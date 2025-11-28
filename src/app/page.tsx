@@ -1,16 +1,100 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+
+type Particle = {
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  r: number;
+  color: string;
+};
 
 export default function Home() {
   const [activeFlow, setActiveFlow] = useState<'candidate' | 'referrer'>('candidate');
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const palette = ['rgba(61, 210, 240, 0.55)', 'rgba(122, 76, 226, 0.45)'];
+    const particles: Particle[] = Array.from({ length: 80 }, () => ({
+      x: Math.random() * window.innerWidth,
+      y: Math.random() * window.innerHeight,
+      vx: (Math.random() - 0.5) * 0.35,
+      vy: (Math.random() - 0.5) * 0.35,
+      r: 0.8 + Math.random() * 1.6,
+      color: palette[Math.floor(Math.random() * palette.length)],
+    }));
+
+    let width = window.innerWidth;
+    let height = window.innerHeight;
+    let animationFrameId = 0;
+
+    const resize = () => {
+      width = window.innerWidth;
+      height = window.innerHeight;
+      const ratio = window.devicePixelRatio || 1;
+      canvas.width = width * ratio;
+      canvas.height = height * ratio;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(1, 0, 0, 1, 0, 0);
+      ctx.scale(ratio, ratio);
+    };
+
+    const step = () => {
+      ctx.clearRect(0, 0, width, height);
+      particles.forEach((particle) => {
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+
+        if (particle.x < -10) particle.x = width + 10;
+        if (particle.x > width + 10) particle.x = -10;
+        if (particle.y < -10) particle.y = height + 10;
+        if (particle.y > height + 10) particle.y = -10;
+
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.r, 0, Math.PI * 2);
+        ctx.fillStyle = particle.color;
+        ctx.fill();
+      });
+
+      animationFrameId = requestAnimationFrame(step);
+    };
+
+    resize();
+    step();
+    window.addEventListener('resize', resize);
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', resize);
+    };
+  }, []);
 
   const isCandidate = activeFlow === 'candidate';
 
   return (
     <div className="app">
-      <div className="glow glow-1" />
-      <div className="glow glow-2" />
+      <div className="background-orbits" aria-hidden="true">
+        <div id="container">
+          <div className="circle-container" id="circle-container-1">
+            <div id="circle1" className="circle" />
+          </div>
+          <div className="circle-container" id="circle-container-2">
+            <div id="circle2" className="circle" />
+          </div>
+          <div id="particles-js">
+            <canvas ref={canvasRef} />
+          </div>
+        </div>
+      </div>
 
       <div className="board">
         <nav className="sidebar" aria-label="Primary">
