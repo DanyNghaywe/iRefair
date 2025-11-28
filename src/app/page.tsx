@@ -97,45 +97,6 @@ export default function Home() {
       </div>
 
       <div className="board">
-        <nav className="sidebar" aria-label="Primary">
-          <div className="logo">
-            <span className="logo-mark" aria-hidden="true" />
-            <span className="logo-text">irefair</span>
-          </div>
-          <ul className="nav-buttons">
-            <li>
-              <button className="nav-btn is-active" type="button" aria-label="Home">
-                <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    fill="currentColor"
-                    d="M12 3 3.5 9.5V21h6.5v-5h4v5h6.5V9.5L12 3Z"
-                  />
-                </svg>
-              </button>
-            </li>
-            <li>
-              <button className="nav-btn" type="button" aria-label="Find referrals">
-                <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    fill="currentColor"
-                    d="M5 20h14v-2H5v2Zm1-3h3V9H6v8Zm5 0h3V5h-3v12Zm5 0h3v-6h-3v6Z"
-                  />
-                </svg>
-              </button>
-            </li>
-            <li>
-              <button className="nav-btn" type="button" aria-label="My profile">
-                <svg className="icon" viewBox="0 0 24 24" aria-hidden="true">
-                  <path
-                    fill="currentColor"
-                    d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-3.3 0-6 2.2-6 5v1h12v-1c0-2.8-2.7-5-6-5Z"
-                  />
-                </svg>
-              </button>
-            </li>
-          </ul>
-        </nav>
-
         <div className="content">
           <header className="topbar">
             <div className="topbar-copy">
