@@ -9,6 +9,7 @@
   --accent: #f47c5d;
   --accent-2: #3d8bfd;
   --accent-3: #ffd166;
+  --surface-soft: linear-gradient(135deg, rgba(61, 139, 253, 0.03), rgba(244, 124, 93, 0.04));
   --shadow: 0 24px 70px rgba(35, 46, 89, 0.16);
   --radius: 18px;
   --gap: 18px;
@@ -173,8 +174,8 @@ canvas {
   justify-content: space-between;
   gap: 16px;
   padding: 12px 14px;
-  background: linear-gradient(135deg, rgba(61, 139, 253, 0.05), rgba(244, 124, 93, 0.06));
-  border: 1px solid var(--line);
+  background: var(--surface-soft);
+  border: none;
   border-radius: 16px;
   flex-wrap: wrap;
 }
@@ -307,6 +308,10 @@ h1 {
   box-shadow: 0 16px 34px rgba(15, 23, 42, 0.04);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
+}
+
+.referral-card {
+  background: var(--surface-soft);
 }
 
 .referrer-card {
