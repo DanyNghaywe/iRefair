@@ -97,47 +97,46 @@ export default function Home() {
       </div>
 
       <div className="board">
-        <div className="content">
-          <header className="topbar">
-            <div className="topbar-copy">
-              <p className="eyebrow">Workspaces</p>
-              <h1>Match candidates with referrers</h1>
-              <p className="lead small-lead">
-                Choose a lane below: request a referral as a candidate, or share who you can sponsor as a referrer.
-              </p>
-            </div>
-            <div className="persona-pills" role="list">
-              <button
-                className={`persona-pill ${isCandidate ? 'is-active' : ''}`}
-                type="button"
-                role="listitem"
-                aria-pressed={isCandidate}
-                onClick={() => setActiveFlow('candidate')}
-              >
-                <div className="pill-badge candidate" aria-hidden="true" />
-                <div>
-                  <p className="pill-label">Candidate flow</p>
-                  <p className="pill-sub">Submit a referral request</p>
-                </div>
-              </button>
-              <button
-                className={`persona-pill ${!isCandidate ? 'is-active' : ''}`}
-                type="button"
-                role="listitem"
-                aria-pressed={!isCandidate}
-                onClick={() => setActiveFlow('referrer')}
-              >
-                <div className="pill-badge referrer" aria-hidden="true" />
-                <div>
-                  <p className="pill-label">Referrer flow</p>
-                  <p className="pill-sub">Offer introductions you can make</p>
-                </div>
-              </button>
-            </div>
-          </header>
+        <header className="topbar">
+          <div className="topbar-copy">
+            <p className="eyebrow">Workspaces</p>
+            <h1>Match candidates with referrers</h1>
+            <p className="lead small-lead">
+              Choose a lane below: request a referral as a candidate, or share who you can sponsor as a referrer.
+            </p>
+          </div>
+          <div className="persona-pills" role="list">
+            <button
+              className={`persona-pill ${isCandidate ? 'is-active' : ''}`}
+              type="button"
+              role="listitem"
+              aria-pressed={isCandidate}
+              onClick={() => setActiveFlow('candidate')}
+            >
+              <div className="pill-badge candidate" aria-hidden="true" />
+              <div>
+                <p className="pill-label">Candidate flow</p>
+                <p className="pill-sub">Submit a referral request</p>
+              </div>
+            </button>
+            <button
+              className={`persona-pill ${!isCandidate ? 'is-active' : ''}`}
+              type="button"
+              role="listitem"
+              aria-pressed={!isCandidate}
+              onClick={() => setActiveFlow('referrer')}
+            >
+              <div className="pill-badge referrer" aria-hidden="true" />
+              <div>
+                <p className="pill-label">Referrer flow</p>
+                <p className="pill-sub">Offer introductions you can make</p>
+              </div>
+            </button>
+          </div>
+        </header>
 
-          <main>
-            <div className="flow-stack">
+        <main>
+          <div className="flow-stack">
               {isCandidate ? (
                 <section className="card referral-card" aria-labelledby="referral-title">
                   <div className="card-header">
@@ -534,9 +533,8 @@ export default function Home() {
                   </div>
                 </section>
               )}
-            </div>
-          </main>
-        </div>
+          </div>
+        </main>
       </div>
     </div>
   );
