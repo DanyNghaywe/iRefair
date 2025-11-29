@@ -24,7 +24,7 @@
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: var(--font-sora), "Sora", system-ui, -apple-system, sans-serif;
+  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
   background-color: #0f343c;
   background-image: radial-gradient(ellipse at 50% 30%, rgba(223, 243, 248, 0.6) 0%, rgba(19, 80, 88, 0.58) 42%, #0f343c 100%);
   background-repeat: no-repeat;
@@ -113,9 +113,9 @@ main {
 
 .eyebrow {
   margin: 0;
-  color: #eaf6ff;
-  font-size: 12px;
-  letter-spacing: 0.1em;
+  color: hsla(0, 0%, 100%, 0.7);
+  font-size: 11px;
+  letter-spacing: 0.5em;
   text-transform: uppercase;
   font-weight: 700;
 }

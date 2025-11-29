@@ -1,12 +1,5 @@
 import type { Metadata } from "next";
-import { Sora } from "next/font/google";
 import "./globals.css";
-
-const sora = Sora({
-  subsets: ["latin"],
-  variable: "--font-sora",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "irefair | Request a job referral",
@@ -21,7 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={sora.className}>{children}</body>
+      <body>{children}</body>
     </html>
   );
 }
