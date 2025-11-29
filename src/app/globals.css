@@ -194,19 +194,24 @@ h1 {
   font-size: 14px;
 }
 
+.flow-toggle {
+  display: flex;
+  justify-content: flex-end;
+}
+
 .persona-pills {
-  display: grid;
+  display: flex;
   gap: 10px;
-  min-width: 250px;
+  align-items: center;
 }
 
 .persona-pill {
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
-  border-radius: 12px;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
   border: 1px solid var(--line);
   background: #ffffff;
   box-shadow: 0 10px 20px rgba(17, 24, 39, 0.06);
@@ -247,12 +252,13 @@ h1 {
   margin: 0;
   font-weight: 700;
   color: var(--ink);
+  font-size: 14px;
 }
 
 .pill-sub {
   margin: 4px 0 0;
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
 }
 
 .user {
@@ -307,7 +313,7 @@ h1 {
 .referrer-card {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(140deg, rgba(167, 167, 167, 0.32), rgba(167, 167, 167, 0.16));
+  background: var(--surface-soft);
 }
 
 .referrer-card::after {
@@ -357,7 +363,7 @@ h2 {
 }
 
 .badge-alt {
-  background: linear-gradient(120deg, rgba(244, 124, 93, 0.24), rgba(255, 209, 102, 0.18));
+  background: linear-gradient(120deg, rgba(61, 139, 253, 0.14), rgba(244, 124, 93, 0.16));
 }
 
 .referral-form {
@@ -545,6 +551,10 @@ textarea:focus {
 
   h2 {
     font-size: 21px;
+  }
+
+  .flow-toggle {
+    justify-content: center;
   }
 
   .actions {
