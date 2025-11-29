@@ -11,7 +11,8 @@ type Particle = {
   color: string;
 };
 
-const COLORS = ['#344455', '#ffffff'];
+const COLORS = ['#7ad7e3', '#3b9faf', '#c7f0ff'];
+const LINK_COLOR = '122, 215, 227';
 const PARTICLE_COUNT = 60;
 const MAX_DISTANCE = 120;
 const MAX_SPEED = 0.35;
@@ -93,7 +94,7 @@ export function ParticlesBackground() {
 
           if (distance < MAX_DISTANCE) {
             const opacity = 0.6 * (1 - distance / MAX_DISTANCE);
-            context.strokeStyle = `rgba(255, 255, 255, ${opacity.toFixed(3)})`;
+            context.strokeStyle = `rgba(${LINK_COLOR}, ${opacity.toFixed(3)})`;
             context.lineWidth = 1;
             context.beginPath();
             context.moveTo(particle.x, particle.y);
