@@ -312,11 +312,12 @@ h2 {
 
 fieldset {
   border: 1px solid rgba(255, 255, 255, 0.24);
+  border-top: none;
   border-radius: 16px;
   padding: 14px 14px 10px;
   margin: 0;
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.08));
-  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  box-shadow: 0 12px 26px rgba(15, 23, 42, 0.1);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
 }
