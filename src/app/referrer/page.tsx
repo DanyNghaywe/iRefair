@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { ParticlesBackground } from '@/components/ParticlesBackground';
 
@@ -36,6 +37,11 @@ export default function ReferrerPage() {
       <div className="board">
         <main>
           <section className="card referrer-card" aria-labelledby="referrer-title">
+            <div className="role-switch">
+              <span className="role-switch__text">
+                Not a referrer? <Link href="/candidate">Switch to candidate</Link>
+              </span>
+            </div>
             <div className="card-header">
               <div>
                 <p className="eyebrow">For referrers</p>

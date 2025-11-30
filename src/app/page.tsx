@@ -3,18 +3,18 @@
 import { useRouter } from 'next/navigation';
 import { ParticlesBackground } from '@/components/ParticlesBackground';
 
-const personas = [
+const roles = [
   {
     id: 'candidate',
     label: 'Candidate',
-    description: 'Request referrals and share your background to be matched.',
-    badgeClass: 'candidate',
+    description: 'I want to request referrals',
+    path: '/candidate',
   },
   {
     id: 'referrer',
     label: 'Referrer',
-    description: 'Offer introductions or referrals to roles and teams you support.',
-    badgeClass: 'referrer',
+    description: 'I can refer candidates into my company',
+    path: '/referrer',
   },
 ];
 
@@ -27,28 +27,23 @@ export default function Home() {
       <ParticlesBackground />
 
       <div className="board">
-        <main>
-          <section className="card landing-card" aria-labelledby="persona-heading">
-            <p className="eyebrow">Get started</p>
-            <h1 id="persona-heading">I am a...</h1>
-            <p className="lead landing-lead">
-              Choose the path that fits you. We&apos;ll guide you to request a referral or offer one.
-            </p>
+        <main className="role-picker">
+          <section className="card role-picker-card" aria-labelledby="role-heading">
+            <p className="eyebrow">Start with your role</p>
+            <h1 id="role-heading">I am a...</h1>
+            <p className="lead role-subtitle">Choose how you want to use iRefair.</p>
 
-            <div className="persona-grid" role="list">
-              {personas.map((persona) => (
+            <div className="role-options" role="list">
+              {roles.map((role) => (
                 <button
-                  key={persona.id}
+                  key={role.id}
                   type="button"
-                  className="persona-pill persona-pill--large"
+                  className={`role-option role-option--${role.id}`}
                   role="listitem"
-                  onClick={() => router.push(`/${persona.id}`)}
+                  onClick={() => router.push(role.path)}
                 >
-                  <div className={`pill-badge ${persona.badgeClass}`} aria-hidden="true" />
-                  <div>
-                    <p className="pill-label">{persona.label}</p>
-                    <p className="pill-sub">{persona.description}</p>
-                  </div>
+                  <span className="role-option-title">{role.label}</span>
+                  <span className="role-option-sub">{role.description}</span>
                 </button>
               ))}
             </div>

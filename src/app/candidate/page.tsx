@@ -1,7 +1,151 @@
 'use client';
 
+import Link from 'next/link';
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import { ParticlesBackground } from '@/components/ParticlesBackground';
+
+type Language = 'en' | 'fr';
+
+const translations = {
+  en: {
+    eyebrow: 'For candidates',
+    title: 'Request a referral match',
+    lead: "Tell us your background and target roles. We'll pair you with referrers when they're available.",
+    success: 'Request sent. We will notify you when a referrer is available.',
+    legends: {
+      details: 'Your details',
+      profiles: 'Your profiles',
+      preferences: 'Role preferences',
+      experience: 'Experience snapshot',
+      context: 'Referral context',
+      attachments: 'Attachments (optional)',
+    },
+    labels: {
+      fullName: 'Full name',
+      email: 'Email',
+      phone: 'Phone number',
+      location: 'Location',
+      linkedin: 'LinkedIn profile',
+      portfolio: 'Portfolio or site',
+      github: 'GitHub profile',
+      desiredRole: 'Target role',
+      seniority: 'Seniority',
+      jobType: 'Job type',
+      workPreference: 'Work preference',
+      preferredLocations: 'Preferred locations',
+      experienceYears: "Years of experience",
+      primarySkills: 'Primary skills',
+      currentCompany: 'Current company',
+      currentTitle: 'Current job title',
+      targetCompanies: 'Target companies',
+      hasPostings: 'Do you already have specific job postings?',
+      postingNotes: 'Links and notes',
+      pitch: 'Brief pitch',
+      resume: 'Upload resume / CV',
+    },
+    placeholders: {
+      phone: '+1 555 123 4567',
+      location: 'City, Country',
+      linkedin: 'https://linkedin.com/in/',
+      portfolio: 'https://example.com',
+      github: 'https://github.com/',
+      desiredRole: 'e.g. Product Designer',
+      preferredLocations: 'e.g. London, Berlin, Remote Europe',
+      primarySkills: 'e.g. React, Node.js, Python, Product Management',
+      targetCompanies: 'List company names and/or job links',
+      postingNotes: 'Add job links, role IDs, or notes',
+      pitch: 'Briefly describe your background and what kind of referral you are looking for',
+    },
+    selects: {
+      selectLabel: 'Select',
+      seniority: ['Intern', 'Junior', 'Mid-level', 'Senior', 'Lead', 'Director+'],
+      jobType: ['Full-time', 'Part-time', 'Contract', 'Internship'],
+      workPreference: ['Remote', 'Hybrid', 'On-site'],
+      hasPostings: ['Yes', 'No'],
+    },
+    optional: '(optional)',
+    upload: 'Upload resume',
+    uploadHint: 'Accepted: PDF, DOC, DOCX. Max size 10MB.',
+    noFile: 'No file selected yet',
+    buttons: {
+      submit: 'Send referral request',
+      submitting: 'Submitting...',
+      reset: 'Clear form',
+    },
+    languageLabel: 'Language',
+    english: 'English',
+    french: 'Français',
+  },
+  fr: {
+    eyebrow: 'Pour les candidats',
+    title: 'Demander une mise en relation pour une recommandation',
+    lead: "Parlez-nous de votre parcours et des postes visés. Nous vous mettrons en relation avec des référents disponibles.",
+    success: 'Demande envoyée. Nous vous informerons lorsqu’un référent sera disponible.',
+    legends: {
+      details: 'Vos informations',
+      profiles: 'Vos profils',
+      preferences: 'Préférences de poste',
+      experience: "Résumé de l'expérience",
+      context: 'Contexte de recommandation',
+      attachments: 'Pièces jointes (optionnel)',
+    },
+    labels: {
+      fullName: 'Nom complet',
+      email: 'Email',
+      phone: 'Numéro de téléphone',
+      location: 'Lieu',
+      linkedin: 'Profil LinkedIn',
+      portfolio: 'Portfolio ou site',
+      github: 'Profil GitHub',
+      desiredRole: 'Poste cible',
+      seniority: 'Niveau de séniorité',
+      jobType: "Type d'emploi",
+      workPreference: 'Préférence de travail',
+      preferredLocations: 'Lieux préférés',
+      experienceYears: "Années d'expérience",
+      primarySkills: 'Compétences principales',
+      currentCompany: 'Entreprise actuelle',
+      currentTitle: 'Intitulé de poste actuel',
+      targetCompanies: 'Entreprises ciblées',
+      hasPostings: 'Avez-vous déjà des offres spécifiques ?',
+      postingNotes: 'Liens et notes',
+      pitch: 'Présentation concise',
+      resume: 'Télécharger le CV',
+    },
+    placeholders: {
+      phone: '+33 6 12 34 56 78',
+      location: 'Ville, Pays',
+      linkedin: 'https://linkedin.com/in/',
+      portfolio: 'https://exemple.com',
+      github: 'https://github.com/',
+      desiredRole: 'ex. Designer produit',
+      preferredLocations: 'ex. Paris, Lyon, Télétravail Europe',
+      primarySkills: 'ex. React, Node.js, Python, Product Management',
+      targetCompanies: "Liste d'entreprises et/ou liens d'offres",
+      postingNotes: "Ajoutez des liens d'offres, IDs ou notes",
+      pitch: 'Décrivez brièvement votre parcours et le type de recommandation souhaitée',
+    },
+    selects: {
+      selectLabel: 'Sélectionner',
+      seniority: ['Stagiaire', 'Junior', 'Intermédiaire', 'Senior', 'Lead', 'Directeur+'],
+      jobType: ['Temps plein', 'Temps partiel', 'Contrat', 'Stage'],
+      workPreference: ['Télétravail', 'Hybride', 'Sur site'],
+      hasPostings: ['Oui', 'Non'],
+    },
+    optional: '(optionnel)',
+    upload: 'Télécharger le CV',
+    uploadHint: 'Formats acceptés : PDF, DOC, DOCX. Taille max 10 Mo.',
+    noFile: 'Aucun fichier sélectionné',
+    buttons: {
+      submit: 'Envoyer la demande de recommandation',
+      submitting: 'Envoi...',
+      reset: 'Effacer le formulaire',
+    },
+    languageLabel: 'Langue',
+    english: 'Anglais',
+    french: 'Français',
+  },
+};
 
 export default function CandidatePage() {
   const [resumeName, setResumeName] = useState('');
@@ -10,6 +154,7 @@ export default function CandidatePage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+   const [language, setLanguage] = useState<Language>('en');
 
   const handleResumeChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -31,9 +176,11 @@ export default function CandidatePage() {
     setSubmitting(true);
     timeoutRef.current = setTimeout(() => {
       setSubmitting(false);
-      setSuccess('Request sent. We will notify you when a referrer is available.');
+      setSuccess(translations[language].success);
     }, 1200);
   };
+
+  const t = translations[language];
 
   return (
     <div className="app">
@@ -43,13 +190,32 @@ export default function CandidatePage() {
       <div className="board">
         <main>
           <section className="card referral-card" aria-labelledby="referral-title">
+            <div className="role-switch">
+              <span className="role-switch__text">
+                Not a candidate? <Link href="/referrer">Switch to referrer</Link>
+              </span>
+            </div>
+            <div className="language-toggle" role="group" aria-label={t.languageLabel}>
+              <button
+                type="button"
+                className={`language-toggle__btn ${language === 'en' ? 'is-active' : ''}`}
+                onClick={() => setLanguage('en')}
+              >
+                {t.english}
+              </button>
+              <button
+                type="button"
+                className={`language-toggle__btn ${language === 'fr' ? 'is-active' : ''}`}
+                onClick={() => setLanguage('fr')}
+              >
+                {t.french}
+              </button>
+            </div>
             <div className="card-header">
               <div>
-                <p className="eyebrow">For candidates</p>
-                <h2 id="referral-title">Request a referral match</h2>
-                <p className="lead">
-                  Tell us your background and target roles. We&apos;ll pair you with referrers when they&apos;re available.
-                </p>
+                <p className="eyebrow">{t.eyebrow}</p>
+                <h2 id="referral-title">{t.title}</h2>
+                <p className="lead">{t.lead}</p>
               </div>
             </div>
 
@@ -66,39 +232,39 @@ export default function CandidatePage() {
 
             <form className="referral-form" action="#" method="post" onSubmit={handleSubmit}>
               <fieldset>
-                <legend>Your details</legend>
+                <legend>{t.legends.details}</legend>
                 <div className="field-grid">
                   <div className="field">
-                    <label htmlFor="full-name">Full name</label>
+                    <label htmlFor="full-name">{t.labels.fullName}</label>
                     <input id="full-name" name="full-name" type="text" required aria-describedby="full-name-error" />
                     <p className="field-error" id="full-name-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field">
-                    <label htmlFor="email">Email</label>
+                    <label htmlFor="email">{t.labels.email}</label>
                     <input id="email" name="email" type="email" required aria-describedby="email-error" />
                     <p className="field-error" id="email-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field">
                     <label htmlFor="phone">
-                      Phone number <span className="optional">(optional)</span>
+                      {t.labels.phone} <span className="optional">{t.optional}</span>
                     </label>
                     <input
                       id="phone"
                       name="phone"
                       type="tel"
-                      placeholder="+1 555 123 4567"
+                      placeholder={t.placeholders.phone}
                       aria-describedby="phone-error"
                     />
                     <p className="field-error" id="phone-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field">
-                    <label htmlFor="location">Location</label>
+                    <label htmlFor="location">{t.labels.location}</label>
                     <input
                       id="location"
                       name="location"
                       type="text"
                       required
-                      placeholder="City, Country"
+                      placeholder={t.placeholders.location}
                       aria-describedby="location-error"
                     />
                     <p className="field-error" id="location-error" role="alert" aria-live="polite"></p>
@@ -107,42 +273,42 @@ export default function CandidatePage() {
               </fieldset>
 
               <fieldset>
-                <legend>Your profiles</legend>
+                <legend>{t.legends.profiles}</legend>
                 <div className="field-grid">
                   <div className="field">
-                    <label htmlFor="linkedin">LinkedIn profile</label>
+                    <label htmlFor="linkedin">{t.labels.linkedin}</label>
                     <input
                       id="linkedin"
                       name="linkedin"
                       type="url"
                       required
                       aria-describedby="linkedin-error"
-                      placeholder="https://linkedin.com/in/"
+                      placeholder={t.placeholders.linkedin}
                     />
                     <p className="field-error" id="linkedin-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field">
                     <label htmlFor="portfolio">
-                      Portfolio or site <span className="optional">(optional)</span>
+                      {t.labels.portfolio} <span className="optional">{t.optional}</span>
                     </label>
                     <input
                       id="portfolio"
                       name="portfolio"
                       type="url"
-                      placeholder="https://example.com"
+                      placeholder={t.placeholders.portfolio}
                       aria-describedby="portfolio-error"
                     />
                     <p className="field-error" id="portfolio-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field">
                     <label htmlFor="github">
-                      GitHub profile <span className="optional">(optional)</span>
+                      {t.labels.github} <span className="optional">{t.optional}</span>
                     </label>
                     <input
                       id="github"
                       name="github"
                       type="url"
-                      placeholder="https://github.com/"
+                      placeholder={t.placeholders.github}
                       aria-describedby="github-error"
                     />
                     <p className="field-error" id="github-error" role="alert" aria-live="polite"></p>
@@ -151,22 +317,22 @@ export default function CandidatePage() {
               </fieldset>
 
               <fieldset>
-                <legend>Role preferences</legend>
+                <legend>{t.legends.preferences}</legend>
                 <div className="field-grid">
                   <div className="field">
-                    <label htmlFor="desired-role">Target role</label>
+                    <label htmlFor="desired-role">{t.labels.desiredRole}</label>
                     <input
                       id="desired-role"
                       name="desired-role"
                       type="text"
                       required
                       aria-describedby="desired-role-error"
-                      placeholder="e.g. Product Designer"
+                      placeholder={t.placeholders.desiredRole}
                     />
                     <p className="field-error" id="desired-role-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field">
-                    <label htmlFor="seniority">Seniority</label>
+                    <label htmlFor="seniority">{t.labels.seniority}</label>
                     <select
                       id="seniority"
                       name="seniority"
@@ -175,19 +341,16 @@ export default function CandidatePage() {
                       aria-describedby="seniority-error"
                     >
                       <option value="" disabled>
-                        Select
+                        {t.selects.selectLabel}
                       </option>
-                      <option>Intern</option>
-                      <option>Junior</option>
-                      <option>Mid-level</option>
-                      <option>Senior</option>
-                      <option>Lead</option>
-                      <option>Director+</option>
+                      {t.selects.seniority.map((option) => (
+                        <option key={option}>{option}</option>
+                      ))}
                     </select>
                     <p className="field-error" id="seniority-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field">
-                    <label htmlFor="job-type">Job type</label>
+                    <label htmlFor="job-type">{t.labels.jobType}</label>
                     <select
                       id="job-type"
                       name="job-type"
@@ -196,17 +359,16 @@ export default function CandidatePage() {
                       aria-describedby="job-type-error"
                     >
                       <option value="" disabled>
-                        Select
+                        {t.selects.selectLabel}
                       </option>
-                      <option>Full-time</option>
-                      <option>Part-time</option>
-                      <option>Contract</option>
-                      <option>Internship</option>
+                      {t.selects.jobType.map((option) => (
+                        <option key={option}>{option}</option>
+                      ))}
                     </select>
                     <p className="field-error" id="job-type-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field">
-                    <label htmlFor="work-preference">Work preference</label>
+                    <label htmlFor="work-preference">{t.labels.workPreference}</label>
                     <select
                       id="work-preference"
                       name="work-preference"
@@ -215,24 +377,24 @@ export default function CandidatePage() {
                       aria-describedby="work-preference-error"
                     >
                       <option value="" disabled>
-                        Select
+                        {t.selects.selectLabel}
                       </option>
-                      <option>Remote</option>
-                      <option>Hybrid</option>
-                      <option>On-site</option>
+                      {t.selects.workPreference.map((option) => (
+                        <option key={option}>{option}</option>
+                      ))}
                     </select>
                     <p className="field-error" id="work-preference-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field field-full">
                     <label htmlFor="preferred-locations">
-                      Preferred locations <span className="optional">(optional)</span>
+                      {t.labels.preferredLocations} <span className="optional">{t.optional}</span>
                     </label>
                     <textarea
                       id="preferred-locations"
                       name="preferred-locations"
                       rows={2}
                       aria-describedby="preferred-locations-error"
-                      placeholder="e.g. London, Berlin, Remote Europe"
+                      placeholder={t.placeholders.preferredLocations}
                     />
                     <p className="field-error" id="preferred-locations-error" role="alert" aria-live="polite"></p>
                   </div>
@@ -240,10 +402,10 @@ export default function CandidatePage() {
               </fieldset>
 
               <fieldset>
-                <legend>Experience snapshot</legend>
+                <legend>{t.legends.experience}</legend>
                 <div className="field-grid">
                   <div className="field">
-                    <label htmlFor="experience-years">Years of experience</label>
+                    <label htmlFor="experience-years">{t.labels.experienceYears}</label>
                     <input
                       id="experience-years"
                       name="experience-years"
@@ -255,20 +417,20 @@ export default function CandidatePage() {
                     <p className="field-error" id="experience-years-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field field-full">
-                    <label htmlFor="primary-skills">Primary skills</label>
+                    <label htmlFor="primary-skills">{t.labels.primarySkills}</label>
                     <textarea
                       id="primary-skills"
                       name="primary-skills"
                       rows={2}
                       required
                       aria-describedby="primary-skills-error"
-                      placeholder="e.g. React, Node.js, Python, Product Management"
+                      placeholder={t.placeholders.primarySkills}
                     />
                     <p className="field-error" id="primary-skills-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field">
                     <label htmlFor="current-company">
-                      Current company <span className="optional">(optional)</span>
+                      {t.labels.currentCompany} <span className="optional">{t.optional}</span>
                     </label>
                     <input
                       id="current-company"
@@ -280,7 +442,7 @@ export default function CandidatePage() {
                   </div>
                   <div className="field">
                     <label htmlFor="current-title">
-                      Current job title <span className="optional">(optional)</span>
+                      {t.labels.currentTitle} <span className="optional">{t.optional}</span>
                     </label>
                     <input
                       id="current-title"
@@ -294,23 +456,23 @@ export default function CandidatePage() {
               </fieldset>
 
               <fieldset>
-                <legend>Referral context</legend>
+                <legend>{t.legends.context}</legend>
                 <div className="field-grid">
                   <div className="field field-full">
-                    <label htmlFor="target-companies">Target companies</label>
+                    <label htmlFor="target-companies">{t.labels.targetCompanies}</label>
                     <textarea
                       id="target-companies"
                       name="target-companies"
                       rows={2}
                       required
                       aria-describedby="target-companies-error"
-                      placeholder="List company names and/or job links"
+                      placeholder={t.placeholders.targetCompanies}
                     />
                     <p className="field-error" id="target-companies-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field">
                     <label htmlFor="has-postings">
-                      Do you already have specific job postings? <span className="optional">(optional)</span>
+                      {t.labels.hasPostings} <span className="optional">{t.optional}</span>
                     </label>
                     <select
                       id="has-postings"
@@ -318,33 +480,34 @@ export default function CandidatePage() {
                       defaultValue="No"
                       aria-describedby="has-postings-error"
                     >
-                      <option>Yes</option>
-                      <option>No</option>
+                      {t.selects.hasPostings.map((option) => (
+                        <option key={option}>{option}</option>
+                      ))}
                     </select>
                     <p className="field-error" id="has-postings-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field field-full">
                     <label htmlFor="posting-notes">
-                      Links and notes <span className="optional">(optional)</span>
+                      {t.labels.postingNotes} <span className="optional">{t.optional}</span>
                     </label>
                     <textarea
                       id="posting-notes"
                       name="posting-notes"
                       rows={2}
                       aria-describedby="posting-notes-error"
-                      placeholder="Add job links, role IDs, or notes"
+                      placeholder={t.placeholders.postingNotes}
                     />
                     <p className="field-error" id="posting-notes-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field field-full">
-                    <label htmlFor="pitch">Brief pitch</label>
+                    <label htmlFor="pitch">{t.labels.pitch}</label>
                     <textarea
                       id="pitch"
                       name="pitch"
                       rows={3}
                       required
                       aria-describedby="pitch-error"
-                      placeholder="Briefly describe your background and what kind of referral you are looking for"
+                      placeholder={t.placeholders.pitch}
                     />
                     <p className="field-error" id="pitch-error" role="alert" aria-live="polite"></p>
                   </div>
@@ -352,10 +515,10 @@ export default function CandidatePage() {
               </fieldset>
 
               <fieldset>
-                <legend>Attachments (optional)</legend>
+                <legend>{t.legends.attachments}</legend>
                 <div className="field">
                   <label htmlFor="resume">
-                    Upload resume / CV <span className="optional">(optional)</span>
+                    {t.labels.resume} <span className="optional">{t.optional}</span>
                   </label>
                   <div className="file-upload">
                     <input
@@ -374,14 +537,14 @@ export default function CandidatePage() {
                       onClick={() => resumeInputRef.current?.click()}
                       aria-describedby="resume-helper resume-file-name resume-error"
                     >
-                      Upload resume
+                      {t.upload}
                     </button>
                     <span id="resume-file-name" className="file-upload-name" aria-live="polite">
-                      {resumeName || 'No file selected yet'}
+                      {resumeName || t.noFile}
                     </span>
                   </div>
                   <p id="resume-helper" className="field-hint">
-                    Accepted: PDF, DOC, DOCX. Max size 10MB.
+                    {t.uploadHint}
                   </p>
                   <p className="field-error" id="resume-error" role="alert" aria-live="polite"></p>
                 </div>
@@ -391,15 +554,15 @@ export default function CandidatePage() {
                 <button className="btn primary" type="submit" disabled={submitting} aria-busy={submitting}>
                   {submitting ? (
                     <>
-                      Submitting...
+                      {t.buttons.submitting}
                       <span className="loading-indicator" aria-hidden="true" />
                     </>
                   ) : (
-                    'Send referral request'
+                    t.buttons.submit
                   )}
                 </button>
                 <button className="btn ghost" type="reset">
-                  Clear form
+                  {t.buttons.reset}
                 </button>
               </div>
             </form>
