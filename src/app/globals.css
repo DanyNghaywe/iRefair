@@ -698,7 +698,8 @@ textarea {
 }
 
 textarea {
-  resize: vertical;
+  resize: none;
+  overflow-y: auto;
 }
 
 input::placeholder,
@@ -888,43 +889,6 @@ textarea:-webkit-autofill {
   }
 }
 
-.referrer-metrics {
-  margin-top: 12px;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: 12px;
-}
-
-.metric-card {
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.08));
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  border-radius: 14px;
-  padding: 12px 14px;
-  box-shadow: 0 12px 20px rgba(17, 24, 39, 0.08);
-}
-
-.metric-label {
-  margin: 0;
-  font-size: var(--font-size-small);
-  color: var(--muted);
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-}
-
-.metric-value {
-  margin: 4px 0 2px;
-  font-weight: 800;
-  font-size: 19px;
-  color: var(--ink);
-}
-
-.metric-note {
-  margin: 0;
-  color: var(--muted);
-  font-size: var(--font-size-small);
-  line-height: 1.5;
-}
-
 @media (max-width: 1080px) {
   .board {
     min-height: auto;
@@ -1007,12 +971,4 @@ textarea:-webkit-autofill {
     min-height: 102px;
   }
 
-  .referrer-metrics {
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-    gap: 10px;
-  }
-
-  .metric-card {
-    padding: 12px;
-  }
 }
