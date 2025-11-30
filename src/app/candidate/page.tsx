@@ -6,10 +6,37 @@ import { ParticlesBackground } from '@/components/ParticlesBackground';
 
 type Language = 'en' | 'fr';
 
-const translations = {
+const translations: Record<
+  Language,
+  {
+    eyebrow: string;
+    title: string;
+    lead: string;
+    success: string;
+    legends: Record<string, string>;
+    labels: Record<string, string>;
+    placeholders: Record<string, string>;
+    selects: {
+      selectLabel: string;
+      seniority: string[];
+      jobType: string[];
+      workPreference: string[];
+      hasPostings: string[];
+    };
+    optional: string;
+    upload: string;
+    uploadHint: string;
+    noFile: string;
+    buttons: { submit: string; submitting: string; reset: string };
+    languageLabel: string;
+    english: string;
+    french: string;
+    switchText: { prompt: string; link: string };
+  }
+> = {
   en: {
     eyebrow: 'For candidates',
-    title: 'Request a referral match',
+    title: 'Candidate referral request',
     lead: "Tell us your background and target roles. We'll pair you with referrers when they're available.",
     success: 'Request sent. We will notify you when a referrer is available.',
     legends: {
@@ -33,7 +60,7 @@ const translations = {
       jobType: 'Job type',
       workPreference: 'Work preference',
       preferredLocations: 'Preferred locations',
-      experienceYears: "Years of experience",
+      experienceYears: 'Years of experience',
       primarySkills: 'Primary skills',
       currentCompany: 'Current company',
       currentTitle: 'Current job title',
@@ -75,11 +102,15 @@ const translations = {
     languageLabel: 'Language',
     english: 'English',
     french: 'Français',
+    switchText: {
+      prompt: 'Not a candidate?',
+      link: 'Switch to referrer',
+    },
   },
   fr: {
     eyebrow: 'Pour les candidats',
-    title: 'Demander une mise en relation pour une recommandation',
-    lead: "Parlez-nous de votre parcours et des postes visés. Nous vous mettrons en relation avec des référents disponibles.",
+    title: 'Demande de recommandation candidat',
+    lead: 'Parlez-nous de votre parcours et des postes visés. Nous vous mettrons en relation avec des référents disponibles.',
     success: 'Demande envoyée. Nous vous informerons lorsqu’un référent sera disponible.',
     legends: {
       details: 'Vos informations',
@@ -142,7 +173,7 @@ const translations = {
       reset: 'Effacer le formulaire',
     },
     languageLabel: 'Langue',
-    english: 'Anglais',
+    english: 'English',
     french: 'Français',
     switchText: {
       prompt: 'Pas candidat ?',
@@ -158,7 +189,9 @@ export default function CandidatePage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
-   const [language, setLanguage] = useState<Language>('en');
+  const [language, setLanguage] = useState<Language>('en');
+
+  const t = translations[language];
 
   const handleResumeChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -180,11 +213,9 @@ export default function CandidatePage() {
     setSubmitting(true);
     timeoutRef.current = setTimeout(() => {
       setSubmitting(false);
-      setSuccess(translations[language].success);
+      setSuccess(t.success);
     }, 1200);
   };
-
-  const t = translations[language];
 
   return (
     <div className="app">
@@ -192,14 +223,16 @@ export default function CandidatePage() {
       <ParticlesBackground />
 
       <div className="board">
+        <div className="shell-header">
+          <span className="wordmark" aria-label="iRefair">
+            iRefair
+          </span>
+        </div>
         <main>
           <section className="card referral-card" aria-labelledby="referral-title">
             <div className="role-switch">
               <span className="role-switch__text">
-                {language === 'fr' ? translations.fr.switchText.prompt : 'Not a candidate?'}{' '}
-                <Link href="/referrer">
-                  {language === 'fr' ? translations.fr.switchText.link : 'Switch to referrer'}
-                </Link>
+                {t.switchText.prompt} <Link href="/referrer">{t.switchText.link}</Link>
               </span>
             </div>
             <div className="language-toggle" role="group" aria-label={t.languageLabel}>
@@ -358,13 +391,7 @@ export default function CandidatePage() {
                   </div>
                   <div className="field">
                     <label htmlFor="job-type">{t.labels.jobType}</label>
-                    <select
-                      id="job-type"
-                      name="job-type"
-                      required
-                      defaultValue=""
-                      aria-describedby="job-type-error"
-                    >
+                    <select id="job-type" name="job-type" required defaultValue="" aria-describedby="job-type-error">
                       <option value="" disabled>
                         {t.selects.selectLabel}
                       </option>
@@ -484,7 +511,7 @@ export default function CandidatePage() {
                     <select
                       id="has-postings"
                       name="has-postings"
-                      defaultValue="No"
+                      defaultValue={t.selects.hasPostings[1]}
                       aria-describedby="has-postings-error"
                     >
                       {t.selects.hasPostings.map((option) => (

@@ -115,6 +115,44 @@ main {
   backdrop-filter: none;
 }
 
+.app-logo {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin: 8px 0 6px;
+}
+
+.app-logo__name {
+  font-size: 30px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+.shell-header {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  margin-bottom: 10px;
+  gap: 8px;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  color: #ffffff;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  box-shadow: none;
+}
+
 .topbar {
   display: flex;
   align-items: flex-start;

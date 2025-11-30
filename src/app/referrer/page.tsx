@@ -35,6 +35,11 @@ export default function ReferrerPage() {
       <ParticlesBackground />
 
       <div className="board">
+        <div className="shell-header">
+          <span className="wordmark" aria-label="iRefair">
+            iRefair
+          </span>
+        </div>
         <main>
           <section className="card referrer-card" aria-labelledby="referrer-title">
             <div className="role-switch">
@@ -45,7 +50,7 @@ export default function ReferrerPage() {
             <div className="card-header">
               <div>
                 <p className="eyebrow">For referrers</p>
-                <h2 id="referrer-title">Offer a referral</h2>
+                <h2 id="referrer-title">Referrer referral form</h2>
                 <p className="lead">
                   Share the teams, roles, and capacity you have. Log a candidate now or just your availability.
                 </p>
