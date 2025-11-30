@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import { ParticlesBackground } from '@/components/ParticlesBackground';
+import { Select } from '@/components/Select';
 
 type Language = 'en' | 'fr';
 
@@ -285,13 +286,12 @@ export default function CandidatePage() {
                     <p className="field-error" id="email-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field">
-                    <label htmlFor="phone">
-                      {t.labels.phone} <span className="optional">{t.optional}</span>
-                    </label>
+                    <label htmlFor="phone">{t.labels.phone}</label>
                     <input
                       id="phone"
                       name="phone"
                       type="tel"
+                      required
                       placeholder={t.placeholders.phone}
                       aria-describedby="phone-error"
                     />
@@ -373,50 +373,38 @@ export default function CandidatePage() {
                   </div>
                   <div className="field">
                     <label htmlFor="seniority">{t.labels.seniority}</label>
-                    <select
+                    <Select
                       id="seniority"
                       name="seniority"
+                      options={t.selects.seniority}
+                      placeholder={t.selects.selectLabel}
                       required
-                      defaultValue=""
-                      aria-describedby="seniority-error"
-                    >
-                      <option value="" disabled>
-                        {t.selects.selectLabel}
-                      </option>
-                      {t.selects.seniority.map((option) => (
-                        <option key={option}>{option}</option>
-                      ))}
-                    </select>
+                      ariaDescribedBy="seniority-error"
+                    />
                     <p className="field-error" id="seniority-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field">
                     <label htmlFor="job-type">{t.labels.jobType}</label>
-                    <select id="job-type" name="job-type" required defaultValue="" aria-describedby="job-type-error">
-                      <option value="" disabled>
-                        {t.selects.selectLabel}
-                      </option>
-                      {t.selects.jobType.map((option) => (
-                        <option key={option}>{option}</option>
-                      ))}
-                    </select>
+                    <Select
+                      id="job-type"
+                      name="job-type"
+                      options={t.selects.jobType}
+                      placeholder={t.selects.selectLabel}
+                      required
+                      ariaDescribedBy="job-type-error"
+                    />
                     <p className="field-error" id="job-type-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field">
                     <label htmlFor="work-preference">{t.labels.workPreference}</label>
-                    <select
+                    <Select
                       id="work-preference"
                       name="work-preference"
+                      options={t.selects.workPreference}
+                      placeholder={t.selects.selectLabel}
                       required
-                      defaultValue=""
-                      aria-describedby="work-preference-error"
-                    >
-                      <option value="" disabled>
-                        {t.selects.selectLabel}
-                      </option>
-                      {t.selects.workPreference.map((option) => (
-                        <option key={option}>{option}</option>
-                      ))}
-                    </select>
+                      ariaDescribedBy="work-preference-error"
+                    />
                     <p className="field-error" id="work-preference-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field field-full">
@@ -508,16 +496,14 @@ export default function CandidatePage() {
                     <label htmlFor="has-postings">
                       {t.labels.hasPostings} <span className="optional">{t.optional}</span>
                     </label>
-                    <select
+                    <Select
                       id="has-postings"
                       name="has-postings"
+                      options={t.selects.hasPostings}
                       defaultValue={t.selects.hasPostings[1]}
-                      aria-describedby="has-postings-error"
-                    >
-                      {t.selects.hasPostings.map((option) => (
-                        <option key={option}>{option}</option>
-                      ))}
-                    </select>
+                      placeholder={t.selects.selectLabel}
+                      ariaDescribedBy="has-postings-error"
+                    />
                     <p className="field-error" id="has-postings-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field field-full">

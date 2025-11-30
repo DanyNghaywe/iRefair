@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import { ParticlesBackground } from '@/components/ParticlesBackground';
+import { Select } from '@/components/Select';
 
 export default function ReferrerPage() {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -168,39 +169,26 @@ export default function ReferrerPage() {
                 <div className="field-grid">
                   <div className="field">
                     <label htmlFor="referral-type">Referral type</label>
-                    <select
+                    <Select
                       id="referral-type"
                       name="referral-type"
+                      options={['Internal employee referral', 'Recruiter-led introduction', 'Peer recommendation']}
+                      placeholder="Select"
                       required
-                      defaultValue=""
-                      aria-describedby="referral-type-error"
-                    >
-                      <option value="" disabled>
-                        Select
-                      </option>
-                      <option>Internal employee referral</option>
-                      <option>Recruiter-led introduction</option>
-                      <option>Peer recommendation</option>
-                    </select>
+                      ariaDescribedBy="referral-type-error"
+                    />
                     <p className="field-error" id="referral-type-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field">
                     <label htmlFor="monthly-slots">Monthly slots</label>
-                    <select
+                    <Select
                       id="monthly-slots"
                       name="monthly-slots"
+                      options={['1-3 candidates', '4-8 candidates', '9-15 candidates', 'Unlimited']}
+                      placeholder="Select"
                       required
-                      defaultValue=""
-                      aria-describedby="monthly-slots-error"
-                    >
-                      <option value="" disabled>
-                        Select
-                      </option>
-                      <option>1-3 candidates</option>
-                      <option>4-8 candidates</option>
-                      <option>9-15 candidates</option>
-                      <option>Unlimited</option>
-                    </select>
+                      ariaDescribedBy="monthly-slots-error"
+                    />
                     <p className="field-error" id="monthly-slots-error" role="alert" aria-live="polite"></p>
                   </div>
                   <div className="field">
