@@ -9,6 +9,7 @@ export default function ReferrerPage() {
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
+  const [language, setLanguage] = useState<'en' | 'fr'>('en');
 
   useEffect(() => {
     return () => {
@@ -44,8 +45,25 @@ export default function ReferrerPage() {
           <section className="card referrer-card" aria-labelledby="referrer-title">
             <div className="role-switch">
               <span className="role-switch__text">
-                Not a referrer? <Link href="/candidate">Switch to candidate</Link>
+                {language === 'fr' ? 'Pas référent ?' : 'Not a referrer?'}{' '}
+                <Link href="/candidate">{language === 'fr' ? 'Passer au candidat' : 'Switch to candidate'}</Link>
               </span>
+            </div>
+            <div className="language-toggle" role="group" aria-label="Language">
+              <button
+                type="button"
+                className={`language-toggle__btn ${language === 'en' ? 'is-active' : ''}`}
+                onClick={() => setLanguage('en')}
+              >
+                English
+              </button>
+              <button
+                type="button"
+                className={`language-toggle__btn ${language === 'fr' ? 'is-active' : ''}`}
+                onClick={() => setLanguage('fr')}
+              >
+                Français
+              </button>
             </div>
             <div className="card-header">
               <div>
@@ -306,24 +324,6 @@ export default function ReferrerPage() {
                 </button>
               </div>
             </form>
-
-            <div className="referrer-metrics" aria-label="Referrer quick stats">
-              <div className="metric-card">
-                <p className="metric-label">Match time</p>
-                <p className="metric-value">48h</p>
-                <p className="metric-note">We only pair candidates that fit your teams and bandwidth.</p>
-              </div>
-              <div className="metric-card">
-                <p className="metric-label">Privacy</p>
-                <p className="metric-value">Private</p>
-                <p className="metric-note">We keep your details hidden until you accept a match.</p>
-              </div>
-              <div className="metric-card">
-                <p className="metric-label">Availability</p>
-                <p className="metric-value">Open</p>
-                <p className="metric-note">Update us anytime if you need to pause referrals or adjust slots.</p>
-              </div>
-            </div>
           </section>
         </main>
       </div>
