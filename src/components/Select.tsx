@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 
 type Option = { value: string; label: string };
 
@@ -100,7 +100,7 @@ export function Select({
     });
   };
 
-  const handleKeyDown = (event: KeyboardEvent<HTMLButtonElement | HTMLUListElement>) => {
+  const handleKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement | HTMLUListElement>) => {
     if (!isOpen && (event.key === ' ' || event.key === 'Enter' || event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
       event.preventDefault();
       setIsOpen(true);
