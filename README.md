@@ -1,5 +1,18 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## SMTP / email setup (Hostinger)
+
+Set these environment variables (values from your Hostinger panel):
+
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `SMTP_FROM_NAME` (optional, defaults to `iRefair`)
+- `SMTP_FROM_EMAIL` (optional, defaults to `info@andbeyondca.com` or `SMTP_USER`)
+
+Emails are sent via `src/lib/mailer.ts` and the candidate confirmation API is at `src/app/api/candidate/route.ts`.
+
 ## Getting Started
 
 First, run the development server:

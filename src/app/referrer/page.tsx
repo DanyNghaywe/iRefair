@@ -1,34 +1,50 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormEvent, useState } from 'react';
 import { ParticlesBackground } from '@/components/ParticlesBackground';
 import { Select } from '@/components/Select';
 
 export default function ReferrerPage() {
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
   const [language, setLanguage] = useState<'en' | 'fr'>('en');
 
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSuccess('');
-    setError('');
+    setStatus('submitting');
     setSubmitting(true);
-    timeoutRef.current = setTimeout(() => {
+
+    const formData = new FormData(event.currentTarget);
+    const name = (formData.get('referrer-name') as string | null)?.trim() || '';
+
+    const payload = {
+      name,
+      email: (formData.get('referrer-email') as string | null)?.trim() || '',
+      targetRoles: (formData.get('target-roles') as string | null)?.trim() || '',
+      regions: (formData.get('regions') as string | null)?.trim() || '',
+      referralType: (formData.get('referral-type') as string | null)?.trim() || '',
+      monthlySlots: (formData.get('monthly-slots') as string | null)?.trim() || '',
+    };
+
+    try {
+      const response = await fetch('/api/referrer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || 'Submission failed');
+      }
+
+      setStatus('ok');
+    } catch (err) {
+      setStatus('error');
+    } finally {
       setSubmitting(false);
-      setSuccess('Details received. We will reach out when a candidate match is ready.');
-    }, 1200);
+    }
   };
 
   return (
@@ -76,14 +92,16 @@ export default function ReferrerPage() {
               </div>
             </div>
 
-            {success && (
-              <div className="status-banner" role="status" aria-live="polite">
-                <span className="badge success">{success}</span>
+            {status === 'ok' && (
+              <div className="status-banner status-banner--ok" role="status" aria-live="polite">
+                <span className="status-icon" aria-hidden="true">✓</span>
+                <span>We’ve received your details. We’ll reach out when there’s a candidate match.</span>
               </div>
             )}
-            {error && (
-              <div className="status-banner error" role="alert" aria-live="assertive">
-                <span className="badge danger">{error}</span>
+            {status === 'error' && (
+              <div className="status-banner status-banner--error" role="alert" aria-live="assertive">
+                <span className="status-icon" aria-hidden="true">!</span>
+                <span>We couldn’t send your details right now. Please try again in a moment.</span>
               </div>
             )}
 

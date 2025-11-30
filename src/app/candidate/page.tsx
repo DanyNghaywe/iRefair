@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, FormEvent, useRef, useState } from 'react';
 import { ParticlesBackground } from '@/components/ParticlesBackground';
 import { Select } from '@/components/Select';
 
@@ -186,11 +186,10 @@ const translations: Record<
 export default function CandidatePage() {
   const [resumeName, setResumeName] = useState('');
   const resumeInputRef = useRef<HTMLInputElement | null>(null);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [success, setSuccess] = useState('');
-  const [error, setError] = useState('');
   const [language, setLanguage] = useState<Language>('en');
+  const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
+  const formRef = useRef<HTMLFormElement | null>(null);
 
   const t = translations[language];
 
@@ -199,23 +198,45 @@ export default function CandidatePage() {
     setResumeName(file ? file.name : '');
   };
 
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
-
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setSuccess('');
-    setError('');
+    setStatus('submitting');
     setSubmitting(true);
-    timeoutRef.current = setTimeout(() => {
+
+    const formData = new FormData(event.currentTarget);
+    const fullName = (formData.get('full-name') as string | null)?.trim() || '';
+    const [firstName, ...rest] = fullName.split(' ').filter(Boolean);
+    const payload = {
+      firstName: firstName || fullName,
+      lastName: rest.join(' '),
+      email: (formData.get('email') as string | null)?.trim() || '',
+      targetRoles: (formData.get('desired-role') as string | null)?.trim() || '',
+      seniority: (formData.get('seniority') as string | null)?.trim() || '',
+      location: (formData.get('location') as string | null)?.trim() || '',
+      targetCompanies: (formData.get('target-companies') as string | null)?.trim() || '',
+      phone: (formData.get('phone') as string | null)?.trim() || '',
+      workPreference: (formData.get('work-preference') as string | null)?.trim() || '',
+      preferredLocations: (formData.get('preferred-locations') as string | null)?.trim() || '',
+    };
+
+    try {
+      const response = await fetch('/api/candidate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error || 'Something went wrong. Please try again.');
+      }
+
+      setStatus('ok');
+    } catch (err) {
+      setStatus('error');
+    } finally {
       setSubmitting(false);
-      setSuccess(t.success);
-    }, 1200);
+    }
   };
 
   return (
@@ -260,18 +281,20 @@ export default function CandidatePage() {
               </div>
             </div>
 
-            {success && (
-              <div className="status-banner" role="status" aria-live="polite">
-                <span className="badge success">{success}</span>
+            {status === 'ok' && (
+              <div className="status-banner status-banner--ok" role="status" aria-live="polite">
+                <span className="status-icon" aria-hidden="true">✓</span>
+                <span>We’ve received your request. We’ll follow up by email soon.</span>
               </div>
             )}
-            {error && (
-              <div className="status-banner error" role="alert" aria-live="assertive">
-                <span className="badge danger">{error}</span>
+            {status === 'error' && (
+              <div className="status-banner status-banner--error" role="alert" aria-live="assertive">
+                <span className="status-icon" aria-hidden="true">!</span>
+                <span>We couldn’t send your request right now. Please try again in a moment.</span>
               </div>
             )}
 
-            <form className="referral-form" action="#" method="post" onSubmit={handleSubmit}>
+            <form ref={formRef} className="referral-form" action="#" method="post" onSubmit={handleSubmit}>
               <fieldset>
                 <legend>{t.legends.details}</legend>
                 <div className="field-grid">

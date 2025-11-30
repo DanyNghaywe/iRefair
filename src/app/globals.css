@@ -626,7 +626,45 @@ h2 {
 }
 
 .status-banner {
+  margin-top: 10px;
   margin-bottom: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-size: var(--font-size-small);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(255, 255, 255, 0.16));
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 12px 20px rgba(15, 23, 42, 0.12);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  color: var(--ink);
+}
+
+.status-banner--ok {
+  border-color: rgba(var(--accent-primary-rgb), 0.45);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.3), rgba(var(--accent-primary-rgb), 0.1));
+  color: var(--ink);
+}
+
+.status-banner--error {
+  border-color: rgba(var(--error-rgb), 0.55);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.26), rgba(var(--error-rgb), 0.12));
+  color: var(--ink);
+}
+
+.status-icon {
+  width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--ink);
+  font-weight: 800;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6), 0 4px 10px rgba(15, 23, 42, 0.08);
 }
 
 .referral-form {
