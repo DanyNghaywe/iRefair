@@ -144,6 +144,10 @@ const translations = {
     languageLabel: 'Langue',
     english: 'Anglais',
     french: 'Français',
+    switchText: {
+      prompt: 'Pas candidat ?',
+      link: 'Passer au référent',
+    },
   },
 };
 
@@ -192,7 +196,10 @@ export default function CandidatePage() {
           <section className="card referral-card" aria-labelledby="referral-title">
             <div className="role-switch">
               <span className="role-switch__text">
-                Not a candidate? <Link href="/referrer">Switch to referrer</Link>
+                {language === 'fr' ? translations.fr.switchText.prompt : 'Not a candidate?'}{' '}
+                <Link href="/referrer">
+                  {language === 'fr' ? translations.fr.switchText.link : 'Switch to referrer'}
+                </Link>
               </span>
             </div>
             <div className="language-toggle" role="group" aria-label={t.languageLabel}>
