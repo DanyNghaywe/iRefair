@@ -7,7 +7,7 @@ import { Select } from '@/components/Select';
 
 type Language = 'en' | 'fr';
 
-const LANGUAGE_OPTIONS = ['English', 'Arabic', 'French', 'Other'] as const;
+const LANGUAGE_OPTIONS: string[] = ['English', 'Arabic', 'French', 'Other'];
 const ALLOWED_RESUME_TYPES = [
   'application/pdf',
   'application/msword',
@@ -16,7 +16,7 @@ const ALLOWED_RESUME_TYPES = [
 const ALLOWED_RESUME_EXTENSIONS = ['pdf', 'doc', 'docx'];
 const MAX_RESUME_SIZE = 10 * 1024 * 1024;
 
-const PROVINCES = [
+const PROVINCES: string[] = [
   'Alberta',
   'British Columbia',
   'Manitoba',
@@ -30,8 +30,8 @@ const PROVINCES = [
   'Northwest Territories',
   'Nunavut',
   'Yukon',
-] as const;
-const INDUSTRY_OPTIONS = [
+];
+const INDUSTRY_OPTIONS: string[] = [
   'Information Technology (IT)',
   'Finance / Banking / Accounting',
   'Healthcare / Medical',
@@ -52,8 +52,8 @@ const INDUSTRY_OPTIONS = [
   'Agriculture / Food Industry',
   'Compliance/ Audit/ Monitoring & Evaluation',
   'Other',
-] as const;
-const EMPLOYMENT_OPTIONS = ['Yes', 'No', 'Temporary Work'] as const;
+];
+const EMPLOYMENT_OPTIONS: string[] = ['Yes', 'No', 'Temporary Work'];
 
 const translations: Record<
   Language,
