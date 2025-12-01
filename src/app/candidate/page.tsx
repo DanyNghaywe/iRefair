@@ -7,6 +7,54 @@ import { Select } from '@/components/Select';
 
 type Language = 'en' | 'fr';
 
+const LANGUAGE_OPTIONS = ['English', 'Arabic', 'French', 'Other'] as const;
+const ALLOWED_RESUME_TYPES = [
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+];
+const ALLOWED_RESUME_EXTENSIONS = ['pdf', 'doc', 'docx'];
+const MAX_RESUME_SIZE = 10 * 1024 * 1024;
+
+const PROVINCES = [
+  'Alberta',
+  'British Columbia',
+  'Manitoba',
+  'New Brunswick',
+  'Newfoundland and Labrador',
+  'Nova Scotia',
+  'Ontario',
+  'Prince Edward Island',
+  'Quebec',
+  'Saskatchewan',
+  'Northwest Territories',
+  'Nunavut',
+  'Yukon',
+] as const;
+const INDUSTRY_OPTIONS = [
+  'Information Technology (IT)',
+  'Finance / Banking / Accounting',
+  'Healthcare / Medical',
+  'Education / Academia',
+  'Engineering / Construction',
+  'Marketing / Advertising / PR',
+  'Media / Entertainment / Journalism',
+  'Legal / Law',
+  'Human Resources / Recruitment',
+  'Retail / E-commerce',
+  'Hospitality / Travel / Tourism',
+  'Logistics / Transportation',
+  'Manufacturing',
+  'Non-Profit / NGO',
+  'Real Estate',
+  'Energy / Utilities',
+  'Telecommunications',
+  'Agriculture / Food Industry',
+  'Compliance/ Audit/ Monitoring & Evaluation',
+  'Other',
+] as const;
+const EMPLOYMENT_OPTIONS = ['Yes', 'No', 'Temporary Work'] as const;
+
 const translations: Record<
   Language,
   {
@@ -41,18 +89,30 @@ const translations: Record<
     lead: "Tell us your background and target roles. We'll pair you with referrers when they're available.",
     success: 'Request sent. We will notify you when a referrer is available.',
     legends: {
-      details: 'Your details',
+      details: 'Personal Information',
       profiles: 'Your profiles',
       preferences: 'Role preferences',
+      locationAuth: 'Location and Work Authorization',
+      professionalProfile: 'Professional Profile',
       experience: 'Experience snapshot',
       context: 'Referral context',
       attachments: 'Attachments (optional)',
     },
     labels: {
-      fullName: 'Full name',
-      email: 'Email',
-      phone: 'Phone number',
-      location: 'Location',
+      firstName: 'First Name',
+      middleName: 'Middle Name',
+      familyName: 'Family Name',
+      email: 'Email address',
+      languagesSpoken: 'Languages Spoken',
+      languagesOther: 'Other language',
+      locatedCanada: 'Are you currently located in Canada?',
+      province: 'If yes, which province',
+      authorizedCanada: 'Are you legally authorized to work in Canada?',
+      industryType: 'Education/Experience Industry Type',
+      industryOther: 'Other industry type',
+      employmentStatus: 'Are you currently employed?',
+      countryOfOrigin: 'Country of Origin',
+      phone: 'Phone Number',
       linkedin: 'LinkedIn profile',
       portfolio: 'Portfolio or site',
       github: 'GitHub profile',
@@ -72,7 +132,11 @@ const translations: Record<
       resume: 'Upload resume / CV',
     },
     placeholders: {
-      phone: '+1 555 123 4567',
+      phone: '+1-XXX-XXXX or +961-XX-XXXXXX',
+      languagesOther: 'Please specify',
+      province: 'Select province',
+      industryOther: 'Please specify',
+      countryOfOrigin: 'e.g. Canada',
       location: 'City, Country',
       linkedin: 'https://linkedin.com/in/',
       portfolio: 'https://example.com',
@@ -114,17 +178,30 @@ const translations: Record<
     lead: 'Parlez-nous de votre parcours et des postes visés. Nous vous mettrons en relation avec des référents disponibles.',
     success: 'Demande envoyée. Nous vous informerons lorsqu’un référent sera disponible.',
     legends: {
-      details: 'Vos informations',
+      details: 'Informations personnelles',
       profiles: 'Vos profils',
       preferences: 'Préférences de poste',
+      locationAuth: 'Localisation et autorisation de travail',
+      professionalProfile: 'Profil professionnel',
       experience: "Résumé de l'expérience",
       context: 'Contexte de recommandation',
       attachments: 'Pièces jointes (optionnel)',
     },
     labels: {
-      fullName: 'Nom complet',
-      email: 'Email',
-      phone: 'Numéro de téléphone',
+      firstName: 'Prenom',
+      middleName: 'Deuxieme prenom',
+      familyName: 'Nom de famille',
+      email: 'Adresse email',
+      languagesSpoken: 'Langues parlees',
+      languagesOther: 'Autre langue',
+      locatedCanada: 'Êtes-vous actuellement au Canada ?',
+      province: 'Si oui, quelle province',
+      authorizedCanada: 'Êtes-vous autorisé(e) à travailler au Canada ?',
+      industryType: "Type d'industrie (formation/expérience)",
+      industryOther: 'Autre industrie',
+      employmentStatus: 'Êtes-vous actuellement en emploi ?',
+      countryOfOrigin: "Pays d'origine",
+      phone: 'Numero de telephone',
       location: 'Lieu',
       linkedin: 'Profil LinkedIn',
       portfolio: 'Portfolio ou site',
@@ -145,7 +222,11 @@ const translations: Record<
       resume: 'Télécharger le CV',
     },
     placeholders: {
-      phone: '+33 6 12 34 56 78',
+      phone: '+1-XXX-XXXX ou +961-XX-XXXXXX',
+      languagesOther: 'Precisez',
+      province: 'Sélectionnez une province',
+      industryOther: 'Precisez',
+      countryOfOrigin: 'ex. France',
       location: 'Ville, Pays',
       linkedin: 'https://linkedin.com/in/',
       portfolio: 'https://exemple.com',
@@ -191,6 +272,12 @@ export default function CandidatePage() {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
   const formRef = useRef<HTMLFormElement | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [languageSelection, setLanguageSelection] = useState('');
+  const [locatedInCanada, setLocatedInCanada] = useState('');
+  const [provinceSelection, setProvinceSelection] = useState('');
+  const [authorizedCanada, setAuthorizedCanada] = useState('');
+  const [industrySelection, setIndustrySelection] = useState('');
+  const [employmentStatus, setEmploymentStatus] = useState('');
 
   const t = translations[language];
 
@@ -210,7 +297,6 @@ export default function CandidatePage() {
   };
 
   const handleFieldChange = (field: string) => () => clearError(field);
-  const handleSelectChange = (field: string) => () => clearError(field);
 
   const isValidEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
   const isValidUrl = (value: string) => {
@@ -222,36 +308,40 @@ export default function CandidatePage() {
     }
   };
 
+  const isAllowedResume = (file: File) => {
+    const extension = file.name.split('.').pop()?.toLowerCase();
+    const typeAllowed = file.type ? ALLOWED_RESUME_TYPES.includes(file.type) : false;
+    const extensionAllowed = extension ? ALLOWED_RESUME_EXTENSIONS.includes(extension) : false;
+    return typeAllowed || extensionAllowed;
+  };
+
   const getFormValues = (formData: FormData) => {
     const valueOf = (key: string) => ((formData.get(key) as string | null)?.trim() || '');
     return {
-      fullName: valueOf('full-name'),
+      firstName: valueOf('first-name'),
+      middleName: valueOf('middle-name'),
+      familyName: valueOf('family-name'),
       email: valueOf('email'),
+      languages: valueOf('languages'),
+      languagesOther: valueOf('languages-other'),
+      locatedCanada: valueOf('located-canada'),
+      province: valueOf('province'),
+      authorizedCanada: valueOf('authorized-canada'),
+      industryType: valueOf('industry-type'),
+      industryOther: valueOf('industry-other'),
+      employmentStatus: valueOf('employment-status'),
+      countryOfOrigin: valueOf('country-of-origin'),
       phone: valueOf('phone'),
-      location: valueOf('location'),
       linkedin: valueOf('linkedin'),
-      portfolio: valueOf('portfolio'),
-      github: valueOf('github'),
-      desiredRole: valueOf('desired-role'),
-      seniority: valueOf('seniority'),
-      jobType: valueOf('job-type'),
-      workPreference: valueOf('work-preference'),
-      preferredLocations: valueOf('preferred-locations'),
-      experienceYears: valueOf('experience-years'),
-      primarySkills: valueOf('primary-skills'),
-      currentCompany: valueOf('current-company'),
-      currentTitle: valueOf('current-title'),
-      targetCompanies: valueOf('target-companies'),
-      hasPostings: valueOf('has-postings'),
-      postingNotes: valueOf('posting-notes'),
-      pitch: valueOf('pitch'),
     };
   };
 
   const validateValues = (values: ReturnType<typeof getFormValues>) => {
     const nextErrors: Record<string, string> = {};
 
-    if (!values.fullName) nextErrors['full-name'] = 'Please enter your full name.';
+    if (!values.firstName) nextErrors['first-name'] = 'Please enter your first name.';
+    if (!values.middleName) nextErrors['middle-name'] = 'Please enter your middle name.';
+    if (!values.familyName) nextErrors['family-name'] = 'Please enter your family name.';
 
     if (!values.email) {
       nextErrors.email = 'Please enter your email address.';
@@ -259,8 +349,45 @@ export default function CandidatePage() {
       nextErrors.email = 'Please enter a valid email address.';
     }
 
-    if (!values.phone) nextErrors.phone = 'Please enter your phone number.';
-    if (!values.location) nextErrors.location = 'Please enter your location.';
+    if (!values.phone) {
+      nextErrors.phone = 'Please enter your phone number.';
+    }
+
+    if (!values.locatedCanada) {
+      nextErrors['located-canada'] = 'Please select your current location status.';
+    }
+
+    if (values.locatedCanada === 'Yes' && !values.province) {
+      nextErrors.province = 'Please select your province.';
+    }
+
+    if (!values.authorizedCanada) {
+      nextErrors['authorized-canada'] = 'Please confirm your work authorization.';
+    }
+
+    if (!values.industryType) {
+      nextErrors['industry-type'] = 'Please select an industry type.';
+    }
+
+    if (values.industryType === 'Other' && !values.industryOther) {
+      nextErrors['industry-other'] = 'Please specify the other industry type.';
+    }
+
+    if (!values.employmentStatus) {
+      nextErrors['employment-status'] = 'Please select your employment status.';
+    }
+
+    if (!values.languages) {
+      nextErrors.languages = 'Please select at least one language.';
+    }
+
+    if (values.languages === 'Other' && !values.languagesOther) {
+      nextErrors['languages-other'] = 'Please specify the other language.';
+    }
+
+    if (!values.countryOfOrigin) {
+      nextErrors['country-of-origin'] = 'Please enter your country of origin.';
+    }
 
     if (!values.linkedin) {
       nextErrors.linkedin = 'Please enter your LinkedIn profile.';
@@ -268,29 +395,29 @@ export default function CandidatePage() {
       nextErrors.linkedin = 'Please enter a valid URL.';
     }
 
-    if (values.portfolio && !isValidUrl(values.portfolio)) {
-      nextErrors.portfolio = 'Please enter a valid URL.';
-    }
-    if (values.github && !isValidUrl(values.github)) {
-      nextErrors.github = 'Please enter a valid URL.';
-    }
-
-    if (!values.desiredRole) nextErrors['desired-role'] = 'Please enter your target role.';
-    if (!values.seniority) nextErrors.seniority = 'Please select your seniority.';
-    if (!values.jobType) nextErrors['job-type'] = 'Please select a job type.';
-    if (!values.workPreference) nextErrors['work-preference'] = 'Please select your work preference.';
-
-    if (!values.experienceYears) nextErrors['experience-years'] = 'Please enter your years of experience.';
-    if (!values.primarySkills) nextErrors['primary-skills'] = 'Please enter your primary skills.';
-    if (!values.targetCompanies) nextErrors['target-companies'] = 'Please enter your target companies.';
-    if (!values.pitch) nextErrors.pitch = 'Please add a brief pitch.';
-
     return nextErrors;
   };
 
   const handleResumeChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    setResumeName(file ? file.name : '');
+    if (!file) {
+      setResumeName('');
+      clearError('resume');
+      return;
+    }
+
+    if (!isAllowedResume(file) || file.size > MAX_RESUME_SIZE) {
+      setErrors((prev) => ({
+        ...prev,
+        resume: 'Please upload a PDF or DOC/DOCX file under 10MB.',
+      }));
+      setResumeName('');
+      event.target.value = '';
+      return;
+    }
+
+    clearError('resume');
+    setResumeName(file.name);
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -298,6 +425,11 @@ export default function CandidatePage() {
     const formData = new FormData(event.currentTarget);
     const values = getFormValues(formData);
     const validationErrors = validateValues(values);
+
+    const resumeFile = resumeInputRef.current?.files?.[0];
+    if (resumeFile && (!isAllowedResume(resumeFile) || resumeFile.size > MAX_RESUME_SIZE)) {
+      validationErrors.resume = 'Please upload a PDF or DOC/DOCX file under 10MB.';
+    }
 
     if (Object.keys(validationErrors).length) {
       setErrors(validationErrors);
@@ -310,18 +442,21 @@ export default function CandidatePage() {
     setStatus('submitting');
     setSubmitting(true);
 
-    const [firstName, ...rest] = values.fullName.split(' ').filter(Boolean);
     const payload = {
-      firstName: firstName || values.fullName,
-      lastName: rest.join(' '),
+      firstName: values.firstName,
+      middleName: values.middleName,
+      familyName: values.familyName,
       email: values.email,
-      targetRoles: values.desiredRole,
-      seniority: values.seniority,
-      location: values.location,
-      targetCompanies: values.targetCompanies,
+      locatedCanada: values.locatedCanada,
+      province: values.province,
+      authorizedCanada: values.authorizedCanada,
+      languages: values.languages,
+      languagesOther: values.languagesOther,
+      industryType: values.industryType,
+      industryOther: values.industryOther,
+      employmentStatus: values.employmentStatus,
+      countryOfOrigin: values.countryOfOrigin,
       phone: values.phone,
-      workPreference: values.workPreference,
-      preferredLocations: values.preferredLocations,
     };
 
     try {
@@ -397,24 +532,76 @@ export default function CandidatePage() {
               onReset={() => {
                 setErrors({});
                 setStatus('idle');
+                setLanguageSelection('');
+                setLocatedInCanada('');
+                setProvinceSelection('');
+                setAuthorizedCanada('');
+                setIndustrySelection('');
+                setEmploymentStatus('');
               }}
             >
               <fieldset>
                 <legend>{t.legends.details}</legend>
                 <div className="field-grid">
-                  <div className={fieldClass('field', 'full-name')}>
-                    <label htmlFor="full-name">{t.labels.fullName}</label>
+                  <div className={fieldClass('field', 'first-name')}>
+                    <label htmlFor="first-name">{t.labels.firstName}</label>
                     <input
-                      id="full-name"
-                      name="full-name"
+                      id="first-name"
+                      name="first-name"
                       type="text"
                       required
-                      aria-invalid={Boolean(errors['full-name'])}
-                      aria-describedby="full-name-error"
-                      onChange={handleFieldChange('full-name')}
+                      aria-invalid={Boolean(errors['first-name'])}
+                      aria-describedby="first-name-error"
+                      onChange={handleFieldChange('first-name')}
                     />
-                    <p className="field-error" id="full-name-error" role="alert" aria-live="polite">
-                      {errors['full-name']}
+                    <p className="field-error" id="first-name-error" role="alert" aria-live="polite">
+                      {errors['first-name']}
+                    </p>
+                  </div>
+                  <div className={fieldClass('field', 'middle-name')}>
+                    <label htmlFor="middle-name">{t.labels.middleName}</label>
+                    <input
+                      id="middle-name"
+                      name="middle-name"
+                      type="text"
+                      required
+                      aria-invalid={Boolean(errors['middle-name'])}
+                      aria-describedby="middle-name-error"
+                      onChange={handleFieldChange('middle-name')}
+                    />
+                    <p className="field-error" id="middle-name-error" role="alert" aria-live="polite">
+                      {errors['middle-name']}
+                    </p>
+                  </div>
+                  <div className={fieldClass('field', 'family-name')}>
+                    <label htmlFor="family-name">{t.labels.familyName}</label>
+                    <input
+                      id="family-name"
+                      name="family-name"
+                      type="text"
+                      required
+                      aria-invalid={Boolean(errors['family-name'])}
+                      aria-describedby="family-name-error"
+                      onChange={handleFieldChange('family-name')}
+                    />
+                    <p className="field-error" id="family-name-error" role="alert" aria-live="polite">
+                      {errors['family-name']}
+                    </p>
+                  </div>
+                  <div className={fieldClass('field', 'country-of-origin')}>
+                    <label htmlFor="country-of-origin">{t.labels.countryOfOrigin}</label>
+                    <input
+                      id="country-of-origin"
+                      name="country-of-origin"
+                      type="text"
+                      required
+                      placeholder={t.placeholders.countryOfOrigin}
+                      aria-invalid={Boolean(errors['country-of-origin'])}
+                      aria-describedby="country-of-origin-error"
+                      onChange={handleFieldChange('country-of-origin')}
+                    />
+                    <p className="field-error" id="country-of-origin-error" role="alert" aria-live="polite">
+                      {errors['country-of-origin']}
                     </p>
                   </div>
                   <div className={fieldClass('field', 'email')}>
@@ -432,6 +619,44 @@ export default function CandidatePage() {
                       {errors.email}
                     </p>
                   </div>
+                  <div className={fieldClass('field', 'languages')}>
+                    <label htmlFor="languages">{t.labels.languagesSpoken}</label>
+                    <Select
+                      id="languages"
+                      name="languages"
+                      options={LANGUAGE_OPTIONS}
+                      placeholder={t.selects.selectLabel}
+                      required
+                      value={languageSelection}
+                      ariaDescribedBy="languages-error"
+                      ariaInvalid={Boolean(errors.languages)}
+                      onChange={(value) => {
+                        setLanguageSelection(value);
+                        clearError('languages');
+                        if (value !== 'Other') clearError('languages-other');
+                      }}
+                    />
+                    <p className="field-error" id="languages-error" role="alert" aria-live="polite">
+                      {errors.languages}
+                    </p>
+                  </div>
+                  {languageSelection === 'Other' && (
+                    <div className={fieldClass('field', 'languages-other')}>
+                      <label htmlFor="languages-other">{t.labels.languagesOther}</label>
+                      <input
+                        id="languages-other"
+                        name="languages-other"
+                        type="text"
+                        placeholder={t.placeholders.languagesOther}
+                        aria-invalid={Boolean(errors['languages-other'])}
+                        aria-describedby="languages-other-error"
+                        onChange={handleFieldChange('languages-other')}
+                      />
+                      <p className="field-error" id="languages-other-error" role="alert" aria-live="polite">
+                        {errors['languages-other']}
+                      </p>
+                    </div>
+                  )}
                   <div className={fieldClass('field', 'phone')}>
                     <label htmlFor="phone">{t.labels.phone}</label>
                     <input
@@ -441,35 +666,137 @@ export default function CandidatePage() {
                       required
                       placeholder={t.placeholders.phone}
                       aria-invalid={Boolean(errors.phone)}
-                      aria-describedby="phone-error"
+                      aria-describedby="phone-helper phone-error"
                       onChange={handleFieldChange('phone')}
                     />
+                    <p className="field-hint" id="phone-helper">
+                      {t.placeholders.phone}
+                    </p>
                     <p className="field-error" id="phone-error" role="alert" aria-live="polite">
                       {errors.phone}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field', 'location')}>
-                    <label htmlFor="location">{t.labels.location}</label>
-                    <input
-                      id="location"
-                      name="location"
-                      type="text"
-                      required
-                      placeholder={t.placeholders.location}
-                      aria-invalid={Boolean(errors.location)}
-                      aria-describedby="location-error"
-                      onChange={handleFieldChange('location')}
-                    />
-                    <p className="field-error" id="location-error" role="alert" aria-live="polite">
-                      {errors.location}
                     </p>
                   </div>
                 </div>
               </fieldset>
 
               <fieldset>
-                <legend>{t.legends.profiles}</legend>
+                <legend>{t.legends.locationAuth}</legend>
                 <div className="field-grid">
+                  <div className={fieldClass('field', 'located-canada')}>
+                    <label htmlFor="located-canada">{t.labels.locatedCanada}</label>
+                    <Select
+                      id="located-canada"
+                      name="located-canada"
+                      options={['Yes', 'No']}
+                      placeholder={t.selects.selectLabel}
+                      required
+                      value={locatedInCanada}
+                      ariaDescribedBy="located-canada-error"
+                      ariaInvalid={Boolean(errors['located-canada'])}
+                      onChange={(value) => {
+                        setLocatedInCanada(value);
+                        clearError('located-canada');
+                        if (value !== 'Yes') {
+                          setProvinceSelection('');
+                          clearError('province');
+                        }
+                      }}
+                    />
+                    <p className="field-error" id="located-canada-error" role="alert" aria-live="polite">
+                      {errors['located-canada']}
+                    </p>
+                  </div>
+                  {locatedInCanada === 'Yes' && (
+                    <div className={fieldClass('field', 'province')}>
+                      <label htmlFor="province">{t.labels.province}</label>
+                      <Select
+                        id="province"
+                        name="province"
+                        options={PROVINCES}
+                        placeholder={t.placeholders.province}
+                        required
+                        value={provinceSelection}
+                        ariaDescribedBy="province-error"
+                        ariaInvalid={Boolean(errors.province)}
+                        onChange={(value) => {
+                          setProvinceSelection(value);
+                          clearError('province');
+                        }}
+                      />
+                      <p className="field-error" id="province-error" role="alert" aria-live="polite">
+                        {errors.province}
+                      </p>
+                    </div>
+                  )}
+                  <div className={fieldClass('field', 'authorized-canada')}>
+                    <label htmlFor="authorized-canada">{t.labels.authorizedCanada}</label>
+                    <Select
+                      id="authorized-canada"
+                      name="authorized-canada"
+                      options={['Yes', 'No']}
+                      placeholder={t.selects.selectLabel}
+                      required
+                      value={authorizedCanada}
+                      ariaDescribedBy="authorized-canada-error"
+                      ariaInvalid={Boolean(errors['authorized-canada'])}
+                      onChange={(value) => {
+                        setAuthorizedCanada(value);
+                        clearError('authorized-canada');
+                      }}
+                    />
+                    <p className="field-error" id="authorized-canada-error" role="alert" aria-live="polite">
+                      {errors['authorized-canada']}
+                    </p>
+                  </div>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>{t.legends.professionalProfile}</legend>
+                <div className="field-grid">
+                  <div className={fieldClass('field', 'industry-type')}>
+                    <label htmlFor="industry-type">{t.labels.industryType}</label>
+                    <Select
+                      id="industry-type"
+                      name="industry-type"
+                      options={INDUSTRY_OPTIONS}
+                      placeholder={t.selects.selectLabel}
+                      required
+                      value={industrySelection}
+                      ariaDescribedBy="industry-type-error"
+                      ariaInvalid={Boolean(errors['industry-type'])}
+                      onChange={(value) => {
+                        setIndustrySelection(value);
+                        clearError('industry-type');
+                        if (value !== 'Other') {
+                          clearError('industry-other');
+                        }
+                      }}
+                    />
+                    <p className="field-error" id="industry-type-error" role="alert" aria-live="polite">
+                      {errors['industry-type']}
+                    </p>
+                  </div>
+                  <div className={fieldClass('field', 'employment-status')}>
+                    <label htmlFor="employment-status">{t.labels.employmentStatus}</label>
+                    <Select
+                      id="employment-status"
+                      name="employment-status"
+                      options={EMPLOYMENT_OPTIONS}
+                      placeholder={t.selects.selectLabel}
+                      required
+                      value={employmentStatus}
+                      ariaDescribedBy="employment-status-error"
+                      ariaInvalid={Boolean(errors['employment-status'])}
+                      onChange={(value) => {
+                        setEmploymentStatus(value);
+                        clearError('employment-status');
+                      }}
+                    />
+                    <p className="field-error" id="employment-status-error" role="alert" aria-live="polite">
+                      {errors['employment-status']}
+                    </p>
+                  </div>
                   <div className={fieldClass('field', 'linkedin')}>
                     <label htmlFor="linkedin">{t.labels.linkedin}</label>
                     <input
@@ -486,270 +813,23 @@ export default function CandidatePage() {
                       {errors.linkedin}
                     </p>
                   </div>
-                  <div className={fieldClass('field', 'portfolio')}>
-                    <label htmlFor="portfolio">
-                      {t.labels.portfolio} <span className="optional">{t.optional}</span>
-                    </label>
-                    <input
-                      id="portfolio"
-                      name="portfolio"
-                      type="url"
-                      placeholder={t.placeholders.portfolio}
-                      aria-invalid={Boolean(errors.portfolio)}
-                      aria-describedby="portfolio-error"
-                      onChange={handleFieldChange('portfolio')}
-                    />
-                    <p className="field-error" id="portfolio-error" role="alert" aria-live="polite">
-                      {errors.portfolio}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field', 'github')}>
-                    <label htmlFor="github">
-                      {t.labels.github} <span className="optional">{t.optional}</span>
-                    </label>
-                    <input
-                      id="github"
-                      name="github"
-                      type="url"
-                      placeholder={t.placeholders.github}
-                      aria-invalid={Boolean(errors.github)}
-                      aria-describedby="github-error"
-                      onChange={handleFieldChange('github')}
-                    />
-                    <p className="field-error" id="github-error" role="alert" aria-live="polite">
-                      {errors.github}
-                    </p>
-                  </div>
-                </div>
-              </fieldset>
-
-              <fieldset>
-                <legend>{t.legends.preferences}</legend>
-                <div className="field-grid">
-                  <div className={fieldClass('field', 'desired-role')}>
-                    <label htmlFor="desired-role">{t.labels.desiredRole}</label>
-                    <input
-                      id="desired-role"
-                      name="desired-role"
-                      type="text"
-                      required
-                      aria-invalid={Boolean(errors['desired-role'])}
-                      aria-describedby="desired-role-error"
-                      placeholder={t.placeholders.desiredRole}
-                      onChange={handleFieldChange('desired-role')}
-                    />
-                    <p className="field-error" id="desired-role-error" role="alert" aria-live="polite">
-                      {errors['desired-role']}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field', 'seniority')}>
-                    <label htmlFor="seniority">{t.labels.seniority}</label>
-                    <Select
-                      id="seniority"
-                      name="seniority"
-                      options={t.selects.seniority}
-                      placeholder={t.selects.selectLabel}
-                      required
-                      ariaDescribedBy="seniority-error"
-                      ariaInvalid={Boolean(errors.seniority)}
-                      onChange={handleSelectChange('seniority')}
-                    />
-                    <p className="field-error" id="seniority-error" role="alert" aria-live="polite">
-                      {errors.seniority}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field', 'job-type')}>
-                    <label htmlFor="job-type">{t.labels.jobType}</label>
-                    <Select
-                      id="job-type"
-                      name="job-type"
-                      options={t.selects.jobType}
-                      placeholder={t.selects.selectLabel}
-                      required
-                      ariaDescribedBy="job-type-error"
-                      ariaInvalid={Boolean(errors['job-type'])}
-                      onChange={handleSelectChange('job-type')}
-                    />
-                    <p className="field-error" id="job-type-error" role="alert" aria-live="polite">
-                      {errors['job-type']}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field', 'work-preference')}>
-                    <label htmlFor="work-preference">{t.labels.workPreference}</label>
-                    <Select
-                      id="work-preference"
-                      name="work-preference"
-                      options={t.selects.workPreference}
-                      placeholder={t.selects.selectLabel}
-                      required
-                      ariaDescribedBy="work-preference-error"
-                      ariaInvalid={Boolean(errors['work-preference'])}
-                      onChange={handleSelectChange('work-preference')}
-                    />
-                    <p className="field-error" id="work-preference-error" role="alert" aria-live="polite">
-                      {errors['work-preference']}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field field-full', 'preferred-locations')}>
-                    <label htmlFor="preferred-locations">
-                      {t.labels.preferredLocations} <span className="optional">{t.optional}</span>
-                    </label>
-                    <textarea
-                      id="preferred-locations"
-                      name="preferred-locations"
-                      rows={2}
-                      aria-describedby="preferred-locations-error"
-                      placeholder={t.placeholders.preferredLocations}
-                      aria-invalid={Boolean(errors['preferred-locations'])}
-                      onChange={handleFieldChange('preferred-locations')}
-                    />
-                    <p className="field-error" id="preferred-locations-error" role="alert" aria-live="polite">
-                      {errors['preferred-locations']}
-                    </p>
-                  </div>
-                </div>
-              </fieldset>
-
-              <fieldset>
-                <legend>{t.legends.experience}</legend>
-                <div className="field-grid">
-                  <div className={fieldClass('field', 'experience-years')}>
-                    <label htmlFor="experience-years">{t.labels.experienceYears}</label>
-                    <input
-                      id="experience-years"
-                      name="experience-years"
-                      type="number"
-                      min="0"
-                      required
-                      aria-invalid={Boolean(errors['experience-years'])}
-                      aria-describedby="experience-years-error"
-                      onChange={handleFieldChange('experience-years')}
-                    />
-                    <p className="field-error" id="experience-years-error" role="alert" aria-live="polite">
-                      {errors['experience-years']}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field field-full', 'primary-skills')}>
-                    <label htmlFor="primary-skills">{t.labels.primarySkills}</label>
-                    <textarea
-                      id="primary-skills"
-                      name="primary-skills"
-                      rows={2}
-                      required
-                      aria-invalid={Boolean(errors['primary-skills'])}
-                      aria-describedby="primary-skills-error"
-                      placeholder={t.placeholders.primarySkills}
-                      onChange={handleFieldChange('primary-skills')}
-                    />
-                    <p className="field-error" id="primary-skills-error" role="alert" aria-live="polite">
-                      {errors['primary-skills']}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field', 'current-company')}>
-                    <label htmlFor="current-company">
-                      {t.labels.currentCompany} <span className="optional">{t.optional}</span>
-                    </label>
-                    <input
-                      id="current-company"
-                      name="current-company"
-                      type="text"
-                      aria-invalid={Boolean(errors['current-company'])}
-                      aria-describedby="current-company-error"
-                      onChange={handleFieldChange('current-company')}
-                    />
-                    <p className="field-error" id="current-company-error" role="alert" aria-live="polite">
-                      {errors['current-company']}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field', 'current-title')}>
-                    <label htmlFor="current-title">
-                      {t.labels.currentTitle} <span className="optional">{t.optional}</span>
-                    </label>
-                    <input
-                      id="current-title"
-                      name="current-title"
-                      type="text"
-                      aria-invalid={Boolean(errors['current-title'])}
-                      aria-describedby="current-title-error"
-                      onChange={handleFieldChange('current-title')}
-                    />
-                    <p className="field-error" id="current-title-error" role="alert" aria-live="polite">
-                      {errors['current-title']}
-                    </p>
-                  </div>
-                </div>
-              </fieldset>
-
-              <fieldset>
-                <legend>{t.legends.context}</legend>
-                <div className="field-grid">
-                  <div className={fieldClass('field field-full', 'target-companies')}>
-                    <label htmlFor="target-companies">{t.labels.targetCompanies}</label>
-                    <textarea
-                      id="target-companies"
-                      name="target-companies"
-                      rows={2}
-                      required
-                      aria-invalid={Boolean(errors['target-companies'])}
-                      aria-describedby="target-companies-error"
-                      placeholder={t.placeholders.targetCompanies}
-                      onChange={handleFieldChange('target-companies')}
-                    />
-                    <p className="field-error" id="target-companies-error" role="alert" aria-live="polite">
-                      {errors['target-companies']}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field', 'has-postings')}>
-                    <label htmlFor="has-postings">
-                      {t.labels.hasPostings} <span className="optional">{t.optional}</span>
-                    </label>
-                    <Select
-                      id="has-postings"
-                      name="has-postings"
-                      options={t.selects.hasPostings}
-                      defaultValue={t.selects.hasPostings[1]}
-                      placeholder={t.selects.selectLabel}
-                      ariaDescribedBy="has-postings-error"
-                      ariaInvalid={Boolean(errors['has-postings'])}
-                      onChange={handleSelectChange('has-postings')}
-                    />
-                    <p className="field-error" id="has-postings-error" role="alert" aria-live="polite">
-                      {errors['has-postings']}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field field-full', 'posting-notes')}>
-                    <label htmlFor="posting-notes">
-                      {t.labels.postingNotes} <span className="optional">{t.optional}</span>
-                    </label>
-                    <textarea
-                      id="posting-notes"
-                      name="posting-notes"
-                      rows={2}
-                      aria-describedby="posting-notes-error"
-                      aria-invalid={Boolean(errors['posting-notes'])}
-                      placeholder={t.placeholders.postingNotes}
-                      onChange={handleFieldChange('posting-notes')}
-                    />
-                    <p className="field-error" id="posting-notes-error" role="alert" aria-live="polite">
-                      {errors['posting-notes']}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field field-full', 'pitch')}>
-                    <label htmlFor="pitch">{t.labels.pitch}</label>
-                    <textarea
-                      id="pitch"
-                      name="pitch"
-                      rows={3}
-                      required
-                      aria-invalid={Boolean(errors.pitch)}
-                      aria-describedby="pitch-error"
-                      placeholder={t.placeholders.pitch}
-                      onChange={handleFieldChange('pitch')}
-                    />
-                    <p className="field-error" id="pitch-error" role="alert" aria-live="polite">
-                      {errors.pitch}
-                    </p>
-                  </div>
+                  {industrySelection === 'Other' && (
+                    <div className={fieldClass('field', 'industry-other')}>
+                      <label htmlFor="industry-other">{t.labels.industryOther}</label>
+                      <input
+                        id="industry-other"
+                        name="industry-other"
+                        type="text"
+                        placeholder={t.placeholders.industryOther}
+                        aria-invalid={Boolean(errors['industry-other'])}
+                        aria-describedby="industry-other-error"
+                        onChange={handleFieldChange('industry-other')}
+                      />
+                      <p className="field-error" id="industry-other-error" role="alert" aria-live="polite">
+                        {errors['industry-other']}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </fieldset>
 
@@ -785,7 +865,9 @@ export default function CandidatePage() {
                   <p id="resume-helper" className="field-hint">
                     {t.uploadHint}
                   </p>
-                  <p className="field-error" id="resume-error" role="alert" aria-live="polite"></p>
+                  <p className="field-error" id="resume-error" role="alert" aria-live="polite">
+                    {errors.resume}
+                  </p>
                 </div>
               </fieldset>
 
