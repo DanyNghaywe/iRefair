@@ -911,6 +911,22 @@ textarea:-webkit-autofill {
   margin-top: 8px;
 }
 
+.form-footer {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: nowrap;
+}
+
+.footer-status {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
 .optional {
   color: rgba(255, 255, 255, 0.76);
   font-weight: 500;
@@ -1127,6 +1143,15 @@ textarea:-webkit-autofill {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
+  }
+
+  .form-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .footer-status {
+    width: 100%;
   }
 
   .btn {

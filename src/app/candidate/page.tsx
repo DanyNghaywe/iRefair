@@ -281,19 +281,6 @@ export default function CandidatePage() {
               </div>
             </div>
 
-            {status === 'ok' && (
-              <div className="status-banner status-banner--ok" role="status" aria-live="polite">
-                <span className="status-icon" aria-hidden="true">✓</span>
-                <span>We’ve received your request. We’ll follow up by email soon.</span>
-              </div>
-            )}
-            {status === 'error' && (
-              <div className="status-banner status-banner--error" role="alert" aria-live="assertive">
-                <span className="status-icon" aria-hidden="true">!</span>
-                <span>We couldn’t send your request right now. Please try again in a moment.</span>
-              </div>
-            )}
-
             <form ref={formRef} className="referral-form" action="#" method="post" onSubmit={handleSubmit}>
               <fieldset>
                 <legend>{t.legends.details}</legend>
@@ -593,20 +580,36 @@ export default function CandidatePage() {
                 </div>
               </fieldset>
 
-              <div className="actions">
-                <button className="btn primary" type="submit" disabled={submitting} aria-busy={submitting}>
-                  {submitting ? (
-                    <>
-                      {t.buttons.submitting}
-                      <span className="loading-indicator" aria-hidden="true" />
-                    </>
-                  ) : (
-                    t.buttons.submit
+              <div className="form-footer">
+                <div className="footer-status">
+                  {status === 'ok' && (
+                    <div className="status-banner status-banner--ok" role="status" aria-live="polite">
+                      <span className="status-icon" aria-hidden="true">✓</span>
+                      <span>We’ve received your request. We’ll follow up by email soon.</span>
+                    </div>
                   )}
-                </button>
-                <button className="btn ghost" type="reset">
-                  {t.buttons.reset}
-                </button>
+                  {status === 'error' && (
+                    <div className="status-banner status-banner--error" role="alert" aria-live="assertive">
+                      <span className="status-icon" aria-hidden="true">!</span>
+                      <span>We couldn’t send your request right now. Please try again in a moment.</span>
+                    </div>
+                  )}
+                </div>
+                <div className="actions">
+                  <button className="btn primary" type="submit" disabled={submitting} aria-busy={submitting}>
+                    {submitting ? (
+                      <>
+                        {t.buttons.submitting}
+                        <span className="loading-indicator" aria-hidden="true" />
+                      </>
+                    ) : (
+                      t.buttons.submit
+                    )}
+                  </button>
+                  <button className="btn ghost" type="reset">
+                    {t.buttons.reset}
+                  </button>
+                </div>
               </div>
             </form>
           </section>

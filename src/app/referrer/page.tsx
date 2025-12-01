@@ -92,19 +92,6 @@ export default function ReferrerPage() {
               </div>
             </div>
 
-            {status === 'ok' && (
-              <div className="status-banner status-banner--ok" role="status" aria-live="polite">
-                <span className="status-icon" aria-hidden="true">✓</span>
-                <span>We’ve received your details. We’ll reach out when there’s a candidate match.</span>
-              </div>
-            )}
-            {status === 'error' && (
-              <div className="status-banner status-banner--error" role="alert" aria-live="assertive">
-                <span className="status-icon" aria-hidden="true">!</span>
-                <span>We couldn’t send your details right now. Please try again in a moment.</span>
-              </div>
-            )}
-
             <form className="referral-form" action="#" method="post" onSubmit={handleSubmit}>
               <fieldset>
                 <legend>About you</legend>
@@ -314,20 +301,36 @@ export default function ReferrerPage() {
                 </div>
               </fieldset>
 
-              <div className="actions">
-                <button className="btn primary" type="submit" disabled={submitting} aria-busy={submitting}>
-                  {submitting ? (
-                    <>
-                      Submitting...
-                      <span className="loading-indicator" aria-hidden="true" />
-                    </>
-                  ) : (
-                    'Send referrer details'
+              <div className="form-footer">
+                <div className="footer-status">
+                  {status === 'ok' && (
+                    <div className="status-banner status-banner--ok" role="status" aria-live="polite">
+                      <span className="status-icon" aria-hidden="true">✓</span>
+                      <span>We’ve received your details. We’ll reach out when there’s a candidate match.</span>
+                    </div>
                   )}
-                </button>
-                <button className="btn ghost" type="reset">
-                  Save progress
-                </button>
+                  {status === 'error' && (
+                    <div className="status-banner status-banner--error" role="alert" aria-live="assertive">
+                      <span className="status-icon" aria-hidden="true">!</span>
+                      <span>We couldn’t send your details right now. Please try again in a moment.</span>
+                    </div>
+                  )}
+                </div>
+                <div className="actions">
+                  <button className="btn primary" type="submit" disabled={submitting} aria-busy={submitting}>
+                    {submitting ? (
+                      <>
+                        Submitting...
+                        <span className="loading-indicator" aria-hidden="true" />
+                      </>
+                    ) : (
+                      'Send referrer details'
+                    )}
+                  </button>
+                  <button className="btn ghost" type="reset">
+                    Save progress
+                  </button>
+                </div>
               </div>
             </form>
           </section>
