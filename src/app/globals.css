@@ -897,6 +897,7 @@ textarea:focus-visible {
 
 input:-webkit-autofill,
 select:-webkit-autofill,
+textarea:-webkit-autofill,
 textarea:-webkit-autofill {
   -webkit-box-shadow: 0 0 0 40px rgba(255, 255, 255, 0.32) inset !important;
   -webkit-text-fill-color: var(--ink);

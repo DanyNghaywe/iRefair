@@ -13,6 +13,7 @@ type SelectProps = {
   value?: string;
   required?: boolean;
   ariaDescribedBy?: string;
+  ariaInvalid?: boolean;
   onChange?: (value: string) => void;
 };
 
@@ -25,6 +26,7 @@ export function Select({
   value,
   required,
   ariaDescribedBy,
+  ariaInvalid,
   onChange,
 }: SelectProps) {
   const normalizedOptions = useMemo<Option[]>(
@@ -149,6 +151,7 @@ export function Select({
         tabIndex={-1}
         className="select-native"
         aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
       >
         <option value="" disabled>
           {placeholder}
@@ -168,6 +171,7 @@ export function Select({
         aria-expanded={isOpen}
         aria-controls={listboxId}
         aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
         onClick={() => setIsOpen((open) => !open)}
         onKeyDown={handleKeyDown}
       >

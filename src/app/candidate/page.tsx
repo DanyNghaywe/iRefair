@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ChangeEvent, FormEvent, useRef, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import { ParticlesBackground } from '@/components/ParticlesBackground';
 import { Select } from '@/components/Select';
 
@@ -190,8 +190,103 @@ export default function CandidatePage() {
   const [language, setLanguage] = useState<Language>('en');
   const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
   const formRef = useRef<HTMLFormElement | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
   const t = translations[language];
+
+  useEffect(() => {
+    document.documentElement.lang = language;
+  }, [language]);
+
+  const fieldClass = (base: string, field: string) => `${base}${errors[field] ? ' has-error' : ''}`;
+
+  const clearError = (field: string) => {
+    setErrors((prev) => {
+      if (!prev[field]) return prev;
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  const handleFieldChange = (field: string) => () => clearError(field);
+  const handleSelectChange = (field: string) => () => clearError(field);
+
+  const isValidEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
+  const isValidUrl = (value: string) => {
+    try {
+      const url = new URL(value);
+      return Boolean(url.protocol) && Boolean(url.hostname);
+    } catch {
+      return false;
+    }
+  };
+
+  const getFormValues = (formData: FormData) => {
+    const valueOf = (key: string) => ((formData.get(key) as string | null)?.trim() || '');
+    return {
+      fullName: valueOf('full-name'),
+      email: valueOf('email'),
+      phone: valueOf('phone'),
+      location: valueOf('location'),
+      linkedin: valueOf('linkedin'),
+      portfolio: valueOf('portfolio'),
+      github: valueOf('github'),
+      desiredRole: valueOf('desired-role'),
+      seniority: valueOf('seniority'),
+      jobType: valueOf('job-type'),
+      workPreference: valueOf('work-preference'),
+      preferredLocations: valueOf('preferred-locations'),
+      experienceYears: valueOf('experience-years'),
+      primarySkills: valueOf('primary-skills'),
+      currentCompany: valueOf('current-company'),
+      currentTitle: valueOf('current-title'),
+      targetCompanies: valueOf('target-companies'),
+      hasPostings: valueOf('has-postings'),
+      postingNotes: valueOf('posting-notes'),
+      pitch: valueOf('pitch'),
+    };
+  };
+
+  const validateValues = (values: ReturnType<typeof getFormValues>) => {
+    const nextErrors: Record<string, string> = {};
+
+    if (!values.fullName) nextErrors['full-name'] = 'Please enter your full name.';
+
+    if (!values.email) {
+      nextErrors.email = 'Please enter your email address.';
+    } else if (!isValidEmail(values.email)) {
+      nextErrors.email = 'Please enter a valid email address.';
+    }
+
+    if (!values.phone) nextErrors.phone = 'Please enter your phone number.';
+    if (!values.location) nextErrors.location = 'Please enter your location.';
+
+    if (!values.linkedin) {
+      nextErrors.linkedin = 'Please enter your LinkedIn profile.';
+    } else if (!isValidUrl(values.linkedin)) {
+      nextErrors.linkedin = 'Please enter a valid URL.';
+    }
+
+    if (values.portfolio && !isValidUrl(values.portfolio)) {
+      nextErrors.portfolio = 'Please enter a valid URL.';
+    }
+    if (values.github && !isValidUrl(values.github)) {
+      nextErrors.github = 'Please enter a valid URL.';
+    }
+
+    if (!values.desiredRole) nextErrors['desired-role'] = 'Please enter your target role.';
+    if (!values.seniority) nextErrors.seniority = 'Please select your seniority.';
+    if (!values.jobType) nextErrors['job-type'] = 'Please select a job type.';
+    if (!values.workPreference) nextErrors['work-preference'] = 'Please select your work preference.';
+
+    if (!values.experienceYears) nextErrors['experience-years'] = 'Please enter your years of experience.';
+    if (!values.primarySkills) nextErrors['primary-skills'] = 'Please enter your primary skills.';
+    if (!values.targetCompanies) nextErrors['target-companies'] = 'Please enter your target companies.';
+    if (!values.pitch) nextErrors.pitch = 'Please add a brief pitch.';
+
+    return nextErrors;
+  };
 
   const handleResumeChange = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -200,23 +295,33 @@ export default function CandidatePage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const values = getFormValues(formData);
+    const validationErrors = validateValues(values);
+
+    if (Object.keys(validationErrors).length) {
+      setErrors(validationErrors);
+      setStatus('idle');
+      setSubmitting(false);
+      return;
+    }
+
+    setErrors({});
     setStatus('submitting');
     setSubmitting(true);
 
-    const formData = new FormData(event.currentTarget);
-    const fullName = (formData.get('full-name') as string | null)?.trim() || '';
-    const [firstName, ...rest] = fullName.split(' ').filter(Boolean);
+    const [firstName, ...rest] = values.fullName.split(' ').filter(Boolean);
     const payload = {
-      firstName: firstName || fullName,
+      firstName: firstName || values.fullName,
       lastName: rest.join(' '),
-      email: (formData.get('email') as string | null)?.trim() || '',
-      targetRoles: (formData.get('desired-role') as string | null)?.trim() || '',
-      seniority: (formData.get('seniority') as string | null)?.trim() || '',
-      location: (formData.get('location') as string | null)?.trim() || '',
-      targetCompanies: (formData.get('target-companies') as string | null)?.trim() || '',
-      phone: (formData.get('phone') as string | null)?.trim() || '',
-      workPreference: (formData.get('work-preference') as string | null)?.trim() || '',
-      preferredLocations: (formData.get('preferred-locations') as string | null)?.trim() || '',
+      email: values.email,
+      targetRoles: values.desiredRole,
+      seniority: values.seniority,
+      location: values.location,
+      targetCompanies: values.targetCompanies,
+      phone: values.phone,
+      workPreference: values.workPreference,
+      preferredLocations: values.preferredLocations,
     };
 
     try {
@@ -262,6 +367,7 @@ export default function CandidatePage() {
                 type="button"
                 className={`language-toggle__btn ${language === 'en' ? 'is-active' : ''}`}
                 onClick={() => setLanguage('en')}
+                aria-pressed={language === 'en'}
               >
                 {t.english}
               </button>
@@ -269,6 +375,7 @@ export default function CandidatePage() {
                 type="button"
                 className={`language-toggle__btn ${language === 'fr' ? 'is-active' : ''}`}
                 onClick={() => setLanguage('fr')}
+                aria-pressed={language === 'fr'}
               >
                 {t.french}
               </button>
@@ -281,21 +388,51 @@ export default function CandidatePage() {
               </div>
             </div>
 
-            <form ref={formRef} className="referral-form" action="#" method="post" onSubmit={handleSubmit}>
+            <form
+              ref={formRef}
+              className="referral-form"
+              action="#"
+              method="post"
+              onSubmit={handleSubmit}
+              onReset={() => {
+                setErrors({});
+                setStatus('idle');
+              }}
+            >
               <fieldset>
                 <legend>{t.legends.details}</legend>
                 <div className="field-grid">
-                  <div className="field">
+                  <div className={fieldClass('field', 'full-name')}>
                     <label htmlFor="full-name">{t.labels.fullName}</label>
-                    <input id="full-name" name="full-name" type="text" required aria-describedby="full-name-error" />
-                    <p className="field-error" id="full-name-error" role="alert" aria-live="polite"></p>
+                    <input
+                      id="full-name"
+                      name="full-name"
+                      type="text"
+                      required
+                      aria-invalid={Boolean(errors['full-name'])}
+                      aria-describedby="full-name-error"
+                      onChange={handleFieldChange('full-name')}
+                    />
+                    <p className="field-error" id="full-name-error" role="alert" aria-live="polite">
+                      {errors['full-name']}
+                    </p>
                   </div>
-                  <div className="field">
+                  <div className={fieldClass('field', 'email')}>
                     <label htmlFor="email">{t.labels.email}</label>
-                    <input id="email" name="email" type="email" required aria-describedby="email-error" />
-                    <p className="field-error" id="email-error" role="alert" aria-live="polite"></p>
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      required
+                      aria-invalid={Boolean(errors.email)}
+                      aria-describedby="email-error"
+                      onChange={handleFieldChange('email')}
+                    />
+                    <p className="field-error" id="email-error" role="alert" aria-live="polite">
+                      {errors.email}
+                    </p>
                   </div>
-                  <div className="field">
+                  <div className={fieldClass('field', 'phone')}>
                     <label htmlFor="phone">{t.labels.phone}</label>
                     <input
                       id="phone"
@@ -303,11 +440,15 @@ export default function CandidatePage() {
                       type="tel"
                       required
                       placeholder={t.placeholders.phone}
+                      aria-invalid={Boolean(errors.phone)}
                       aria-describedby="phone-error"
+                      onChange={handleFieldChange('phone')}
                     />
-                    <p className="field-error" id="phone-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="phone-error" role="alert" aria-live="polite">
+                      {errors.phone}
+                    </p>
                   </div>
-                  <div className="field">
+                  <div className={fieldClass('field', 'location')}>
                     <label htmlFor="location">{t.labels.location}</label>
                     <input
                       id="location"
@@ -315,9 +456,13 @@ export default function CandidatePage() {
                       type="text"
                       required
                       placeholder={t.placeholders.location}
+                      aria-invalid={Boolean(errors.location)}
                       aria-describedby="location-error"
+                      onChange={handleFieldChange('location')}
                     />
-                    <p className="field-error" id="location-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="location-error" role="alert" aria-live="polite">
+                      {errors.location}
+                    </p>
                   </div>
                 </div>
               </fieldset>
@@ -325,19 +470,23 @@ export default function CandidatePage() {
               <fieldset>
                 <legend>{t.legends.profiles}</legend>
                 <div className="field-grid">
-                  <div className="field">
+                  <div className={fieldClass('field', 'linkedin')}>
                     <label htmlFor="linkedin">{t.labels.linkedin}</label>
                     <input
                       id="linkedin"
                       name="linkedin"
                       type="url"
                       required
+                      aria-invalid={Boolean(errors.linkedin)}
                       aria-describedby="linkedin-error"
                       placeholder={t.placeholders.linkedin}
+                      onChange={handleFieldChange('linkedin')}
                     />
-                    <p className="field-error" id="linkedin-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="linkedin-error" role="alert" aria-live="polite">
+                      {errors.linkedin}
+                    </p>
                   </div>
-                  <div className="field">
+                  <div className={fieldClass('field', 'portfolio')}>
                     <label htmlFor="portfolio">
                       {t.labels.portfolio} <span className="optional">{t.optional}</span>
                     </label>
@@ -346,11 +495,15 @@ export default function CandidatePage() {
                       name="portfolio"
                       type="url"
                       placeholder={t.placeholders.portfolio}
+                      aria-invalid={Boolean(errors.portfolio)}
                       aria-describedby="portfolio-error"
+                      onChange={handleFieldChange('portfolio')}
                     />
-                    <p className="field-error" id="portfolio-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="portfolio-error" role="alert" aria-live="polite">
+                      {errors.portfolio}
+                    </p>
                   </div>
-                  <div className="field">
+                  <div className={fieldClass('field', 'github')}>
                     <label htmlFor="github">
                       {t.labels.github} <span className="optional">{t.optional}</span>
                     </label>
@@ -359,9 +512,13 @@ export default function CandidatePage() {
                       name="github"
                       type="url"
                       placeholder={t.placeholders.github}
+                      aria-invalid={Boolean(errors.github)}
                       aria-describedby="github-error"
+                      onChange={handleFieldChange('github')}
                     />
-                    <p className="field-error" id="github-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="github-error" role="alert" aria-live="polite">
+                      {errors.github}
+                    </p>
                   </div>
                 </div>
               </fieldset>
@@ -369,19 +526,23 @@ export default function CandidatePage() {
               <fieldset>
                 <legend>{t.legends.preferences}</legend>
                 <div className="field-grid">
-                  <div className="field">
+                  <div className={fieldClass('field', 'desired-role')}>
                     <label htmlFor="desired-role">{t.labels.desiredRole}</label>
                     <input
                       id="desired-role"
                       name="desired-role"
                       type="text"
                       required
+                      aria-invalid={Boolean(errors['desired-role'])}
                       aria-describedby="desired-role-error"
                       placeholder={t.placeholders.desiredRole}
+                      onChange={handleFieldChange('desired-role')}
                     />
-                    <p className="field-error" id="desired-role-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="desired-role-error" role="alert" aria-live="polite">
+                      {errors['desired-role']}
+                    </p>
                   </div>
-                  <div className="field">
+                  <div className={fieldClass('field', 'seniority')}>
                     <label htmlFor="seniority">{t.labels.seniority}</label>
                     <Select
                       id="seniority"
@@ -390,10 +551,14 @@ export default function CandidatePage() {
                       placeholder={t.selects.selectLabel}
                       required
                       ariaDescribedBy="seniority-error"
+                      ariaInvalid={Boolean(errors.seniority)}
+                      onChange={handleSelectChange('seniority')}
                     />
-                    <p className="field-error" id="seniority-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="seniority-error" role="alert" aria-live="polite">
+                      {errors.seniority}
+                    </p>
                   </div>
-                  <div className="field">
+                  <div className={fieldClass('field', 'job-type')}>
                     <label htmlFor="job-type">{t.labels.jobType}</label>
                     <Select
                       id="job-type"
@@ -402,10 +567,14 @@ export default function CandidatePage() {
                       placeholder={t.selects.selectLabel}
                       required
                       ariaDescribedBy="job-type-error"
+                      ariaInvalid={Boolean(errors['job-type'])}
+                      onChange={handleSelectChange('job-type')}
                     />
-                    <p className="field-error" id="job-type-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="job-type-error" role="alert" aria-live="polite">
+                      {errors['job-type']}
+                    </p>
                   </div>
-                  <div className="field">
+                  <div className={fieldClass('field', 'work-preference')}>
                     <label htmlFor="work-preference">{t.labels.workPreference}</label>
                     <Select
                       id="work-preference"
@@ -414,10 +583,14 @@ export default function CandidatePage() {
                       placeholder={t.selects.selectLabel}
                       required
                       ariaDescribedBy="work-preference-error"
+                      ariaInvalid={Boolean(errors['work-preference'])}
+                      onChange={handleSelectChange('work-preference')}
                     />
-                    <p className="field-error" id="work-preference-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="work-preference-error" role="alert" aria-live="polite">
+                      {errors['work-preference']}
+                    </p>
                   </div>
-                  <div className="field field-full">
+                  <div className={fieldClass('field field-full', 'preferred-locations')}>
                     <label htmlFor="preferred-locations">
                       {t.labels.preferredLocations} <span className="optional">{t.optional}</span>
                     </label>
@@ -427,8 +600,12 @@ export default function CandidatePage() {
                       rows={2}
                       aria-describedby="preferred-locations-error"
                       placeholder={t.placeholders.preferredLocations}
+                      aria-invalid={Boolean(errors['preferred-locations'])}
+                      onChange={handleFieldChange('preferred-locations')}
                     />
-                    <p className="field-error" id="preferred-locations-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="preferred-locations-error" role="alert" aria-live="polite">
+                      {errors['preferred-locations']}
+                    </p>
                   </div>
                 </div>
               </fieldset>
@@ -436,7 +613,7 @@ export default function CandidatePage() {
               <fieldset>
                 <legend>{t.legends.experience}</legend>
                 <div className="field-grid">
-                  <div className="field">
+                  <div className={fieldClass('field', 'experience-years')}>
                     <label htmlFor="experience-years">{t.labels.experienceYears}</label>
                     <input
                       id="experience-years"
@@ -444,23 +621,31 @@ export default function CandidatePage() {
                       type="number"
                       min="0"
                       required
+                      aria-invalid={Boolean(errors['experience-years'])}
                       aria-describedby="experience-years-error"
+                      onChange={handleFieldChange('experience-years')}
                     />
-                    <p className="field-error" id="experience-years-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="experience-years-error" role="alert" aria-live="polite">
+                      {errors['experience-years']}
+                    </p>
                   </div>
-                  <div className="field field-full">
+                  <div className={fieldClass('field field-full', 'primary-skills')}>
                     <label htmlFor="primary-skills">{t.labels.primarySkills}</label>
                     <textarea
                       id="primary-skills"
                       name="primary-skills"
                       rows={2}
                       required
+                      aria-invalid={Boolean(errors['primary-skills'])}
                       aria-describedby="primary-skills-error"
                       placeholder={t.placeholders.primarySkills}
+                      onChange={handleFieldChange('primary-skills')}
                     />
-                    <p className="field-error" id="primary-skills-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="primary-skills-error" role="alert" aria-live="polite">
+                      {errors['primary-skills']}
+                    </p>
                   </div>
-                  <div className="field">
+                  <div className={fieldClass('field', 'current-company')}>
                     <label htmlFor="current-company">
                       {t.labels.currentCompany} <span className="optional">{t.optional}</span>
                     </label>
@@ -468,11 +653,15 @@ export default function CandidatePage() {
                       id="current-company"
                       name="current-company"
                       type="text"
+                      aria-invalid={Boolean(errors['current-company'])}
                       aria-describedby="current-company-error"
+                      onChange={handleFieldChange('current-company')}
                     />
-                    <p className="field-error" id="current-company-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="current-company-error" role="alert" aria-live="polite">
+                      {errors['current-company']}
+                    </p>
                   </div>
-                  <div className="field">
+                  <div className={fieldClass('field', 'current-title')}>
                     <label htmlFor="current-title">
                       {t.labels.currentTitle} <span className="optional">{t.optional}</span>
                     </label>
@@ -480,9 +669,13 @@ export default function CandidatePage() {
                       id="current-title"
                       name="current-title"
                       type="text"
+                      aria-invalid={Boolean(errors['current-title'])}
                       aria-describedby="current-title-error"
+                      onChange={handleFieldChange('current-title')}
                     />
-                    <p className="field-error" id="current-title-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="current-title-error" role="alert" aria-live="polite">
+                      {errors['current-title']}
+                    </p>
                   </div>
                 </div>
               </fieldset>
@@ -490,19 +683,23 @@ export default function CandidatePage() {
               <fieldset>
                 <legend>{t.legends.context}</legend>
                 <div className="field-grid">
-                  <div className="field field-full">
+                  <div className={fieldClass('field field-full', 'target-companies')}>
                     <label htmlFor="target-companies">{t.labels.targetCompanies}</label>
                     <textarea
                       id="target-companies"
                       name="target-companies"
                       rows={2}
                       required
+                      aria-invalid={Boolean(errors['target-companies'])}
                       aria-describedby="target-companies-error"
                       placeholder={t.placeholders.targetCompanies}
+                      onChange={handleFieldChange('target-companies')}
                     />
-                    <p className="field-error" id="target-companies-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="target-companies-error" role="alert" aria-live="polite">
+                      {errors['target-companies']}
+                    </p>
                   </div>
-                  <div className="field">
+                  <div className={fieldClass('field', 'has-postings')}>
                     <label htmlFor="has-postings">
                       {t.labels.hasPostings} <span className="optional">{t.optional}</span>
                     </label>
@@ -513,10 +710,14 @@ export default function CandidatePage() {
                       defaultValue={t.selects.hasPostings[1]}
                       placeholder={t.selects.selectLabel}
                       ariaDescribedBy="has-postings-error"
+                      ariaInvalid={Boolean(errors['has-postings'])}
+                      onChange={handleSelectChange('has-postings')}
                     />
-                    <p className="field-error" id="has-postings-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="has-postings-error" role="alert" aria-live="polite">
+                      {errors['has-postings']}
+                    </p>
                   </div>
-                  <div className="field field-full">
+                  <div className={fieldClass('field field-full', 'posting-notes')}>
                     <label htmlFor="posting-notes">
                       {t.labels.postingNotes} <span className="optional">{t.optional}</span>
                     </label>
@@ -525,21 +726,29 @@ export default function CandidatePage() {
                       name="posting-notes"
                       rows={2}
                       aria-describedby="posting-notes-error"
+                      aria-invalid={Boolean(errors['posting-notes'])}
                       placeholder={t.placeholders.postingNotes}
+                      onChange={handleFieldChange('posting-notes')}
                     />
-                    <p className="field-error" id="posting-notes-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="posting-notes-error" role="alert" aria-live="polite">
+                      {errors['posting-notes']}
+                    </p>
                   </div>
-                  <div className="field field-full">
+                  <div className={fieldClass('field field-full', 'pitch')}>
                     <label htmlFor="pitch">{t.labels.pitch}</label>
                     <textarea
                       id="pitch"
                       name="pitch"
                       rows={3}
                       required
+                      aria-invalid={Boolean(errors.pitch)}
                       aria-describedby="pitch-error"
                       placeholder={t.placeholders.pitch}
+                      onChange={handleFieldChange('pitch')}
                     />
-                    <p className="field-error" id="pitch-error" role="alert" aria-live="polite"></p>
+                    <p className="field-error" id="pitch-error" role="alert" aria-live="polite">
+                      {errors.pitch}
+                    </p>
                   </div>
                 </div>
               </fieldset>
