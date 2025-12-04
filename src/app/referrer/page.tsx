@@ -7,6 +7,21 @@ import { Select } from '@/components/Select';
 
 type Language = 'en' | 'fr';
 
+const COMPANY_INDUSTRY_OPTIONS: string[] = [
+  'Technology',
+  'Finance',
+  'Healthcare',
+  'Education',
+  'Retail',
+  'Hospitality',
+  'Marketing / Media',
+  'Engineering / Construction',
+  'Consulting',
+  'Not for profit',
+  'Compliance / Audit',
+  'Other',
+];
+
 const translations: Record<
   Language,
   {
@@ -17,40 +32,49 @@ const translations: Record<
     eyebrow: string;
     title: string;
     lead: string;
-    legends: { aboutYou: string; capacity: string; candidate: string };
+    legends: { personal: string; company: string; workType: string };
     labels: {
       fullName: string;
       workEmail: string;
+      phone: string;
+      country: string;
       company: string;
-      role: string;
+      companyIndustry: string;
+      workType: string;
       linkedin: string;
-      timezone: string;
       referralType: string;
       monthlySlots: string;
       targetRoles: string;
       regions: string;
       constraints: string;
-      candidateName: string;
-      candidateEmail: string;
-      candidateRole: string;
-      candidateResume: string;
-      candidateContext: string;
     };
     placeholders: {
       linkedin: string;
-      timezone: string;
       targetRoles: string;
       regions: string;
       constraints: string;
-      candidateRole: string;
-      candidateResume: string;
-      candidateContext: string;
+      phone: string;
+      country: string;
+      workTypeOther: string;
+      companyIndustryOther: string;
     };
     selects: { selectLabel: string; referralType: string[]; monthlySlots: string[] };
     optional: string;
     statusMessages: { ok: string; error: string };
     errors: { submissionFailed: string };
     buttons: { submit: string; submitting: string; reset: string };
+    disclaimer: {
+      body: string;
+      linksLead: string;
+      termsLabel: string;
+      privacyLabel: string;
+      separator: string;
+      ariaLabel: string;
+    };
+    consentTitle: string;
+    consentIntro: string;
+    consentPoints: string[];
+    consentAgreement: string;
   }
 > = {
   en: {
@@ -62,37 +86,35 @@ const translations: Record<
     title: 'Referrer referral form',
     lead: 'Share the teams, roles, and capacity you have. Log a candidate now or just your availability.',
     legends: {
-      aboutYou: 'About you',
-      capacity: 'Referral capacity',
-      candidate: 'Candidate to refer',
+      personal: 'Personal Information',
+      company: 'Company Details',
+      workType: 'Type of work',
     },
     labels: {
-      fullName: 'Full name',
-      workEmail: 'Work email',
-      company: 'Company',
-      role: 'Role / team',
-      linkedin: 'LinkedIn profile',
-      timezone: 'Location or time zone',
+      fullName: 'Full Name *',
+      workEmail: 'Email address *',
+      phone: 'Phone Number',
+      country: 'Country of Origin',
+      company: 'Company  Name',
+      companyIndustry: 'Industry of the company',
+      workType: 'Type of work',
+      companyIndustryOther: 'Other company industry',
+      linkedin: 'LinkedIn Profile',
       referralType: 'Referral type',
       monthlySlots: 'Monthly slots',
       targetRoles: 'Teams and roles you cover',
       regions: 'Regions you cover',
       constraints: 'Constraints or notes',
-      candidateName: 'Candidate name',
-      candidateEmail: 'Candidate email',
-      candidateRole: 'Recommended role',
-      candidateResume: 'Resume or portfolio link',
-      candidateContext: 'Why they stand out',
     },
     placeholders: {
       linkedin: 'https://linkedin.com/in/',
-      timezone: 'e.g. PST, Remote US',
       targetRoles: 'e.g. Product Design, Backend (Go/Java), GTM in EMEA',
       regions: 'e.g. US, Canada, Europe',
       constraints: 'e.g. Only full-time roles, no agency work, NDA needed',
-      candidateRole: 'e.g. Senior Product Designer',
-      candidateResume: 'https://link.to/resume',
-      candidateContext: 'How you know them, achievements, and the type of intro you want to make',
+      phone: '+1-XXX-XXXX or +961-XX-XXXXXX',
+      country: 'e.g. Canada',
+      companyIndustryOther: 'Please specify',
+      workTypeOther: 'Please specify',
     },
     selects: {
       selectLabel: 'Select',
@@ -112,6 +134,28 @@ const translations: Record<
       submitting: 'Submitting...',
       reset: 'Clear form',
     },
+    disclaimer: {
+      body: 'By submitting, you agree that iRefair may contact you about this request.',
+      linksLead: 'Read our',
+      termsLabel: 'Terms',
+      privacyLabel: 'Privacy Policy',
+      separator: 'and',
+      ariaLabel: 'Form disclaimer',
+    },
+    consentTitle: 'Consent & Legal Disclaimer',
+    consentIntro:
+      'By submitting this form, I agree to be contacted by iRefair when a potential candidate may align with open roles at my company. I understand and acknowledge the following:',
+    consentPoints: [
+      'iRefair is a voluntary, community-driven initiative, and I am under no obligation to make any referrals.',
+      'Any referral I make is based on my own discretion, and I am solely responsible for complying with my company’s internal referral or hiring policies.',
+      'iRefair, &Beyond Consulting, IM Power SARL and Inaspire and their legal founders assume no liability at all including but not limited to: hiring outcomes, internal processes, or employer decisions.',
+      'My contact and employer details will be kept confidential and will not be shared without my consent.',
+      'I may request to update or delete my information at any time by contacting info@andbeyondca.com.',
+      'My participation is entirely optional, and I can opt out at any time via contacting info@andbeyondca.com.',
+    ],
+    consentAgreement: 'I have read, understood, and agree to the above terms.',
+    consentAgreement: 'I have read, understood, and agree to the above terms.',
+    consentAgreement: 'I have read, understood, and agree to the above terms.',
   },
   fr: {
     roleSwitch: { prompt: 'Pas référent ?', link: 'Passer au candidat' },
@@ -122,37 +166,35 @@ const translations: Record<
     title: 'Formulaire de recommandation référent',
     lead: 'Indiquez les équipes, les rôles et votre capacité. Enregistrez un candidat ou simplement votre disponibilité.',
     legends: {
-      aboutYou: 'À propos de vous',
-      capacity: 'Capacité de recommandation',
-      candidate: 'Candidat à recommander',
+      personal: 'Informations personnelles',
+      company: "Détails de l'entreprise",
+      workType: 'Type de travail',
     },
     labels: {
       fullName: 'Nom complet',
-      workEmail: 'Email professionnel',
+      workEmail: 'Adresse email',
+      phone: 'Numéro de téléphone',
+      country: "Pays d'origine",
       company: 'Entreprise',
-      role: 'Poste / équipe',
+      companyIndustry: "Secteur de l'entreprise",
+      workType: 'Type de travail',
+      companyIndustryOther: 'Autre secteur',
       linkedin: 'Profil LinkedIn',
-      timezone: 'Lieu ou fuseau horaire',
       referralType: 'Type de recommandation',
       monthlySlots: 'Nombre de recommandations par mois',
       targetRoles: 'Équipes et rôles couverts',
       regions: 'Régions couvertes',
       constraints: 'Contraintes ou notes',
-      candidateName: 'Nom du candidat',
-      candidateEmail: 'Email du candidat',
-      candidateRole: 'Poste recommandé',
-      candidateResume: 'Lien vers CV ou portfolio',
-      candidateContext: 'Pourquoi ce candidat se démarque',
     },
     placeholders: {
       linkedin: 'https://linkedin.com/in/',
-      timezone: 'ex. PST, US à distance',
       targetRoles: 'ex. Design produit, Backend (Go/Java), GTM en EMEA',
       regions: 'ex. États-Unis, Canada, Europe',
       constraints: 'ex. Uniquement temps plein, pas de missions agence, NDA requis',
-      candidateRole: 'ex. Designer produit senior',
-      candidateResume: 'https://lien.vers/cv',
-      candidateContext: "Comment vous le connaissez, ses réussites et le type d'introduction souhaitée",
+      phone: '+1-XXX-XXXX ou +961-XX-XXXXXX',
+      country: 'ex. France',
+      companyIndustryOther: 'Précisez',
+      workTypeOther: 'Précisez',
     },
     selects: {
       selectLabel: 'Sélectionner',
@@ -172,6 +214,26 @@ const translations: Record<
       submitting: 'Envoi...',
       reset: 'Effacer le formulaire',
     },
+    disclaimer: {
+      body: "En envoyant le formulaire, vous acceptez d'être contacté par iRefair au sujet de cette demande.",
+      linksLead: 'Consultez nos',
+      termsLabel: 'Conditions',
+      privacyLabel: 'Politique de confidentialité',
+      separator: 'et notre',
+      ariaLabel: 'Avertissement du formulaire',
+    },
+    consentTitle: 'Consentement et avis légal',
+    consentIntro:
+      "En soumettant ce formulaire, j'accepte d'être contacté par iRefair lorsqu'un candidat potentiel pourrait correspondre à des postes ouverts dans mon entreprise. Je comprends et reconnais ce qui suit :",
+    consentPoints: [
+      'iRefair est une initiative bénévole, portée par la communauté, et je ne suis soumis à aucune obligation de recommander qui que ce soit.',
+      "Toute recommandation que je fais est à ma discrétion, et je suis seul responsable du respect des politiques internes de mon entreprise en matière de recommandation ou de recrutement.",
+      "iRefair, &Beyond Consulting, IM Power SARL et Inaspire ainsi que leurs fondateurs légaux déclinent toute responsabilité (y compris, sans s'y limiter) concernant les résultats d'embauche, les processus internes ou les décisions de l'employeur.",
+      'Mes coordonnées et informations employeur resteront confidentielles et ne seront pas partagées sans mon consentement.',
+      "Je peux demander la mise à jour ou la suppression de mes informations à tout moment en contactant info@andbeyondca.com.",
+      'Ma participation est entièrement facultative, et je peux me retirer à tout moment en contactant info@andbeyondca.com.',
+    ],
+    consentAgreement: "J'ai lu, compris et j'accepte les conditions ci-dessus.",
   },
 };
 
@@ -180,6 +242,8 @@ export default function ReferrerPage() {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
   const [language, setLanguage] = useState<Language>('en');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [companyIndustrySelection, setCompanyIndustrySelection] = useState('');
+  const [workTypeSelection, setWorkTypeSelection] = useState('');
   const t = translations[language];
 
   useEffect(() => {
@@ -210,25 +274,36 @@ export default function ReferrerPage() {
     }
   };
 
+  const renderConsentPoint = (point: string) => {
+    const email = 'info@andbeyondca.com';
+    if (!point.includes(email)) return point;
+    const parts = point.split(email);
+    return (
+      <>
+        {parts[0]}
+        <a href={`mailto:${email}`}>{email}</a>
+        {parts.slice(1).join(email)}
+      </>
+    );
+  };
+
   const getFormValues = (formData: FormData) => {
     const valueOf = (key: string) => ((formData.get(key) as string | null)?.trim() || '');
     return {
       name: valueOf('referrer-name'),
       email: valueOf('referrer-email'),
       company: valueOf('referrer-company'),
-      role: valueOf('referrer-role'),
+      companyIndustry: valueOf('referrer-company-industry'),
+      companyIndustryOther: valueOf('referrer-company-industry-other'),
+      workType: valueOf('work-type'),
       linkedin: valueOf('referrer-linkedin'),
-      timezone: valueOf('referrer-timezone'),
+      phone: valueOf('referrer-phone'),
+      country: valueOf('referrer-country'),
       referralType: valueOf('referral-type'),
       monthlySlots: valueOf('monthly-slots'),
       targetRoles: valueOf('target-roles'),
       regions: valueOf('regions'),
       constraints: valueOf('constraints'),
-      candidateName: valueOf('candidate-name'),
-      candidateEmail: valueOf('candidate-email'),
-      candidateRole: valueOf('candidate-role'),
-      candidateResume: valueOf('candidate-resume'),
-      candidateContext: valueOf('candidate-context'),
     };
   };
 
@@ -238,13 +313,18 @@ export default function ReferrerPage() {
     if (!values.name) nextErrors['referrer-name'] = 'Please enter your name.';
 
     if (!values.email) {
-      nextErrors['referrer-email'] = 'Please enter your email address.';
+      nextErrors['referrer-email'] = 'Please enter your work email.';
     } else if (!isValidEmail(values.email)) {
       nextErrors['referrer-email'] = 'Please enter a valid email address.';
     }
 
-    if (!values.company) nextErrors['referrer-company'] = 'Please enter your company.';
-    if (!values.role) nextErrors['referrer-role'] = 'Please enter your role.';
+    if (!values.companyIndustry) nextErrors['referrer-company-industry'] = 'Please select the company industry.';
+    if (values.companyIndustry === 'Other' && !values.companyIndustryOther) {
+      nextErrors['referrer-company-industry-other'] = 'Please specify the company industry.';
+    }
+    if (!values.workType) nextErrors['work-type'] = 'Please select a work type.';
+    if (!values.phone) nextErrors['referrer-phone'] = 'Please enter your phone number.';
+    if (!values.country) nextErrors['referrer-country'] = 'Please enter your country of origin.';
 
     if (values.linkedin && !isValidUrl(values.linkedin)) {
       nextErrors['referrer-linkedin'] = 'Please enter a valid URL.';
@@ -255,18 +335,7 @@ export default function ReferrerPage() {
 
     if (!values.targetRoles) nextErrors['target-roles'] = 'Please enter the teams and roles you cover.';
     if (!values.regions) nextErrors.regions = 'Please enter the regions you cover.';
-
-    if (!values.candidateName) nextErrors['candidate-name'] = 'Please enter the candidate name.';
-    if (!values.candidateEmail) {
-      nextErrors['candidate-email'] = 'Please enter the candidate email.';
-    } else if (!isValidEmail(values.candidateEmail)) {
-      nextErrors['candidate-email'] = 'Please enter a valid email address.';
-    }
-    if (!values.candidateRole) nextErrors['candidate-role'] = 'Please enter the recommended role.';
-    if (values.candidateResume && !isValidUrl(values.candidateResume)) {
-      nextErrors['candidate-resume'] = 'Please enter a valid URL.';
-    }
-    if (!values.candidateContext) nextErrors['candidate-context'] = 'Please share why this candidate stands out.';
+    if (values.constraints && values.constraints.length > 500) nextErrors.constraints = 'Constraints must be under 500 characters.';
 
     return nextErrors;
   };
@@ -291,6 +360,11 @@ export default function ReferrerPage() {
     const payload = {
       name: values.name,
       email: values.email,
+      phone: values.phone,
+      country: values.country,
+      companyIndustry: values.companyIndustry,
+      companyIndustryOther: values.companyIndustryOther,
+      workType: values.workType,
       targetRoles: values.targetRoles,
       regions: values.regions,
       referralType: values.referralType,
@@ -369,11 +443,18 @@ export default function ReferrerPage() {
               onReset={() => {
                 setErrors({});
                 setStatus('idle');
+                setLanguageSelection('');
+                setLocatedInCanada('');
+                setProvinceSelection('');
+                setAuthorizedCanada('');
+                setIndustrySelection('');
+                setEmploymentStatus('');
+                setCompanyIndustrySelection('');
               }}
             >
               <fieldset>
-                <legend>{t.legends.aboutYou}</legend>
-                <div className="field-grid">
+                <legend>{t.legends.personal}</legend>
+                <div className="field-grid field-grid--two">
                   <div className={fieldClass('field', 'referrer-name')}>
                     <label htmlFor="referrer-name">{t.labels.fullName}</label>
                     <input
@@ -404,40 +485,42 @@ export default function ReferrerPage() {
                       {errors['referrer-email']}
                     </p>
                   </div>
-                  <div className={fieldClass('field', 'referrer-company')}>
-                    <label htmlFor="referrer-company">{t.labels.company}</label>
+                  <div className={fieldClass('field', 'referrer-phone')}>
+                    <label htmlFor="referrer-phone">{t.labels.phone}</label>
                     <input
-                      id="referrer-company"
-                      name="referrer-company"
+                      id="referrer-phone"
+                      name="referrer-phone"
                       type="text"
                       required
-                      aria-invalid={Boolean(errors['referrer-company'])}
-                      aria-describedby="referrer-company-error"
-                      onChange={handleFieldChange('referrer-company')}
+                      aria-invalid={Boolean(errors['referrer-phone'])}
+                      aria-describedby="referrer-phone-helper referrer-phone-error"
+                      onChange={handleFieldChange('referrer-phone')}
                     />
-                    <p className="field-error" id="referrer-company-error" role="alert" aria-live="polite">
-                      {errors['referrer-company']}
+                    <p className="field-hint" id="referrer-phone-helper">
+                      {t.placeholders.phone}
+                    </p>
+                    <p className="field-error" id="referrer-phone-error" role="alert" aria-live="polite">
+                      {errors['referrer-phone']}
                     </p>
                   </div>
-                  <div className={fieldClass('field', 'referrer-role')}>
-                    <label htmlFor="referrer-role">{t.labels.role}</label>
+                  <div className={fieldClass('field', 'referrer-country')}>
+                    <label htmlFor="referrer-country">{t.labels.country}</label>
                     <input
-                      id="referrer-role"
-                      name="referrer-role"
+                      id="referrer-country"
+                      name="referrer-country"
                       type="text"
                       required
-                      aria-invalid={Boolean(errors['referrer-role'])}
-                      aria-describedby="referrer-role-error"
-                      onChange={handleFieldChange('referrer-role')}
+                      placeholder={t.placeholders.country}
+                      aria-invalid={Boolean(errors['referrer-country'])}
+                      aria-describedby="referrer-country-error"
+                      onChange={handleFieldChange('referrer-country')}
                     />
-                    <p className="field-error" id="referrer-role-error" role="alert" aria-live="polite">
-                      {errors['referrer-role']}
+                    <p className="field-error" id="referrer-country-error" role="alert" aria-live="polite">
+                      {errors['referrer-country']}
                     </p>
                   </div>
                   <div className={fieldClass('field', 'referrer-linkedin')}>
-                    <label htmlFor="referrer-linkedin">
-                      {t.labels.linkedin} <span className="optional">{t.optional}</span>
-                    </label>
+                    <label htmlFor="referrer-linkedin">{t.labels.linkedin}</label>
                     <input
                       id="referrer-linkedin"
                       name="referrer-linkedin"
@@ -451,197 +534,113 @@ export default function ReferrerPage() {
                       {errors['referrer-linkedin']}
                     </p>
                   </div>
-                  <div className={fieldClass('field', 'referrer-timezone')}>
-                    <label htmlFor="referrer-timezone">
-                      {t.labels.timezone} <span className="optional">{t.optional}</span>
-                    </label>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>{t.legends.company}</legend>
+                <div className="field-grid field-grid--two">
+                  <div className={fieldClass('field', 'referrer-company')}>
+                    <label htmlFor="referrer-company">{t.labels.company}</label>
                     <input
-                      id="referrer-timezone"
-                      name="referrer-timezone"
+                      id="referrer-company"
+                      name="referrer-company"
                       type="text"
-                      aria-invalid={Boolean(errors['referrer-timezone'])}
-                      aria-describedby="referrer-timezone-error"
-                      placeholder={t.placeholders.timezone}
-                      onChange={handleFieldChange('referrer-timezone')}
+                      aria-invalid={Boolean(errors['referrer-company'])}
+                      aria-describedby="referrer-company-error"
+                      onChange={handleFieldChange('referrer-company')}
                     />
-                    <p className="field-error" id="referrer-timezone-error" role="alert" aria-live="polite">
-                      {errors['referrer-timezone']}
+                    <p className="field-error" id="referrer-company-error" role="alert" aria-live="polite">
+                      {errors['referrer-company']}
+                    </p>
+                  </div>
+                  <div className={fieldClass('field', 'referrer-company-industry')}>
+                    <label htmlFor="referrer-company-industry">{t.labels.companyIndustry}</label>
+                    <Select
+                      id="referrer-company-industry"
+                      name="referrer-company-industry"
+                      options={COMPANY_INDUSTRY_OPTIONS}
+                      placeholder={t.selects.selectLabel}
+                      required
+                      value={companyIndustrySelection}
+                      ariaDescribedBy="referrer-company-industry-error"
+                      ariaInvalid={Boolean(errors['referrer-company-industry'])}
+                      onChange={(value) => {
+                        setCompanyIndustrySelection(value);
+                        clearError('referrer-company-industry');
+                        if (value !== 'Other') clearError('referrer-company-industry-other');
+                      }}
+                    />
+                    <p className="field-error" id="referrer-company-industry-error" role="alert" aria-live="polite">
+                      {errors['referrer-company-industry']}
+                    </p>
+                  </div>
+                  {companyIndustrySelection === 'Other' && (
+                    <div className={fieldClass('field', 'referrer-company-industry-other')}>
+                      <label htmlFor="referrer-company-industry-other">{t.labels.companyIndustryOther}</label>
+                      <input
+                        id="referrer-company-industry-other"
+                        name="referrer-company-industry-other"
+                        type="text"
+                        placeholder={t.placeholders.companyIndustryOther}
+                        aria-invalid={Boolean(errors['referrer-company-industry-other'])}
+                        aria-describedby="referrer-company-industry-other-error"
+                        onChange={handleFieldChange('referrer-company-industry-other')}
+                      />
+                      <p
+                        className="field-error"
+                        id="referrer-company-industry-other-error"
+                        role="alert"
+                        aria-live="polite"
+                      >
+                        {errors['referrer-company-industry-other']}
+                      </p>
+                    </div>
+                  )}
+                  <div className={fieldClass('field', 'work-type')}>
+                    <label htmlFor="work-type">{t.labels.workType}</label>
+                    <Select
+                      id="work-type"
+                      name="work-type"
+                      options={['Physical', 'Remote', 'Hybrid']}
+                      placeholder={t.selects.selectLabel}
+                      required
+                      value={workTypeSelection}
+                      ariaDescribedBy="work-type-error"
+                      ariaInvalid={Boolean(errors['work-type'])}
+                      onChange={(value) => {
+                        setWorkTypeSelection(value);
+                        clearError('work-type');
+                      }}
+                    />
+                    <p className="field-error" id="work-type-error" role="alert" aria-live="polite">
+                      {errors['work-type']}
                     </p>
                   </div>
                 </div>
               </fieldset>
 
-              <fieldset>
-                <legend>{t.legends.capacity}</legend>
-                <div className="field-grid">
-                  <div className={fieldClass('field', 'referral-type')}>
-                    <label htmlFor="referral-type">{t.labels.referralType}</label>
-                    <Select
-                      id="referral-type"
-                      name="referral-type"
-                      options={t.selects.referralType}
-                      placeholder={t.selects.selectLabel}
-                      required
-                      ariaDescribedBy="referral-type-error"
-                      ariaInvalid={Boolean(errors['referral-type'])}
-                      onChange={handleSelectChange('referral-type')}
-                    />
-                    <p className="field-error" id="referral-type-error" role="alert" aria-live="polite">
-                      {errors['referral-type']}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field', 'monthly-slots')}>
-                    <label htmlFor="monthly-slots">{t.labels.monthlySlots}</label>
-                    <Select
-                      id="monthly-slots"
-                      name="monthly-slots"
-                      options={t.selects.monthlySlots}
-                      placeholder={t.selects.selectLabel}
-                      required
-                      ariaDescribedBy="monthly-slots-error"
-                      ariaInvalid={Boolean(errors['monthly-slots'])}
-                      onChange={handleSelectChange('monthly-slots')}
-                    />
-                    <p className="field-error" id="monthly-slots-error" role="alert" aria-live="polite">
-                      {errors['monthly-slots']}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field', 'target-roles')}>
-                    <label htmlFor="target-roles">{t.labels.targetRoles}</label>
-                    <textarea
-                      id="target-roles"
-                      name="target-roles"
-                      rows={2}
-                      required
-                      aria-invalid={Boolean(errors['target-roles'])}
-                      aria-describedby="target-roles-error"
-                      placeholder={t.placeholders.targetRoles}
-                      onChange={handleFieldChange('target-roles')}
-                    />
-                    <p className="field-error" id="target-roles-error" role="alert" aria-live="polite">
-                      {errors['target-roles']}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field', 'regions')}>
-                    <label htmlFor="regions">{t.labels.regions}</label>
+              <section className="consent-section" aria-labelledby="consent-title">
+                <div className="consent-card">
+                  <h2 id="consent-title">{t.consentTitle}</h2>
+                  <p>{t.consentIntro}</p>
+                  <ul className="consent-list">
+                    {t.consentPoints.map((item, index) => (
+                      <li key={index}>{renderConsentPoint(item)}</li>
+                    ))}
+                  </ul>
+                  <div className="consent-checkbox">
                     <input
-                      id="regions"
-                      name="regions"
-                      type="text"
+                      id="consent-legal"
+                      name="consent-legal"
+                      type="checkbox"
                       required
-                      aria-invalid={Boolean(errors.regions)}
-                      aria-describedby="regions-error"
-                      placeholder={t.placeholders.regions}
-                      onChange={handleFieldChange('regions')}
+                      aria-describedby="consent-legal-help"
                     />
-                    <p className="field-error" id="regions-error" role="alert" aria-live="polite">
-                      {errors.regions}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field field-full', 'constraints')}>
-                    <label htmlFor="constraints">
-                      {t.labels.constraints} <span className="optional">{t.optional}</span>
-                    </label>
-                    <textarea
-                      id="constraints"
-                      name="constraints"
-                      rows={2}
-                      aria-describedby="constraints-error"
-                      aria-invalid={Boolean(errors.constraints)}
-                      placeholder={t.placeholders.constraints}
-                      onChange={handleFieldChange('constraints')}
-                    />
-                    <p className="field-error" id="constraints-error" role="alert" aria-live="polite">
-                      {errors.constraints}
-                    </p>
+                    <label htmlFor="consent-legal">{t.consentAgreement}</label>
                   </div>
                 </div>
-              </fieldset>
-
-              <fieldset>
-                <legend>{t.legends.candidate}</legend>
-                <div className="field-grid">
-                  <div className={fieldClass('field', 'candidate-name')}>
-                    <label htmlFor="candidate-name">{t.labels.candidateName}</label>
-                    <input
-                      id="candidate-name"
-                      name="candidate-name"
-                      type="text"
-                      required
-                      aria-invalid={Boolean(errors['candidate-name'])}
-                      aria-describedby="candidate-name-error"
-                      onChange={handleFieldChange('candidate-name')}
-                    />
-                    <p className="field-error" id="candidate-name-error" role="alert" aria-live="polite">
-                      {errors['candidate-name']}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field', 'candidate-email')}>
-                    <label htmlFor="candidate-email">{t.labels.candidateEmail}</label>
-                    <input
-                      id="candidate-email"
-                      name="candidate-email"
-                      type="email"
-                      required
-                      aria-invalid={Boolean(errors['candidate-email'])}
-                      aria-describedby="candidate-email-error"
-                      onChange={handleFieldChange('candidate-email')}
-                    />
-                    <p className="field-error" id="candidate-email-error" role="alert" aria-live="polite">
-                      {errors['candidate-email']}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field', 'candidate-role')}>
-                    <label htmlFor="candidate-role">{t.labels.candidateRole}</label>
-                    <input
-                      id="candidate-role"
-                      name="candidate-role"
-                      type="text"
-                      required
-                      aria-invalid={Boolean(errors['candidate-role'])}
-                      aria-describedby="candidate-role-error"
-                      placeholder={t.placeholders.candidateRole}
-                      onChange={handleFieldChange('candidate-role')}
-                    />
-                    <p className="field-error" id="candidate-role-error" role="alert" aria-live="polite">
-                      {errors['candidate-role']}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field', 'candidate-resume')}>
-                    <label htmlFor="candidate-resume">
-                      {t.labels.candidateResume} <span className="optional">{t.optional}</span>
-                    </label>
-                    <input
-                      id="candidate-resume"
-                      name="candidate-resume"
-                      type="url"
-                      aria-invalid={Boolean(errors['candidate-resume'])}
-                      aria-describedby="candidate-resume-error"
-                      placeholder={t.placeholders.candidateResume}
-                      onChange={handleFieldChange('candidate-resume')}
-                    />
-                    <p className="field-error" id="candidate-resume-error" role="alert" aria-live="polite">
-                      {errors['candidate-resume']}
-                    </p>
-                  </div>
-                  <div className={fieldClass('field field-full', 'candidate-context')}>
-                    <label htmlFor="candidate-context">{t.labels.candidateContext}</label>
-                    <textarea
-                      id="candidate-context"
-                      name="candidate-context"
-                      rows={3}
-                      required
-                      aria-invalid={Boolean(errors['candidate-context'])}
-                      aria-describedby="candidate-context-error"
-                      placeholder={t.placeholders.candidateContext}
-                      onChange={handleFieldChange('candidate-context')}
-                    />
-                    <p className="field-error" id="candidate-context-error" role="alert" aria-live="polite">
-                      {errors['candidate-context']}
-                    </p>
-                  </div>
-                </div>
-              </fieldset>
+              </section>
 
               <div className="form-footer">
                 <div className="footer-status">

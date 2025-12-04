@@ -4,10 +4,15 @@ import { sendMail } from '@/lib/mailer';
 type CandidatePayload = {
   firstName?: string;
   email?: string;
-  targetRoles?: string;
-  seniority?: string;
-  location?: string;
-  targetCompanies?: string;
+  locatedCanada?: string;
+  province?: string;
+  authorizedCanada?: string;
+  industryType?: string;
+  industryOther?: string;
+  employmentStatus?: string;
+  countryOfOrigin?: string;
+  languages?: string;
+  languagesOther?: string;
 };
 
 const subject = 'We’ve received your referral request – iRefair';
@@ -60,23 +65,7 @@ const htmlTemplate = `<!DOCTYPE html>
                       <table role="presentation" cellpadding="0" cellspacing="0" width="100%">
                         <tr>
                           <td style="padding:6px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:#e5f6ff;">
-                            <strong>Target roles</strong>
-                          </td>
-                          <td align="right" style="padding:6px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:rgba(220,238,255,0.9);">
-                            {{targetRoles}}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td style="padding:6px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:#e5f6ff;">
-                            <strong>Seniority</strong>
-                          </td>
-                          <td align="right" style="padding:6px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:rgba(220,238,255,0.9);">
-                            {{seniority}}
-                          </td>
-                        </tr>
-                        <tr>
-                          <td style="padding:6px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:#e5f6ff;">
-                            <strong>Location / time zone</strong>
+                            <strong>Location</strong>
                           </td>
                           <td align="right" style="padding:6px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:rgba(220,238,255,0.9);">
                             {{location}}
@@ -84,10 +73,26 @@ const htmlTemplate = `<!DOCTYPE html>
                         </tr>
                         <tr>
                           <td style="padding:6px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:#e5f6ff;">
-                            <strong>Preferred companies</strong>
+                            <strong>Work authorization</strong>
                           </td>
                           <td align="right" style="padding:6px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:rgba(220,238,255,0.9);">
-                            {{targetCompanies}}
+                            {{authorization}}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding:6px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:#e5f6ff;">
+                            <strong>Industry focus</strong>
+                          </td>
+                          <td align="right" style="padding:6px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:rgba(220,238,255,0.9);">
+                            {{industry}}
+                          </td>
+                        </tr>
+                        <tr>
+                          <td style="padding:6px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:#e5f6ff;">
+                            <strong>Languages</strong>
+                          </td>
+                          <td align="right" style="padding:6px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;color:rgba(220,238,255,0.9);">
+                            {{languages}}
                           </td>
                         </tr>
                       </table>
@@ -140,10 +145,10 @@ const textTemplate = `Hi {{firstName}},
 Thanks for submitting your referral request to iRefair.
 
 Here’s a quick snapshot of what you shared:
-- Target roles: {{targetRoles}}
-- Seniority: {{seniority}}
-- Location / time zone: {{location}}
-- Preferred companies: {{targetCompanies}}
+- Location: {{location}}
+- Work authorization: {{authorization}}
+- Industry focus: {{industry}}
+- Languages: {{languages}}
 
 What happens next:
 1) We review your profile for clarity and completeness.
@@ -174,12 +179,45 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: 'Missing required fields: firstName and email.' }, { status: 400 });
     }
 
+    const locationSnapshot = (() => {
+      const locatedCanada = sanitize(body.locatedCanada);
+      const province = sanitize(body.province);
+      const country = sanitize(body.countryOfOrigin);
+
+      if (locatedCanada === 'Yes') return province ? `Canada — ${province}` : 'Canada';
+      if (locatedCanada === 'No' && country) return country;
+      return country || 'Not provided';
+    })();
+
+    const authorizationSnapshot = sanitize(body.authorizedCanada) || 'Not provided';
+
+    const industrySnapshot = (() => {
+      const industryType = sanitize(body.industryType);
+      const industryOther = sanitize(body.industryOther);
+      if (industryType === 'Other' && industryOther) return industryOther;
+      return industryType || 'Not provided';
+    })();
+
+    const languagesSnapshot = (() => {
+      const languagesRaw = sanitize(body.languages);
+      const languagesOther = sanitize(body.languagesOther);
+
+      const baseList = languagesRaw
+        .split(',')
+        .map((item) => item.trim())
+        .filter((item) => item && item.toLowerCase() !== 'other');
+
+      const all = languagesOther ? [...baseList, languagesOther.trim()] : baseList;
+      const combined = all.filter(Boolean).join(', ');
+      return combined || 'Not provided';
+    })();
+
     const values = {
       firstName,
-      targetRoles: sanitize(body.targetRoles) || 'Not provided',
-      seniority: sanitize(body.seniority) || 'Not provided',
-      location: sanitize(body.location) || 'Not provided',
-      targetCompanies: sanitize(body.targetCompanies) || 'Not provided',
+      location: locationSnapshot,
+      authorization: authorizationSnapshot,
+      industry: industrySnapshot,
+      languages: languagesSnapshot,
     };
 
     const html = fillTemplate(htmlTemplate, values);

@@ -81,6 +81,18 @@ const translations: Record<
     english: string;
     french: string;
     switchText: { prompt: string; link: string };
+    disclaimer: {
+      body: string;
+      linksLead: string;
+      termsLabel: string;
+      privacyLabel: string;
+      separator: string;
+      ariaLabel: string;
+    };
+    consentTitle: string;
+    consentIntro: string;
+    consentPoints: string[];
+    consentAgreement: string;
   }
 > = {
   en: {
@@ -113,7 +125,7 @@ const translations: Record<
       employmentStatus: 'Are you currently employed?',
       countryOfOrigin: 'Country of Origin',
       phone: 'Phone Number',
-      linkedin: 'LinkedIn profile',
+      linkedin: 'LinkedIn Profile',
       portfolio: 'Portfolio or site',
       github: 'GitHub profile',
       desiredRole: 'Target role',
@@ -171,6 +183,26 @@ const translations: Record<
       prompt: 'Not a candidate?',
       link: 'Switch to referrer',
     },
+    disclaimer: {
+      body: 'By submitting, you agree that iRefair may contact you about this request.',
+      linksLead: 'Read our',
+      termsLabel: 'Terms',
+      privacyLabel: 'Privacy Policy',
+      separator: 'and',
+      ariaLabel: 'Form disclaimer',
+    },
+    consentTitle: 'Consent & Legal Disclaimer',
+    consentIntro:
+      'By submitting this form, I agree to be contacted by iRefair when a potential candidate may align with open roles at my company. I understand and acknowledge the following:',
+    consentPoints: [
+      'iRefair is a voluntary, community-driven initiative, and I am under no obligation to make any referrals.',
+      'Any referral I make is based on my own discretion, and I am solely responsible for complying with my company’s internal referral or hiring policies.',
+      'iRefair, &Beyond Consulting, IM Power SARL and inaspire and their legal founders assume no liability at all including but not limited to: hiring outcomes, internal processes, or employer decisions.',
+      'My contact and employer details will be kept confidential and will not be shared without my consent.',
+      'I may request to update or delete my information at any time by contacting info@andbeyondca.com.',
+      'My participation is entirely optional, and I can opt out at any time via contacting info@andbeyondca.com.',
+    ],
+    consentAgreement: 'I have read, understood, and agree to the above terms.',
   },
   fr: {
     eyebrow: 'Pour les candidats',
@@ -261,6 +293,26 @@ const translations: Record<
       prompt: 'Pas candidat ?',
       link: 'Passer au référent',
     },
+    disclaimer: {
+      body: "En envoyant le formulaire, vous acceptez d'être contacté par iRefair au sujet de cette demande.",
+      linksLead: 'Consultez nos',
+      termsLabel: 'Conditions',
+      privacyLabel: 'Politique de confidentialité',
+      separator: 'et notre',
+      ariaLabel: 'Avertissement du formulaire',
+    },
+    consentTitle: 'Consentement et avis légal',
+    consentIntro:
+      "En soumettant ce formulaire, j'accepte d'être contacté par iRefair lorsqu'un candidat potentiel pourrait correspondre à des postes ouverts dans mon entreprise. Je comprends et reconnais ce qui suit :",
+    consentPoints: [
+      'iRefair est une initiative bénévole, portée par la communauté, et je ne suis soumis à aucune obligation de recommander qui que ce soit.',
+      "Toute recommandation que je fais est à ma discrétion, et je suis seul responsable du respect des politiques internes de mon entreprise en matière de recommandation ou de recrutement.",
+      "iRefair, &Beyond Consulting, IM Power SARL et inaspire ainsi que leurs fondateurs légaux déclinent toute responsabilité (y compris, sans s'y limiter) concernant les résultats d'embauche, les processus internes ou les décisions de l'employeur.",
+      'Mes coordonnées et informations employeur resteront confidentielles et ne seront pas partagées sans mon consentement.',
+      'Je peux demander la mise à jour ou la suppression de mes informations à tout moment en contactant info@andbeyondca.com.',
+      'Ma participation est entièrement facultative, et je peux me retirer à tout moment en contactant info@andbeyondca.com.',
+    ],
+    consentAgreement: "J'ai lu, compris et j'accepte les conditions ci-dessus.",
   },
 };
 
@@ -272,7 +324,7 @@ export default function CandidatePage() {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
   const formRef = useRef<HTMLFormElement | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [languageSelection, setLanguageSelection] = useState('');
+  const [languageSelection, setLanguageSelection] = useState<string[]>([]);
   const [locatedInCanada, setLocatedInCanada] = useState('');
   const [provinceSelection, setProvinceSelection] = useState('');
   const [authorizedCanada, setAuthorizedCanada] = useState('');
@@ -322,7 +374,7 @@ export default function CandidatePage() {
       middleName: valueOf('middle-name'),
       familyName: valueOf('family-name'),
       email: valueOf('email'),
-      languages: valueOf('languages'),
+      languages: (formData.getAll('languages') as string[]).map((value) => value.trim()).filter(Boolean),
       languagesOther: valueOf('languages-other'),
       locatedCanada: valueOf('located-canada'),
       province: valueOf('province'),
@@ -333,6 +385,7 @@ export default function CandidatePage() {
       countryOfOrigin: valueOf('country-of-origin'),
       phone: valueOf('phone'),
       linkedin: valueOf('linkedin'),
+      consentLegal: formData.get('consent-legal') === 'on',
     };
   };
 
@@ -377,11 +430,11 @@ export default function CandidatePage() {
       nextErrors['employment-status'] = 'Please select your employment status.';
     }
 
-    if (!values.languages) {
+    if (!values.languages.length) {
       nextErrors.languages = 'Please select at least one language.';
     }
 
-    if (values.languages === 'Other' && !values.languagesOther) {
+    if (values.languages.includes('Other') && !values.languagesOther) {
       nextErrors['languages-other'] = 'Please specify the other language.';
     }
 
@@ -393,6 +446,10 @@ export default function CandidatePage() {
       nextErrors.linkedin = 'Please enter your LinkedIn profile.';
     } else if (!isValidUrl(values.linkedin)) {
       nextErrors.linkedin = 'Please enter a valid URL.';
+    }
+
+    if (!values.consentLegal) {
+      nextErrors['consent-legal'] = 'Please confirm your consent to proceed.';
     }
 
     return nextErrors;
@@ -450,7 +507,7 @@ export default function CandidatePage() {
       locatedCanada: values.locatedCanada,
       province: values.province,
       authorizedCanada: values.authorizedCanada,
-      languages: values.languages,
+      languages: values.languages.join(', '),
       languagesOther: values.languagesOther,
       industryType: values.industryType,
       industryOther: values.industryOther,
@@ -532,7 +589,7 @@ export default function CandidatePage() {
               onReset={() => {
                 setErrors({});
                 setStatus('idle');
-                setLanguageSelection('');
+                setLanguageSelection([]);
                 setLocatedInCanada('');
                 setProvinceSelection('');
                 setAuthorizedCanada('');
@@ -627,20 +684,22 @@ export default function CandidatePage() {
                       options={LANGUAGE_OPTIONS}
                       placeholder={t.selects.selectLabel}
                       required
-                      value={languageSelection}
+                      multi
+                      values={languageSelection}
                       ariaDescribedBy="languages-error"
                       ariaInvalid={Boolean(errors.languages)}
                       onChange={(value) => {
-                        setLanguageSelection(value);
+                        const next = Array.isArray(value) ? value : value ? [value] : [];
+                        setLanguageSelection(next);
                         clearError('languages');
-                        if (value !== 'Other') clearError('languages-other');
+                        if (!next.includes('Other')) clearError('languages-other');
                       }}
                     />
                     <p className="field-error" id="languages-error" role="alert" aria-live="polite">
                       {errors.languages}
                     </p>
                   </div>
-                  {languageSelection === 'Other' && (
+                  {languageSelection.includes('Other') && (
                     <div className={fieldClass('field', 'languages-other')}>
                       <label htmlFor="languages-other">{t.labels.languagesOther}</label>
                       <input
@@ -870,6 +929,32 @@ export default function CandidatePage() {
                   </p>
                 </div>
               </fieldset>
+
+              <section className="consent-section" aria-labelledby="consent-title">
+                <div className="consent-card">
+                  <h2 id="consent-title">{t.consentTitle}</h2>
+                  <p>{t.consentIntro}</p>
+                  <ul className="consent-list">
+                    {t.consentPoints.map((item, index) => (
+                      <li key={index}>{item}</li>
+                    ))}
+                  </ul>
+                  <div className={fieldClass('consent-checkbox', 'consent-legal')}>
+                    <input
+                      id="consent-legal"
+                      name="consent-legal"
+                      type="checkbox"
+                      required
+                      aria-describedby="consent-legal-error"
+                      onChange={handleFieldChange('consent-legal')}
+                    />
+                    <label htmlFor="consent-legal">{t.consentAgreement}</label>
+                    <p className="field-error" id="consent-legal-error" role="alert" aria-live="polite">
+                      {errors['consent-legal']}
+                    </p>
+                  </div>
+                </div>
+              </section>
 
               <div className="form-footer">
                 <div className="footer-status">

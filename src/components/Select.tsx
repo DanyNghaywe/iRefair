@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ChangeEvent } from 'react';
 
 type Option = { value: string; label: string };
 
@@ -11,10 +11,12 @@ type SelectProps = {
   placeholder?: string;
   defaultValue?: string;
   value?: string;
+  values?: string[];
+  multi?: boolean;
   required?: boolean;
   ariaDescribedBy?: string;
   ariaInvalid?: boolean;
-  onChange?: (value: string) => void;
+  onChange?: (value: string | string[]) => void;
 };
 
 export function Select({
@@ -24,18 +26,20 @@ export function Select({
   placeholder = 'Select',
   defaultValue = '',
   value,
+  values,
+  multi = false,
   required,
   ariaDescribedBy,
   ariaInvalid,
   onChange,
 }: SelectProps) {
   const normalizedOptions = useMemo<Option[]>(
-    () =>
-      options.map((opt) => (typeof opt === 'string' ? { value: opt, label: opt } : opt)),
+    () => options.map((opt) => (typeof opt === 'string' ? { value: opt, label: opt } : opt)),
     [options],
   );
 
   const [selectedValue, setSelectedValue] = useState<string>(value ?? defaultValue);
+  const [selectedValues, setSelectedValues] = useState<string[]>(values ?? []);
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
 
@@ -45,10 +49,12 @@ export function Select({
   const selectedIndex = normalizedOptions.findIndex((opt) => opt.value === selectedValue);
 
   useEffect(() => {
-    if (value !== undefined) {
-      setSelectedValue(value);
-    }
+    if (value !== undefined) setSelectedValue(value);
   }, [value]);
+
+  useEffect(() => {
+    if (values !== undefined) setSelectedValues(values);
+  }, [values]);
 
   useEffect(() => {
     if (isOpen) {
@@ -86,10 +92,31 @@ export function Select({
   const handleSelect = (index: number) => {
     const option = normalizedOptions[index];
     if (!option) return;
-    setSelectedValue(option.value);
-    onChange?.(option.value);
-    setIsOpen(false);
-    requestAnimationFrame(() => triggerRef.current?.focus());
+    if (multi) {
+      const exists = selectedValues.includes(option.value);
+      const next = exists ? selectedValues.filter((v) => v !== option.value) : [...selectedValues, option.value];
+      setSelectedValues(next);
+      onChange?.(next);
+    } else {
+      setSelectedValue(option.value);
+      onChange?.(option.value);
+      setIsOpen(false);
+      requestAnimationFrame(() => triggerRef.current?.focus());
+    }
+  };
+
+  const handleNativeChange = (event: ChangeEvent<HTMLSelectElement>) => {
+    if (multi) {
+      const next = Array.from(event.target.selectedOptions).map((opt) => opt.value);
+      setSelectedValues(next);
+      onChange?.(next);
+    } else {
+      const next = event.target.value;
+      setSelectedValue(next);
+      onChange?.(next);
+      setIsOpen(false);
+      requestAnimationFrame(() => triggerRef.current?.focus());
+    }
   };
 
   const moveHighlight = (direction: 1 | -1) => {
@@ -138,14 +165,19 @@ export function Select({
   const selectedLabel = selectedIndex >= 0 ? normalizedOptions[selectedIndex]?.label : '';
   const listboxId = `${id}-listbox`;
   const activeOptionId = `${id}-option-${highlightedIndex}`;
+  const selectedLabelMulti =
+    selectedValues.length > 0
+      ? normalizedOptions.filter((opt) => selectedValues.includes(opt.value)).map((opt) => opt.label)
+      : [];
 
   return (
     <div className={`select-field ${isOpen ? 'is-open' : ''}`} ref={wrapperRef}>
       <select
         id={id}
         name={name}
-        value={selectedValue}
-        onChange={(event) => setSelectedValue(event.target.value)}
+        multiple={multi}
+        value={multi ? selectedValues : selectedValue}
+        onChange={handleNativeChange}
         required={required}
         aria-hidden="true"
         tabIndex={-1}
@@ -153,9 +185,11 @@ export function Select({
         aria-describedby={ariaDescribedBy}
         aria-invalid={ariaInvalid}
       >
-        <option value="" disabled>
-          {placeholder}
-        </option>
+        {!multi && (
+          <option value="" disabled>
+            {placeholder}
+          </option>
+        )}
         {normalizedOptions.map((opt) => (
           <option key={opt.value} value={opt.value}>
             {opt.label}
@@ -175,9 +209,23 @@ export function Select({
         onClick={() => setIsOpen((open) => !open)}
         onKeyDown={handleKeyDown}
       >
-        <span className={`select-value ${selectedLabel ? '' : 'is-placeholder'}`}>
-          {selectedLabel || placeholder}
-        </span>
+        {multi ? (
+          <span className={`select-value ${selectedValues.length ? '' : 'is-placeholder'}`}>
+            {selectedValues.length ? (
+              <span className="select-chips">
+                {selectedLabelMulti.map((label) => (
+                  <span key={label} className="select-chip">
+                    {label}
+                  </span>
+                ))}
+              </span>
+            ) : (
+              placeholder
+            )}
+          </span>
+        ) : (
+          <span className={`select-value ${selectedLabel ? '' : 'is-placeholder'}`}>{selectedLabel || placeholder}</span>
+        )}
         <span className="select-chevron" aria-hidden="true">
           <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M2 3l5 4 5-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
@@ -191,12 +239,13 @@ export function Select({
           role="listbox"
           id={listboxId}
           aria-activedescendant={activeOptionId}
+          aria-multiselectable={multi || undefined}
           tabIndex={-1}
           onKeyDown={handleKeyDown}
         >
           {normalizedOptions.map((opt, index) => {
             const isHighlighted = index === highlightedIndex;
-            const isSelected = opt.value === selectedValue;
+            const isSelected = multi ? selectedValues.includes(opt.value) : opt.value === selectedValue;
             return (
               <li
                 key={opt.value}
