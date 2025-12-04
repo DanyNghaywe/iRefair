@@ -263,6 +263,8 @@ export default function ReferrerPage() {
   const handleFieldChange = (field: string) => () => clearError(field);
   const handleSelectChange = (field: string) => () => clearError(field);
 
+  const toSingleValue = (value: string | string[]) => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
+
   const isValidEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
   const isValidUrl = (value: string) => {
     try {
@@ -560,9 +562,10 @@ export default function ReferrerPage() {
                       ariaDescribedBy="referrer-company-industry-error"
                       ariaInvalid={Boolean(errors['referrer-company-industry'])}
                       onChange={(value) => {
-                        setCompanyIndustrySelection(value);
+                        const next = toSingleValue(value);
+                        setCompanyIndustrySelection(next);
                         clearError('referrer-company-industry');
-                        if (value !== 'Other') clearError('referrer-company-industry-other');
+                        if (next !== 'Other') clearError('referrer-company-industry-other');
                       }}
                     />
                     <p className="field-error" id="referrer-company-industry-error" role="alert" aria-live="polite">
@@ -603,7 +606,7 @@ export default function ReferrerPage() {
                       ariaDescribedBy="work-type-error"
                       ariaInvalid={Boolean(errors['work-type'])}
                       onChange={(value) => {
-                        setWorkTypeSelection(value);
+                        setWorkTypeSelection(toSingleValue(value));
                         clearError('work-type');
                       }}
                     />
