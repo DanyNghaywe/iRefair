@@ -40,6 +40,7 @@ const translations: Record<
       country: string;
       company: string;
       companyIndustry: string;
+      companyIndustryOther: string;
       workType: string;
       linkedin: string;
       referralType: string;
