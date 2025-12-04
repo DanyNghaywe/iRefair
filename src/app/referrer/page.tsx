@@ -442,13 +442,8 @@ export default function ReferrerPage() {
               onReset={() => {
                 setErrors({});
                 setStatus('idle');
-                setLanguageSelection('');
-                setLocatedInCanada('');
-                setProvinceSelection('');
-                setAuthorizedCanada('');
-                setIndustrySelection('');
-                setEmploymentStatus('');
                 setCompanyIndustrySelection('');
+                setWorkTypeSelection('');
               }}
             >
               <fieldset>
