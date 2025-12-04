@@ -38,6 +38,7 @@ type ReferrerRow = {
 };
 
 let sheetsClient: ReturnType<typeof google.sheets> | null = null;
+const headersInitialized = new Set<string>();
 
 function getSheetsClient() {
   if (sheetsClient) return sheetsClient;
@@ -56,6 +57,29 @@ function getSheetsClient() {
   });
   sheetsClient = google.sheets({ version: 'v4', auth });
   return sheetsClient;
+}
+
+async function ensureHeaders(sheetName: string, headers: string[]) {
+  if (headersInitialized.has(sheetName)) return;
+  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
+  if (!spreadsheetId) {
+    throw new Error('Missing Google Sheets spreadsheet ID. Please set GOOGLE_SHEETS_SPREADSHEET_ID.');
+  }
+  const sheets = getSheetsClient();
+  const current = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!1:1`,
+  });
+  const firstRow = current.data.values?.[0] ?? [];
+  if (!firstRow.length) {
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range: `${sheetName}!1:1`,
+      valueInputOption: 'RAW',
+      requestBody: { values: [headers] },
+    });
+  }
+  headersInitialized.add(sheetName);
 }
 
 async function appendRow(sheetName: string, values: (string | number | null)[]) {
@@ -84,6 +108,25 @@ export function generateSubmissionId(prefix: 'CAND' | 'REF') {
 }
 
 export async function appendCandidateRow(row: CandidateRow) {
+  await ensureHeaders('Candidates', [
+    'ID',
+    'Timestamp',
+    'First Name',
+    'Middle Name',
+    'Family Name',
+    'Email',
+    'Phone',
+    'Located in Canada',
+    'Province',
+    'Work Authorization',
+    'Country of Origin',
+    'Languages',
+    'Languages Other',
+    'Industry Type',
+    'Industry Other',
+    'Employment Status',
+  ]);
+
   const timestamp = new Date().toISOString();
   await appendRow('Candidates', [
     row.id,
@@ -106,6 +149,24 @@ export async function appendCandidateRow(row: CandidateRow) {
 }
 
 export async function appendReferrerRow(row: ReferrerRow) {
+  await ensureHeaders('Referrers', [
+    'ID',
+    'Timestamp',
+    'Name',
+    'Email',
+    'Phone',
+    'Country',
+    'Company',
+    'Company Industry',
+    'Company Industry Other',
+    'Work Type',
+    'Target Roles',
+    'Regions',
+    'Referral Type',
+    'Monthly Slots',
+    'Constraints',
+  ]);
+
   const timestamp = new Date().toISOString();
   await appendRow('Referrers', [
     row.id,
