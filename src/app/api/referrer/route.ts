@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sendMail } from '@/lib/mailer';
+import { appendReferrerRow, generateSubmissionId } from '@/lib/sheets';
 
 type ReferrerPayload = {
   name?: string;
@@ -8,6 +9,13 @@ type ReferrerPayload = {
   regions?: string;
   referralType?: string;
   monthlySlots?: string;
+  phone?: string;
+  country?: string;
+  company?: string;
+  companyIndustry?: string;
+  companyIndustryOther?: string;
+  workType?: string;
+  constraints?: string;
 };
 
 const subject = 'Thanks for offering referrals – iRefair';
@@ -31,6 +39,9 @@ const htmlTemplate = `<!DOCTYPE html>
                 </div>
                 <div style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(217,240,255,0.75);margin-top:4px;">
                   Referral offer received
+                </div>
+                <div style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:rgba(227,242,255,0.8);margin-top:6px;">
+                  Request ID: <strong>{{requestId}}</strong>
                 </div>
               </td>
             </tr>
@@ -81,6 +92,8 @@ const textTemplate = `Hi {{name}},
 
 Thank you for offering referrals. We'll reach out when we have a candidate who matches the teams and roles you cover.
 
+Request ID: {{requestId}}
+
 Snapshot you shared:
 - Roles you cover: {{targetRoles}}
 - Regions: {{regions}}
@@ -105,12 +118,22 @@ export async function POST(request: Request) {
     const body: ReferrerPayload = await request.json();
     const name = sanitize(body.name);
     const email = sanitize(body.email);
+    const phone = sanitize(body.phone);
+    const country = sanitize(body.country);
+    const company = sanitize(body.company);
+    const companyIndustry = sanitize(body.companyIndustry);
+    const companyIndustryOther = sanitize(body.companyIndustryOther);
+    const workType = sanitize(body.workType);
+    const constraints = sanitize(body.constraints);
 
     if (!email) {
       return NextResponse.json({ ok: false, error: 'Missing required field: email.' }, { status: 400 });
     }
 
+    const requestId = generateSubmissionId('REF');
+
     const values = {
+      requestId,
       name: name || 'there',
       targetRoles: sanitize(body.targetRoles) || 'Not provided',
       regions: sanitize(body.regions) || 'Not provided',
@@ -120,6 +143,23 @@ export async function POST(request: Request) {
 
     const html = fillTemplate(htmlTemplate, values);
     const text = fillTemplate(textTemplate, values);
+
+    await appendReferrerRow({
+      id: requestId,
+      name,
+      email,
+      phone,
+      country,
+      company,
+      companyIndustry,
+      companyIndustryOther,
+      workType,
+      targetRoles: sanitize(body.targetRoles),
+      regions: sanitize(body.regions),
+      referralType: sanitize(body.referralType),
+      monthlySlots: sanitize(body.monthlySlots),
+      constraints,
+    });
 
     await sendMail({
       to: email,

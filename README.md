@@ -13,6 +13,16 @@ Set these environment variables (values from your Hostinger panel):
 
 Emails are sent via `src/lib/mailer.ts` and the candidate confirmation API is at `src/app/api/candidate/route.ts`.
 
+## Google Sheets storage
+
+Set these environment variables to store submissions in Google Sheets:
+
+- `GOOGLE_SHEETS_SPREADSHEET_ID`
+- `GOOGLE_SHEETS_CLIENT_EMAIL`
+- `GOOGLE_SHEETS_PRIVATE_KEY` (keep `\n` line breaks)
+
+Give the service account Editor access to the spreadsheet, with tabs named `Candidates` and `Referrers`. Submission IDs are generated and included in emails.
+
 ## Getting Started
 
 First, run the development server:
