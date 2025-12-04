@@ -49,7 +49,11 @@ function getSheetsClient() {
     throw new Error('Missing Google Sheets credentials. Please set GOOGLE_SHEETS_CLIENT_EMAIL and GOOGLE_SHEETS_PRIVATE_KEY.');
   }
 
-  const auth = new google.auth.JWT(clientEmail, undefined, privateKey.replace(/\\n/g, '\n'), SCOPES);
+  const auth = new google.auth.JWT({
+    email: clientEmail,
+    key: privateKey.replace(/\\n/g, '\n'),
+    scopes: SCOPES,
+  });
   sheetsClient = google.sheets({ version: 'v4', auth });
   return sheetsClient;
 }
