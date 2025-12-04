@@ -155,8 +155,6 @@ const translations: Record<
       'My participation is entirely optional, and I can opt out at any time via contacting info@andbeyondca.com.',
     ],
     consentAgreement: 'I have read, understood, and agree to the above terms.',
-    consentAgreement: 'I have read, understood, and agree to the above terms.',
-    consentAgreement: 'I have read, understood, and agree to the above terms.',
   },
   fr: {
     roleSwitch: { prompt: 'Pas référent ?', link: 'Passer au candidat' },
