@@ -1,9 +1,13 @@
 import { NextResponse } from 'next/server';
 import { sendMail } from '@/lib/mailer';
+import { appendCandidateRow, generateSubmissionId } from '@/lib/sheets';
 
 type CandidatePayload = {
   firstName?: string;
+  middleName?: string;
+  familyName?: string;
   email?: string;
+  phone?: string;
   locatedCanada?: string;
   province?: string;
   authorizedCanada?: string;
@@ -40,6 +44,9 @@ const htmlTemplate = `<!DOCTYPE html>
                 </div>
                 <div style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(217,240,255,0.75);margin-top:4px;">
                   Referral request received
+                </div>
+                <div style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:rgba(227,242,255,0.8);margin-top:6px;">
+                  Request ID: <strong>{{requestId}}</strong>
                 </div>
               </td>
             </tr>
@@ -144,6 +151,8 @@ const textTemplate = `Hi {{firstName}},
 
 Thanks for submitting your referral request to iRefair.
 
+Request ID: {{requestId}}
+
 Here’s a quick snapshot of what you shared:
 - Location: {{location}}
 - Work authorization: {{authorization}}
@@ -173,11 +182,16 @@ export async function POST(request: Request) {
   try {
     const body: CandidatePayload = await request.json();
     const firstName = sanitize(body.firstName);
+    const middleName = sanitize(body.middleName);
+    const familyName = sanitize(body.familyName);
     const email = sanitize(body.email);
+    const phone = sanitize(body.phone);
 
     if (!firstName || !email) {
       return NextResponse.json({ ok: false, error: 'Missing required fields: firstName and email.' }, { status: 400 });
     }
+
+    const requestId = generateSubmissionId('CAND');
 
     const locationSnapshot = (() => {
       const locatedCanada = sanitize(body.locatedCanada);
@@ -213,6 +227,7 @@ export async function POST(request: Request) {
     })();
 
     const values = {
+      requestId,
       firstName,
       location: locationSnapshot,
       authorization: authorizationSnapshot,
@@ -222,6 +237,24 @@ export async function POST(request: Request) {
 
     const html = fillTemplate(htmlTemplate, values);
     const text = fillTemplate(textTemplate, values);
+
+    await appendCandidateRow({
+      id: requestId,
+      firstName,
+      middleName,
+      familyName,
+      email,
+      phone,
+      locatedCanada: sanitize(body.locatedCanada),
+      province: sanitize(body.province),
+      authorizedCanada: sanitize(body.authorizedCanada),
+      countryOfOrigin: sanitize(body.countryOfOrigin),
+      languages: languagesSnapshot,
+      languagesOther: sanitize(body.languagesOther),
+      industryType: sanitize(body.industryType),
+      industryOther: sanitize(body.industryOther),
+      employmentStatus: sanitize(body.employmentStatus),
+    });
 
     await sendMail({
       to: email,
