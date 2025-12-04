@@ -367,6 +367,8 @@ export default function CandidatePage() {
     return typeAllowed || extensionAllowed;
   };
 
+  const toSingleValue = (value: string | string[]) => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
+
   const getFormValues = (formData: FormData) => {
     const valueOf = (key: string) => ((formData.get(key) as string | null)?.trim() || '');
     return {
@@ -753,9 +755,10 @@ export default function CandidatePage() {
                       ariaDescribedBy="located-canada-error"
                       ariaInvalid={Boolean(errors['located-canada'])}
                       onChange={(value) => {
-                        setLocatedInCanada(value);
+                        const next = toSingleValue(value);
+                        setLocatedInCanada(next);
                         clearError('located-canada');
-                        if (value !== 'Yes') {
+                        if (next !== 'Yes') {
                           setProvinceSelection('');
                           clearError('province');
                         }
@@ -778,7 +781,7 @@ export default function CandidatePage() {
                         ariaDescribedBy="province-error"
                         ariaInvalid={Boolean(errors.province)}
                         onChange={(value) => {
-                          setProvinceSelection(value);
+                          setProvinceSelection(toSingleValue(value));
                           clearError('province');
                         }}
                       />
@@ -799,7 +802,7 @@ export default function CandidatePage() {
                       ariaDescribedBy="authorized-canada-error"
                       ariaInvalid={Boolean(errors['authorized-canada'])}
                       onChange={(value) => {
-                        setAuthorizedCanada(value);
+                        setAuthorizedCanada(toSingleValue(value));
                         clearError('authorized-canada');
                       }}
                     />
@@ -825,9 +828,10 @@ export default function CandidatePage() {
                       ariaDescribedBy="industry-type-error"
                       ariaInvalid={Boolean(errors['industry-type'])}
                       onChange={(value) => {
-                        setIndustrySelection(value);
+                        const next = toSingleValue(value);
+                        setIndustrySelection(next);
                         clearError('industry-type');
-                        if (value !== 'Other') {
+                        if (next !== 'Other') {
                           clearError('industry-other');
                         }
                       }}
@@ -848,7 +852,7 @@ export default function CandidatePage() {
                       ariaDescribedBy="employment-status-error"
                       ariaInvalid={Boolean(errors['employment-status'])}
                       onChange={(value) => {
-                        setEmploymentStatus(value);
+                        setEmploymentStatus(toSingleValue(value));
                         clearError('employment-status');
                       }}
                     />
