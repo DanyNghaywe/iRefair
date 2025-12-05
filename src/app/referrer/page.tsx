@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { ParticlesBackground } from '@/components/ParticlesBackground';
 import { Select } from '@/components/Select';
 import { useNavigationLoader } from '@/components/NavigationLoader';
@@ -275,6 +275,8 @@ export default function ReferrerPage() {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
   const [language, setLanguage] = useState<Language>('en');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const linkedinInputRef = useRef<HTMLInputElement | null>(null);
   const [companyIndustrySelection, setCompanyIndustrySelection] = useState('');
   const [workTypeSelection, setWorkTypeSelection] = useState('');
   const t = translations[language];
@@ -294,16 +296,52 @@ export default function ReferrerPage() {
     });
   };
 
+  const scrollToFirstError = () => {
+    requestAnimationFrame(() => {
+      const formElement = formRef.current;
+      if (!formElement) return;
+      const firstErrorField = formElement.querySelector('.has-error') as HTMLElement | null;
+      if (firstErrorField) {
+        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const focusTarget = firstErrorField.querySelector<HTMLElement>(
+          'input, select, textarea, button, [role="combobox"], [tabindex]:not([tabindex="-1"])'
+        );
+        focusTarget?.focus({ preventScroll: true });
+      }
+    });
+  };
+
   const handleFieldChange = (field: string) => () => clearError(field);
   const handleSelectChange = (field: string) => () => clearError(field);
+  const handleLinkedInChange = () => {
+    linkedinInputRef.current?.setCustomValidity('');
+    clearError('referrer-linkedin');
+  };
 
   const toSingleValue = (value: string | string[]) => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
 
   const isValidEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
-  const isValidUrl = (value: string) => {
+  const isValidLinkedInProfileUrl = (value: string) => {
     try {
       const url = new URL(value);
-      return Boolean(url.protocol) && Boolean(url.hostname);
+      const protocol = url.protocol.toLowerCase();
+      const hostname = url.hostname.toLowerCase();
+      if (protocol !== 'http:' && protocol !== 'https:') return false;
+      if (hostname !== 'linkedin.com' && !hostname.endsWith('.linkedin.com')) return false;
+
+      const segments = url.pathname
+        .split('/')
+        .filter(Boolean)
+        .map((segment) => segment.toLowerCase());
+
+      if (segments[0] === 'mwlite') segments.shift();
+      if (!segments.length) return false;
+
+      const [first, second] = segments;
+      if ((first === 'in' || first === 'pub') && Boolean(second)) return true;
+      if (first === 'profile' && second === 'view') return url.searchParams.has('id');
+
+      return false;
     } catch {
       return false;
     }
@@ -361,10 +399,6 @@ export default function ReferrerPage() {
     if (!values.phone) nextErrors['referrer-phone'] = 'Please enter your phone number.';
     if (!values.country) nextErrors['referrer-country'] = 'Please enter your country of origin.';
 
-    if (values.linkedin && !isValidUrl(values.linkedin)) {
-      nextErrors['referrer-linkedin'] = 'Please enter a valid URL.';
-    }
-
     if (!values.referralType) nextErrors['referral-type'] = 'Please select a referral type.';
     if (!values.monthlySlots) nextErrors['monthly-slots'] = 'Please select monthly slots.';
 
@@ -381,10 +415,28 @@ export default function ReferrerPage() {
     const values = getFormValues(formData);
     const validationErrors = validateValues(values);
 
-    if (Object.keys(validationErrors).length) {
+    const linkedinInput = linkedinInputRef.current;
+    const linkedinInvalid = Boolean(values.linkedin) && !isValidLinkedInProfileUrl(values.linkedin);
+    linkedinInput?.setCustomValidity('');
+    if (linkedinInvalid && linkedinInput) {
+      linkedinInput.setCustomValidity('Please enter a valid LinkedIn profile URL.');
+    }
+
+    const hasErrors = Object.keys(validationErrors).length > 0;
+
+    if (linkedinInvalid) {
       setErrors(validationErrors);
       setStatus('idle');
       setSubmitting(false);
+      linkedinInput?.reportValidity();
+      return;
+    }
+
+    if (hasErrors) {
+      setErrors(validationErrors);
+      setStatus('idle');
+      setSubmitting(false);
+      scrollToFirstError();
       return;
     }
 
@@ -479,12 +531,14 @@ export default function ReferrerPage() {
             </div>
 
             <form
+              ref={formRef}
               className="referral-form"
               action="#"
               method="post"
               onSubmit={handleSubmit}
               onReset={() => {
                 setErrors({});
+                linkedinInputRef.current?.setCustomValidity('');
                 setStatus('idle');
                 setCompanyIndustrySelection('');
                 setWorkTypeSelection('');
@@ -563,10 +617,11 @@ export default function ReferrerPage() {
                       id="referrer-linkedin"
                       name="referrer-linkedin"
                       type="url"
+                      ref={linkedinInputRef}
                       aria-invalid={Boolean(errors['referrer-linkedin'])}
                       aria-describedby="referrer-linkedin-error"
                       placeholder={t.placeholders.linkedin}
-                      onChange={handleFieldChange('referrer-linkedin')}
+                      onChange={handleLinkedInChange}
                     />
                     <p className="field-error" id="referrer-linkedin-error" role="alert" aria-live="polite">
                       {errors['referrer-linkedin']}
