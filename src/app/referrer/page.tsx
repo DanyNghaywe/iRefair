@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { FormEvent, useEffect, useState } from 'react';
 import { ParticlesBackground } from '@/components/ParticlesBackground';
 import { Select } from '@/components/Select';
+import { useNavigationLoader } from '@/components/NavigationLoader';
 
 type Language = 'en' | 'fr';
 
@@ -269,6 +270,7 @@ const translations: Record<
 };
 
 export default function ReferrerPage() {
+  const { startNavigation } = useNavigationLoader();
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
   const [language, setLanguage] = useState<Language>('en');
@@ -439,7 +441,15 @@ export default function ReferrerPage() {
           <section className="card referrer-card" aria-labelledby="referrer-title">
             <div className="role-switch">
               <span className="role-switch__text">
-                {t.roleSwitch.prompt} <Link href="/candidate">{t.roleSwitch.link}</Link>
+                {t.roleSwitch.prompt}{' '}
+                <Link
+                  href="/candidate"
+                  onClick={() => {
+                    startNavigation('/candidate');
+                  }}
+                >
+                  {t.roleSwitch.link}
+                </Link>
               </span>
             </div>
             <div className="language-toggle" role="group" aria-label={t.languageLabel}>

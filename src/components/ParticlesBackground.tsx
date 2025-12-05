@@ -17,8 +17,9 @@ const PARTICLE_COUNT = 60;
 const MAX_DISTANCE = 120;
 const MAX_SPEED = 0.35;
 
-export function ParticlesBackground() {
+export function ParticlesBackground({ className }: { className?: string }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const classes = ['particles-layer', className].filter(Boolean).join(' ');
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -125,5 +126,5 @@ export function ParticlesBackground() {
     };
   }, []);
 
-  return <canvas ref={canvasRef} className="particles-layer" aria-hidden="true" />;
+  return <canvas ref={canvasRef} className={classes} aria-hidden="true" />;
 }

@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import { ParticlesBackground } from '@/components/ParticlesBackground';
 import { Select } from '@/components/Select';
+import { useNavigationLoader } from '@/components/NavigationLoader';
 
 type Language = 'en' | 'fr';
 
@@ -375,6 +376,7 @@ const translations: Record<
 };
 
 export default function CandidatePage() {
+  const { startNavigation } = useNavigationLoader();
   const [resumeName, setResumeName] = useState('');
   const resumeInputRef = useRef<HTMLInputElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -611,7 +613,15 @@ export default function CandidatePage() {
           <section className="card referral-card" aria-labelledby="referral-title">
             <div className="role-switch">
               <span className="role-switch__text">
-                {t.switchText.prompt} <Link href="/referrer">{t.switchText.link}</Link>
+                {t.switchText.prompt}{' '}
+                <Link
+                  href="/referrer"
+                  onClick={() => {
+                    startNavigation('/referrer');
+                  }}
+                >
+                  {t.switchText.link}
+                </Link>
               </span>
             </div>
             <div className="language-toggle" role="group" aria-label={t.languageLabel}>
