@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { ParticlesBackground } from '@/components/ParticlesBackground';
+import { useNavigationLoader } from '@/components/NavigationLoader';
 
 const roles = [
   {
@@ -20,6 +21,7 @@ const roles = [
 
 export default function Home() {
   const router = useRouter();
+  const { startNavigation } = useNavigationLoader();
 
   return (
     <div className="app">
@@ -43,7 +45,10 @@ export default function Home() {
                   type="button"
                   className={`role-option role-option--${role.id}`}
                   role="listitem"
-                  onClick={() => router.push(role.path)}
+                  onClick={() => {
+                    startNavigation(role.path);
+                    router.push(role.path);
+                  }}
                 >
                   <span className="role-option-title">{role.label}</span>
                   <span className="role-option-sub">{role.description}</span>
