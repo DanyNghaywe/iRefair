@@ -20,6 +20,8 @@ type CandidatePayload = {
 };
 
 const subject = 'We’ve received your referral request – iRefair';
+const jobOpeningsUrl =
+  'https://docs.google.com/document/d/1z6s9qb7G_7NUKlgar0eCzFfFvhfe4tW6L45S1wFvuQk/edit?tab=t.0';
 
 const htmlTemplate = `<!DOCTYPE html>
 <html lang="en">
@@ -126,6 +128,14 @@ const htmlTemplate = `<!DOCTYPE html>
                       <p style="margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;line-height:1.7;color:rgba(205,228,244,0.9);">
                         Thanks again for trusting iRefair with your search. 💼
                       </p>
+                      <div style="margin:16px 0 0 0;">
+                        <a href="${jobOpeningsUrl}" style="display:inline-block;padding:12px 16px;border-radius:10px;background:linear-gradient(120deg,#5ae6ff,#5d8bff);color:#041923;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,0.35);">
+                          See who’s hiring in Canada right now
+                        </a>
+                        <p style="margin:10px 0 0 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;line-height:1.6;color:rgba(205,228,244,0.9);">
+                          Quick company notes, what they need, and links to apply.
+                        </p>
+                      </div>
                     </td>
                   </tr>
                 </table>
@@ -158,6 +168,9 @@ Here’s a quick snapshot of what you shared:
 - Work authorization: {{authorization}}
 - Industry focus: {{industry}}
 - Languages: {{languages}}
+
+See who’s hiring in Canada right now (quick company notes, what they need, links to apply):
+${jobOpeningsUrl}
 
 What happens next:
 1) We review your profile for clarity and completeness.
