@@ -22,6 +22,7 @@ type CandidatePayload = {
 const subject = 'We’ve received your referral request – iRefair';
 const jobOpeningsUrl =
   'https://docs.google.com/document/d/1z6s9qb7G_7NUKlgar0eCzFfFvhfe4tW6L45S1wFvuQk/edit?tab=t.0';
+const ineligibleSubject = 'About your referral request - iRefair';
 
 const htmlTemplate = `<!DOCTYPE html>
 <html lang="en">
@@ -182,6 +183,81 @@ If anything changes (new resume, updated targets, different locations), just rep
 — The iRefair team
 `;
 
+const ineligibleHtmlTemplate = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>About your referral request - iRefair</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body style="margin:0;padding:0;background:#041923;">
+    <div style="display:none;max-height:0;overflow:hidden;font-size:0;line-height:0;">
+      We are sorry, but we cannot proceed with your referral request right now.
+    </div>
+
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#041923;padding:32px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:640px;border-radius:24px;background:radial-gradient(circle at top left, #1d728f 0, #041923 50%, #020b10 100%);box-shadow:0 18px 40px rgba(0,0,0,0.6);overflow:hidden;border:1px solid rgba(255,255,255,0.07);">
+            <tr>
+              <td style="padding:22px 28px 10px 28px;text-align:left;">
+                <div style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:20px;font-weight:700;color:#f5fbff;">
+                  iRefair
+                </div>
+                <div style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(217,240,255,0.75);margin-top:4px;">
+                  Referral request update
+                </div>
+                <div style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:rgba(227,242,255,0.8);margin-top:6px;">
+                  Request ID: <strong>{{requestId}}</strong>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 16px 28px 16px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-radius:18px;background:rgba(2,16,24,0.96);border:1px solid rgba(255,255,255,0.06);">
+                  <tr>
+                    <td style="padding:22px 24px 12px 24px;">
+                      <h1 style="margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:22px;line-height:1.4;font-weight:700;color:#f5fbff;">
+                        Hi {{firstName}}, thank you for your interest in iRefair.
+                      </h1>
+                      <p style="margin:12px 0 12px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.7;color:rgba(227,242,255,0.88);">
+                        We reviewed the details you shared. Because you indicated that you are not located in Canada and are not legally authorized to work in Canada, we cannot move forward with a referral at this time. This means you are not eligible for our referral program right now. We are sorry about this.
+                      </p>
+                      <p style="margin:0 0 12px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.7;color:rgba(227,242,255,0.88);">
+                        Our program currently supports candidates who are in Canada and have work authorization. If your situation changes, reply to this email or submit a new request and we will gladly revisit it.
+                      </p>
+                      <p style="margin:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.7;color:rgba(205,228,244,0.9);">
+                        Thank you for understanding.<br />
+                        The iRefair team
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>
+`;
+
+const ineligibleTextTemplate = `Hi {{firstName}},
+
+Thanks for your interest in iRefair.
+
+We reviewed the details you shared. Because you indicated that you are not located in Canada and are not legally authorized to work in Canada, we cannot move forward with a referral at this time. We are sorry about this.
+This means you are not eligible for our referral program right now.
+
+Our program currently supports candidates who are in Canada and have work authorization. If your situation changes, reply to this email or submit a new request and we will gladly revisit it.
+
+Request ID: {{requestId}}
+
+Thank you for understanding.
+- The iRefair team
+`;
+
 function fillTemplate(template: string, values: Record<string, string>) {
   return template.replace(/{{(.*?)}}/g, (_, key) => values[key.trim()] ?? '');
 }
@@ -199,35 +275,38 @@ export async function POST(request: Request) {
     const familyName = sanitize(body.familyName);
     const email = sanitize(body.email);
     const phone = sanitize(body.phone);
+    const locatedCanada = sanitize(body.locatedCanada);
+    const province = sanitize(body.province);
+    const authorizedCanada = sanitize(body.authorizedCanada);
+    const countryOfOrigin = sanitize(body.countryOfOrigin);
+    const industryType = sanitize(body.industryType);
+    const industryOther = sanitize(body.industryOther);
+    const employmentStatus = sanitize(body.employmentStatus);
+    const languagesOther = sanitize(body.languagesOther);
 
     if (!firstName || !email) {
       return NextResponse.json({ ok: false, error: 'Missing required fields: firstName and email.' }, { status: 400 });
     }
 
     const requestId = generateSubmissionId('CAND');
+    const isIneligible =
+      locatedCanada.toLowerCase() === 'no' && authorizedCanada.toLowerCase() === 'no';
 
     const locationSnapshot = (() => {
-      const locatedCanada = sanitize(body.locatedCanada);
-      const province = sanitize(body.province);
-      const country = sanitize(body.countryOfOrigin);
-
       if (locatedCanada === 'Yes') return province ? `Canada — ${province}` : 'Canada';
-      if (locatedCanada === 'No' && country) return country;
-      return country || 'Not provided';
+      if (locatedCanada === 'No' && countryOfOrigin) return countryOfOrigin;
+      return countryOfOrigin || 'Not provided';
     })();
 
-    const authorizationSnapshot = sanitize(body.authorizedCanada) || 'Not provided';
+    const authorizationSnapshot = authorizedCanada || 'Not provided';
 
     const industrySnapshot = (() => {
-      const industryType = sanitize(body.industryType);
-      const industryOther = sanitize(body.industryOther);
       if (industryType === 'Other' && industryOther) return industryOther;
       return industryType || 'Not provided';
     })();
 
     const languagesSnapshot = (() => {
       const languagesRaw = sanitize(body.languages);
-      const languagesOther = sanitize(body.languagesOther);
 
       const baseList = languagesRaw
         .split(',')
@@ -248,8 +327,13 @@ export async function POST(request: Request) {
       languages: languagesSnapshot,
     };
 
-    const html = fillTemplate(htmlTemplate, values);
-    const text = fillTemplate(textTemplate, values);
+    const html = isIneligible
+      ? fillTemplate(ineligibleHtmlTemplate, { requestId, firstName })
+      : fillTemplate(htmlTemplate, values);
+    const text = isIneligible
+      ? fillTemplate(ineligibleTextTemplate, { requestId, firstName })
+      : fillTemplate(textTemplate, values);
+    const emailSubject = isIneligible ? ineligibleSubject : subject;
 
     await appendCandidateRow({
       id: requestId,
@@ -258,20 +342,20 @@ export async function POST(request: Request) {
       familyName,
       email,
       phone,
-      locatedCanada: sanitize(body.locatedCanada),
-      province: sanitize(body.province),
-      authorizedCanada: sanitize(body.authorizedCanada),
-      countryOfOrigin: sanitize(body.countryOfOrigin),
+      locatedCanada,
+      province,
+      authorizedCanada,
+      countryOfOrigin,
       languages: languagesSnapshot,
-      languagesOther: sanitize(body.languagesOther),
-      industryType: sanitize(body.industryType),
-      industryOther: sanitize(body.industryOther),
-      employmentStatus: sanitize(body.employmentStatus),
+      languagesOther,
+      industryType,
+      industryOther,
+      employmentStatus,
     });
 
     await sendMail({
       to: email,
-      subject,
+      subject: emailSubject,
       html,
       text,
     });
