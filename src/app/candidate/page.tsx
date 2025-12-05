@@ -455,7 +455,6 @@ export default function CandidatePage() {
     const nextErrors: Record<string, string> = {};
 
     if (!values.firstName) nextErrors['first-name'] = 'Please enter your first name.';
-    if (!values.middleName) nextErrors['middle-name'] = 'Please enter your middle name.';
     if (!values.familyName) nextErrors['family-name'] = 'Please enter your family name.';
 
     if (!values.email) {
@@ -504,9 +503,7 @@ export default function CandidatePage() {
       nextErrors['country-of-origin'] = 'Please enter your country of origin.';
     }
 
-    if (!values.linkedin) {
-      nextErrors.linkedin = 'Please enter your LinkedIn profile.';
-    } else if (!isValidUrl(values.linkedin)) {
+    if (values.linkedin && !isValidUrl(values.linkedin)) {
       nextErrors.linkedin = 'Please enter a valid URL.';
     }
 
@@ -686,12 +683,13 @@ export default function CandidatePage() {
                     </p>
                   </div>
                   <div className={fieldClass('field', 'middle-name')}>
-                    <label htmlFor="middle-name">{t.labels.middleName}</label>
+                    <label htmlFor="middle-name">
+                      {t.labels.middleName} <span className="optional">{t.optional}</span>
+                    </label>
                     <input
                       id="middle-name"
                       name="middle-name"
                       type="text"
-                      required
                       aria-invalid={Boolean(errors['middle-name'])}
                       aria-describedby="middle-name-error"
                       onChange={handleFieldChange('middle-name')}
@@ -929,12 +927,13 @@ export default function CandidatePage() {
                     </p>
                   </div>
                   <div className={fieldClass('field', 'linkedin')}>
-                    <label htmlFor="linkedin">{t.labels.linkedin}</label>
+                    <label htmlFor="linkedin">
+                      {t.labels.linkedin} <span className="optional">{t.optional}</span>
+                    </label>
                     <input
                       id="linkedin"
                       name="linkedin"
                       type="url"
-                      required
                       aria-invalid={Boolean(errors.linkedin)}
                       aria-describedby="linkedin-error"
                       placeholder={t.placeholders.linkedin}
