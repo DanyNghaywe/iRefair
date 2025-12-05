@@ -7,7 +7,8 @@ import { Select } from '@/components/Select';
 
 type Language = 'en' | 'fr';
 
-const LANGUAGE_OPTIONS: string[] = ['English', 'Arabic', 'French', 'Other'];
+// Stable values; labels are localized below
+const LANGUAGE_VALUES = ['English', 'Arabic', 'French', 'Other'] as const;
 const ALLOWED_RESUME_TYPES = [
   'application/pdf',
   'application/msword',
@@ -31,7 +32,8 @@ const PROVINCES: string[] = [
   'Nunavut',
   'Yukon',
 ];
-const INDUSTRY_OPTIONS: string[] = [
+// Stable values; labels are localized below
+const INDUSTRY_VALUES: string[] = [
   'Information Technology (IT)',
   'Finance / Banking / Accounting',
   'Healthcare / Medical',
@@ -53,7 +55,63 @@ const INDUSTRY_OPTIONS: string[] = [
   'Compliance/ Audit/ Monitoring & Evaluation',
   'Other',
 ];
-const EMPLOYMENT_OPTIONS: string[] = ['Yes', 'No', 'Temporary Work'];
+// Stable values; labels are localized below
+const EMPLOYMENT_VALUES: string[] = ['Yes', 'No', 'Temporary Work'];
+
+type Option = { value: string; label: string };
+
+function yesNoOptions(lang: Language): Option[] {
+  const [yes, no] = lang === 'fr' ? ['Oui', 'Non'] : ['Yes', 'No'];
+  return [
+    { value: 'Yes', label: yes },
+    { value: 'No', label: no },
+  ];
+}
+
+function languageOptions(lang: Language): Option[] {
+  const labels =
+    lang === 'fr'
+      ? { English: 'Anglais', Arabic: 'Arabe', French: 'Français', Other: 'Autre' }
+      : { English: 'English', Arabic: 'Arabic', French: 'French', Other: 'Other' };
+  return LANGUAGE_VALUES.map((v) => ({ value: v, label: labels[v] }));
+}
+
+function industryOptions(lang: Language): Option[] {
+  if (lang === 'fr') {
+    const map: Record<string, string> = {
+      'Information Technology (IT)': "Technologies de l'information (TI)",
+      'Finance / Banking / Accounting': 'Finance / Banque / Comptabilité',
+      'Healthcare / Medical': 'Santé / Médical',
+      'Education / Academia': 'Éducation / Université',
+      'Engineering / Construction': 'Ingénierie / Construction',
+      'Marketing / Advertising / PR': 'Marketing / Publicité / RP',
+      'Media / Entertainment / Journalism': 'Médias / Divertissement / Journalisme',
+      'Legal / Law': 'Juridique / Droit',
+      'Human Resources / Recruitment': 'Ressources humaines / Recrutement',
+      'Retail / E-commerce': 'Commerce de détail / E-commerce',
+      'Hospitality / Travel / Tourism': 'Hôtellerie / Voyage / Tourisme',
+      'Logistics / Transportation': 'Logistique / Transport',
+      Manufacturing: 'Fabrication',
+      'Non-Profit / NGO': 'Organisme à but non lucratif / ONG',
+      'Real Estate': 'Immobilier',
+      'Energy / Utilities': 'Énergie / Services publics',
+      Telecommunications: 'Télécommunications',
+      'Agriculture / Food Industry': 'Agriculture / Agroalimentaire',
+      'Compliance/ Audit/ Monitoring & Evaluation': 'Conformité / Audit / Suivi & Évaluation',
+      Other: 'Autre',
+    };
+    return INDUSTRY_VALUES.map((v) => ({ value: v, label: map[v] ?? v }));
+  }
+  return INDUSTRY_VALUES.map((v) => ({ value: v, label: v }));
+}
+
+function employmentOptions(lang: Language): Option[] {
+  if (lang === 'fr') {
+    const map: Record<string, string> = { Yes: 'Oui', No: 'Non', 'Temporary Work': 'Travail temporaire' };
+    return EMPLOYMENT_VALUES.map((v) => ({ value: v, label: map[v] ?? v }));
+  }
+  return EMPLOYMENT_VALUES.map((v) => ({ value: v, label: v }));
+}
 
 const translations: Record<
   Language,
@@ -683,7 +741,7 @@ export default function CandidatePage() {
                     <Select
                       id="languages"
                       name="languages"
-                      options={LANGUAGE_OPTIONS}
+                      options={languageOptions(language)}
                       placeholder={t.selects.selectLabel}
                       required
                       multi
@@ -748,7 +806,7 @@ export default function CandidatePage() {
                     <Select
                       id="located-canada"
                       name="located-canada"
-                      options={['Yes', 'No']}
+                      options={yesNoOptions(language)}
                       placeholder={t.selects.selectLabel}
                       required
                       value={locatedInCanada}
@@ -795,7 +853,7 @@ export default function CandidatePage() {
                     <Select
                       id="authorized-canada"
                       name="authorized-canada"
-                      options={['Yes', 'No']}
+                      options={yesNoOptions(language)}
                       placeholder={t.selects.selectLabel}
                       required
                       value={authorizedCanada}
@@ -821,7 +879,7 @@ export default function CandidatePage() {
                     <Select
                       id="industry-type"
                       name="industry-type"
-                      options={INDUSTRY_OPTIONS}
+                      options={industryOptions(language)}
                       placeholder={t.selects.selectLabel}
                       required
                       value={industrySelection}
@@ -845,7 +903,7 @@ export default function CandidatePage() {
                     <Select
                       id="employment-status"
                       name="employment-status"
-                      options={EMPLOYMENT_OPTIONS}
+                      options={employmentOptions(language)}
                       placeholder={t.selects.selectLabel}
                       required
                       value={employmentStatus}

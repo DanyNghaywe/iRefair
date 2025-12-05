@@ -7,7 +7,8 @@ import { Select } from '@/components/Select';
 
 type Language = 'en' | 'fr';
 
-const COMPANY_INDUSTRY_OPTIONS: string[] = [
+// Stable values; labels are localized below
+const COMPANY_INDUSTRY_VALUES: string[] = [
   'Technology',
   'Finance',
   'Healthcare',
@@ -21,6 +22,37 @@ const COMPANY_INDUSTRY_OPTIONS: string[] = [
   'Compliance / Audit',
   'Other',
 ];
+
+type Option = { value: string; label: string };
+
+function companyIndustryOptions(lang: Language): Option[] {
+  if (lang === 'fr') {
+    const map: Record<string, string> = {
+      Technology: 'Technologie',
+      Finance: 'Finance',
+      Healthcare: 'Santé',
+      Education: 'Éducation',
+      Retail: 'Commerce de détail',
+      Hospitality: 'Hôtellerie',
+      'Marketing / Media': 'Marketing / Médias',
+      'Engineering / Construction': 'Ingénierie / Construction',
+      Consulting: 'Conseil',
+      'Not for profit': 'Organisme à but non lucratif',
+      'Compliance / Audit': 'Conformité / Audit',
+      Other: 'Autre',
+    };
+    return COMPANY_INDUSTRY_VALUES.map((v) => ({ value: v, label: map[v] ?? v }));
+  }
+  return COMPANY_INDUSTRY_VALUES.map((v) => ({ value: v, label: v }));
+}
+
+function workTypeOptions(lang: Language): Option[] {
+  if (lang === 'fr') {
+    const map: Record<string, string> = { Physical: 'Sur site', Remote: 'Télétravail', Hybrid: 'Hybride' };
+    return ['Physical', 'Remote', 'Hybrid'].map((v) => ({ value: v, label: map[v] }));
+  }
+  return ['Physical', 'Remote', 'Hybrid'].map((v) => ({ value: v, label: v }));
+}
 
 const translations: Record<
   Language,
@@ -555,7 +587,7 @@ export default function ReferrerPage() {
                     <Select
                       id="referrer-company-industry"
                       name="referrer-company-industry"
-                      options={COMPANY_INDUSTRY_OPTIONS}
+                      options={companyIndustryOptions(language)}
                       placeholder={t.selects.selectLabel}
                       required
                       value={companyIndustrySelection}
@@ -599,7 +631,7 @@ export default function ReferrerPage() {
                     <Select
                       id="work-type"
                       name="work-type"
-                      options={['Physical', 'Remote', 'Hybrid']}
+                      options={workTypeOptions(language)}
                       placeholder={t.selects.selectLabel}
                       required
                       value={workTypeSelection}
