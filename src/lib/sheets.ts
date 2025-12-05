@@ -66,6 +66,19 @@ async function ensureHeaders(sheetName: string, headers: string[]) {
     throw new Error('Missing Google Sheets spreadsheet ID. Please set GOOGLE_SHEETS_SPREADSHEET_ID.');
   }
   const sheets = getSheetsClient();
+  try {
+    const doc = await sheets.spreadsheets.get({ spreadsheetId });
+    const exists = doc.data.sheets?.some((sheet) => sheet.properties?.title === sheetName);
+    if (!exists) {
+      throw new Error(
+        `Sheet "${sheetName}" was not found in spreadsheet ${spreadsheetId}. Please create a tab named "${sheetName}" (case-sensitive).`,
+      );
+    }
+  } catch (error: any) {
+    throw new Error(
+      `Unable to access Google Sheet. Check GOOGLE_SHEETS_SPREADSHEET_ID and share the sheet with the service account. Original error: ${error?.message ?? error}`,
+    );
+  }
   const current = await sheets.spreadsheets.values.get({
     spreadsheetId,
     range: `${sheetName}!1:1`,
