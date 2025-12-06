@@ -134,10 +134,13 @@ const htmlTemplate = `<!DOCTYPE html>
                       </p>
                       <div style="margin:16px 0 0 0;">
                         <a href="${jobOpeningsUrl}" style="display:inline-block;padding:12px 16px;border-radius:10px;background:linear-gradient(120deg,#5ae6ff,#5d8bff);color:#041923;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,0.35);">
-                          See who’s hiring in Canada right now
+                          See who's hiring in Canada right now
                         </a>
                         <p style="margin:10px 0 0 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;line-height:1.6;color:rgba(205,228,244,0.9);">
                           Quick company notes, what they need, and links to apply.
+                        </p>
+                        <p style="margin:10px 0 0 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:13px;line-height:1.6;color:rgba(205,228,244,0.9);">
+                          Visit the live list here: <a href="${jobOpeningsUrl}" style="color:#7de3ff;text-decoration:underline;">${jobOpeningsUrl}</a>
                         </p>
                       </div>
                     </td>
@@ -169,23 +172,23 @@ Thanks for submitting your referral request to iRefair.
 
 Request ID: {{requestId}}
 
-Here’s a quick snapshot of what you shared:
+Here's a quick snapshot of what you shared:
 - Location: {{location}}
 - Work authorization: {{authorization}}
 - Industry focus: {{industry}}
 - Languages: {{languages}}
 
-See who’s hiring in Canada right now (quick company notes, what they need, links to apply):
-${jobOpeningsUrl}
-
 What happens next:
 1) We review your profile for clarity and completeness.
-2) We look for referrers whose teams and roles match what you’re targeting.
-3) When there’s a potential match, we’ll contact you before any intro is made.
+2) We look for referrers whose teams and roles match what you're targeting.
+3) When there's a potential match, we'll contact you before any intro is made.
 
-If anything changes (new resume, updated targets, different locations), just reply to this email and we’ll update your details.
+If anything changes (new resume, updated targets, different locations), just reply to this email and we'll update your details.
 
-— The iRefair team
+Before you go, visit this live list of companies hiring in Canada right now (quick company notes, what they need, and links to apply):
+${jobOpeningsUrl}
+
+- The iRefair team
 `;
 
 const ineligibleHtmlTemplate = `<!DOCTYPE html>
