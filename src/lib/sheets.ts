@@ -102,9 +102,10 @@ async function ensureHeaders(sheetName: string, headers: string[]) {
         `Sheet "${sheetName}" was not found in spreadsheet ${spreadsheetId}. Please create a tab named "${sheetName}" (case-sensitive).`,
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
     throw new Error(
-      `Unable to access Google Sheet. Check GOOGLE_SHEETS_SPREADSHEET_ID and share the sheet with the service account. Original error: ${error?.message ?? error}`,
+      `Unable to access Google Sheet. Check GOOGLE_SHEETS_SPREADSHEET_ID and share the sheet with the service account. Original error: ${message}`,
     );
   }
   const current = await sheets.spreadsheets.values.get({
@@ -168,9 +169,10 @@ async function fetchExistingSubmissionIds(prefix: SubmissionPrefix) {
         .map((value) => String(value).trim())
         .filter((value) => value.toUpperCase().startsWith(`${prefix}-`)),
     );
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
     throw new Error(
-      `Unable to verify submission ID uniqueness for sheet "${sheetName}". Original error: ${error?.message ?? error}`,
+      `Unable to verify submission ID uniqueness for sheet "${sheetName}". Original error: ${message}`,
     );
   }
 }

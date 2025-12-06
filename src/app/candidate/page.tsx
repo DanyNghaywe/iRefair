@@ -639,7 +639,7 @@ export default function CandidatePage() {
       }
 
       setStatus('ok');
-    } catch (err) {
+    } catch {
       setStatus('error');
     } finally {
       setSubmitting(false);

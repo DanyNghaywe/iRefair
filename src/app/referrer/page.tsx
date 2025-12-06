@@ -312,7 +312,6 @@ export default function ReferrerPage() {
   };
 
   const handleFieldChange = (field: string) => () => clearError(field);
-  const handleSelectChange = (field: string) => () => clearError(field);
   const handleLinkedInChange = () => {
     linkedinInputRef.current?.setCustomValidity('');
     clearError('referrer-linkedin');
@@ -471,7 +470,7 @@ export default function ReferrerPage() {
       }
 
       setStatus('ok');
-    } catch (err) {
+    } catch {
       setStatus('error');
     } finally {
       setSubmitting(false);

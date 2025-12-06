@@ -24,6 +24,8 @@ export function NavigationLoaderProvider({ children }: { children: React.ReactNo
     const matchedPendingPath = pendingPath ? pathname === pendingPath : pathChanged;
 
     if (isNavigating && matchedPendingPath) {
+      // Necessary to hide the overlay once the navigation target matches; keeping local state change here is intentional.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsNavigating(false);
       pendingPathRef.current = null;
     }
