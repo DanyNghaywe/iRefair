@@ -3,7 +3,7 @@ import { randomUUID } from 'crypto';
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
-type SubmissionPrefix = 'CAND' | 'REF';
+type SubmissionPrefix = 'CAND' | 'REF' | 'APP';
 
 const CANDIDATE_HEADERS = [
   'ID',
@@ -26,6 +26,17 @@ const CANDIDATE_HEADERS = [
 ];
 const CANDIDATE_SHEET_NAME = 'Candidates';
 const CANDIDATE_EMAIL_COLUMN_INDEX = 5; // zero-based (Column F)
+
+const APPLICATION_HEADERS = [
+  'ID',
+  'Timestamp',
+  'iRAIN',
+  'iRCRN',
+  'Position',
+  'Reference Number',
+  'Resume File Name',
+];
+const APPLICATION_SHEET_NAME = 'Applications';
 
 type CandidateRow = {
   id: string;
@@ -63,11 +74,21 @@ type ReferrerRow = {
   constraints: string;
 };
 
+type ApplicationRow = {
+  id: string;
+  iRain: string;
+  iCrn: string;
+  position: string;
+  referenceNumber: string;
+  resumeFileName: string;
+};
+
 let sheetsClient: ReturnType<typeof google.sheets> | null = null;
 const headersInitialized = new Set<string>();
 const SHEET_BY_PREFIX: Record<SubmissionPrefix, string> = {
   CAND: 'Candidates',
   REF: 'Referrers',
+  APP: APPLICATION_SHEET_NAME,
 };
 
 function getSheetsClient() {
@@ -232,6 +253,20 @@ export async function appendReferrerRow(row: ReferrerRow) {
     row.referralType,
     row.monthlySlots,
     row.constraints,
+  ]);
+}
+
+export async function appendApplicationRow(row: ApplicationRow) {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  const timestamp = new Date().toISOString();
+  await appendRow(APPLICATION_SHEET_NAME, [
+    row.id,
+    timestamp,
+    row.iRain,
+    row.iCrn,
+    row.position,
+    row.referenceNumber,
+    row.resumeFileName,
   ]);
 }
 
