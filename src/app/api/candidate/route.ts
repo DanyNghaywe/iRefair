@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sendMail } from '@/lib/mailer';
-import { appendCandidateRow, generateSubmissionId } from '@/lib/sheets';
+import { generateSubmissionId, upsertCandidateRow } from '@/lib/sheets';
 
 type CandidatePayload = {
   firstName?: string;
@@ -20,6 +20,7 @@ type CandidatePayload = {
 };
 
 const subject = 'We’ve received your referral request – iRefair';
+const updatedSubject = 'We updated your referral request - iRefair';
 const jobOpeningsUrl =
   'https://docs.google.com/document/d/1z6s9qb7G_7NUKlgar0eCzFfFvhfe4tW6L45S1wFvuQk/edit?tab=t.0';
 const ineligibleSubject = 'About your referral request - iRefair';
@@ -65,6 +66,7 @@ const htmlTemplate = `<!DOCTYPE html>
                         Thanks for submitting your referral request to <strong>iRefair</strong>.
                         We’ll review your profile and start looking for referrers who can help with roles that match your experience and preferences.
                       </p>
+                      {{statusNote}}
                     </td>
                   </tr>
                   <tr>
@@ -162,6 +164,8 @@ const textTemplate = `Hi {{firstName}},
 
 Thanks for submitting your referral request to iRefair.
 
+{{statusNote}}
+
 Request ID: {{requestId}}
 
 Here’s a quick snapshot of what you shared:
@@ -223,6 +227,7 @@ const ineligibleHtmlTemplate = `<!DOCTYPE html>
                       <p style="margin:12px 0 12px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.7;color:rgba(227,242,255,0.88);">
                         We reviewed the details you shared. Because you indicated that you are not located in Canada and are not legally authorized to work in Canada, we cannot move forward with a referral at this time. This means you are not eligible for our referral program right now. We are sorry about this.
                       </p>
+                      {{statusNote}}
                       <p style="margin:0 0 12px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.7;color:rgba(227,242,255,0.88);">
                         Our program currently supports candidates who are in Canada and have work authorization. If your situation changes, reply to this email or submit a new request and we will gladly revisit it.
                       </p>
@@ -249,6 +254,8 @@ Thanks for your interest in iRefair.
 
 We reviewed the details you shared. Because you indicated that you are not located in Canada and are not legally authorized to work in Canada, we cannot move forward with a referral at this time. We are sorry about this.
 This means you are not eligible for our referral program right now.
+
+{{statusNote}}
 
 Our program currently supports candidates who are in Canada and have work authorization. If your situation changes, reply to this email or submit a new request and we will gladly revisit it.
 
@@ -288,7 +295,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: 'Missing required fields: firstName and email.' }, { status: 400 });
     }
 
-    const requestId = generateSubmissionId('CAND');
+    const generatedRequestId = await generateSubmissionId('CAND');
     const isIneligible =
       locatedCanada.toLowerCase() === 'no' && authorizedCanada.toLowerCase() === 'no';
 
@@ -318,25 +325,8 @@ export async function POST(request: Request) {
       return combined || 'Not provided';
     })();
 
-    const values = {
-      requestId,
-      firstName,
-      location: locationSnapshot,
-      authorization: authorizationSnapshot,
-      industry: industrySnapshot,
-      languages: languagesSnapshot,
-    };
-
-    const html = isIneligible
-      ? fillTemplate(ineligibleHtmlTemplate, { requestId, firstName })
-      : fillTemplate(htmlTemplate, values);
-    const text = isIneligible
-      ? fillTemplate(ineligibleTextTemplate, { requestId, firstName })
-      : fillTemplate(textTemplate, values);
-    const emailSubject = isIneligible ? ineligibleSubject : subject;
-
-    await appendCandidateRow({
-      id: requestId,
+    const upsertResult = await upsertCandidateRow({
+      id: generatedRequestId,
       firstName,
       middleName,
       familyName,
@@ -353,6 +343,34 @@ export async function POST(request: Request) {
       employmentStatus,
     });
 
+    const finalRequestId = upsertResult.id;
+    const statusNoteHtml = upsertResult.wasUpdated
+      ? `<p style="margin:0 0 14px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.7;color:rgba(227,242,255,0.88);">We updated your referral request with the latest details you shared. Your Request ID remains <strong>${finalRequestId}</strong>.</p>`
+      : '';
+    const statusNoteText = upsertResult.wasUpdated
+      ? 'We updated your referral request with the latest details you shared.'
+      : '';
+
+    const values = {
+      requestId: finalRequestId,
+      firstName,
+      location: locationSnapshot,
+      authorization: authorizationSnapshot,
+      industry: industrySnapshot,
+      languages: languagesSnapshot,
+    };
+
+    const htmlValues = { ...values, statusNote: statusNoteHtml };
+    const textValues = { ...values, statusNote: statusNoteText };
+
+    const html = isIneligible
+      ? fillTemplate(ineligibleHtmlTemplate, htmlValues)
+      : fillTemplate(htmlTemplate, htmlValues);
+    const text = isIneligible
+      ? fillTemplate(ineligibleTextTemplate, textValues)
+      : fillTemplate(textTemplate, textValues);
+    const emailSubject = isIneligible ? ineligibleSubject : upsertResult.wasUpdated ? updatedSubject : subject;
+
     await sendMail({
       to: email,
       subject: emailSubject,
@@ -360,7 +378,7 @@ export async function POST(request: Request) {
       text,
     });
 
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, updated: upsertResult.wasUpdated, requestId: finalRequestId });
   } catch (error) {
     console.error('Candidate email API error', error);
     return NextResponse.json({ ok: false, error: 'Failed to send email' }, { status: 500 });

@@ -143,7 +143,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: 'Missing required field: email.' }, { status: 400 });
     }
 
-    const requestId = generateSubmissionId('REF');
+    const requestId = await generateSubmissionId('REF');
 
     const values = {
       requestId,

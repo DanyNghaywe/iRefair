@@ -1,6 +1,30 @@
 import { google } from 'googleapis';
+import { randomUUID } from 'crypto';
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
+
+type SubmissionPrefix = 'CAND' | 'REF';
+
+const CANDIDATE_HEADERS = [
+  'ID',
+  'Timestamp',
+  'First Name',
+  'Middle Name',
+  'Family Name',
+  'Email',
+  'Phone',
+  'Located in Canada',
+  'Province',
+  'Work Authorization',
+  'Country of Origin',
+  'Languages',
+  'Languages Other',
+  'Industry Type',
+  'Industry Other',
+  'Employment Status',
+];
+const CANDIDATE_SHEET_NAME = 'Candidates';
+const CANDIDATE_EMAIL_COLUMN_INDEX = 5; // zero-based (Column F)
 
 type CandidateRow = {
   id: string;
@@ -39,6 +63,10 @@ type ReferrerRow = {
 
 let sheetsClient: ReturnType<typeof google.sheets> | null = null;
 const headersInitialized = new Set<string>();
+const SHEET_BY_PREFIX: Record<SubmissionPrefix, string> = {
+  CAND: 'Candidates',
+  REF: 'Referrers',
+};
 
 function getSheetsClient() {
   if (sheetsClient) return sheetsClient;
@@ -113,52 +141,55 @@ async function appendRow(sheetName: string, values: (string | number | null)[]) 
   });
 }
 
-export function generateSubmissionId(prefix: 'CAND' | 'REF') {
+function buildSubmissionId(prefix: SubmissionPrefix) {
   const now = new Date();
   const date = `${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-  const random = Math.random().toString(36).slice(2, 8).toUpperCase();
-  return `${prefix}-${date}-${random}`;
+  const unique = randomUUID().replace(/-/g, '').slice(0, 12).toUpperCase();
+  return `${prefix}-${date}-${unique}`;
+}
+
+async function fetchExistingSubmissionIds(prefix: SubmissionPrefix) {
+  const sheetName = SHEET_BY_PREFIX[prefix];
+  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
+  if (!spreadsheetId) {
+    throw new Error('Missing Google Sheets spreadsheet ID. Please set GOOGLE_SHEETS_SPREADSHEET_ID.');
+  }
+
+  const sheets = getSheetsClient();
+  try {
+    const existing = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${sheetName}!A:A`,
+      majorDimension: 'COLUMNS',
+    });
+    const firstColumn = existing.data.values?.[0] ?? [];
+    return new Set(
+      firstColumn
+        .map((value) => String(value).trim())
+        .filter((value) => value.toUpperCase().startsWith(`${prefix}-`)),
+    );
+  } catch (error: any) {
+    throw new Error(
+      `Unable to verify submission ID uniqueness for sheet "${sheetName}". Original error: ${error?.message ?? error}`,
+    );
+  }
+}
+
+export async function generateSubmissionId(prefix: SubmissionPrefix) {
+  const existingIds = await fetchExistingSubmissionIds(prefix);
+
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const candidate = buildSubmissionId(prefix);
+    if (!existingIds.has(candidate)) {
+      return candidate;
+    }
+  }
+
+  throw new Error('Unable to generate unique submission ID after multiple attempts.');
 }
 
 export async function appendCandidateRow(row: CandidateRow) {
-  await ensureHeaders('Candidates', [
-    'ID',
-    'Timestamp',
-    'First Name',
-    'Middle Name',
-    'Family Name',
-    'Email',
-    'Phone',
-    'Located in Canada',
-    'Province',
-    'Work Authorization',
-    'Country of Origin',
-    'Languages',
-    'Languages Other',
-    'Industry Type',
-    'Industry Other',
-    'Employment Status',
-  ]);
-
-  const timestamp = new Date().toISOString();
-  await appendRow('Candidates', [
-    row.id,
-    timestamp,
-    row.firstName,
-    row.middleName,
-    row.familyName,
-    row.email,
-    row.phone,
-    row.locatedCanada,
-    row.province,
-    row.authorizedCanada,
-    row.countryOfOrigin,
-    row.languages,
-    row.languagesOther,
-    row.industryType,
-    row.industryOther,
-    row.employmentStatus,
-  ]);
+  await upsertCandidateRow(row);
 }
 
 export async function appendReferrerRow(row: ReferrerRow) {
@@ -198,4 +229,85 @@ export async function appendReferrerRow(row: ReferrerRow) {
     row.monthlySlots,
     row.constraints,
   ]);
+}
+
+function buildCandidateRowValues(row: CandidateRow, id: string, timestamp: string) {
+  return [
+    id,
+    timestamp,
+    row.firstName,
+    row.middleName,
+    row.familyName,
+    row.email,
+    row.phone,
+    row.locatedCanada,
+    row.province,
+    row.authorizedCanada,
+    row.countryOfOrigin,
+    row.languages,
+    row.languagesOther,
+    row.industryType,
+    row.industryOther,
+    row.employmentStatus,
+  ];
+}
+
+async function findCandidateRowByEmail(email: string) {
+  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
+  if (!spreadsheetId) {
+    throw new Error('Missing Google Sheets spreadsheet ID. Please set GOOGLE_SHEETS_SPREADSHEET_ID.');
+  }
+
+  const sheets = getSheetsClient();
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${CANDIDATE_SHEET_NAME}!A:P`,
+    majorDimension: 'ROWS',
+  });
+
+  const rows = existing.data.values ?? [];
+  for (let index = 1; index < rows.length; index++) {
+    const row = rows[index] ?? [];
+    const rowEmail = String(row[CANDIDATE_EMAIL_COLUMN_INDEX] ?? '').trim().toLowerCase();
+    if (rowEmail && rowEmail === normalizedEmail) {
+      return {
+        rowIndex: index + 1, // 1-based for Google Sheets
+        id: String(row[0] ?? '').trim(),
+      };
+    }
+  }
+
+  return null;
+}
+
+export async function upsertCandidateRow(row: CandidateRow) {
+  await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
+
+  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
+  if (!spreadsheetId) {
+    throw new Error('Missing Google Sheets spreadsheet ID. Please set GOOGLE_SHEETS_SPREADSHEET_ID.');
+  }
+
+  const sheets = getSheetsClient();
+  const timestamp = new Date().toISOString();
+  const existing = await findCandidateRowByEmail(row.email);
+
+  if (existing) {
+    const idToUse = existing.id || row.id;
+    const range = `${CANDIDATE_SHEET_NAME}!A${existing.rowIndex}:P${existing.rowIndex}`;
+
+    await sheets.spreadsheets.values.update({
+      spreadsheetId,
+      range,
+      valueInputOption: 'RAW',
+      requestBody: { values: [buildCandidateRowValues(row, idToUse, timestamp)] },
+    });
+
+    return { id: idToUse, wasUpdated: true };
+  }
+
+  await appendRow(CANDIDATE_SHEET_NAME, buildCandidateRowValues(row, row.id, timestamp));
+  return { id: row.id, wasUpdated: false };
 }
