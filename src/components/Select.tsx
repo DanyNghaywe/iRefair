@@ -42,9 +42,12 @@ export function Select({
   const [selectedValues, setSelectedValues] = useState<string[]>(values ?? []);
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const typeaheadRef = useRef('');
+  const typeaheadTimeoutRef = useRef<number | null>(null);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   const isControlledSingle = value !== undefined;
   const isControlledMulti = values !== undefined;
@@ -78,6 +81,20 @@ export function Select({
       document.removeEventListener('keydown', handleEscape);
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    return () => {
+      if (typeaheadTimeoutRef.current) {
+        window.clearTimeout(typeaheadTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const optionEl = listRef.current?.querySelector<HTMLElement>(`[data-option-index="${highlightedIndex}"]`);
+    optionEl?.scrollIntoView({ block: 'nearest' });
+  }, [highlightedIndex, isOpen]);
 
   const handleSelect = (index: number) => {
     const option = normalizedOptions[index];
@@ -124,10 +141,56 @@ export function Select({
     setIsOpen(true);
   };
 
+  const clearTypeahead = () => {
+    if (typeaheadTimeoutRef.current) {
+      window.clearTimeout(typeaheadTimeoutRef.current);
+      typeaheadTimeoutRef.current = null;
+    }
+    typeaheadRef.current = '';
+  };
+
+  const queueTypeaheadClear = () => {
+    if (typeaheadTimeoutRef.current) window.clearTimeout(typeaheadTimeoutRef.current);
+    typeaheadTimeoutRef.current = window.setTimeout(() => {
+      typeaheadRef.current = '';
+      typeaheadTimeoutRef.current = null;
+    }, 700);
+  };
+
+  const findMatch = (query: string) => {
+    if (!query) return -1;
+    const lowerQuery = query.toLowerCase();
+    return normalizedOptions.findIndex((opt) => opt.label.toLowerCase().startsWith(lowerQuery));
+  };
+
+  const handleTypeahead = (key: string) => {
+    if (!normalizedOptions.length) return;
+    const char = key.toLowerCase();
+    const nextQuery = `${typeaheadRef.current}${char}`;
+    const matchIndex = findMatch(nextQuery);
+    const fallbackIndex = matchIndex >= 0 ? matchIndex : findMatch(char);
+    const targetIndex = matchIndex >= 0 ? matchIndex : fallbackIndex;
+
+    typeaheadRef.current = matchIndex >= 0 ? nextQuery : char;
+    if (targetIndex >= 0) setHighlightedIndex(targetIndex);
+    queueTypeaheadClear();
+  };
+
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement | HTMLUListElement>) => {
     if (!isOpen && (event.key === ' ' || event.key === 'Enter' || event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
       event.preventDefault();
       openDropdown();
+      return;
+    }
+
+    const isCharacterKey =
+      event.key.length === 1 && event.key !== ' ' && !event.ctrlKey && !event.metaKey && !event.altKey;
+    if (isCharacterKey) {
+      if (!isOpen) {
+        event.preventDefault();
+        openDropdown();
+      }
+      handleTypeahead(event.key);
       return;
     }
 
@@ -153,6 +216,7 @@ export function Select({
         triggerRef.current?.focus();
         break;
       default:
+        clearTypeahead();
         break;
     }
   };
@@ -244,6 +308,7 @@ export function Select({
           aria-multiselectable={multi || undefined}
           tabIndex={-1}
           onKeyDown={handleKeyDown}
+          ref={listRef}
         >
           {normalizedOptions.map((opt, index) => {
             const isHighlighted = index === highlightedIndex;
@@ -255,6 +320,7 @@ export function Select({
                 role="option"
                 aria-selected={isSelected}
                 className={`select-option ${isHighlighted ? 'is-highlighted' : ''} ${isSelected ? 'is-selected' : ''}`}
+                data-option-index={index}
                 onMouseEnter={() => setHighlightedIndex(index)}
                 onMouseDown={(event) => {
                   event.preventDefault();

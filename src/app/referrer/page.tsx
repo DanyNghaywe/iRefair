@@ -5,6 +5,7 @@ import { FormEvent, useEffect, useRef, useState } from 'react';
 import { ParticlesBackground } from '@/components/ParticlesBackground';
 import { Select } from '@/components/Select';
 import { useNavigationLoader } from '@/components/NavigationLoader';
+import { countryOptions } from '@/lib/countries';
 
 type Language = 'en' | 'fr';
 
@@ -278,6 +279,7 @@ export default function ReferrerPage() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const linkedinInputRef = useRef<HTMLInputElement | null>(null);
   const [companyIndustrySelection, setCompanyIndustrySelection] = useState('');
+  const [countrySelection, setCountrySelection] = useState('');
   const [workTypeSelection, setWorkTypeSelection] = useState('');
   const t = translations[language];
 
@@ -396,7 +398,7 @@ export default function ReferrerPage() {
     }
     if (!values.workType) nextErrors['work-type'] = 'Please select a work type.';
     if (!values.phone) nextErrors['referrer-phone'] = 'Please enter your phone number.';
-    if (!values.country) nextErrors['referrer-country'] = 'Please enter your country of origin.';
+    if (!values.country) nextErrors['referrer-country'] = 'Please select your country of origin.';
 
     if (!values.referralType) nextErrors['referral-type'] = 'Please select a referral type.';
     if (!values.monthlySlots) nextErrors['monthly-slots'] = 'Please select monthly slots.';
@@ -541,6 +543,7 @@ export default function ReferrerPage() {
                 linkedinInputRef.current?.setCustomValidity('');
                 setStatus('idle');
                 setCompanyIndustrySelection('');
+                setCountrySelection('');
                 setWorkTypeSelection('');
               }}
             >
@@ -597,15 +600,19 @@ export default function ReferrerPage() {
                   </div>
                   <div className={fieldClass('field', 'referrer-country')}>
                     <label htmlFor="referrer-country">{t.labels.country}</label>
-                    <input
+                    <Select
                       id="referrer-country"
                       name="referrer-country"
-                      type="text"
+                      options={countryOptions()}
+                      placeholder={t.selects.selectLabel}
                       required
-                      placeholder={t.placeholders.country}
-                      aria-invalid={Boolean(errors['referrer-country'])}
-                      aria-describedby="referrer-country-error"
-                      onChange={handleFieldChange('referrer-country')}
+                      value={countrySelection}
+                      ariaDescribedBy="referrer-country-error"
+                      ariaInvalid={Boolean(errors['referrer-country'])}
+                      onChange={(value) => {
+                        setCountrySelection(toSingleValue(value));
+                        clearError('referrer-country');
+                      }}
                     />
                     <p className="field-error" id="referrer-country-error" role="alert" aria-live="polite">
                       {errors['referrer-country']}

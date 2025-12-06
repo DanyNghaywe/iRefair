@@ -5,6 +5,7 @@ import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import { ParticlesBackground } from '@/components/ParticlesBackground';
 import { Select } from '@/components/Select';
 import { useNavigationLoader } from '@/components/NavigationLoader';
+import { countryOptions } from '@/lib/countries';
 
 type Language = 'en' | 'fr';
 
@@ -388,6 +389,7 @@ export default function CandidatePage() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [languageSelection, setLanguageSelection] = useState<string[]>([]);
+  const [countrySelection, setCountrySelection] = useState('');
   const [locatedInCanada, setLocatedInCanada] = useState('');
   const [provinceSelection, setProvinceSelection] = useState('');
   const [authorizedCanada, setAuthorizedCanada] = useState('');
@@ -547,7 +549,7 @@ export default function CandidatePage() {
     }
 
     if (!values.countryOfOrigin) {
-      nextErrors['country-of-origin'] = 'Please enter your country of origin.';
+      nextErrors['country-of-origin'] = 'Please select your country of origin.';
     }
 
     if (!values.consentLegal) {
@@ -721,6 +723,7 @@ export default function CandidatePage() {
                 linkedinInputRef.current?.setCustomValidity('');
                 setStatus('idle');
                 setLanguageSelection([]);
+                setCountrySelection('');
                 setLocatedInCanada('');
                 setProvinceSelection('');
                 setAuthorizedCanada('');
@@ -780,15 +783,19 @@ export default function CandidatePage() {
                   </div>
                   <div className={fieldClass('field', 'country-of-origin')}>
                     <label htmlFor="country-of-origin">{t.labels.countryOfOrigin}</label>
-                    <input
+                    <Select
                       id="country-of-origin"
                       name="country-of-origin"
-                      type="text"
+                      options={countryOptions()}
+                      placeholder={t.selects.selectLabel}
                       required
-                      placeholder={t.placeholders.countryOfOrigin}
-                      aria-invalid={Boolean(errors['country-of-origin'])}
-                      aria-describedby="country-of-origin-error"
-                      onChange={handleFieldChange('country-of-origin')}
+                      value={countrySelection}
+                      ariaDescribedBy="country-of-origin-error"
+                      ariaInvalid={Boolean(errors['country-of-origin'])}
+                      onChange={(value) => {
+                        setCountrySelection(toSingleValue(value));
+                        clearError('country-of-origin');
+                      }}
                     />
                     <p className="field-error" id="country-of-origin-error" role="alert" aria-live="polite">
                       {errors['country-of-origin']}

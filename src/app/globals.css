@@ -883,7 +883,30 @@ textarea {
   padding: 6px;
   max-height: 260px;
   overflow-y: auto;
+  padding-right: 10px;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--accent-primary-rgb), 0.35) transparent;
   z-index: 20;
+}
+
+.select-dropdown::-webkit-scrollbar {
+  width: 10px;
+}
+
+.select-dropdown::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 12px;
+}
+
+.select-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(var(--accent-primary-rgb), 0.35);
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.select-dropdown::-webkit-scrollbar-thumb:hover {
+  background: rgba(var(--accent-primary-rgb), 0.5);
 }
 
 .select-option {
