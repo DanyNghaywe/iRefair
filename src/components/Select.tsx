@@ -42,25 +42,18 @@ export function Select({
   const [selectedValues, setSelectedValues] = useState<string[]>(values ?? []);
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const typeaheadRef = useRef('');
+  const typeaheadTimeoutRef = useRef<number | null>(null);
 
   const wrapperRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
-  const selectedIndex = normalizedOptions.findIndex((opt) => opt.value === selectedValue);
-
-  useEffect(() => {
-    if (value !== undefined) setSelectedValue(value);
-  }, [value]);
-
-  useEffect(() => {
-    if (values !== undefined) setSelectedValues(values);
-  }, [values]);
-
-  useEffect(() => {
-    if (isOpen) {
-      setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
-    }
-  }, [isOpen, selectedIndex]);
+  const isControlledSingle = value !== undefined;
+  const isControlledMulti = values !== undefined;
+  const resolvedSelectedValue = isControlledSingle ? value : selectedValue;
+  const resolvedSelectedValues = isControlledMulti ? values ?? [] : selectedValues;
+  const selectedIndex = normalizedOptions.findIndex((opt) => opt.value === resolvedSelectedValue);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -89,16 +82,30 @@ export function Select({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    return () => {
+      if (typeaheadTimeoutRef.current) {
+        window.clearTimeout(typeaheadTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const optionEl = listRef.current?.querySelector<HTMLElement>(`[data-option-index="${highlightedIndex}"]`);
+    optionEl?.scrollIntoView({ block: 'nearest' });
+  }, [highlightedIndex, isOpen]);
+
   const handleSelect = (index: number) => {
     const option = normalizedOptions[index];
     if (!option) return;
     if (multi) {
-      const exists = selectedValues.includes(option.value);
-      const next = exists ? selectedValues.filter((v) => v !== option.value) : [...selectedValues, option.value];
-      setSelectedValues(next);
+      const exists = resolvedSelectedValues.includes(option.value);
+      const next = exists ? resolvedSelectedValues.filter((v) => v !== option.value) : [...resolvedSelectedValues, option.value];
+      if (!isControlledMulti) setSelectedValues(next);
       onChange?.(next);
     } else {
-      setSelectedValue(option.value);
+      if (!isControlledSingle) setSelectedValue(option.value);
       onChange?.(option.value);
       setIsOpen(false);
       requestAnimationFrame(() => triggerRef.current?.focus());
@@ -108,11 +115,11 @@ export function Select({
   const handleNativeChange = (event: ChangeEvent<HTMLSelectElement>) => {
     if (multi) {
       const next = Array.from(event.target.selectedOptions).map((opt) => opt.value);
-      setSelectedValues(next);
+      if (!isControlledMulti) setSelectedValues(next);
       onChange?.(next);
     } else {
       const next = event.target.value;
-      setSelectedValue(next);
+      if (!isControlledSingle) setSelectedValue(next);
       onChange?.(next);
       setIsOpen(false);
       requestAnimationFrame(() => triggerRef.current?.focus());
@@ -129,10 +136,61 @@ export function Select({
     });
   };
 
+  const openDropdown = () => {
+    setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
+    setIsOpen(true);
+  };
+
+  const clearTypeahead = () => {
+    if (typeaheadTimeoutRef.current) {
+      window.clearTimeout(typeaheadTimeoutRef.current);
+      typeaheadTimeoutRef.current = null;
+    }
+    typeaheadRef.current = '';
+  };
+
+  const queueTypeaheadClear = () => {
+    if (typeaheadTimeoutRef.current) window.clearTimeout(typeaheadTimeoutRef.current);
+    typeaheadTimeoutRef.current = window.setTimeout(() => {
+      typeaheadRef.current = '';
+      typeaheadTimeoutRef.current = null;
+    }, 700);
+  };
+
+  const findMatch = (query: string) => {
+    if (!query) return -1;
+    const lowerQuery = query.toLowerCase();
+    return normalizedOptions.findIndex((opt) => opt.label.toLowerCase().startsWith(lowerQuery));
+  };
+
+  const handleTypeahead = (key: string) => {
+    if (!normalizedOptions.length) return;
+    const char = key.toLowerCase();
+    const nextQuery = `${typeaheadRef.current}${char}`;
+    const matchIndex = findMatch(nextQuery);
+    const fallbackIndex = matchIndex >= 0 ? matchIndex : findMatch(char);
+    const targetIndex = matchIndex >= 0 ? matchIndex : fallbackIndex;
+
+    typeaheadRef.current = matchIndex >= 0 ? nextQuery : char;
+    if (targetIndex >= 0) setHighlightedIndex(targetIndex);
+    queueTypeaheadClear();
+  };
+
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement | HTMLUListElement>) => {
     if (!isOpen && (event.key === ' ' || event.key === 'Enter' || event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
       event.preventDefault();
-      setIsOpen(true);
+      openDropdown();
+      return;
+    }
+
+    const isCharacterKey =
+      event.key.length === 1 && event.key !== ' ' && !event.ctrlKey && !event.metaKey && !event.altKey;
+    if (isCharacterKey) {
+      if (!isOpen) {
+        event.preventDefault();
+        openDropdown();
+      }
+      handleTypeahead(event.key);
       return;
     }
 
@@ -158,6 +216,7 @@ export function Select({
         triggerRef.current?.focus();
         break;
       default:
+        clearTypeahead();
         break;
     }
   };
@@ -166,8 +225,8 @@ export function Select({
   const listboxId = `${id}-listbox`;
   const activeOptionId = `${id}-option-${highlightedIndex}`;
   const selectedLabelMulti =
-    selectedValues.length > 0
-      ? normalizedOptions.filter((opt) => selectedValues.includes(opt.value)).map((opt) => opt.label)
+    resolvedSelectedValues.length > 0
+      ? normalizedOptions.filter((opt) => resolvedSelectedValues.includes(opt.value)).map((opt) => opt.label)
       : [];
 
   return (
@@ -176,7 +235,7 @@ export function Select({
         id={id}
         name={name}
         multiple={multi}
-        value={multi ? selectedValues : selectedValue}
+        value={multi ? resolvedSelectedValues : resolvedSelectedValue}
         onChange={handleNativeChange}
         required={required}
         aria-hidden="true"
@@ -205,13 +264,20 @@ export function Select({
         aria-expanded={isOpen}
         aria-controls={listboxId}
         aria-describedby={ariaDescribedBy}
-        aria-invalid={ariaInvalid}
-        onClick={() => setIsOpen((open) => !open)}
+        onClick={() => {
+          setIsOpen((open) => {
+            const next = !open;
+            if (next) {
+              setHighlightedIndex(selectedIndex >= 0 ? selectedIndex : 0);
+            }
+            return next;
+          });
+        }}
         onKeyDown={handleKeyDown}
       >
         {multi ? (
-          <span className={`select-value ${selectedValues.length ? '' : 'is-placeholder'}`}>
-            {selectedValues.length ? (
+          <span className={`select-value ${resolvedSelectedValues.length ? '' : 'is-placeholder'}`}>
+            {resolvedSelectedValues.length ? (
               <span className="select-chips">
                 {selectedLabelMulti.map((label) => (
                   <span key={label} className="select-chip">
@@ -242,6 +308,7 @@ export function Select({
           aria-multiselectable={multi || undefined}
           tabIndex={-1}
           onKeyDown={handleKeyDown}
+          ref={listRef}
         >
           {normalizedOptions.map((opt, index) => {
             const isHighlighted = index === highlightedIndex;
@@ -253,6 +320,7 @@ export function Select({
                 role="option"
                 aria-selected={isSelected}
                 className={`select-option ${isHighlighted ? 'is-highlighted' : ''} ${isSelected ? 'is-selected' : ''}`}
+                data-option-index={index}
                 onMouseEnter={() => setHighlightedIndex(index)}
                 onMouseDown={(event) => {
                   event.preventDefault();

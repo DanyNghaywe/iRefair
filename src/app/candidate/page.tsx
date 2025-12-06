@@ -4,10 +4,13 @@ import Link from 'next/link';
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import { ParticlesBackground } from '@/components/ParticlesBackground';
 import { Select } from '@/components/Select';
+import { useNavigationLoader } from '@/components/NavigationLoader';
+import { countryOptions } from '@/lib/countries';
 
 type Language = 'en' | 'fr';
 
-const LANGUAGE_OPTIONS: string[] = ['English', 'Arabic', 'French', 'Other'];
+// Stable values; labels are localized below
+const LANGUAGE_VALUES = ['English', 'Arabic', 'French', 'Other'] as const;
 const ALLOWED_RESUME_TYPES = [
   'application/pdf',
   'application/msword',
@@ -31,7 +34,8 @@ const PROVINCES: string[] = [
   'Nunavut',
   'Yukon',
 ];
-const INDUSTRY_OPTIONS: string[] = [
+// Stable values; labels are localized below
+const INDUSTRY_VALUES: string[] = [
   'Information Technology (IT)',
   'Finance / Banking / Accounting',
   'Healthcare / Medical',
@@ -53,7 +57,63 @@ const INDUSTRY_OPTIONS: string[] = [
   'Compliance/ Audit/ Monitoring & Evaluation',
   'Other',
 ];
-const EMPLOYMENT_OPTIONS: string[] = ['Yes', 'No', 'Temporary Work'];
+// Stable values; labels are localized below
+const EMPLOYMENT_VALUES: string[] = ['Yes', 'No', 'Temporary Work'];
+
+type Option = { value: string; label: string };
+
+function yesNoOptions(lang: Language): Option[] {
+  const [yes, no] = lang === 'fr' ? ['Oui', 'Non'] : ['Yes', 'No'];
+  return [
+    { value: 'Yes', label: yes },
+    { value: 'No', label: no },
+  ];
+}
+
+function languageOptions(lang: Language): Option[] {
+  const labels =
+    lang === 'fr'
+      ? { English: 'Anglais', Arabic: 'Arabe', French: 'Français', Other: 'Autre' }
+      : { English: 'English', Arabic: 'Arabic', French: 'French', Other: 'Other' };
+  return LANGUAGE_VALUES.map((v) => ({ value: v, label: labels[v] }));
+}
+
+function industryOptions(lang: Language): Option[] {
+  if (lang === 'fr') {
+    const map: Record<string, string> = {
+      'Information Technology (IT)': "Technologies de l'information (TI)",
+      'Finance / Banking / Accounting': 'Finance / Banque / Comptabilité',
+      'Healthcare / Medical': 'Santé / Médical',
+      'Education / Academia': 'Éducation / Université',
+      'Engineering / Construction': 'Ingénierie / Construction',
+      'Marketing / Advertising / PR': 'Marketing / Publicité / RP',
+      'Media / Entertainment / Journalism': 'Médias / Divertissement / Journalisme',
+      'Legal / Law': 'Juridique / Droit',
+      'Human Resources / Recruitment': 'Ressources humaines / Recrutement',
+      'Retail / E-commerce': 'Commerce de détail / E-commerce',
+      'Hospitality / Travel / Tourism': 'Hôtellerie / Voyage / Tourisme',
+      'Logistics / Transportation': 'Logistique / Transport',
+      Manufacturing: 'Fabrication',
+      'Non-Profit / NGO': 'Organisme à but non lucratif / ONG',
+      'Real Estate': 'Immobilier',
+      'Energy / Utilities': 'Énergie / Services publics',
+      Telecommunications: 'Télécommunications',
+      'Agriculture / Food Industry': 'Agriculture / Agroalimentaire',
+      'Compliance/ Audit/ Monitoring & Evaluation': 'Conformité / Audit / Suivi & Évaluation',
+      Other: 'Autre',
+    };
+    return INDUSTRY_VALUES.map((v) => ({ value: v, label: map[v] ?? v }));
+  }
+  return INDUSTRY_VALUES.map((v) => ({ value: v, label: v }));
+}
+
+function employmentOptions(lang: Language): Option[] {
+  if (lang === 'fr') {
+    const map: Record<string, string> = { Yes: 'Oui', No: 'Non', 'Temporary Work': 'Travail temporaire' };
+    return EMPLOYMENT_VALUES.map((v) => ({ value: v, label: map[v] ?? v }));
+  }
+  return EMPLOYMENT_VALUES.map((v) => ({ value: v, label: v }));
+}
 
 const translations: Record<
   Language,
@@ -120,6 +180,7 @@ const translations: Record<
       locatedCanada: 'Are you currently located in Canada?',
       province: 'If yes, which province',
       authorizedCanada: 'Are you legally authorized to work in Canada?',
+      eligibleMoveCanada: 'Are you eligible to move and work in Canada in the next 6 months?',
       industryType: 'Education/Experience Industry Type',
       industryOther: 'Other industry type',
       employmentStatus: 'Are you currently employed?',
@@ -229,6 +290,7 @@ const translations: Record<
       locatedCanada: 'Êtes-vous actuellement au Canada ?',
       province: 'Si oui, quelle province',
       authorizedCanada: 'Êtes-vous autorisé(e) à travailler au Canada ?',
+      eligibleMoveCanada: 'Pouvez-vous vous installer et travailler au Canada dans les 6 prochains mois ?',
       industryType: "Type d'industrie (formation/expérience)",
       industryOther: 'Autre industrie',
       employmentStatus: 'Êtes-vous actuellement en emploi ?',
@@ -317,17 +379,21 @@ const translations: Record<
 };
 
 export default function CandidatePage() {
+  const { startNavigation } = useNavigationLoader();
   const [resumeName, setResumeName] = useState('');
   const resumeInputRef = useRef<HTMLInputElement | null>(null);
+  const linkedinInputRef = useRef<HTMLInputElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [language, setLanguage] = useState<Language>('en');
   const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
   const formRef = useRef<HTMLFormElement | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [languageSelection, setLanguageSelection] = useState<string[]>([]);
+  const [countrySelection, setCountrySelection] = useState('');
   const [locatedInCanada, setLocatedInCanada] = useState('');
   const [provinceSelection, setProvinceSelection] = useState('');
   const [authorizedCanada, setAuthorizedCanada] = useState('');
+  const [eligibleMoveCanada, setEligibleMoveCanada] = useState('');
   const [industrySelection, setIndustrySelection] = useState('');
   const [employmentStatus, setEmploymentStatus] = useState('');
 
@@ -348,13 +414,49 @@ export default function CandidatePage() {
     });
   };
 
+  const scrollToFirstError = () => {
+    requestAnimationFrame(() => {
+      const formElement = formRef.current;
+      if (!formElement) return;
+      const firstErrorField = formElement.querySelector('.has-error') as HTMLElement | null;
+      if (firstErrorField) {
+        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const focusTarget = firstErrorField.querySelector<HTMLElement>(
+          'input, select, textarea, button, [role="combobox"], [tabindex]:not([tabindex="-1"])'
+        );
+        focusTarget?.focus({ preventScroll: true });
+      }
+    });
+  };
+
   const handleFieldChange = (field: string) => () => clearError(field);
+  const handleLinkedInChange = () => {
+    linkedinInputRef.current?.setCustomValidity('');
+    clearError('linkedin');
+  };
 
   const isValidEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
-  const isValidUrl = (value: string) => {
+  const isValidLinkedInProfileUrl = (value: string) => {
     try {
       const url = new URL(value);
-      return Boolean(url.protocol) && Boolean(url.hostname);
+      const protocol = url.protocol.toLowerCase();
+      const hostname = url.hostname.toLowerCase();
+      if (protocol !== 'http:' && protocol !== 'https:') return false;
+      if (hostname !== 'linkedin.com' && !hostname.endsWith('.linkedin.com')) return false;
+
+      const segments = url.pathname
+        .split('/')
+        .filter(Boolean)
+        .map((segment) => segment.toLowerCase());
+
+      if (segments[0] === 'mwlite') segments.shift();
+      if (!segments.length) return false;
+
+      const [first, second] = segments;
+      if ((first === 'in' || first === 'pub') && Boolean(second)) return true;
+      if (first === 'profile' && second === 'view') return url.searchParams.has('id');
+
+      return false;
     } catch {
       return false;
     }
@@ -381,6 +483,7 @@ export default function CandidatePage() {
       locatedCanada: valueOf('located-canada'),
       province: valueOf('province'),
       authorizedCanada: valueOf('authorized-canada'),
+      eligibleMoveCanada: valueOf('eligible-move-canada'),
       industryType: valueOf('industry-type'),
       industryOther: valueOf('industry-other'),
       employmentStatus: valueOf('employment-status'),
@@ -395,7 +498,6 @@ export default function CandidatePage() {
     const nextErrors: Record<string, string> = {};
 
     if (!values.firstName) nextErrors['first-name'] = 'Please enter your first name.';
-    if (!values.middleName) nextErrors['middle-name'] = 'Please enter your middle name.';
     if (!values.familyName) nextErrors['family-name'] = 'Please enter your family name.';
 
     if (!values.email) {
@@ -412,12 +514,18 @@ export default function CandidatePage() {
       nextErrors['located-canada'] = 'Please select your current location status.';
     }
 
-    if (values.locatedCanada === 'Yes' && !values.province) {
-      nextErrors.province = 'Please select your province.';
+    if (values.locatedCanada === 'Yes') {
+      if (!values.province) {
+        nextErrors.province = 'Please select your province.';
+      }
+
+      if (!values.authorizedCanada) {
+        nextErrors['authorized-canada'] = 'Please confirm your work authorization.';
+      }
     }
 
-    if (!values.authorizedCanada) {
-      nextErrors['authorized-canada'] = 'Please confirm your work authorization.';
+    if (values.locatedCanada === 'No' && !values.eligibleMoveCanada) {
+      nextErrors['eligible-move-canada'] = 'Please confirm if you can move and work in Canada in the next 6 months.';
     }
 
     if (!values.industryType) {
@@ -441,13 +549,7 @@ export default function CandidatePage() {
     }
 
     if (!values.countryOfOrigin) {
-      nextErrors['country-of-origin'] = 'Please enter your country of origin.';
-    }
-
-    if (!values.linkedin) {
-      nextErrors.linkedin = 'Please enter your LinkedIn profile.';
-    } else if (!isValidUrl(values.linkedin)) {
-      nextErrors.linkedin = 'Please enter a valid URL.';
+      nextErrors['country-of-origin'] = 'Please select your country of origin.';
     }
 
     if (!values.consentLegal) {
@@ -490,10 +592,28 @@ export default function CandidatePage() {
       validationErrors.resume = 'Please upload a PDF or DOC/DOCX file under 10MB.';
     }
 
-    if (Object.keys(validationErrors).length) {
+    const linkedinInput = linkedinInputRef.current;
+    const linkedinInvalid = Boolean(values.linkedin) && !isValidLinkedInProfileUrl(values.linkedin);
+    linkedinInput?.setCustomValidity('');
+    if (linkedinInvalid && linkedinInput) {
+      linkedinInput.setCustomValidity('Please enter a valid LinkedIn profile URL.');
+    }
+
+    const hasErrors = Object.keys(validationErrors).length > 0;
+
+    if (linkedinInvalid) {
       setErrors(validationErrors);
       setStatus('idle');
       setSubmitting(false);
+      linkedinInput?.reportValidity();
+      return;
+    }
+
+    if (hasErrors) {
+      setErrors(validationErrors);
+      setStatus('idle');
+      setSubmitting(false);
+      scrollToFirstError();
       return;
     }
 
@@ -506,9 +626,11 @@ export default function CandidatePage() {
       middleName: values.middleName,
       familyName: values.familyName,
       email: values.email,
+      language,
       locatedCanada: values.locatedCanada,
       province: values.province,
       authorizedCanada: values.authorizedCanada,
+      eligibleMoveCanada: values.eligibleMoveCanada,
       languages: values.languages.join(', '),
       languagesOther: values.languagesOther,
       industryType: values.industryType,
@@ -531,7 +653,7 @@ export default function CandidatePage() {
       }
 
       setStatus('ok');
-    } catch (err) {
+    } catch {
       setStatus('error');
     } finally {
       setSubmitting(false);
@@ -553,7 +675,15 @@ export default function CandidatePage() {
           <section className="card referral-card" aria-labelledby="referral-title">
             <div className="role-switch">
               <span className="role-switch__text">
-                {t.switchText.prompt} <Link href="/referrer">{t.switchText.link}</Link>
+                {t.switchText.prompt}{' '}
+                <Link
+                  href="/referrer"
+                  onClick={() => {
+                    startNavigation('/referrer');
+                  }}
+                >
+                  {t.switchText.link}
+                </Link>
               </span>
             </div>
             <div className="language-toggle" role="group" aria-label={t.languageLabel}>
@@ -590,11 +720,14 @@ export default function CandidatePage() {
               onSubmit={handleSubmit}
               onReset={() => {
                 setErrors({});
+                linkedinInputRef.current?.setCustomValidity('');
                 setStatus('idle');
                 setLanguageSelection([]);
+                setCountrySelection('');
                 setLocatedInCanada('');
                 setProvinceSelection('');
                 setAuthorizedCanada('');
+                setEligibleMoveCanada('');
                 setIndustrySelection('');
                 setEmploymentStatus('');
               }}
@@ -618,12 +751,13 @@ export default function CandidatePage() {
                     </p>
                   </div>
                   <div className={fieldClass('field', 'middle-name')}>
-                    <label htmlFor="middle-name">{t.labels.middleName}</label>
+                    <label htmlFor="middle-name">
+                      {t.labels.middleName} <span className="optional">{t.optional}</span>
+                    </label>
                     <input
                       id="middle-name"
                       name="middle-name"
                       type="text"
-                      required
                       aria-invalid={Boolean(errors['middle-name'])}
                       aria-describedby="middle-name-error"
                       onChange={handleFieldChange('middle-name')}
@@ -649,15 +783,19 @@ export default function CandidatePage() {
                   </div>
                   <div className={fieldClass('field', 'country-of-origin')}>
                     <label htmlFor="country-of-origin">{t.labels.countryOfOrigin}</label>
-                    <input
+                    <Select
                       id="country-of-origin"
                       name="country-of-origin"
-                      type="text"
+                      options={countryOptions()}
+                      placeholder={t.selects.selectLabel}
                       required
-                      placeholder={t.placeholders.countryOfOrigin}
-                      aria-invalid={Boolean(errors['country-of-origin'])}
-                      aria-describedby="country-of-origin-error"
-                      onChange={handleFieldChange('country-of-origin')}
+                      value={countrySelection}
+                      ariaDescribedBy="country-of-origin-error"
+                      ariaInvalid={Boolean(errors['country-of-origin'])}
+                      onChange={(value) => {
+                        setCountrySelection(toSingleValue(value));
+                        clearError('country-of-origin');
+                      }}
                     />
                     <p className="field-error" id="country-of-origin-error" role="alert" aria-live="polite">
                       {errors['country-of-origin']}
@@ -683,7 +821,7 @@ export default function CandidatePage() {
                     <Select
                       id="languages"
                       name="languages"
-                      options={LANGUAGE_OPTIONS}
+                      options={languageOptions(language)}
                       placeholder={t.selects.selectLabel}
                       required
                       multi
@@ -742,13 +880,13 @@ export default function CandidatePage() {
 
               <fieldset>
                 <legend>{t.legends.locationAuth}</legend>
-                <div className="field-grid">
+                <div className="field-grid field-grid--two">
                   <div className={fieldClass('field', 'located-canada')}>
                     <label htmlFor="located-canada">{t.labels.locatedCanada}</label>
                     <Select
                       id="located-canada"
                       name="located-canada"
-                      options={['Yes', 'No']}
+                      options={yesNoOptions(language)}
                       placeholder={t.selects.selectLabel}
                       required
                       value={locatedInCanada}
@@ -758,6 +896,10 @@ export default function CandidatePage() {
                         const next = toSingleValue(value);
                         setLocatedInCanada(next);
                         clearError('located-canada');
+                        setAuthorizedCanada('');
+                        clearError('authorized-canada');
+                        setEligibleMoveCanada('');
+                        clearError('eligible-move-canada');
                         if (next !== 'Yes') {
                           setProvinceSelection('');
                           clearError('province');
@@ -781,35 +923,59 @@ export default function CandidatePage() {
                         ariaDescribedBy="province-error"
                         ariaInvalid={Boolean(errors.province)}
                         onChange={(value) => {
-                          setProvinceSelection(toSingleValue(value));
-                          clearError('province');
+                        setProvinceSelection(toSingleValue(value));
+                        clearError('province');
+                      }}
+                    />
+                    <p className="field-error" id="province-error" role="alert" aria-live="polite">
+                      {errors.province}
+                    </p>
+                  </div>
+                  )}
+                  {locatedInCanada === 'Yes' && (
+                    <div className={fieldClass('field', 'authorized-canada')}>
+                      <label htmlFor="authorized-canada">{t.labels.authorizedCanada}</label>
+                      <Select
+                        id="authorized-canada"
+                        name="authorized-canada"
+                        options={yesNoOptions(language)}
+                        placeholder={t.selects.selectLabel}
+                        required
+                        value={authorizedCanada}
+                        ariaDescribedBy="authorized-canada-error"
+                        ariaInvalid={Boolean(errors['authorized-canada'])}
+                        onChange={(value) => {
+                          setAuthorizedCanada(toSingleValue(value));
+                          clearError('authorized-canada');
                         }}
                       />
-                      <p className="field-error" id="province-error" role="alert" aria-live="polite">
-                        {errors.province}
+                      <p className="field-error" id="authorized-canada-error" role="alert" aria-live="polite">
+                        {errors['authorized-canada']}
                       </p>
                     </div>
                   )}
-                  <div className={fieldClass('field', 'authorized-canada')}>
-                    <label htmlFor="authorized-canada">{t.labels.authorizedCanada}</label>
-                    <Select
-                      id="authorized-canada"
-                      name="authorized-canada"
-                      options={['Yes', 'No']}
-                      placeholder={t.selects.selectLabel}
-                      required
-                      value={authorizedCanada}
-                      ariaDescribedBy="authorized-canada-error"
-                      ariaInvalid={Boolean(errors['authorized-canada'])}
-                      onChange={(value) => {
-                        setAuthorizedCanada(toSingleValue(value));
-                        clearError('authorized-canada');
-                      }}
-                    />
-                    <p className="field-error" id="authorized-canada-error" role="alert" aria-live="polite">
-                      {errors['authorized-canada']}
-                    </p>
-                  </div>
+                  {locatedInCanada === 'No' && (
+                    <div className={fieldClass('field', 'eligible-move-canada')}>
+                      <label htmlFor="eligible-move-canada">{t.labels.eligibleMoveCanada}</label>
+                      <Select
+                        id="eligible-move-canada"
+                        name="eligible-move-canada"
+                        options={yesNoOptions(language)}
+                        placeholder={t.selects.selectLabel}
+                        required
+                        value={eligibleMoveCanada}
+                        ariaDescribedBy="eligible-move-canada-error"
+                        ariaInvalid={Boolean(errors['eligible-move-canada'])}
+                        onChange={(value) => {
+                          setEligibleMoveCanada(toSingleValue(value));
+                          clearError('eligible-move-canada');
+                        }}
+                      />
+                      <p className="field-error" id="eligible-move-canada-error" role="alert" aria-live="polite">
+                        {errors['eligible-move-canada']}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </fieldset>
 
@@ -821,7 +987,7 @@ export default function CandidatePage() {
                     <Select
                       id="industry-type"
                       name="industry-type"
-                      options={INDUSTRY_OPTIONS}
+                      options={industryOptions(language)}
                       placeholder={t.selects.selectLabel}
                       required
                       value={industrySelection}
@@ -845,7 +1011,7 @@ export default function CandidatePage() {
                     <Select
                       id="employment-status"
                       name="employment-status"
-                      options={EMPLOYMENT_OPTIONS}
+                      options={employmentOptions(language)}
                       placeholder={t.selects.selectLabel}
                       required
                       value={employmentStatus}
@@ -861,16 +1027,18 @@ export default function CandidatePage() {
                     </p>
                   </div>
                   <div className={fieldClass('field', 'linkedin')}>
-                    <label htmlFor="linkedin">{t.labels.linkedin}</label>
+                    <label htmlFor="linkedin">
+                      {t.labels.linkedin} <span className="optional">{t.optional}</span>
+                    </label>
                     <input
                       id="linkedin"
                       name="linkedin"
                       type="url"
-                      required
+                      ref={linkedinInputRef}
                       aria-invalid={Boolean(errors.linkedin)}
                       aria-describedby="linkedin-error"
                       placeholder={t.placeholders.linkedin}
-                      onChange={handleFieldChange('linkedin')}
+                      onChange={handleLinkedInChange}
                     />
                     <p className="field-error" id="linkedin-error" role="alert" aria-live="polite">
                       {errors.linkedin}

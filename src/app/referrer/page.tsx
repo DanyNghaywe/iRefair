@@ -1,13 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import { ParticlesBackground } from '@/components/ParticlesBackground';
 import { Select } from '@/components/Select';
+import { useNavigationLoader } from '@/components/NavigationLoader';
+import { countryOptions } from '@/lib/countries';
 
 type Language = 'en' | 'fr';
 
-const COMPANY_INDUSTRY_OPTIONS: string[] = [
+// Stable values; labels are localized below
+const COMPANY_INDUSTRY_VALUES: string[] = [
   'Technology',
   'Finance',
   'Healthcare',
@@ -21,6 +24,37 @@ const COMPANY_INDUSTRY_OPTIONS: string[] = [
   'Compliance / Audit',
   'Other',
 ];
+
+type Option = { value: string; label: string };
+
+function companyIndustryOptions(lang: Language): Option[] {
+  if (lang === 'fr') {
+    const map: Record<string, string> = {
+      Technology: 'Technologie',
+      Finance: 'Finance',
+      Healthcare: 'Santé',
+      Education: 'Éducation',
+      Retail: 'Commerce de détail',
+      Hospitality: 'Hôtellerie',
+      'Marketing / Media': 'Marketing / Médias',
+      'Engineering / Construction': 'Ingénierie / Construction',
+      Consulting: 'Conseil',
+      'Not for profit': 'Organisme à but non lucratif',
+      'Compliance / Audit': 'Conformité / Audit',
+      Other: 'Autre',
+    };
+    return COMPANY_INDUSTRY_VALUES.map((v) => ({ value: v, label: map[v] ?? v }));
+  }
+  return COMPANY_INDUSTRY_VALUES.map((v) => ({ value: v, label: v }));
+}
+
+function workTypeOptions(lang: Language): Option[] {
+  if (lang === 'fr') {
+    const map: Record<string, string> = { Physical: 'Sur site', Remote: 'Télétravail', Hybrid: 'Hybride' };
+    return ['Physical', 'Remote', 'Hybrid'].map((v) => ({ value: v, label: map[v] }));
+  }
+  return ['Physical', 'Remote', 'Hybrid'].map((v) => ({ value: v, label: v }));
+}
 
 const translations: Record<
   Language,
@@ -237,11 +271,15 @@ const translations: Record<
 };
 
 export default function ReferrerPage() {
+  const { startNavigation } = useNavigationLoader();
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
   const [language, setLanguage] = useState<Language>('en');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const formRef = useRef<HTMLFormElement | null>(null);
+  const linkedinInputRef = useRef<HTMLInputElement | null>(null);
   const [companyIndustrySelection, setCompanyIndustrySelection] = useState('');
+  const [countrySelection, setCountrySelection] = useState('');
   const [workTypeSelection, setWorkTypeSelection] = useState('');
   const t = translations[language];
 
@@ -260,16 +298,51 @@ export default function ReferrerPage() {
     });
   };
 
+  const scrollToFirstError = () => {
+    requestAnimationFrame(() => {
+      const formElement = formRef.current;
+      if (!formElement) return;
+      const firstErrorField = formElement.querySelector('.has-error') as HTMLElement | null;
+      if (firstErrorField) {
+        firstErrorField.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const focusTarget = firstErrorField.querySelector<HTMLElement>(
+          'input, select, textarea, button, [role="combobox"], [tabindex]:not([tabindex="-1"])'
+        );
+        focusTarget?.focus({ preventScroll: true });
+      }
+    });
+  };
+
   const handleFieldChange = (field: string) => () => clearError(field);
-  const handleSelectChange = (field: string) => () => clearError(field);
+  const handleLinkedInChange = () => {
+    linkedinInputRef.current?.setCustomValidity('');
+    clearError('referrer-linkedin');
+  };
 
   const toSingleValue = (value: string | string[]) => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
 
   const isValidEmail = (value: string) => /\S+@\S+\.\S+/.test(value);
-  const isValidUrl = (value: string) => {
+  const isValidLinkedInProfileUrl = (value: string) => {
     try {
       const url = new URL(value);
-      return Boolean(url.protocol) && Boolean(url.hostname);
+      const protocol = url.protocol.toLowerCase();
+      const hostname = url.hostname.toLowerCase();
+      if (protocol !== 'http:' && protocol !== 'https:') return false;
+      if (hostname !== 'linkedin.com' && !hostname.endsWith('.linkedin.com')) return false;
+
+      const segments = url.pathname
+        .split('/')
+        .filter(Boolean)
+        .map((segment) => segment.toLowerCase());
+
+      if (segments[0] === 'mwlite') segments.shift();
+      if (!segments.length) return false;
+
+      const [first, second] = segments;
+      if ((first === 'in' || first === 'pub') && Boolean(second)) return true;
+      if (first === 'profile' && second === 'view') return url.searchParams.has('id');
+
+      return false;
     } catch {
       return false;
     }
@@ -325,11 +398,7 @@ export default function ReferrerPage() {
     }
     if (!values.workType) nextErrors['work-type'] = 'Please select a work type.';
     if (!values.phone) nextErrors['referrer-phone'] = 'Please enter your phone number.';
-    if (!values.country) nextErrors['referrer-country'] = 'Please enter your country of origin.';
-
-    if (values.linkedin && !isValidUrl(values.linkedin)) {
-      nextErrors['referrer-linkedin'] = 'Please enter a valid URL.';
-    }
+    if (!values.country) nextErrors['referrer-country'] = 'Please select your country of origin.';
 
     if (!values.referralType) nextErrors['referral-type'] = 'Please select a referral type.';
     if (!values.monthlySlots) nextErrors['monthly-slots'] = 'Please select monthly slots.';
@@ -347,10 +416,28 @@ export default function ReferrerPage() {
     const values = getFormValues(formData);
     const validationErrors = validateValues(values);
 
-    if (Object.keys(validationErrors).length) {
+    const linkedinInput = linkedinInputRef.current;
+    const linkedinInvalid = Boolean(values.linkedin) && !isValidLinkedInProfileUrl(values.linkedin);
+    linkedinInput?.setCustomValidity('');
+    if (linkedinInvalid && linkedinInput) {
+      linkedinInput.setCustomValidity('Please enter a valid LinkedIn profile URL.');
+    }
+
+    const hasErrors = Object.keys(validationErrors).length > 0;
+
+    if (linkedinInvalid) {
       setErrors(validationErrors);
       setStatus('idle');
       setSubmitting(false);
+      linkedinInput?.reportValidity();
+      return;
+    }
+
+    if (hasErrors) {
+      setErrors(validationErrors);
+      setStatus('idle');
+      setSubmitting(false);
+      scrollToFirstError();
       return;
     }
 
@@ -361,6 +448,7 @@ export default function ReferrerPage() {
     const payload = {
       name: values.name,
       email: values.email,
+      language,
       phone: values.phone,
       country: values.country,
       companyIndustry: values.companyIndustry,
@@ -385,7 +473,7 @@ export default function ReferrerPage() {
       }
 
       setStatus('ok');
-    } catch (err) {
+    } catch {
       setStatus('error');
     } finally {
       setSubmitting(false);
@@ -407,7 +495,15 @@ export default function ReferrerPage() {
           <section className="card referrer-card" aria-labelledby="referrer-title">
             <div className="role-switch">
               <span className="role-switch__text">
-                {t.roleSwitch.prompt} <Link href="/candidate">{t.roleSwitch.link}</Link>
+                {t.roleSwitch.prompt}{' '}
+                <Link
+                  href="/candidate"
+                  onClick={() => {
+                    startNavigation('/candidate');
+                  }}
+                >
+                  {t.roleSwitch.link}
+                </Link>
               </span>
             </div>
             <div className="language-toggle" role="group" aria-label={t.languageLabel}>
@@ -437,14 +533,17 @@ export default function ReferrerPage() {
             </div>
 
             <form
+              ref={formRef}
               className="referral-form"
               action="#"
               method="post"
               onSubmit={handleSubmit}
               onReset={() => {
                 setErrors({});
+                linkedinInputRef.current?.setCustomValidity('');
                 setStatus('idle');
                 setCompanyIndustrySelection('');
+                setCountrySelection('');
                 setWorkTypeSelection('');
               }}
             >
@@ -501,15 +600,19 @@ export default function ReferrerPage() {
                   </div>
                   <div className={fieldClass('field', 'referrer-country')}>
                     <label htmlFor="referrer-country">{t.labels.country}</label>
-                    <input
+                    <Select
                       id="referrer-country"
                       name="referrer-country"
-                      type="text"
+                      options={countryOptions()}
+                      placeholder={t.selects.selectLabel}
                       required
-                      placeholder={t.placeholders.country}
-                      aria-invalid={Boolean(errors['referrer-country'])}
-                      aria-describedby="referrer-country-error"
-                      onChange={handleFieldChange('referrer-country')}
+                      value={countrySelection}
+                      ariaDescribedBy="referrer-country-error"
+                      ariaInvalid={Boolean(errors['referrer-country'])}
+                      onChange={(value) => {
+                        setCountrySelection(toSingleValue(value));
+                        clearError('referrer-country');
+                      }}
                     />
                     <p className="field-error" id="referrer-country-error" role="alert" aria-live="polite">
                       {errors['referrer-country']}
@@ -521,10 +624,11 @@ export default function ReferrerPage() {
                       id="referrer-linkedin"
                       name="referrer-linkedin"
                       type="url"
+                      ref={linkedinInputRef}
                       aria-invalid={Boolean(errors['referrer-linkedin'])}
                       aria-describedby="referrer-linkedin-error"
                       placeholder={t.placeholders.linkedin}
-                      onChange={handleFieldChange('referrer-linkedin')}
+                      onChange={handleLinkedInChange}
                     />
                     <p className="field-error" id="referrer-linkedin-error" role="alert" aria-live="polite">
                       {errors['referrer-linkedin']}
@@ -555,7 +659,7 @@ export default function ReferrerPage() {
                     <Select
                       id="referrer-company-industry"
                       name="referrer-company-industry"
-                      options={COMPANY_INDUSTRY_OPTIONS}
+                      options={companyIndustryOptions(language)}
                       placeholder={t.selects.selectLabel}
                       required
                       value={companyIndustrySelection}
@@ -599,7 +703,7 @@ export default function ReferrerPage() {
                     <Select
                       id="work-type"
                       name="work-type"
-                      options={['Physical', 'Remote', 'Hybrid']}
+                      options={workTypeOptions(language)}
                       placeholder={t.selects.selectLabel}
                       required
                       value={workTypeSelection}

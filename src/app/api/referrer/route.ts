@@ -5,6 +5,7 @@ import { appendReferrerRow, generateSubmissionId } from '@/lib/sheets';
 type ReferrerPayload = {
   name?: string;
   email?: string;
+  language?: string;
   targetRoles?: string;
   regions?: string;
   referralType?: string;
@@ -18,9 +19,12 @@ type ReferrerPayload = {
   constraints?: string;
 };
 
+type EmailLanguage = 'en' | 'fr';
+
 const subject = 'Thanks for offering referrals – iRefair';
 const jobOpeningsUrl =
   'https://docs.google.com/document/d/1z6s9qb7G_7NUKlgar0eCzFfFvhfe4tW6L45S1wFvuQk/edit?tab=t.0';
+const subjectFr = "Merci d'offrir des recommandations – iRefair";
 
 const htmlTemplate = `<!DOCTYPE html>
 <html lang="en">
@@ -117,6 +121,101 @@ Reply to this email anytime to adjust your availability or update the roles/regi
 
 — The iRefair team`;
 
+const htmlTemplateFr = `<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Merci d'offrir des recommandations – iRefair</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body style="margin:0;padding:0;background:#041923;">
+    <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="background:#041923;padding:32px 12px;">
+      <tr>
+        <td align="center">
+          <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="max-width:640px;border-radius:24px;background:radial-gradient(circle at top left, #1d728f 0, #041923 50%, #020b10 100%);box-shadow:0 18px 40px rgba(0,0,0,0.6);overflow:hidden;border:1px solid rgba(255,255,255,0.07);">
+            <tr>
+              <td style="padding:22px 28px 10px 28px;text-align:left;">
+                <div style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:20px;font-weight:700;color:#f5fbff;">
+                  iRefair
+                </div>
+                <div style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:11px;letter-spacing:0.18em;text-transform:uppercase;color:rgba(217,240,255,0.75);margin-top:4px;">
+                  Offre de recommandation reçue
+                </div>
+                <div style="font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:12px;color:rgba(227,242,255,0.8);margin-top:6px;">
+                  ID de demande : <strong>{{requestId}}</strong>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:8px 16px 28px 16px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-radius:18px;background:rgba(2,16,24,0.96);border:1px solid rgba(255,255,255,0.06);">
+                  <tr>
+                    <td style="padding:22px 24px 12px 24px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#f5fbff;">
+                      <h1 style="margin:0 0 10px 0;font-size:22px;line-height:1.4;font-weight:700;">Bonjour {{name}}, merci de proposer des recommandations.</h1>
+                      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:rgba(227,242,255,0.88);">
+                        Nous apprécions votre volonté de recommander des candidats. Nous vous contacterons lorsqu'un candidat correspondra aux équipes et aux rôles que vous couvrez.
+                      </p>
+                      <p style="margin:0;font-size:13px;line-height:1.7;color:rgba(205,228,244,0.9);">
+                        Vous pouvez répondre à cet e-mail à tout moment pour ajuster votre disponibilité ou mettre à jour les rôles/régions que vous couvrez.
+                      </p>
+                      <div style="margin:16px 0 0 0;">
+                        <a href="${jobOpeningsUrl}" style="display:inline-block;padding:12px 16px;border-radius:10px;background:linear-gradient(120deg,#5ae6ff,#5d8bff);color:#041923;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;font-size:14px;text-decoration:none;box-shadow:0 8px 24px rgba(0,0,0,0.35);">
+                          Découvrez qui recrute actuellement au Canada
+                        </a>
+                        <p style="margin:10px 0 0 0;font-size:13px;line-height:1.6;color:rgba(205,228,244,0.9);">
+                          Notes rapides par entreprise, besoins et liens pour postuler.
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="padding:0 24px 18px 24px;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:rgba(220,238,255,0.9);font-size:13px;">
+                      <strong>Résumé partagé</strong><br />
+                      <div style="margin-top:6px;line-height:1.6;">
+                        <div><strong>Rôles que vous couvrez :</strong> {{targetRoles}}</div>
+                        <div><strong>Régions :</strong> {{regions}}</div>
+                        <div><strong>Type de recommandation :</strong> {{referralType}}</div>
+                        <div><strong>Nombre de recommandations par mois :</strong> {{monthlySlots}}</div>
+                      </div>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:0 28px 20px 28px;text-align:center;">
+                <p style="margin:10px 0 0 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:11px;line-height:1.6;color:rgba(201,223,237,0.7);">
+                  Vous recevez ce message car vous avez proposé des recommandations sur iRefair.<br />
+                  Si ce n'était pas vous, vous pouvez ignorer ce message.
+                </p>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
+</html>`;
+
+const textTemplateFr = `Bonjour {{name}},
+
+Merci de proposer des recommandations. Nous vous contacterons quand nous aurons un candidat correspondant aux équipes et aux rôles que vous couvrez.
+
+ID de demande : {{requestId}}
+
+Résumé partagé :
+- Rôles que vous couvrez : {{targetRoles}}
+- Régions : {{regions}}
+- Type de recommandation : {{referralType}}
+- Nombre de recommandations par mois : {{monthlySlots}}
+
+Découvrez qui recrute actuellement au Canada (notes rapides, besoins, liens pour postuler) :
+${jobOpeningsUrl}
+
+Répondez à cet e-mail à tout moment pour ajuster votre disponibilité ou mettre à jour les rôles/régions que vous couvrez.
+
+— L'équipe iRefair`;
+
 function fillTemplate(template: string, values: Record<string, string>) {
   return template.replace(/{{(.*?)}}/g, (_, key) => values[key.trim()] ?? '');
 }
@@ -138,24 +237,28 @@ export async function POST(request: Request) {
     const companyIndustryOther = sanitize(body.companyIndustryOther);
     const workType = sanitize(body.workType);
     const constraints = sanitize(body.constraints);
+    const language = sanitize(body.language).toLowerCase();
+    const locale: EmailLanguage = language === 'fr' ? 'fr' : 'en';
+    const notProvided = locale === 'fr' ? 'Non fourni' : 'Not provided';
+    const fallbackName = name || (locale === 'fr' ? 'à vous' : 'there');
 
     if (!email) {
       return NextResponse.json({ ok: false, error: 'Missing required field: email.' }, { status: 400 });
     }
 
-    const requestId = generateSubmissionId('REF');
+    const requestId = await generateSubmissionId('REF');
 
     const values = {
       requestId,
-      name: name || 'there',
-      targetRoles: sanitize(body.targetRoles) || 'Not provided',
-      regions: sanitize(body.regions) || 'Not provided',
-      referralType: sanitize(body.referralType) || 'Not provided',
-      monthlySlots: sanitize(body.monthlySlots) || 'Not provided',
+      name: fallbackName,
+      targetRoles: sanitize(body.targetRoles) || notProvided,
+      regions: sanitize(body.regions) || notProvided,
+      referralType: sanitize(body.referralType) || notProvided,
+      monthlySlots: sanitize(body.monthlySlots) || notProvided,
     };
 
-    const html = fillTemplate(htmlTemplate, values);
-    const text = fillTemplate(textTemplate, values);
+    const html = fillTemplate(locale === 'fr' ? htmlTemplateFr : htmlTemplate, values);
+    const text = fillTemplate(locale === 'fr' ? textTemplateFr : textTemplate, values);
 
     await appendReferrerRow({
       id: requestId,
@@ -174,9 +277,10 @@ export async function POST(request: Request) {
       constraints,
     });
 
+    const subjectLine = locale === 'fr' ? subjectFr : subject;
     await sendMail({
       to: email,
-      subject,
+      subject: subjectLine,
       html,
       text,
     });
