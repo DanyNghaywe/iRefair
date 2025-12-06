@@ -624,6 +624,7 @@ export default function CandidatePage() {
       middleName: values.middleName,
       familyName: values.familyName,
       email: values.email,
+      language,
       locatedCanada: values.locatedCanada,
       province: values.province,
       authorizedCanada: values.authorizedCanada,

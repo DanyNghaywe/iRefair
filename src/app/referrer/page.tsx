@@ -446,6 +446,7 @@ export default function ReferrerPage() {
     const payload = {
       name: values.name,
       email: values.email,
+      language,
       phone: values.phone,
       country: values.country,
       companyIndustry: values.companyIndustry,
