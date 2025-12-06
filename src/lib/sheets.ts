@@ -16,6 +16,7 @@ const CANDIDATE_HEADERS = [
   'Located in Canada',
   'Province',
   'Work Authorization',
+  'Eligible to Move (6 Months)',
   'Country of Origin',
   'Languages',
   'Languages Other',
@@ -36,6 +37,7 @@ type CandidateRow = {
   locatedCanada: string;
   province: string;
   authorizedCanada: string;
+  eligibleMoveCanada: string;
   countryOfOrigin: string;
   languages: string;
   languagesOther: string;
@@ -245,6 +247,7 @@ function buildCandidateRowValues(row: CandidateRow, id: string, timestamp: strin
     row.locatedCanada,
     row.province,
     row.authorizedCanada,
+    row.eligibleMoveCanada,
     row.countryOfOrigin,
     row.languages,
     row.languagesOther,
@@ -265,7 +268,7 @@ async function findCandidateRowByEmail(email: string) {
 
   const existing = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!A:P`,
+    range: `${CANDIDATE_SHEET_NAME}!A:Q`,
     majorDimension: 'ROWS',
   });
 
@@ -298,7 +301,7 @@ export async function upsertCandidateRow(row: CandidateRow) {
 
   if (existing) {
     const idToUse = existing.id || row.id;
-    const range = `${CANDIDATE_SHEET_NAME}!A${existing.rowIndex}:P${existing.rowIndex}`;
+    const range = `${CANDIDATE_SHEET_NAME}!A${existing.rowIndex}:Q${existing.rowIndex}`;
 
     await sheets.spreadsheets.values.update({
       spreadsheetId,

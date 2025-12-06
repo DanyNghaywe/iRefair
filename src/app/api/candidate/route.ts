@@ -11,6 +11,7 @@ type CandidatePayload = {
   locatedCanada?: string;
   province?: string;
   authorizedCanada?: string;
+  eligibleMoveCanada?: string;
   industryType?: string;
   industryOther?: string;
   employmentStatus?: string;
@@ -225,7 +226,7 @@ const ineligibleHtmlTemplate = `<!DOCTYPE html>
                         Hi {{firstName}}, thank you for your interest in iRefair.
                       </h1>
                       <p style="margin:12px 0 12px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.7;color:rgba(227,242,255,0.88);">
-                        We reviewed the details you shared. Because you indicated that you are not located in Canada and are not legally authorized to work in Canada, we cannot move forward with a referral at this time. This means you are not eligible for our referral program right now. We are sorry about this.
+                        We reviewed the details you shared. Because you indicated that you are not located in Canada and are not able to move and work in Canada within the next 6 months, we cannot move forward with a referral at this time. This means you are not eligible for our referral program right now. We are sorry about this.
                       </p>
                       {{statusNote}}
                       <p style="margin:0 0 12px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.7;color:rgba(227,242,255,0.88);">
@@ -252,7 +253,7 @@ const ineligibleTextTemplate = `Hi {{firstName}},
 
 Thanks for your interest in iRefair.
 
-We reviewed the details you shared. Because you indicated that you are not located in Canada and are not legally authorized to work in Canada, we cannot move forward with a referral at this time. We are sorry about this.
+We reviewed the details you shared. Because you indicated that you are not located in Canada and are not able to move and work in Canada within the next 6 months, we cannot move forward with a referral at this time. We are sorry about this.
 This means you are not eligible for our referral program right now.
 
 {{statusNote}}
@@ -285,6 +286,7 @@ export async function POST(request: Request) {
     const locatedCanada = sanitize(body.locatedCanada);
     const province = sanitize(body.province);
     const authorizedCanada = sanitize(body.authorizedCanada);
+    const eligibleMoveCanada = sanitize(body.eligibleMoveCanada);
     const countryOfOrigin = sanitize(body.countryOfOrigin);
     const industryType = sanitize(body.industryType);
     const industryOther = sanitize(body.industryOther);
@@ -297,7 +299,7 @@ export async function POST(request: Request) {
 
     const generatedRequestId = await generateSubmissionId('CAND');
     const isIneligible =
-      locatedCanada.toLowerCase() === 'no' && authorizedCanada.toLowerCase() === 'no';
+      locatedCanada.toLowerCase() === 'no' && eligibleMoveCanada.toLowerCase() === 'no';
 
     const locationSnapshot = (() => {
       if (locatedCanada === 'Yes') return province ? `Canada — ${province}` : 'Canada';
@@ -305,7 +307,14 @@ export async function POST(request: Request) {
       return countryOfOrigin || 'Not provided';
     })();
 
-    const authorizationSnapshot = authorizedCanada || 'Not provided';
+    const authorizationSnapshot = (() => {
+      if (locatedCanada === 'Yes') return authorizedCanada || 'Not provided';
+      if (locatedCanada === 'No') {
+        if (eligibleMoveCanada) return `Eligible to move/work in 6 months: ${eligibleMoveCanada}`;
+        return 'Not provided';
+      }
+      return authorizedCanada || eligibleMoveCanada || 'Not provided';
+    })();
 
     const industrySnapshot = (() => {
       if (industryType === 'Other' && industryOther) return industryOther;
@@ -335,6 +344,7 @@ export async function POST(request: Request) {
       locatedCanada,
       province,
       authorizedCanada,
+      eligibleMoveCanada,
       countryOfOrigin,
       languages: languagesSnapshot,
       languagesOther,

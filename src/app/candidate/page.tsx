@@ -179,6 +179,7 @@ const translations: Record<
       locatedCanada: 'Are you currently located in Canada?',
       province: 'If yes, which province',
       authorizedCanada: 'Are you legally authorized to work in Canada?',
+      eligibleMoveCanada: 'Are you eligible to move and work in Canada in the next 6 months?',
       industryType: 'Education/Experience Industry Type',
       industryOther: 'Other industry type',
       employmentStatus: 'Are you currently employed?',
@@ -288,6 +289,7 @@ const translations: Record<
       locatedCanada: 'Êtes-vous actuellement au Canada ?',
       province: 'Si oui, quelle province',
       authorizedCanada: 'Êtes-vous autorisé(e) à travailler au Canada ?',
+      eligibleMoveCanada: 'Pouvez-vous vous installer et travailler au Canada dans les 6 prochains mois ?',
       industryType: "Type d'industrie (formation/expérience)",
       industryOther: 'Autre industrie',
       employmentStatus: 'Êtes-vous actuellement en emploi ?',
@@ -389,6 +391,7 @@ export default function CandidatePage() {
   const [locatedInCanada, setLocatedInCanada] = useState('');
   const [provinceSelection, setProvinceSelection] = useState('');
   const [authorizedCanada, setAuthorizedCanada] = useState('');
+  const [eligibleMoveCanada, setEligibleMoveCanada] = useState('');
   const [industrySelection, setIndustrySelection] = useState('');
   const [employmentStatus, setEmploymentStatus] = useState('');
 
@@ -478,6 +481,7 @@ export default function CandidatePage() {
       locatedCanada: valueOf('located-canada'),
       province: valueOf('province'),
       authorizedCanada: valueOf('authorized-canada'),
+      eligibleMoveCanada: valueOf('eligible-move-canada'),
       industryType: valueOf('industry-type'),
       industryOther: valueOf('industry-other'),
       employmentStatus: valueOf('employment-status'),
@@ -508,12 +512,18 @@ export default function CandidatePage() {
       nextErrors['located-canada'] = 'Please select your current location status.';
     }
 
-    if (values.locatedCanada === 'Yes' && !values.province) {
-      nextErrors.province = 'Please select your province.';
+    if (values.locatedCanada === 'Yes') {
+      if (!values.province) {
+        nextErrors.province = 'Please select your province.';
+      }
+
+      if (!values.authorizedCanada) {
+        nextErrors['authorized-canada'] = 'Please confirm your work authorization.';
+      }
     }
 
-    if (!values.authorizedCanada) {
-      nextErrors['authorized-canada'] = 'Please confirm your work authorization.';
+    if (values.locatedCanada === 'No' && !values.eligibleMoveCanada) {
+      nextErrors['eligible-move-canada'] = 'Please confirm if you can move and work in Canada in the next 6 months.';
     }
 
     if (!values.industryType) {
@@ -617,6 +627,7 @@ export default function CandidatePage() {
       locatedCanada: values.locatedCanada,
       province: values.province,
       authorizedCanada: values.authorizedCanada,
+      eligibleMoveCanada: values.eligibleMoveCanada,
       languages: values.languages.join(', '),
       languagesOther: values.languagesOther,
       industryType: values.industryType,
@@ -712,6 +723,7 @@ export default function CandidatePage() {
                 setLocatedInCanada('');
                 setProvinceSelection('');
                 setAuthorizedCanada('');
+                setEligibleMoveCanada('');
                 setIndustrySelection('');
                 setEmploymentStatus('');
               }}
@@ -876,6 +888,10 @@ export default function CandidatePage() {
                         const next = toSingleValue(value);
                         setLocatedInCanada(next);
                         clearError('located-canada');
+                        setAuthorizedCanada('');
+                        clearError('authorized-canada');
+                        setEligibleMoveCanada('');
+                        clearError('eligible-move-canada');
                         if (next !== 'Yes') {
                           setProvinceSelection('');
                           clearError('province');
@@ -899,35 +915,59 @@ export default function CandidatePage() {
                         ariaDescribedBy="province-error"
                         ariaInvalid={Boolean(errors.province)}
                         onChange={(value) => {
-                          setProvinceSelection(toSingleValue(value));
-                          clearError('province');
+                        setProvinceSelection(toSingleValue(value));
+                        clearError('province');
+                      }}
+                    />
+                    <p className="field-error" id="province-error" role="alert" aria-live="polite">
+                      {errors.province}
+                    </p>
+                  </div>
+                  )}
+                  {locatedInCanada === 'Yes' && (
+                    <div className={fieldClass('field', 'authorized-canada')}>
+                      <label htmlFor="authorized-canada">{t.labels.authorizedCanada}</label>
+                      <Select
+                        id="authorized-canada"
+                        name="authorized-canada"
+                        options={yesNoOptions(language)}
+                        placeholder={t.selects.selectLabel}
+                        required
+                        value={authorizedCanada}
+                        ariaDescribedBy="authorized-canada-error"
+                        ariaInvalid={Boolean(errors['authorized-canada'])}
+                        onChange={(value) => {
+                          setAuthorizedCanada(toSingleValue(value));
+                          clearError('authorized-canada');
                         }}
                       />
-                      <p className="field-error" id="province-error" role="alert" aria-live="polite">
-                        {errors.province}
+                      <p className="field-error" id="authorized-canada-error" role="alert" aria-live="polite">
+                        {errors['authorized-canada']}
                       </p>
                     </div>
                   )}
-                  <div className={fieldClass('field', 'authorized-canada')}>
-                    <label htmlFor="authorized-canada">{t.labels.authorizedCanada}</label>
-                    <Select
-                      id="authorized-canada"
-                      name="authorized-canada"
-                      options={yesNoOptions(language)}
-                      placeholder={t.selects.selectLabel}
-                      required
-                      value={authorizedCanada}
-                      ariaDescribedBy="authorized-canada-error"
-                      ariaInvalid={Boolean(errors['authorized-canada'])}
-                      onChange={(value) => {
-                        setAuthorizedCanada(toSingleValue(value));
-                        clearError('authorized-canada');
-                      }}
-                    />
-                    <p className="field-error" id="authorized-canada-error" role="alert" aria-live="polite">
-                      {errors['authorized-canada']}
-                    </p>
-                  </div>
+                  {locatedInCanada === 'No' && (
+                    <div className={fieldClass('field', 'eligible-move-canada')}>
+                      <label htmlFor="eligible-move-canada">{t.labels.eligibleMoveCanada}</label>
+                      <Select
+                        id="eligible-move-canada"
+                        name="eligible-move-canada"
+                        options={yesNoOptions(language)}
+                        placeholder={t.selects.selectLabel}
+                        required
+                        value={eligibleMoveCanada}
+                        ariaDescribedBy="eligible-move-canada-error"
+                        ariaInvalid={Boolean(errors['eligible-move-canada'])}
+                        onChange={(value) => {
+                          setEligibleMoveCanada(toSingleValue(value));
+                          clearError('eligible-move-canada');
+                        }}
+                      />
+                      <p className="field-error" id="eligible-move-canada-error" role="alert" aria-live="polite">
+                        {errors['eligible-move-canada']}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </fieldset>
 
