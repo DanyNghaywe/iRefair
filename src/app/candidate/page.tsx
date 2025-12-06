@@ -880,7 +880,7 @@ export default function CandidatePage() {
 
               <fieldset>
                 <legend>{t.legends.locationAuth}</legend>
-                <div className="field-grid">
+                <div className="field-grid field-grid--two">
                   <div className={fieldClass('field', 'located-canada')}>
                     <label htmlFor="located-canada">{t.labels.locatedCanada}</label>
                     <Select
