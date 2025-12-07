@@ -715,8 +715,8 @@ h1 {
   text-align: left;
   cursor: pointer;
   overflow: hidden;
-  transition: transform 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55), border-color 0.2s ease, box-shadow 0.2s ease,
-    background 0.2s ease;
+  transition: transform 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55), border-color 0.22s ease, box-shadow 0.28s ease,
+    background 0.28s ease, color 0.25s ease;
   opacity: 0;
   animation: dropdownSlideIn 0.5s forwards;
 }
@@ -735,20 +735,32 @@ h1 {
 .role-select__option::before {
   content: "";
   position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.12), transparent 32%);
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.18), rgba(122, 215, 227, 0.12) 55%, transparent 70%);
+  transform: translate(-50%, -50%);
   opacity: 0;
-  transition: opacity 0.2s ease;
+  pointer-events: none;
+  transition: width 0.45s ease, height 0.45s ease, opacity 0.25s ease;
 }
 
-.role-select__option:hover {
-  transform: translateX(6px);
+.role-select__option:hover,
+.role-select__option:focus-visible {
+  transform: translateX(10px);
   border-color: rgba(122, 215, 227, 0.7);
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(122, 215, 227, 0.22));
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  color: #fff;
+  outline: none;
 }
 
-.role-select__option:hover::before {
+.role-select__option:hover::before,
+.role-select__option:focus-visible::before {
+  width: 320px;
+  height: 320px;
   opacity: 1;
   animation: optionGlow 0.4s ease;
 }
