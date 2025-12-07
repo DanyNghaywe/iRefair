@@ -624,12 +624,13 @@ export async function POST(request: Request) {
     });
 
     const finalRequestId = upsertResult.id;
-    const statusNoteHtml = upsertResult.wasUpdated
+    const shouldIncludeStatusNote = upsertResult.wasUpdated && !isIneligible;
+    const statusNoteHtml = shouldIncludeStatusNote
       ? locale === 'fr'
         ? `<p style="margin:0 0 14px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.7;color:rgba(227,242,255,0.88);">Nous avons mis à jour votre demande de recommandation avec les dernières informations fournies. Votre identifiant de demande reste <strong>${finalRequestId}</strong>.</p>`
         : `<p style="margin:0 0 14px 0;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;line-height:1.7;color:rgba(227,242,255,0.88);">We updated your referral request with the latest details you shared. Your Request ID remains <strong>${finalRequestId}</strong>.</p>`
       : '';
-    const statusNoteText = upsertResult.wasUpdated
+    const statusNoteText = shouldIncludeStatusNote
       ? locale === 'fr'
         ? 'Nous avons mis à jour votre demande de recommandation avec les dernières informations fournies.'
         : 'We updated your referral request with the latest details you shared.'

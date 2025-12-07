@@ -599,6 +599,75 @@ h2 {
   line-height: var(--line-height-lead);
 }
 
+.apply-card {
+  width: min(940px, 100%);
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.apply-top {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.apply-text {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.apply-link-row {
+  margin: 8px 0 0;
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.apply-link-row a {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+  font-weight: 700;
+}
+
+.apply-note {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: linear-gradient(140deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.1));
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: rgba(15, 23, 42, 0.9);
+}
+
+.field-label-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.inline-toggle {
+  background: none;
+  border: none;
+  color: var(--accent-primary);
+  font-weight: 700;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 6px;
+}
+
+.inline-toggle:hover {
+  text-decoration: underline;
+}
+
+.inline-toggle:focus-visible {
+  outline: 2px solid rgba(var(--accent-primary-rgb), 0.55);
+  outline-offset: 2px;
+}
+
 .badge {
   background: linear-gradient(120deg, rgba(var(--accent-primary-rgb), 0.16), rgba(var(--accent-secondary-rgb), 0.16));
   border: 1px solid rgba(17, 24, 39, 0.08);
@@ -699,6 +768,16 @@ legend {
 @media (max-width: 640px) {
   .field-grid--two {
     grid-template-columns: 1fr;
+  }
+
+  .apply-note {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .field-label-row {
+    align-items: flex-start;
+    flex-direction: column;
   }
 }
 
@@ -879,12 +958,10 @@ textarea {
   position: absolute;
   margin-top: 8px;
   width: 100%;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.9));
-  border: 1px solid rgba(255, 255, 255, 0.7);
+  background: var(--panel);
+  border: 1px solid #e2e6f1;
   border-radius: 14px;
   box-shadow: 0 18px 32px rgba(15, 23, 42, 0.2);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
   list-style: none;
   padding: 6px;
   max-height: 260px;
