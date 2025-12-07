@@ -353,9 +353,7 @@ export default function ApplyPage() {
                     {errors.iCrn}
                   </p>
                 </div>
-              </div>
 
-              <div className="field-grid">
                 <div className={`${fieldClass('position')} field-full`}>
                   <label htmlFor="position">Position you are applying for *</label>
                   <input
