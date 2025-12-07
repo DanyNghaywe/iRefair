@@ -666,11 +666,6 @@ export default function CandidatePage() {
       <ParticlesBackground />
 
       <div className="board">
-        <div className="shell-header">
-          <span className="wordmark" aria-label="iRefair">
-            iRefair
-          </span>
-        </div>
         <main>
           <section className="card referral-card" aria-labelledby="referral-title">
             <div className="role-switch">
@@ -1144,6 +1139,9 @@ export default function CandidatePage() {
                   )}
                 </div>
                 <div className="actions">
+                  <button className="btn ghost" type="reset">
+                    {t.buttons.reset}
+                  </button>
                   <button className="btn primary" type="submit" disabled={submitting} aria-busy={submitting}>
                     {submitting ? (
                       <>
@@ -1153,9 +1151,6 @@ export default function CandidatePage() {
                     ) : (
                       t.buttons.submit
                     )}
-                  </button>
-                  <button className="btn ghost" type="reset">
-                    {t.buttons.reset}
                   </button>
                 </div>
               </div>

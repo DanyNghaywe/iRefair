@@ -30,7 +30,7 @@ const CANDIDATE_EMAIL_COLUMN_INDEX = 5; // zero-based (Column F)
 const APPLICATION_HEADERS = [
   'ID',
   'Timestamp',
-  'iRAIN',
+  'Candidate ID',
   'iRCRN',
   'Position',
   'Reference Number',
@@ -76,7 +76,7 @@ type ReferrerRow = {
 
 type ApplicationRow = {
   id: string;
-  iRain: string;
+  candidateId: string;
   iCrn: string;
   position: string;
   referenceNumber: string;
@@ -262,7 +262,7 @@ export async function appendApplicationRow(row: ApplicationRow) {
   await appendRow(APPLICATION_SHEET_NAME, [
     row.id,
     timestamp,
-    row.iRain,
+    row.candidateId,
     row.iCrn,
     row.position,
     row.referenceNumber,

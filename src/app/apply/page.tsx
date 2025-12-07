@@ -22,19 +22,19 @@ const parseList = (value?: string) =>
         .filter(Boolean)
     : [];
 
-const IRAIN_OPTIONS = parseList(process.env.NEXT_PUBLIC_IRAIN_OPTIONS);
+const CANDIDATE_ID_OPTIONS = parseList(process.env.NEXT_PUBLIC_IRAIN_OPTIONS);
 const IRCRN_OPTIONS = parseList(process.env.NEXT_PUBLIC_IRCRN_OPTIONS);
 
 type Status = 'idle' | 'submitting' | 'ok' | 'error';
 
 export default function ApplyPage() {
   const { startNavigation } = useNavigationLoader();
-  const hasIRainOptions = IRAIN_OPTIONS.length > 0;
+  const hasCandidateIdOptions = CANDIDATE_ID_OPTIONS.length > 0;
   const hasICrnOptions = IRCRN_OPTIONS.length > 0;
 
-  const [useManualIRain, setUseManualIRain] = useState(!hasIRainOptions);
+  const [useManualCandidateId, setUseManualCandidateId] = useState(!hasCandidateIdOptions);
   const [useManualICrn, setUseManualICrn] = useState(!hasICrnOptions);
-  const [iRain, setIRain] = useState('');
+  const [candidateId, setCandidateId] = useState('');
   const [iCrn, setICrn] = useState('');
   const [position, setPosition] = useState('');
   const [referenceNumber, setReferenceNumber] = useState('');
@@ -46,7 +46,9 @@ export default function ApplyPage() {
   const formRef = useRef<HTMLFormElement | null>(null);
   const resumeInputRef = useRef<HTMLInputElement | null>(null);
 
-  const iRainSelectOptions = hasIRainOptions ? IRAIN_OPTIONS.map((value) => ({ value, label: value })) : [];
+  const candidateIdSelectOptions = hasCandidateIdOptions
+    ? CANDIDATE_ID_OPTIONS.map((value) => ({ value, label: value }))
+    : [];
   const iCrnSelectOptions = hasICrnOptions ? IRCRN_OPTIONS.map((value) => ({ value, label: value })) : [];
 
   const fieldClass = (name: string) => `field ${errors[name] ? 'has-error' : ''}`.trim();
@@ -65,12 +67,12 @@ export default function ApplyPage() {
     setErrors({});
     if (!preserveStatus) setStatus('idle');
     setSubmitting(false);
-    setIRain('');
+    setCandidateId('');
     setICrn('');
     setPosition('');
     setReferenceNumber('');
     setResumeName('');
-    setUseManualIRain(!hasIRainOptions);
+    setUseManualCandidateId(!hasCandidateIdOptions);
     setUseManualICrn(!hasICrnOptions);
     if (resumeInputRef.current) resumeInputRef.current.value = '';
   };
@@ -119,7 +121,7 @@ export default function ApplyPage() {
 
   const validate = () => {
     const nextErrors: Record<string, string> = {};
-    if (!iRain.trim()) nextErrors.iRain = 'Please enter your iRAIN.';
+    if (!candidateId.trim()) nextErrors.candidateId = 'Please enter your Candidate ID.';
     if (!iCrn.trim()) nextErrors.iCrn = 'Please enter the iRCRN.';
     if (!position.trim()) nextErrors.position = 'Please enter the position you are applying for.';
 
@@ -152,7 +154,7 @@ export default function ApplyPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          iRain: iRain.trim(),
+          candidateId: candidateId.trim(),
           iCrn: iCrn.trim(),
           position: position.trim(),
           referenceNumber: referenceNumber.trim(),
@@ -181,17 +183,6 @@ export default function ApplyPage() {
       <ParticlesBackground />
 
       <div className="board">
-        <div className="shell-header">
-          <Link
-            href="/"
-            className="wordmark"
-            onClick={() => {
-              startNavigation('/');
-            }}
-          >
-            iRefair
-          </Link>
-        </div>
         <main>
           <section className="card apply-card" aria-labelledby="apply-title">
             <div className="apply-top">
@@ -203,25 +194,16 @@ export default function ApplyPage() {
                   them with professionals who can refer them for jobs.
                 </p>
                 <p className="apply-text">
-                  Use this form to apply to the company you wish to join. You will need your iRefair Applicant
-                  Identification Number (iRAIN) and the iRefair Company Reference Number (iRCRN).
+                  Use this form to apply to the company you wish to join. You will need your iRefair Candidate ID and the
+                  iRefair Company Reference Number (iRCRN).
                 </p>
                 <p className="apply-link-row">
                   For more info, visit{' '}
-                  <Link href="https://www.andbeyondca.com" target="_blank" rel="noreferrer">
-                    &Beyond Consulting and Advisory
+                  <Link href="https://andbeyondca.com/impact/" target="_blank" rel="noreferrer">
+                    &BeyondCA
                   </Link>
-                  .
                 </p>
               </div>
-            </div>
-
-            <div className="apply-note">
-              <span className="badge">Reminder</span>
-              <span>
-                Have your iRAIN and iRCRN handy before submitting. A tailored CV upload (PDF or DOC/DOCX, max 10MB) can
-                help your chances.
-              </span>
             </div>
 
             {status === 'ok' && (
@@ -243,62 +225,62 @@ export default function ApplyPage() {
               noValidate
             >
               <div className="field-grid field-grid--two">
-                <div className={fieldClass('iRain')}>
+                <div className={fieldClass('candidateId')}>
                   <div className="field-label-row">
-                    <label htmlFor="irain">Your iRAIN *</label>
-                    {hasIRainOptions && (
+                    <label htmlFor="candidate-id">Your Candidate ID *</label>
+                    {hasCandidateIdOptions && (
                       <button
                         type="button"
                         className="inline-toggle"
                         onClick={() => {
-                          setUseManualIRain((prev) => !prev);
-                          setIRain('');
-                          clearError('iRain');
+                          setUseManualCandidateId((prev) => !prev);
+                          setCandidateId('');
+                          clearError('candidateId');
                         }}
                       >
-                        {useManualIRain ? 'Choose from list' : 'Type it instead'}
+                        {useManualCandidateId ? 'Choose from list' : 'Type it instead'}
                       </button>
                     )}
                   </div>
-                  {hasIRainOptions && !useManualIRain ? (
+                  {hasCandidateIdOptions && !useManualCandidateId ? (
                     <Select
-                      id="irain"
-                      name="irain"
-                      options={[...iRainSelectOptions, { value: '__manual__', label: 'Type it instead' }]}
+                      id="candidate-id"
+                      name="candidate-id"
+                      options={[...candidateIdSelectOptions, { value: '__manual__', label: 'Type it instead' }]}
                       placeholder="Choose"
                       required
-                      value={iRain}
-                      ariaDescribedBy="irain-error"
-                      ariaInvalid={Boolean(errors.iRain)}
+                      value={candidateId}
+                      ariaDescribedBy="candidate-id-error"
+                      ariaInvalid={Boolean(errors.candidateId)}
                       onChange={(value) => {
                         if (value === '__manual__') {
-                          setUseManualIRain(true);
-                          setIRain('');
+                          setUseManualCandidateId(true);
+                          setCandidateId('');
                           return;
                         }
                         const next = Array.isArray(value) ? value[0] ?? '' : value ?? '';
-                        setIRain(next);
-                        clearError('iRain');
+                        setCandidateId(next);
+                        clearError('candidateId');
                       }}
                     />
                   ) : (
                     <input
-                      id="irain"
-                      name="irain"
+                      id="candidate-id"
+                      name="candidate-id"
                       type="text"
                       required
-                      placeholder="Enter your iRAIN"
-                      value={iRain}
-                      aria-invalid={Boolean(errors.iRain)}
-                      aria-describedby="irain-error"
+                      placeholder="Enter your Candidate ID"
+                      value={candidateId}
+                      aria-invalid={Boolean(errors.candidateId)}
+                      aria-describedby="candidate-id-error"
                       onChange={(event) => {
-                        setIRain(event.target.value);
-                        clearError('iRain');
+                        setCandidateId(event.target.value);
+                        clearError('candidateId');
                       }}
                     />
                   )}
-                  <p className="field-error" id="irain-error" role="alert" aria-live="polite">
-                    {errors.iRain}
+                  <p className="field-error" id="candidate-id-error" role="alert" aria-live="polite">
+                    {errors.candidateId}
                   </p>
                 </div>
 
@@ -360,9 +342,7 @@ export default function ApplyPage() {
                     {errors.iCrn}
                   </p>
                 </div>
-              </div>
 
-              <div className="field-grid">
                 <div className={`${fieldClass('position')} field-full`}>
                   <label htmlFor="position">Position you are applying for *</label>
                   <input
