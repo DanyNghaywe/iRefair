@@ -759,6 +759,9 @@ export default function ReferrerPage() {
                   )}
                 </div>
                 <div className="actions">
+                  <button className="btn ghost" type="reset">
+                    {t.buttons.reset}
+                  </button>
                   <button className="btn primary" type="submit" disabled={submitting} aria-busy={submitting}>
                     {submitting ? (
                       <>
@@ -768,9 +771,6 @@ export default function ReferrerPage() {
                     ) : (
                       t.buttons.submit
                     )}
-                  </button>
-                  <button className="btn ghost" type="reset">
-                    {t.buttons.reset}
                   </button>
                 </div>
               </div>
