@@ -507,6 +507,7 @@ h1 {
 .role-select {
   width: min(640px, 100%);
   position: relative;
+  font-family: var(--font-body), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
 }
 
 .role-select__trigger {
@@ -594,7 +595,7 @@ h1 {
 
 .role-select__name {
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
 }
 
@@ -774,7 +775,7 @@ h1 {
 
 .role-select__option-name {
   font-size: 17px;
-  font-weight: 800;
+  font-weight: 700;
   letter-spacing: -0.02em;
   color: #fff;
 }
