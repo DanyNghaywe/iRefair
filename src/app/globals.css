@@ -652,15 +652,15 @@ h1 {
   top: calc(100% + 14px);
   left: 0;
   width: 100%;
-  background: rgba(30, 30, 50, 0.95);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: radial-gradient(140% 140% at 12% 0%, rgba(255, 255, 255, 0.26), rgba(122, 215, 227, 0.16) 46%, rgba(15, 38, 58, 0.14) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.32);
   border-radius: 20px;
   padding: 16px;
   opacity: 0;
   visibility: hidden;
   transform: translateY(-12px) scale(0.98);
   transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  box-shadow: 0 26px 60px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 22px 52px rgba(18, 48, 70, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
   z-index: 10;
@@ -752,7 +752,7 @@ h1 {
   transform: translateX(10px);
   border-color: rgba(122, 215, 227, 0.7);
   background: linear-gradient(145deg, rgba(255, 255, 255, 0.2), rgba(122, 215, 227, 0.22));
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: none;
   color: #fff;
   outline: none;
 }
