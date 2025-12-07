@@ -631,17 +631,6 @@ h2 {
   font-weight: 700;
 }
 
-.apply-note {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  background: linear-gradient(140deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.1));
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  color: rgba(15, 23, 42, 0.9);
-}
-
 .field-label-row {
   display: flex;
   justify-content: space-between;
@@ -768,11 +757,6 @@ legend {
 @media (max-width: 640px) {
   .field-grid--two {
     grid-template-columns: 1fr;
-  }
-
-  .apply-note {
-    flex-direction: column;
-    align-items: flex-start;
   }
 
   .field-label-row {
