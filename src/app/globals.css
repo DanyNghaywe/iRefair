@@ -705,26 +705,28 @@ h1 {
   position: relative;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 16px;
   padding: 14px 18px;
   border-radius: 16px;
   border: 1.5px solid rgba(255, 255, 255, 0.14);
   background: rgba(255, 255, 255, 0.06);
   color: rgba(233, 248, 255, 0.9);
+  text-align: left;
   cursor: pointer;
   overflow: hidden;
   transition: transform 0.2s cubic-bezier(0.68, -0.55, 0.265, 1.55), border-color 0.2s ease, box-shadow 0.2s ease,
     background 0.2s ease;
   opacity: 0;
-  animation: optionIn 0.45s forwards;
+  animation: dropdownSlideIn 0.5s forwards;
 }
 
-@keyframes optionIn {
-  from {
+@keyframes dropdownSlideIn {
+  0% {
     transform: translateY(8px);
     opacity: 0;
   }
-  to {
+  100% {
     transform: translateY(0);
     opacity: 1;
   }
@@ -749,24 +751,6 @@ h1 {
 .role-select__option:hover::before {
   opacity: 1;
   animation: optionGlow 0.4s ease;
-}
-
-.role-select__option-icon {
-  width: 32px;
-  height: 32px;
-  display: grid;
-  place-items: center;
-  border-radius: 8px;
-  background: none;
-  border: none;
-  color: var(--option-accent, #7ad7e3);
-  box-shadow: none;
-  flex-shrink: 0;
-}
-
-.role-select__option-icon svg {
-  width: 24px;
-  height: 24px;
 }
 
 .role-select__option-text {
