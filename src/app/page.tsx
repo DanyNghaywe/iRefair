@@ -17,14 +17,14 @@ const roles: RoleOption[] = [
   {
     id: 'candidate',
     label: 'Candidate',
-    description: 'Request referrals and keep your profile in motion.',
+    description: 'Find referrers for your applications and track progress in one place.',
     path: '/candidate',
     accent: '#4cc8e0',
   },
   {
     id: 'referrer',
     label: 'Referrer',
-    description: 'Share referrals and guide great candidates into your company.',
+    description: 'Refer strong candidates and help them land interviews at your company.',
     path: '/referrer',
     accent: '#8ad1ff',
   },
