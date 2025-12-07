@@ -537,7 +537,6 @@ h1 {
 }
 
 .role-select__trigger:hover::before {
-  transform: translateX(0);
   animation: shimmerSweep 0.6s ease;
 }
 
