@@ -29,9 +29,6 @@ export default function Home() {
       <ParticlesBackground />
 
       <div className="board">
-        <header className="app-logo" aria-label="iRefair">
-          <span className="app-logo__name">iRefair</span>
-        </header>
         <main className="role-picker">
           <section className="card role-picker-card" aria-labelledby="role-heading">
             <p className="eyebrow">Start with your role</p>

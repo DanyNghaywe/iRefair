@@ -183,17 +183,6 @@ export default function ApplyPage() {
       <ParticlesBackground />
 
       <div className="board">
-        <div className="shell-header">
-          <Link
-            href="/"
-            className="wordmark"
-            onClick={() => {
-              startNavigation('/');
-            }}
-          >
-            iRefair
-          </Link>
-        </div>
         <main>
           <section className="card apply-card" aria-labelledby="apply-title">
             <div className="apply-top">

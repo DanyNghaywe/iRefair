@@ -486,11 +486,6 @@ export default function ReferrerPage() {
       <ParticlesBackground />
 
       <div className="board">
-        <div className="shell-header">
-          <span className="wordmark" aria-label="iRefair">
-            iRefair
-          </span>
-        </div>
         <main>
           <section className="card referrer-card" aria-labelledby="referrer-title">
             <div className="role-switch">

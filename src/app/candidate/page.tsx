@@ -666,11 +666,6 @@ export default function CandidatePage() {
       <ParticlesBackground />
 
       <div className="board">
-        <div className="shell-header">
-          <span className="wordmark" aria-label="iRefair">
-            iRefair
-          </span>
-        </div>
         <main>
           <section className="card referral-card" aria-labelledby="referral-title">
             <div className="role-switch">
