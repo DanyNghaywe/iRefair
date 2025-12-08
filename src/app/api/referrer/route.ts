@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sendMail } from '@/lib/mailer';
 import { appendReferrerRow, generateSubmissionId } from '@/lib/sheets';
+import { jobOpeningsUrl } from '@/lib/urls';
 
 type ReferrerPayload = {
   name?: string;
@@ -22,8 +23,6 @@ type ReferrerPayload = {
 type EmailLanguage = 'en' | 'fr';
 
 const subject = 'Thanks for offering referrals – iRefair';
-const jobOpeningsUrl =
-  'https://docs.google.com/document/d/1z6s9qb7G_7NUKlgar0eCzFfFvhfe4tW6L45S1wFvuQk/edit?tab=t.0';
 const subjectFr = "Merci d'offrir des recommandations – iRefair";
 
 const htmlTemplate = `<!DOCTYPE html>

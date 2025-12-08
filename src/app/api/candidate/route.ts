@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { sendMail } from '@/lib/mailer';
 import { generateSubmissionId, upsertCandidateRow } from '@/lib/sheets';
+import { jobOpeningsUrl } from '@/lib/urls';
 
 type CandidatePayload = {
   firstName?: string;
@@ -25,8 +26,6 @@ type EmailLanguage = 'en' | 'fr';
 
 const subject = 'We’ve received your referral request – iRefair';
 const updatedSubject = 'We updated your referral request - iRefair';
-const jobOpeningsUrl =
-  'https://docs.google.com/document/d/1z6s9qb7G_7NUKlgar0eCzFfFvhfe4tW6L45S1wFvuQk/edit?tab=t.0';
 const ineligibleSubject = 'About your referral request - iRefair';
 
 const subjectFr = 'Nous avons bien reçu votre demande de recommandation – iRefair';
