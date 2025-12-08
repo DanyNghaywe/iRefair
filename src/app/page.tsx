@@ -17,14 +17,14 @@ const roles: RoleOption[] = [
   {
     id: 'candidate',
     label: 'Candidate',
-    description: 'Request referrals and keep your profile in motion.',
+    description: 'Find referrers for your applications and track progress in one place.',
     path: '/candidate',
     accent: '#4cc8e0',
   },
   {
     id: 'referrer',
     label: 'Referrer',
-    description: 'Share referrals and guide great candidates into your company.',
+    description: 'Refer strong candidates and help them land interviews at your company.',
     path: '/referrer',
     accent: '#8ad1ff',
   },
@@ -123,6 +123,17 @@ export default function Home() {
       document.removeEventListener('keydown', handleKeydown);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isOpen || !selectRef.current) return;
+
+    const options = Array.from(selectRef.current.querySelectorAll<HTMLButtonElement>('.role-select__option'));
+    options.forEach((option) => {
+      option.style.animation = 'none';
+      void option.offsetHeight; // Force reflow so the animation restarts on every open
+      option.style.animation = '';
+    });
+  }, [isOpen]);
 
   const createRipple = (event: React.MouseEvent<HTMLElement>) => {
     const element = event.currentTarget as HTMLElement;
@@ -230,16 +241,8 @@ export default function Home() {
                         aria-selected={selectedRole?.id === role.id}
                         className={`role-select__option ${selectedRole?.id === role.id ? 'is-active' : ''}`}
                         onClick={(event) => handleSelect(role, event)}
-                        style={
-                          {
-                            animationDelay: `${index * 0.08}s`,
-                            '--option-accent': role.accent,
-                          } as CSSProperties
-                        }
+                        style={{ animationDelay: `${index * 0.08}s` }}
                       >
-                        <span className={`role-select__option-icon role-select__option-icon--${role.id}`}>
-                          <RoleIcon id={role.id} />
-                        </span>
                         <div className="role-select__option-text">
                           <span className="role-select__option-name">{role.label}</span>
                           <span className="role-select__option-desc">{role.description}</span>
