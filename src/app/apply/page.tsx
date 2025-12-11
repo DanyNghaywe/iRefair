@@ -184,7 +184,7 @@ export default function ApplyPage() {
 
       <div className="board">
         <main>
-          <section className="card apply-card" aria-labelledby="apply-title">
+          <section className="card page-card apply-card" aria-labelledby="apply-title">
             <div className="apply-top">
               <div>
                 <p className="eyebrow">Application</p>

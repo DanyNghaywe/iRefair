@@ -89,24 +89,29 @@ export default function HiringCompaniesPage() {
 
       <div className="board">
         <main>
-          <section className="card hiring-card" aria-labelledby="hiring-title">
-            <header className="hiring-header">
-              <p className="eyebrow">Hiring now</p>
-              <h1 id="hiring-title">How does this work?</h1>
-              <p className="hiring-intro">To apply, please follow these steps:</p>
-              <ol className="hiring-steps">
-                <li>Review the companies listed in the table below.</li>
-                <li>
-                  Visit the <strong>Careers Page</strong> of the company you are interested in.
-                </li>
-                <li>Choose the position you wish to apply for.</li>
-                <li>
-                  Submit the <strong>Apply Now</strong> form on our page
-                  <span className="hiring-inline-note"> (not company&apos;s page)</span> — you will need to provide your{' '}
-                  <strong>iRAIN</strong>.
-                </li>
-              </ol>
-            </header>
+          <section className="card page-card hiring-card" aria-labelledby="hiring-title">
+            <div className="card-header">
+              <div>
+                <p className="eyebrow">Hiring now</p>
+                <h2 id="hiring-title">Hiring companies &amp; iRCRN list</h2>
+                <p className="lead">
+                  Follow these steps to find a suitable role and submit your application through iRefair.
+                </p>
+              </div>
+            </div>
+            <ol className="hiring-steps">
+              <li>Review the companies listed in the table below.</li>
+              <li>
+                Open the <strong>careers website</strong> of the company you are interested in.
+              </li>
+              <li>
+                Choose the position you want to apply for and note the company <strong>iRCRN</strong>.
+              </li>
+              <li>
+                Complete the <strong>Apply Now</strong> form on the iRefair website using your <strong>iRAIN</strong> and
+                the company <strong>iRCRN</strong>. Do not apply directly on the company website.
+              </li>
+            </ol>
 
             <div className="hiring-table-wrapper" aria-labelledby="company-table-title">
               <div className="hiring-table-title" id="company-table-title">
@@ -119,7 +124,7 @@ export default function HiringCompaniesPage() {
                       <th scope="col">iRCRN</th>
                       <th scope="col">Company Name</th>
                       <th scope="col">Industry</th>
-                      <th scope="col">Career&apos;s Website</th>
+                      <th scope="col">Careers website</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -130,8 +135,14 @@ export default function HiringCompaniesPage() {
                         <td>{company.industry}</td>
                         <td>
                           {company.careersUrl ? (
-                            <Link href={company.careersUrl} target="_blank" rel="noreferrer" className="hiring-link">
-                              {company.careersUrl}
+                            <Link
+                              href={company.careersUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="hiring-link"
+                              aria-label={`Open careers website for ${company.name}`}
+                            >
+                              Open careers website
                             </Link>
                           ) : (
                             <span className="hiring-missing">Not provided yet</span>
@@ -148,16 +159,14 @@ export default function HiringCompaniesPage() {
             </div>
 
             <p className="hiring-followup">
-              After you have found the suitable vacancy in the company you wish to join, get the iRCRN and your iRAIN
-              ready and{' '}
+              Once you have identified a suitable vacancy, keep the company <strong>iRCRN</strong> and your{' '}
+              <strong>iRAIN</strong> ready, then submit your application through the{' '}
               <Link href="/apply" className="hiring-link hiring-link--cta">
-                APPLY NOW
-              </Link>
-              .
+                Apply Now
+              </Link>{' '}
+              page on iRefair.
             </p>
-            <p className="hiring-good-luck">
-              GOOD LUCK <span aria-hidden="true">👍😊</span>
-            </p>
+            <p className="hiring-good-luck">We wish you success with your applications.</p>
           </section>
         </main>
       </div>

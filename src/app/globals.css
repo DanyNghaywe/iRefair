@@ -339,6 +339,14 @@ h1 {
   -webkit-backdrop-filter: blur(18px);
 }
 
+.page-card {
+  width: 100%;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 .role-picker {
   width: 100%;
   display: flex;
@@ -996,10 +1004,7 @@ h2 {
 }
 
 .apply-card {
-  width: min(940px, 100%);
-  margin: 0 auto;
-  display: flex;
-  flex-direction: column;
+  /* Layout comes from .page-card */
   gap: 12px;
 }
 
@@ -1681,14 +1686,8 @@ textarea:-webkit-autofill {
 }
 
 .hiring-card {
-  width: min(1060px, 100%);
-  margin: 0 auto;
-  display: grid;
+  /* Layout comes from .page-card */
   gap: 16px;
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.06));
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .hiring-card h1,
@@ -1701,42 +1700,36 @@ textarea:-webkit-autofill {
 }
 
 .hiring-header {
+  /* no special layout needed anymore; .card-header handles it */
+}
+
+.hiring-steps {
+  margin: 8px 0 12px;
+  padding-left: 20px;
+  display: grid;
+  gap: 4px;
+  color: rgba(255, 255, 255, 0.95);
+  font-size: var(--font-size-small); /* 14px instead of 16px */
+  line-height: var(--line-height-body);
+}
+
+.hiring-table-wrapper {
+  margin-top: 8px;
+  border-radius: 18px;
+  overflow: hidden;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 8px 14px 12px; /* add padding so the title isn’t clipped */
   display: grid;
   gap: 8px;
 }
 
-.hiring-intro {
-  margin: 0;
-  color: rgba(255, 255, 255, 0.88);
-  font-weight: 700;
-}
-
-.hiring-steps {
-  margin: 4px 0 0;
-  padding-left: 20px;
-  color: rgba(255, 255, 255, 0.95);
-  display: grid;
-  gap: 6px;
-}
-
-.hiring-inline-note {
-  color: #e53935;
-  font-weight: 700;
-}
-
-.hiring-table-wrapper {
-  display: grid;
-  gap: 10px;
-  background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(134, 190, 232, 0.12));
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  border-radius: 14px;
-  padding: 14px;
-  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.22);
-}
-
 .hiring-table-title {
-  font-weight: 800;
-  color: #ffffff;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-weight: 700;
+  color: hsla(0, 0%, 100%, 0.78);
 }
 
 .hiring-table-scroll {
@@ -1747,39 +1740,39 @@ textarea:-webkit-autofill {
 .hiring-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 760px;
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(224, 236, 255, 0.82));
+  background: transparent; /* no solid panel */
+  font-size: var(--font-size-small);
 }
 
 .hiring-table th,
 .hiring-table td {
-  border: 1px solid rgba(188, 205, 235, 0.66);
-  padding: 12px 14px;
-  text-align: left;
-  vertical-align: top;
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
 }
 
 .hiring-table th {
-  background: rgba(231, 240, 255, 0.96);
-  font-weight: 800;
+  background: rgba(255, 255, 255, 0.12); /* subtle frosted header */
+  font-weight: 600;
   color: #0f1d36;
 }
 
-.hiring-table td {
-  background: rgba(255, 255, 255, 0.9);
-  color: #0f172a;
+.hiring-table tr:nth-child(odd) td {
+  background: transparent; /* odd rows just sit on the card */
 }
 
 .hiring-table tr:nth-child(even) td {
-  background: rgba(229, 239, 255, 0.94);
+  background: rgba(255, 255, 255, 0.06); /* very light tint, not full blue */
 }
 
 .hiring-link {
-  color: var(--accent-2);
+  color: #e0f2ff; /* light icy blue = higher contrast */
+  font-weight: 500;
   text-decoration: underline;
-  text-decoration-thickness: 1.5px;
-  text-underline-offset: 3px;
-  word-break: break-word;
+  text-underline-offset: 2px;
+}
+
+.hiring-link:hover {
+  color: #ffffff; /* pure white on hover */
 }
 
 .hiring-link--cta {
@@ -1787,7 +1780,9 @@ textarea:-webkit-autofill {
 }
 
 .hiring-missing {
-  color: #5d6174;
+  color: rgba(255, 255, 255, 0.85); /* bright, high contrast on the teal background */
+  font-style: italic;
+  font-weight: 500;
 }
 
 .hiring-footnote {
@@ -1797,17 +1792,19 @@ textarea:-webkit-autofill {
 }
 
 .hiring-followup {
-  margin: 0;
-  color: #ffffff;
-  font-weight: 700;
+  margin: 12px 0 4px;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 400;
+  font-size: var(--font-size-small);      /* 14px */
+  line-height: var(--line-height-body);
 }
 
 .hiring-good-luck {
   margin: 4px 0 0;
-  text-align: right;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  color: #ffffff;
+  text-align: left;
+  color: rgba(255, 255, 255, 0.9);
+  font-weight: 500;
+  font-size: var(--font-size-small);      /* 14px */
 }
 
 @media (max-width: 1080px) {
@@ -1818,6 +1815,10 @@ textarea:-webkit-autofill {
 
   .card {
     padding: 20px;
+  }
+
+  .page-card {
+    width: 100%;
   }
 
   .hiring-card {

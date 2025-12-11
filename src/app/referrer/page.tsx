@@ -487,7 +487,7 @@ export default function ReferrerPage() {
 
       <div className="board">
         <main>
-          <section className="card referrer-card" aria-labelledby="referrer-title">
+          <section className="card page-card referrer-card" aria-labelledby="referrer-title">
             <div className="role-switch">
               <span className="role-switch__text">
                 {t.roleSwitch.prompt}{' '}

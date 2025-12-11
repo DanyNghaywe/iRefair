@@ -667,7 +667,7 @@ export default function CandidatePage() {
 
       <div className="board">
         <main>
-          <section className="card referral-card" aria-labelledby="referral-title">
+          <section className="card page-card referral-card" aria-labelledby="referral-title">
             <div className="role-switch">
               <span className="role-switch__text">
                 {t.switchText.prompt}{' '}
