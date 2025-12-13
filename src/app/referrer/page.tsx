@@ -77,23 +77,15 @@ const translations: Record<
       companyIndustryOther: string;
       workType: string;
       linkedin: string;
-      referralType: string;
-      monthlySlots: string;
-      targetRoles: string;
-      regions: string;
-      constraints: string;
     };
     placeholders: {
       linkedin: string;
-      targetRoles: string;
-      regions: string;
-      constraints: string;
       phone: string;
       country: string;
       workTypeOther: string;
       companyIndustryOther: string;
     };
-    selects: { selectLabel: string; referralType: string[]; monthlySlots: string[] };
+    selects: { selectLabel: string };
     optional: string;
     statusMessages: { ok: string; error: string };
     errors: { submissionFailed: string };
@@ -110,6 +102,14 @@ const translations: Record<
     consentIntro: string;
     consentPoints: string[];
     consentAgreement: string;
+    success: {
+      title: string;
+      thankYou: string;
+      iRainLabel: string;
+      founderIntro: string;
+      founderCtaLabel: string;
+      founderCtaNote: string;
+    };
   }
 > = {
   en: {
@@ -143,9 +143,6 @@ const translations: Record<
     },
     placeholders: {
       linkedin: 'https://linkedin.com/in/',
-      targetRoles: 'e.g. Product Design, Backend (Go/Java), GTM in EMEA',
-      regions: 'e.g. US, Canada, Europe',
-      constraints: 'e.g. Only full-time roles, no agency work, NDA needed',
       phone: '+1-XXX-XXXX or +961-XX-XXXXXX',
       country: 'e.g. Canada',
       companyIndustryOther: 'Please specify',
@@ -153,8 +150,6 @@ const translations: Record<
     },
     selects: {
       selectLabel: 'Select',
-      referralType: ['Internal employee referral', 'Recruiter-led introduction', 'Peer recommendation'],
-      monthlySlots: ['1-3 candidates', '4-8 candidates', '9-15 candidates', 'Unlimited'],
     },
     optional: '(optional)',
     statusMessages: {
@@ -189,6 +184,16 @@ const translations: Record<
       'My participation is entirely optional, and I can opt out at any time via contacting info@andbeyondca.com.',
     ],
     consentAgreement: 'I have read, understood, and agree to the above terms.',
+    success: {
+      title: 'Thank you for contributing to iRefair',
+      thankYou:
+        'Thank you for sharing your referrer details and supporting iRefair. Your contribution helps candidates who are actively looking for work and rely on community referrals.',
+      iRainLabel: 'Your iRefair referral ID (iRAIN):',
+      founderIntro:
+        'Our Founder & Managing Director would also like to meet you, get to know you better, and explore how we can collaborate together.',
+      founderCtaLabel: 'Schedule a meeting with the Founder',
+      founderCtaNote: 'Coming soon: this scheduling link is not active yet.',
+    },
   },
   fr: {
     roleSwitch: { prompt: 'Pas référent ?', link: 'Passer au candidat' },
@@ -221,9 +226,6 @@ const translations: Record<
     },
     placeholders: {
       linkedin: 'https://linkedin.com/in/',
-      targetRoles: 'ex. Design produit, Backend (Go/Java), GTM en EMEA',
-      regions: 'ex. États-Unis, Canada, Europe',
-      constraints: 'ex. Uniquement temps plein, pas de missions agence, NDA requis',
       phone: '+1-XXX-XXXX ou +961-XX-XXXXXX',
       country: 'ex. France',
       companyIndustryOther: 'Précisez',
@@ -231,8 +233,6 @@ const translations: Record<
     },
     selects: {
       selectLabel: 'Sélectionner',
-      referralType: ['Recommandation en interne', 'Introduction menée par un recruteur', 'Recommandation par un pair'],
-      monthlySlots: ['1-3 candidats', '4-8 candidats', '9-15 candidats', 'Illimité'],
     },
     optional: '(optionnel)',
     statusMessages: {
@@ -267,6 +267,16 @@ const translations: Record<
       'Ma participation est entièrement facultative, et je peux me retirer à tout moment en contactant info@andbeyondca.com.',
     ],
     consentAgreement: "J'ai lu, compris et j'accepte les conditions ci-dessus.",
+    success: {
+      title: 'Merci de contribuer Aÿ iRefair',
+      thankYou:
+        "Merci d’avoir partagAc vos informations de rAcfArent et de soutenir iRefair. Votre contribution aide des candidats qui recherchent activement un emploi et comptent sur les recommandations de la communautAc.",
+      iRainLabel: 'Votre identifiant de recommandation iRefair (iRAIN) :',
+      founderIntro:
+        "Le fondateur et directeur gAcnAc ral d’iRefair souhaiterait AAcgalement vous rencontrer pour mieux vous connaAAtre et voir comment vous pourriez collaborer ensemble.",
+      founderCtaLabel: 'Planifier un rendez-vous avec le fondateur',
+      founderCtaNote: "BAcentAt disponible : le lien de prise de rendez-vous n’est pas encore actif.",
+    },
   },
 };
 
@@ -281,6 +291,7 @@ export default function ReferrerPage() {
   const [companyIndustrySelection, setCompanyIndustrySelection] = useState('');
   const [countrySelection, setCountrySelection] = useState('');
   const [workTypeSelection, setWorkTypeSelection] = useState('');
+  const [iRain, setIRain] = useState<string | null>(null);
   const t = translations[language];
 
   useEffect(() => {
@@ -373,11 +384,6 @@ export default function ReferrerPage() {
       linkedin: valueOf('referrer-linkedin'),
       phone: valueOf('referrer-phone'),
       country: valueOf('referrer-country'),
-      referralType: valueOf('referral-type'),
-      monthlySlots: valueOf('monthly-slots'),
-      targetRoles: valueOf('target-roles'),
-      regions: valueOf('regions'),
-      constraints: valueOf('constraints'),
     };
   };
 
@@ -400,20 +406,18 @@ export default function ReferrerPage() {
     if (!values.phone) nextErrors['referrer-phone'] = 'Please enter your phone number.';
     if (!values.country) nextErrors['referrer-country'] = 'Please select your country of origin.';
 
-    if (!values.referralType) nextErrors['referral-type'] = 'Please select a referral type.';
-    if (!values.monthlySlots) nextErrors['monthly-slots'] = 'Please select monthly slots.';
-
-    if (!values.targetRoles) nextErrors['target-roles'] = 'Please enter the teams and roles you cover.';
-    if (!values.regions) nextErrors.regions = 'Please enter the regions you cover.';
-    if (values.constraints && values.constraints.length > 500) nextErrors.constraints = 'Constraints must be under 500 characters.';
-
     return nextErrors;
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
-    const values = getFormValues(formData);
+    const values = {
+      ...getFormValues(formData),
+      companyIndustry: companyIndustrySelection,
+      country: countrySelection,
+      workType: workTypeSelection,
+    };
     const validationErrors = validateValues(values);
 
     const linkedinInput = linkedinInputRef.current;
@@ -451,13 +455,11 @@ export default function ReferrerPage() {
       language,
       phone: values.phone,
       country: values.country,
+      company: values.company,
       companyIndustry: values.companyIndustry,
       companyIndustryOther: values.companyIndustryOther,
       workType: values.workType,
-      targetRoles: values.targetRoles,
-      regions: values.regions,
-      referralType: values.referralType,
-      monthlySlots: values.monthlySlots,
+      linkedin: values.linkedin,
     };
 
     try {
@@ -472,8 +474,10 @@ export default function ReferrerPage() {
         throw new Error(data?.error || t.errors.submissionFailed);
       }
 
+      setIRain(typeof data.iRain === 'string' ? data.iRain : null);
       setStatus('ok');
     } catch {
+      setIRain(null);
       setStatus('error');
     } finally {
       setSubmitting(false);
@@ -527,6 +531,38 @@ export default function ReferrerPage() {
               </div>
             </div>
 
+            {status === 'ok' && iRain && (
+              <section
+                className="success-panel"
+                aria-live="polite"
+                aria-label={t.success.title}
+                style={{ marginBottom: '1.5rem' }}
+              >
+                <h3 className="success-title">{t.success.title}</h3>
+                <p className="success-text">{t.success.thankYou}</p>
+
+                <p className="success-irain">
+                  <span className="success-irain-label">{t.success.iRainLabel} </span>
+                  <code className="success-irain-value">{iRain}</code>
+                </p>
+
+                <p className="success-founder">{t.success.founderIntro}</p>
+
+                <div className="success-founder-actions">
+                  <button
+                    type="button"
+                    className="btn secondary"
+                    disabled
+                    aria-disabled="true"
+                    title={t.success.founderCtaNote}
+                  >
+                    {t.success.founderCtaLabel}
+                  </button>
+                  <p className="success-founder-note">{t.success.founderCtaNote}</p>
+                </div>
+              </section>
+            )}
+
             <form
               ref={formRef}
               className="referral-form"
@@ -537,6 +573,7 @@ export default function ReferrerPage() {
                 setErrors({});
                 linkedinInputRef.current?.setCustomValidity('');
                 setStatus('idle');
+                setIRain(null);
                 setCompanyIndustrySelection('');
                 setCountrySelection('');
                 setWorkTypeSelection('');

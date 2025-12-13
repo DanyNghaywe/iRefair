@@ -1,5 +1,9 @@
 import { NextResponse } from 'next/server';
-import { appendApplicationRow, generateSubmissionId } from '@/lib/sheets';
+import {
+  appendApplicationRow,
+  findCandidateByIdentifier,
+  generateSubmissionId,
+} from '@/lib/sheets';
 
 type ApplyPayload = {
   candidateId?: string;
@@ -22,22 +26,42 @@ export async function POST(request: Request) {
 
     if (!candidateId || !iCrn || !position) {
       return NextResponse.json(
-        { ok: false, error: 'Please provide your Candidate ID, iRCRN, and the position you are applying for.' },
+        {
+          ok: false,
+          error:
+            'Please provide your iRAIN (or legacy candidate ID), iRCRN, and the position you are applying for.',
+        },
         { status: 400 },
+      );
+    }
+
+    const candidateRecord = await findCandidateByIdentifier(candidateId);
+    if (!candidateRecord) {
+      return NextResponse.json(
+        { ok: false, error: 'We could not find a candidate with that ID.' },
+        { status: 404 },
       );
     }
 
     const id = await generateSubmissionId('APP');
     await appendApplicationRow({
       id,
-      candidateId,
+      candidateId: candidateRecord.record.id || candidateId,
       iCrn,
       position,
       referenceNumber,
       resumeFileName,
     });
 
-    return NextResponse.json({ ok: true, id });
+    return NextResponse.json({
+      ok: true,
+      id,
+      candidate: {
+        id: candidateRecord.record.id,
+        legacyCandidateId: candidateRecord.record.legacyCandidateId,
+        rowIndex: candidateRecord.rowIndex,
+      },
+    });
   } catch (error) {
     console.error('Error submitting application', error);
     return NextResponse.json(

@@ -121,7 +121,7 @@ export default function ApplyPage() {
 
   const validate = () => {
     const nextErrors: Record<string, string> = {};
-    if (!candidateId.trim()) nextErrors.candidateId = 'Please enter your Candidate ID.';
+    if (!candidateId.trim()) nextErrors.candidateId = 'Please enter your iRAIN or legacy CAND ID.';
     if (!iCrn.trim()) nextErrors.iCrn = 'Please enter the iRCRN.';
     if (!position.trim()) nextErrors.position = 'Please enter the position you are applying for.';
 
@@ -194,7 +194,7 @@ export default function ApplyPage() {
                   them with professionals who can refer them for jobs.
                 </p>
                 <p className="apply-text">
-                  Use this form to apply to the company you wish to join. You will need your iRefair Candidate ID and the
+                  Use this form to apply to the company you wish to join. You will need your iRefair iRAIN and the
                   iRefair Company Reference Number (iRCRN).
                 </p>
                 <p className="apply-link-row">
@@ -227,7 +227,7 @@ export default function ApplyPage() {
               <div className="field-grid field-grid--two">
                 <div className={fieldClass('candidateId')}>
                   <div className="field-label-row">
-                    <label htmlFor="candidate-id">Your Candidate ID *</label>
+                    <label htmlFor="candidate-id">Your iRAIN *</label>
                     {hasCandidateIdOptions && (
                       <button
                         type="button"
@@ -269,7 +269,7 @@ export default function ApplyPage() {
                       name="candidate-id"
                       type="text"
                       required
-                      placeholder="Enter your Candidate ID"
+                      placeholder="Enter your iRAIN (legacy CAND-... also accepted)"
                       value={candidateId}
                       aria-invalid={Boolean(errors.candidateId)}
                       aria-describedby="candidate-id-error"
