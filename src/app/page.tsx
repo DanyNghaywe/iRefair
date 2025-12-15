@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
-import { ParticlesBackground } from '@/components/ParticlesBackground';
+import { AppShell } from '@/components/AppShell';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 
 type RoleOption = {
@@ -166,107 +166,102 @@ export default function Home() {
   };
 
   return (
-    <div className="app">
-      <div className="background-hero" aria-hidden="true" />
-      <ParticlesBackground />
+    <AppShell>
+      <main className="role-picker">
+        <section className="role-shell" aria-labelledby="role-heading">
+          <header className="role-shell__header">
+            <h1 id="role-heading" className="title-animate">
+              Choose your path
+            </h1>
+          </header>
 
-      <div className="board">
-        <main className="role-picker">
-          <section className="role-shell" aria-labelledby="role-heading">
-            <header className="role-shell__header">
-              <h1 id="role-heading" className="title-animate">
-                Choose your path
-              </h1>
-            </header>
-
-            <div className="select-panel">
-              <div
-                className="role-select"
-                ref={selectRef}
-                style={{ '--role-accent': selectedRole?.accent ?? '#7ad7e3' } as CSSProperties}
+          <div className="select-panel">
+            <div
+              className="role-select"
+              ref={selectRef}
+              style={{ '--role-accent': selectedRole?.accent ?? '#7ad7e3' } as CSSProperties}
+            >
+              <button
+                type="button"
+                className={`role-select__trigger ${isOpen ? 'is-open' : ''}`}
+                onClick={(event) => {
+                  createRipple(event);
+                  toggleDropdown();
+                }}
+                aria-haspopup="listbox"
+                aria-expanded={isOpen}
+                aria-controls="role-dropdown"
               >
-                <button
-                  type="button"
-                  className={`role-select__trigger ${isOpen ? 'is-open' : ''}`}
-                  onClick={(event) => {
-                    createRipple(event);
-                    toggleDropdown();
-                  }}
-                  aria-haspopup="listbox"
-                  aria-expanded={isOpen}
-                  aria-controls="role-dropdown"
-                >
-                  <div className="role-select__selected">
-                    <span
-                      className={`role-select__pill ${
-                        selectedRole ? `role-select__pill--${selectedRole.id}` : 'role-select__pill--placeholder'
-                      }`}
-                    >
-                      {selectedRole ? <RoleIcon id={selectedRole.id} /> : <PlaceholderIcon />}
-                    </span>
-                    <div className="role-select__labels">
-                      <span className={`role-select__name ${selectedRole ? '' : 'is-placeholder'}`}>
-                        {selectedRole ? selectedRole.label : 'Choose your role'}
-                      </span>
-                      <span className="role-select__hint">
-                        {selectedRole ? selectedRole.description : 'Start as a Candidate or a Referrer'}
-                      </span>
-                    </div>
-                  </div>
-                  <span className="role-select__arrow" aria-hidden="true">
-                    <svg viewBox="0 0 24 24" fill="none">
-                      <path
-                        d="M6 9l6 6 6-6"
-                        stroke="currentColor"
-                        strokeWidth="1.8"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
+                <div className="role-select__selected">
+                  <span
+                    className={`role-select__pill ${
+                      selectedRole ? `role-select__pill--${selectedRole.id}` : 'role-select__pill--placeholder'
+                    }`}
+                  >
+                    {selectedRole ? <RoleIcon id={selectedRole.id} /> : <PlaceholderIcon />}
                   </span>
-                </button>
-
-                <div
-                  id="role-dropdown"
-                  className={`role-select__dropdown ${isOpen ? 'is-open' : ''}`}
-                  role="listbox"
-                  aria-label="Choose your role"
-                >
-                  <div className={`role-select__options ${filteredRoles.length === 0 ? 'is-empty' : ''}`}>
-                    {filteredRoles.map((role, index) => (
-                      <button
-                        key={role.id}
-                        type="button"
-                        role="option"
-                        aria-selected={selectedRole?.id === role.id}
-                        className={`role-select__option ${selectedRole?.id === role.id ? 'is-active' : ''}`}
-                        onClick={(event) => handleSelect(role, event)}
-                        style={{ animationDelay: `${index * 0.08}s` }}
-                      >
-                        <div className="role-select__option-text">
-                          <span className="role-select__option-name">{role.label}</span>
-                          <span className="role-select__option-desc">{role.description}</span>
-                        </div>
-                        <span className="role-select__option-action">Continue</span>
-                      </button>
-                    ))}
+                  <div className="role-select__labels">
+                    <span className={`role-select__name ${selectedRole ? '' : 'is-placeholder'}`}>
+                      {selectedRole ? selectedRole.label : 'Choose your role'}
+                    </span>
+                    <span className="role-select__hint">
+                      {selectedRole ? selectedRole.description : 'Start as a Candidate or a Referrer'}
+                    </span>
                   </div>
+                </div>
+                <span className="role-select__arrow" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none">
+                    <path
+                      d="M6 9l6 6 6-6"
+                      stroke="currentColor"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              </button>
 
-                  <div className={`role-select__no-results ${filteredRoles.length === 0 ? 'show' : ''}`}>
-                    <div className="role-select__no-results-icon" aria-hidden="true">
-                      <svg viewBox="0 0 24 24" fill="none">
-                        <circle cx="11" cy="11" r="6" stroke="currentColor" strokeWidth="1.6" />
-                        <path d="m15.5 15.5 3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                      </svg>
-                    </div>
-                    <p>No results found</p>
+              <div
+                id="role-dropdown"
+                className={`role-select__dropdown ${isOpen ? 'is-open' : ''}`}
+                role="listbox"
+                aria-label="Choose your role"
+              >
+                <div className={`role-select__options ${filteredRoles.length === 0 ? 'is-empty' : ''}`}>
+                  {filteredRoles.map((role, index) => (
+                    <button
+                      key={role.id}
+                      type="button"
+                      role="option"
+                      aria-selected={selectedRole?.id === role.id}
+                      className={`role-select__option ${selectedRole?.id === role.id ? 'is-active' : ''}`}
+                      onClick={(event) => handleSelect(role, event)}
+                      style={{ animationDelay: `${index * 0.08}s` }}
+                    >
+                      <div className="role-select__option-text">
+                        <span className="role-select__option-name">{role.label}</span>
+                        <span className="role-select__option-desc">{role.description}</span>
+                      </div>
+                      <span className="role-select__option-action">Continue</span>
+                    </button>
+                  ))}
+                </div>
+
+                <div className={`role-select__no-results ${filteredRoles.length === 0 ? 'show' : ''}`}>
+                  <div className="role-select__no-results-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none">
+                      <circle cx="11" cy="11" r="6" stroke="currentColor" strokeWidth="1.6" />
+                      <path d="m15.5 15.5 3 3" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                    </svg>
                   </div>
+                  <p>No results found</p>
                 </div>
               </div>
             </div>
-          </section>
-        </main>
-      </div>
-    </div>
+          </div>
+        </section>
+      </main>
+    </AppShell>
   );
 }

@@ -7,6 +7,7 @@ type MailInput = {
   subject: string;
   html: string;
   text: string;
+  cc?: string | string[];
 };
 
 let cachedTransporter: nodemailer.Transporter | null = null;
@@ -36,7 +37,7 @@ function getTransporter() {
   return cachedTransporter;
 }
 
-export async function sendMail({ to, subject, html, text }: MailInput) {
+export async function sendMail({ to, subject, html, text, cc }: MailInput) {
   const fromName = process.env.SMTP_FROM_NAME || 'iRefair';
   const fromEmail = process.env.SMTP_FROM_EMAIL || process.env.SMTP_USER || 'info@andbeyondca.com';
   const from = `"${fromName}" <${fromEmail}>`;
@@ -46,6 +47,7 @@ export async function sendMail({ to, subject, html, text }: MailInput) {
     const info = await transporter.sendMail({
       from,
       to,
+      cc,
       subject,
       html,
       text,

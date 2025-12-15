@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
-import { ParticlesBackground } from '@/components/ParticlesBackground';
+import { AppShell } from '@/components/AppShell';
 import { Select } from '@/components/Select';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 import { countryOptions } from '@/lib/countries';
@@ -661,51 +661,47 @@ export default function CandidatePage() {
   };
 
   return (
-    <div className="app">
-      <div className="background-hero" aria-hidden="true" />
-      <ParticlesBackground />
-
-      <div className="board">
-        <main>
-          <section className="card page-card referral-card" aria-labelledby="referral-title">
-            <div className="role-switch">
-              <span className="role-switch__text">
-                {t.switchText.prompt}{' '}
-                <Link
-                  href="/referrer"
-                  onClick={() => {
-                    startNavigation('/referrer');
-                  }}
-                >
-                  {t.switchText.link}
-                </Link>
-              </span>
-            </div>
-            <div className="language-toggle" role="group" aria-label={t.languageLabel}>
-              <button
-                type="button"
-                className={`language-toggle__btn ${language === 'en' ? 'is-active' : ''}`}
-                onClick={() => setLanguage('en')}
-                aria-pressed={language === 'en'}
+    <AppShell>
+      <main>
+        <section className="card page-card referral-card" aria-labelledby="referral-title">
+          <div className="role-switch">
+            <span className="role-switch__text">
+              {t.switchText.prompt}{' '}
+              <Link
+                href="/referrer"
+                onClick={() => {
+                  startNavigation('/referrer');
+                }}
               >
-                {t.english}
-              </button>
-              <button
-                type="button"
-                className={`language-toggle__btn ${language === 'fr' ? 'is-active' : ''}`}
-                onClick={() => setLanguage('fr')}
-                aria-pressed={language === 'fr'}
-              >
-                {t.french}
-              </button>
+                {t.switchText.link}
+              </Link>
+            </span>
+          </div>
+          <div className="language-toggle" role="group" aria-label={t.languageLabel}>
+            <button
+              type="button"
+              className={`language-toggle__btn ${language === 'en' ? 'is-active' : ''}`}
+              onClick={() => setLanguage('en')}
+              aria-pressed={language === 'en'}
+            >
+              {t.english}
+            </button>
+            <button
+              type="button"
+              className={`language-toggle__btn ${language === 'fr' ? 'is-active' : ''}`}
+              onClick={() => setLanguage('fr')}
+              aria-pressed={language === 'fr'}
+            >
+              {t.french}
+            </button>
+          </div>
+          <div className="card-header">
+            <div>
+              <p className="eyebrow">{t.eyebrow}</p>
+              <h2 id="referral-title">{t.title}</h2>
+              <p className="lead">{t.lead}</p>
             </div>
-            <div className="card-header">
-              <div>
-                <p className="eyebrow">{t.eyebrow}</p>
-                <h2 id="referral-title">{t.title}</h2>
-                <p className="lead">{t.lead}</p>
-              </div>
-            </div>
+          </div>
 
             <form
               ref={formRef}
@@ -1157,7 +1153,6 @@ export default function CandidatePage() {
             </form>
           </section>
         </main>
-      </div>
-    </div>
-  );
+      </AppShell>
+    );
 }

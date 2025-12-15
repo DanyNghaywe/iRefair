@@ -43,6 +43,20 @@ export const REFERRER_HEADERS = [
   'Work Type',
   'LinkedIn',
 ];
+export const MATCH_SHEET_NAME = 'Matches';
+export const MATCH_HEADERS = [
+  'Match ID',
+  'Created At',
+  'Candidate iRAIN',
+  'Referrer iRAIN',
+  'Company iRCRN',
+  'Position / Context',
+  'Stage',
+  'Notes',
+  'Intro Sent At',
+];
+export const ADMIN_TRACKING_COLUMNS = ['Status', 'Owner Notes', 'Tags', 'Last Contacted At', 'Next Action At'];
+export const APPLICATION_ADMIN_COLUMNS = ['Status', 'Owner Notes'];
 
 const IRCRN_REGEX = /^iRCRN(\d{10})$/i;
 const IRAIN_REGEX = /^iRAIN(\d{10})$/i;
@@ -349,7 +363,7 @@ export async function applyProSheetFormatting(sheetName: string, headers: string
     },
   });
 }
-const APPLICATION_HEADERS = [
+export const APPLICATION_HEADERS = [
   'ID',
   'Timestamp',
   'Candidate ID',
@@ -358,7 +372,7 @@ const APPLICATION_HEADERS = [
   'Reference Number',
   'Resume File Name',
 ];
-const APPLICATION_SHEET_NAME = 'Applications';
+export const APPLICATION_SHEET_NAME = 'Applications';
 
 type CandidateRow = {
   id: string;
@@ -496,12 +510,16 @@ async function appendLegacyCandidateHeaderIfMissing(
   return { headers: updatedHeaders, appended: true };
 }
 
-async function ensureHeaders(sheetName: string, headers: string[], force = false) {
-  if (!force && headersInitialized.has(sheetName)) return;
-  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
-  if (!spreadsheetId) {
-    throw new Error('Missing Google Sheets spreadsheet ID. Please set GOOGLE_SHEETS_SPREADSHEET_ID.');
+export async function ensureHeaders(
+  sheetName: string,
+  headers: string[],
+  force = false,
+): Promise<{ created: boolean }> {
+  if (!force && headersInitialized.has(sheetName)) {
+    await ensureAdminColumnsForSheet(sheetName);
+    return { created: false };
   }
+  const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
   let createdSheet = false;
   let sheetId: number | undefined;
@@ -523,8 +541,8 @@ async function ensureHeaders(sheetName: string, headers: string[], force = false
                   title: sheetName,
                   gridProperties: {
                     frozenRowCount: 1,
+                    hideGridlines: true,
                   },
-                  hiddenGridlines: true,
                 },
               },
             },
@@ -576,7 +594,7 @@ async function ensureHeaders(sheetName: string, headers: string[], force = false
         needsFormatting = true;
       } else {
         const now = new Date();
-    const backupTitle = `${REFERRER_LEGACY_PREFIX}${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+        const backupTitle = `${REFERRER_LEGACY_PREFIX}${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
 
         await sheets.spreadsheets.batchUpdate({
           spreadsheetId,
@@ -673,6 +691,8 @@ async function ensureHeaders(sheetName: string, headers: string[], force = false
     }
   }
   headersInitialized.add(sheetName);
+  await ensureAdminColumnsForSheet(sheetName);
+  return { created: createdSheet };
 }
 
 async function appendRow(sheetName: string, values: (string | number | null)[]) {
@@ -1049,4 +1069,688 @@ export async function migrateLegacyCandidateIds() {
 export async function formatSheet(sheetName: string, headers: string[]) {
   await ensureHeaders(sheetName, headers, true);
   await applyProSheetFormatting(sheetName, headers);
+}
+
+async function ensureAdminColumnsForSheet(sheetName: string) {
+  if (sheetName === CANDIDATE_SHEET_NAME || sheetName === REFERRER_SHEET_NAME) {
+    return ensureColumns(sheetName, ADMIN_TRACKING_COLUMNS);
+  }
+
+  if (sheetName === APPLICATION_SHEET_NAME) {
+    return ensureColumns(sheetName, APPLICATION_ADMIN_COLUMNS);
+  }
+
+  return { appended: [], headers: [] };
+}
+
+export async function ensureColumns(
+  sheetName: string,
+  requiredHeaders: string[],
+): Promise<{ appended: string[]; headers: string[] }> {
+  if (!requiredHeaders.length) {
+    return { appended: [], headers: [] };
+  }
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  const current = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!1:1`,
+  });
+  const existingHeaders = (current.data.values?.[0] ?? []).map((value) => String(value));
+  const existingSet = new Set(existingHeaders.map((header) => header.trim()));
+  const missing = requiredHeaders.filter((header) => !existingSet.has(header));
+
+  if (!missing.length) {
+    return { appended: [], headers: existingHeaders };
+  }
+
+  const updatedHeaders = [...existingHeaders, ...missing];
+  const headerRange = `${sheetName}!A1:${toColumnLetter(updatedHeaders.length - 1)}1`;
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: headerRange,
+    valueInputOption: 'RAW',
+    requestBody: { majorDimension: 'ROWS', values: [updatedHeaders] },
+  });
+
+  try {
+    await applyProSheetFormatting(sheetName, updatedHeaders);
+  } catch (error) {
+    console.error('Sheet formatting failed (non-fatal):', error);
+  }
+
+  return { appended: missing, headers: updatedHeaders };
+}
+
+type CandidateListParams = {
+  search?: string;
+  status?: string;
+  eligible?: boolean;
+  locatedCanada?: string;
+  limit?: number;
+  offset?: number;
+};
+
+type ReferrerListParams = {
+  search?: string;
+  status?: string;
+  company?: string;
+  limit?: number;
+  offset?: number;
+};
+
+type ApplicationListParams = {
+  search?: string;
+  status?: string;
+  ircrn?: string;
+  limit?: number;
+  offset?: number;
+};
+
+type MatchListParams = {
+  search?: string;
+  stage?: string;
+  limit?: number;
+  offset?: number;
+};
+
+const DEFAULT_LIMIT = 50;
+
+function headerIndex(headers: string[], name: string) {
+  return headers.findIndex((header) => header.trim() === name.trim());
+}
+
+function buildHeaderMap(headers: string[]) {
+  const map = new Map<string, number>();
+  headers.forEach((header, index) => map.set(header, index));
+  return map;
+}
+
+function getHeaderValue(
+  headers: Map<string, number>,
+  row: (string | number | null | undefined)[],
+  name: string,
+) {
+  const index = headers.get(name);
+  if (index === undefined || index < 0) return '';
+  return cellValue(row, index);
+}
+
+function paginate<T>(items: T[], offset?: number, limit?: number) {
+  const safeOffset = Number.isFinite(offset) && offset && offset > 0 ? offset : 0;
+  const safeLimit = Number.isFinite(limit) && limit && limit > 0 ? limit : DEFAULT_LIMIT;
+  return items.slice(safeOffset, safeOffset + safeLimit);
+}
+
+function normalizeSearch(value?: string) {
+  return value ? value.trim().toLowerCase() : '';
+}
+
+export async function listCandidates(params: CandidateListParams) {
+  await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${CANDIDATE_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  if (!headers.length) return { total: 0, items: [] as unknown[] };
+
+  const lastCol = toColumnLetter(headers.length - 1);
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${CANDIDATE_SHEET_NAME}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const headerMap = buildHeaderMap(headers);
+  const rows = (existing.data.values ?? []).slice(1);
+  const searchTerm = normalizeSearch(params.search);
+  const statusFilter = normalizeSearch(params.status);
+  const locationFilter = normalizeSearch(params.locatedCanada);
+  const eligibleFilter =
+    params.eligible === true ? true : params.eligible === false ? false : undefined;
+
+  const items = rows
+    .map((row) => {
+      const locatedCanada = getHeaderValue(headerMap, row, 'Located in Canada');
+      const eligibleMove = getHeaderValue(headerMap, row, 'Eligible to Move (6 Months)');
+      const eligible =
+        locatedCanada.trim().toLowerCase() === 'yes' ||
+        eligibleMove.trim().toLowerCase() === 'yes';
+      const eligibilityReason = eligible
+        ? locatedCanada.trim().toLowerCase() === 'yes'
+          ? 'In Canada'
+          : 'Can move in 6 months'
+        : 'Not eligible';
+
+      const missingFields: string[] = [];
+      if (!getHeaderValue(headerMap, row, 'Email')) missingFields.push('Email');
+      if (!getHeaderValue(headerMap, row, 'Phone')) missingFields.push('Phone');
+      if (!locatedCanada) missingFields.push('Located in Canada');
+      if (!getHeaderValue(headerMap, row, 'Work Authorization')) {
+        missingFields.push('Work Authorization');
+      }
+
+      const record = {
+        irain: getHeaderValue(headerMap, row, 'iRAIN'),
+        timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
+        firstName: getHeaderValue(headerMap, row, 'First Name'),
+        middleName: getHeaderValue(headerMap, row, 'Middle Name'),
+        familyName: getHeaderValue(headerMap, row, 'Family Name'),
+        email: getHeaderValue(headerMap, row, 'Email'),
+        phone: getHeaderValue(headerMap, row, 'Phone'),
+        locatedCanada,
+        province: getHeaderValue(headerMap, row, 'Province'),
+        workAuthorization: getHeaderValue(headerMap, row, 'Work Authorization'),
+        eligibleMoveCanada: eligibleMove,
+        countryOfOrigin: getHeaderValue(headerMap, row, 'Country of Origin'),
+        languages: getHeaderValue(headerMap, row, 'Languages'),
+        languagesOther: getHeaderValue(headerMap, row, 'Languages Other'),
+        industryType: getHeaderValue(headerMap, row, 'Industry Type'),
+        industryOther: getHeaderValue(headerMap, row, 'Industry Other'),
+        employmentStatus: getHeaderValue(headerMap, row, 'Employment Status'),
+        legacyCandidateId: getHeaderValue(headerMap, row, LEGACY_CANDIDATE_ID_HEADER),
+        status: getHeaderValue(headerMap, row, 'Status'),
+        ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
+        tags: getHeaderValue(headerMap, row, 'Tags'),
+        lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
+        nextActionAt: getHeaderValue(headerMap, row, 'Next Action At'),
+        eligibility: {
+          eligible,
+          reason: eligibilityReason,
+        },
+        missingFields,
+      };
+
+      return record;
+    })
+    .filter((record) => {
+      if (searchTerm) {
+        const haystack = [
+          record.irain,
+          record.email,
+          record.firstName,
+          record.middleName,
+          record.familyName,
+          record.phone,
+          record.province,
+          record.languages,
+          record.industryType,
+          record.countryOfOrigin,
+          record.tags,
+          record.ownerNotes,
+        ]
+          .filter(Boolean)
+          .map((value) => value.toLowerCase());
+        const matches = haystack.some((value) => value.includes(searchTerm));
+        if (!matches) return false;
+      }
+
+      if (statusFilter && record.status.toLowerCase() !== statusFilter) return false;
+      if (locationFilter && record.locatedCanada.toLowerCase() !== locationFilter) return false;
+      if (eligibleFilter !== undefined && record.eligibility.eligible !== eligibleFilter) {
+        return false;
+      }
+      return true;
+    });
+
+  return {
+    total: items.length,
+    items: paginate(items, params.offset, params.limit),
+  };
+}
+
+export async function listReferrers(params: ReferrerListParams) {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${REFERRER_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  if (!headers.length) return { total: 0, items: [] as unknown[] };
+
+  const lastCol = toColumnLetter(headers.length - 1);
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${REFERRER_SHEET_NAME}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const headerMap = buildHeaderMap(headers);
+  const rows = (existing.data.values ?? []).slice(1);
+  const searchTerm = normalizeSearch(params.search);
+  const statusFilter = normalizeSearch(params.status);
+  const companyFilter = normalizeSearch(params.company);
+
+  const items = rows
+    .map((row) => {
+      const missingFields: string[] = [];
+      if (!getHeaderValue(headerMap, row, 'Email')) missingFields.push('Email');
+      if (!getHeaderValue(headerMap, row, 'Phone')) missingFields.push('Phone');
+      if (!getHeaderValue(headerMap, row, 'Company')) missingFields.push('Company');
+
+      return {
+        irain: getHeaderValue(headerMap, row, 'iRAIN'),
+        timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
+        name: getHeaderValue(headerMap, row, 'Name'),
+        email: getHeaderValue(headerMap, row, 'Email'),
+        phone: getHeaderValue(headerMap, row, 'Phone'),
+        country: getHeaderValue(headerMap, row, 'Country'),
+        company: getHeaderValue(headerMap, row, 'Company'),
+        companyIndustry: getHeaderValue(headerMap, row, 'Company Industry'),
+        workType: getHeaderValue(headerMap, row, 'Work Type'),
+        linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
+        status: getHeaderValue(headerMap, row, 'Status'),
+        ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
+        tags: getHeaderValue(headerMap, row, 'Tags'),
+        lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
+        nextActionAt: getHeaderValue(headerMap, row, 'Next Action At'),
+        missingFields,
+      };
+    })
+    .filter((record) => {
+      if (searchTerm) {
+        const haystack = [
+          record.irain,
+          record.email,
+          record.name,
+          record.phone,
+          record.country,
+          record.company,
+          record.companyIndustry,
+          record.workType,
+          record.tags,
+          record.ownerNotes,
+        ]
+          .filter(Boolean)
+          .map((value) => value.toLowerCase());
+        const matches = haystack.some((value) => value.includes(searchTerm));
+        if (!matches) return false;
+      }
+
+      if (statusFilter && record.status.toLowerCase() !== statusFilter) return false;
+      if (companyFilter && record.company.toLowerCase().includes(companyFilter) === false) {
+        return false;
+      }
+      return true;
+    });
+
+  return {
+    total: items.length,
+    items: paginate(items, params.offset, params.limit),
+  };
+}
+
+export async function listApplications(params: ApplicationListParams) {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${APPLICATION_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  if (!headers.length) return { total: 0, items: [] as unknown[] };
+
+  const lastCol = toColumnLetter(headers.length - 1);
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${APPLICATION_SHEET_NAME}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const headerMap = buildHeaderMap(headers);
+  const rows = (existing.data.values ?? []).slice(1);
+  const searchTerm = normalizeSearch(params.search);
+  const statusFilter = normalizeSearch(params.status);
+  const ircrnFilter = normalizeSearch(params.ircrn);
+
+  const items = rows
+    .map((row) => {
+      const missingFields: string[] = [];
+      if (!getHeaderValue(headerMap, row, 'Candidate ID')) missingFields.push('Candidate ID');
+      if (!getHeaderValue(headerMap, row, 'iRCRN')) missingFields.push('iRCRN');
+      if (!getHeaderValue(headerMap, row, 'Position')) missingFields.push('Position');
+
+      return {
+        id: getHeaderValue(headerMap, row, 'ID'),
+        timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
+        candidateId: getHeaderValue(headerMap, row, 'Candidate ID'),
+        iCrn: getHeaderValue(headerMap, row, 'iRCRN'),
+        position: getHeaderValue(headerMap, row, 'Position'),
+        referenceNumber: getHeaderValue(headerMap, row, 'Reference Number'),
+        resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name'),
+        status: getHeaderValue(headerMap, row, 'Status'),
+        ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
+        missingFields,
+      };
+    })
+    .filter((record) => {
+      if (searchTerm) {
+        const haystack = [
+          record.id,
+          record.candidateId,
+          record.iCrn,
+          record.position,
+          record.referenceNumber,
+          record.ownerNotes,
+        ]
+          .filter(Boolean)
+          .map((value) => value.toLowerCase());
+        const matches = haystack.some((value) => value.includes(searchTerm));
+        if (!matches) return false;
+      }
+
+      if (statusFilter && record.status.toLowerCase() !== statusFilter) return false;
+      if (ircrnFilter && record.iCrn.toLowerCase() !== ircrnFilter) return false;
+      return true;
+    });
+
+  return {
+    total: items.length,
+    items: paginate(items, params.offset, params.limit),
+  };
+}
+
+export async function listMatches(params: MatchListParams) {
+  await ensureHeaders(MATCH_SHEET_NAME, MATCH_HEADERS);
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${MATCH_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  if (!headers.length) return { total: 0, items: [] as unknown[] };
+
+  const lastCol = toColumnLetter(headers.length - 1);
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${MATCH_SHEET_NAME}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const headerMap = buildHeaderMap(headers);
+  const rows = (existing.data.values ?? []).slice(1);
+  const searchTerm = normalizeSearch(params.search);
+  const stageFilter = normalizeSearch(params.stage);
+
+  const items = rows
+    .map((row) => {
+      const missingFields: string[] = [];
+      if (!getHeaderValue(headerMap, row, 'Candidate iRAIN')) missingFields.push('Candidate iRAIN');
+      if (!getHeaderValue(headerMap, row, 'Referrer iRAIN')) missingFields.push('Referrer iRAIN');
+      if (!getHeaderValue(headerMap, row, 'Company iRCRN')) missingFields.push('Company iRCRN');
+
+      return {
+        matchId: getHeaderValue(headerMap, row, 'Match ID'),
+        createdAt: getHeaderValue(headerMap, row, 'Created At'),
+        candidateIrain: getHeaderValue(headerMap, row, 'Candidate iRAIN'),
+        referrerIrain: getHeaderValue(headerMap, row, 'Referrer iRAIN'),
+        companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
+        positionContext: getHeaderValue(headerMap, row, 'Position / Context'),
+        stage: getHeaderValue(headerMap, row, 'Stage'),
+        notes: getHeaderValue(headerMap, row, 'Notes'),
+        introSentAt: getHeaderValue(headerMap, row, 'Intro Sent At'),
+        missingFields,
+      };
+    })
+    .filter((record) => {
+      if (searchTerm) {
+        const haystack = [
+          record.matchId,
+          record.candidateIrain,
+          record.referrerIrain,
+          record.companyIrcrn,
+          record.positionContext,
+          record.stage,
+          record.notes,
+        ]
+          .filter(Boolean)
+          .map((value) => value.toLowerCase());
+        const matches = haystack.some((value) => value.includes(searchTerm));
+        if (!matches) return false;
+      }
+
+      if (stageFilter && record.stage.toLowerCase() !== stageFilter) return false;
+      return true;
+    });
+
+  return {
+    total: items.length,
+    items: paginate(items, params.offset, params.limit),
+  };
+}
+
+type AdminPatch = {
+  status?: string;
+  ownerNotes?: string;
+  tags?: string;
+  lastContactedAt?: string;
+  nextActionAt?: string;
+};
+
+type ApplicationAdminPatch = {
+  status?: string;
+  ownerNotes?: string;
+};
+
+export async function updateRowById(
+  sheetName: string,
+  idHeaderName: string,
+  idValue: string,
+  patchByHeaderName: Record<string, string | undefined>,
+): Promise<{ updated: boolean; reason?: 'not_found' | 'no_changes' }> {
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  const headerMap = buildHeaderMap(headers);
+
+  const idIndex = headerIndex(headers, idHeaderName);
+  if (idIndex === -1) {
+    throw new Error(`Header "${idHeaderName}" not found in sheet ${sheetName}`);
+  }
+
+  const idColumn = toColumnLetter(idIndex);
+  const column = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!${idColumn}:${idColumn}`,
+    majorDimension: 'COLUMNS',
+  });
+  const rows = column.data.values?.[0] ?? [];
+  const normalizedId = idValue.trim().toLowerCase();
+  let rowIndex = -1;
+  for (let i = 1; i < rows.length; i++) {
+    const value = String(rows[i] ?? '').trim().toLowerCase();
+    if (value === normalizedId) {
+      rowIndex = i + 1; // 1-based for sheets
+      break;
+    }
+  }
+
+  if (rowIndex === -1) {
+    return { updated: false, reason: 'not_found' };
+  }
+
+  const updates = Object.entries(patchByHeaderName)
+    .filter(([, value]) => value !== undefined)
+    .map(([header, value]) => {
+      const index = headerMap.get(header);
+      if (index === undefined) return null;
+      const col = toColumnLetter(index);
+      return {
+        range: `${sheetName}!${col}${rowIndex}`,
+        values: [[value ?? '']],
+      };
+    })
+    .filter(Boolean) as { range: string; values: (string | number | null)[][] }[];
+
+  if (!updates.length) {
+    return { updated: false, reason: 'no_changes' };
+  }
+
+  await sheets.spreadsheets.values.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      valueInputOption: 'RAW',
+      data: updates,
+    },
+  });
+
+  return { updated: true };
+}
+
+export async function updateCandidateAdmin(irain: string, patch: AdminPatch) {
+  await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
+
+  return updateRowById(CANDIDATE_SHEET_NAME, 'iRAIN', irain, {
+    Status: patch.status,
+    'Owner Notes': patch.ownerNotes,
+    Tags: patch.tags,
+    'Last Contacted At': patch.lastContactedAt,
+    'Next Action At': patch.nextActionAt,
+  });
+}
+
+export async function updateReferrerAdmin(irain: string, patch: AdminPatch) {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+
+  return updateRowById(REFERRER_SHEET_NAME, 'iRAIN', irain, {
+    Status: patch.status,
+    'Owner Notes': patch.ownerNotes,
+    Tags: patch.tags,
+    'Last Contacted At': patch.lastContactedAt,
+    'Next Action At': patch.nextActionAt,
+  });
+}
+
+export async function updateApplicationAdmin(id: string, patch: ApplicationAdminPatch) {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+
+  return updateRowById(APPLICATION_SHEET_NAME, 'ID', id, {
+    Status: patch.status,
+    'Owner Notes': patch.ownerNotes,
+  });
+}
+
+type MatchPatch = {
+  stage?: string;
+  notes?: string;
+  introSentAt?: string;
+};
+
+export async function updateMatch(matchId: string, patch: MatchPatch) {
+  await ensureHeaders(MATCH_SHEET_NAME, MATCH_HEADERS);
+
+  return updateRowById(MATCH_SHEET_NAME, 'Match ID', matchId, {
+    Stage: patch.stage,
+    Notes: patch.notes,
+    'Intro Sent At': patch.introSentAt,
+  });
+}
+
+export async function getReferrerByIrain(irain: string) {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${REFERRER_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  const headerMap = buildHeaderMap(headers);
+  const lastCol = toColumnLetter(headers.length - 1);
+  const rows = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${REFERRER_SHEET_NAME}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const values = rows.data.values ?? [];
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i] ?? [];
+    const value = cellValue(row, 0).toLowerCase();
+    if (value === irain.trim().toLowerCase()) {
+      return {
+        rowIndex: i + 1,
+        record: {
+          irain: getHeaderValue(headerMap, row, 'iRAIN'),
+          timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
+          name: getHeaderValue(headerMap, row, 'Name'),
+          email: getHeaderValue(headerMap, row, 'Email'),
+          phone: getHeaderValue(headerMap, row, 'Phone'),
+          country: getHeaderValue(headerMap, row, 'Country'),
+          company: getHeaderValue(headerMap, row, 'Company'),
+          companyIndustry: getHeaderValue(headerMap, row, 'Company Industry'),
+          workType: getHeaderValue(headerMap, row, 'Work Type'),
+          linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
+          status: getHeaderValue(headerMap, row, 'Status'),
+          ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
+          tags: getHeaderValue(headerMap, row, 'Tags'),
+          lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
+          nextActionAt: getHeaderValue(headerMap, row, 'Next Action At'),
+        },
+      };
+    }
+  }
+  return null;
+}
+
+export async function getMatchById(matchId: string) {
+  await ensureHeaders(MATCH_SHEET_NAME, MATCH_HEADERS);
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${MATCH_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  const headerMap = buildHeaderMap(headers);
+  const lastCol = toColumnLetter(headers.length - 1);
+  const rows = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${MATCH_SHEET_NAME}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const values = rows.data.values ?? [];
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i] ?? [];
+    const value = cellValue(row, 0).toLowerCase();
+    if (value === matchId.trim().toLowerCase()) {
+      return {
+        rowIndex: i + 1,
+        record: {
+          matchId: getHeaderValue(headerMap, row, 'Match ID'),
+          createdAt: getHeaderValue(headerMap, row, 'Created At'),
+          candidateIrain: getHeaderValue(headerMap, row, 'Candidate iRAIN'),
+          referrerIrain: getHeaderValue(headerMap, row, 'Referrer iRAIN'),
+          companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
+          positionContext: getHeaderValue(headerMap, row, 'Position / Context'),
+          stage: getHeaderValue(headerMap, row, 'Stage'),
+          notes: getHeaderValue(headerMap, row, 'Notes'),
+          introSentAt: getHeaderValue(headerMap, row, 'Intro Sent At'),
+        },
+      };
+    }
+  }
+  return null;
 }
