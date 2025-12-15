@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { ActionBtn } from "@/components/ActionBtn";
+
 export function LogoutButton() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -21,14 +23,8 @@ export function LogoutButton() {
   };
 
   return (
-    <button
-      type="button"
-      className="btn ghost"
-      onClick={handleLogout}
-      disabled={loading}
-      aria-busy={loading}
-    >
+    <ActionBtn as="button" variant="ghost" onClick={handleLogout} disabled={loading} aria-busy={loading}>
       {loading ? "Signing out..." : "Log out"}
-    </button>
+    </ActionBtn>
   );
 }

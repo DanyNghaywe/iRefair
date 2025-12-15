@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { AppShell } from "@/components/AppShell";
 import { Sidebar } from "@/components/founder/Sidebar";
+import { ActionBtn } from "@/components/ActionBtn";
 
 const navItems = [
   { href: "/founder", label: "Dashboard" },
@@ -66,14 +67,15 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
     <AppShell>
       <div className="ops-scope">
         <main className="ops-layout">
-          <button
-            type="button"
-            className="btn ghost ops-menu-button"
+          <ActionBtn
+            as="button"
+            variant="ghost"
+            className="ops-menu-button"
             aria-label="Open navigation"
             onClick={() => setSidebarOpen((prev) => !prev)}
           >
             Menu
-          </button>
+          </ActionBtn>
 
           <div
             className={`ops-backdrop ${sidebarOpen && isMobile ? "is-open" : ""}`}

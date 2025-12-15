@@ -11,7 +11,7 @@ type Particle = {
   color: string;
 };
 
-const COLORS = ['#7ad7e3', '#3b9faf', '#c7f0ff'];
+const COLORS = ['rgba(122, 215, 227, 0.55)', 'rgba(59, 159, 175, 0.55)', 'rgba(199, 240, 255, 0.55)'];
 const LINK_COLOR = '122, 215, 227';
 const PARTICLE_COUNT = 60;
 const MAX_DISTANCE = 120;
@@ -43,6 +43,7 @@ export function ParticlesBackground({ className }: { className?: string }) {
     let animationFrameId = 0;
     let particleCount = PARTICLE_COUNT;
     let maxDistance = MAX_DISTANCE;
+    let linkOpacityBase = 0.6;
 
     const randomVelocity = () => {
       const velocity = (Math.random() - 0.5) * (MAX_SPEED * 2);
@@ -59,9 +60,10 @@ export function ParticlesBackground({ className }: { className?: string }) {
     });
 
     const syncSettings = () => {
-      const isSmallScreen = window.innerWidth < 720;
-      particleCount = isSmallScreen ? 30 : PARTICLE_COUNT;
+      const isSmallScreen = window.innerWidth < 720 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+      particleCount = isSmallScreen ? 20 : PARTICLE_COUNT;
       maxDistance = isSmallScreen ? 90 : MAX_DISTANCE;
+      linkOpacityBase = isSmallScreen ? 0 : 0.2;
     };
 
     const syncParticleCount = () => {
@@ -115,8 +117,8 @@ export function ParticlesBackground({ className }: { className?: string }) {
           const dy = particle.y - neighbor.y;
           const distance = Math.hypot(dx, dy);
 
-          if (distance < maxDistance) {
-            const opacity = 0.6 * (1 - distance / maxDistance);
+          if (distance < maxDistance && linkOpacityBase > 0) {
+            const opacity = linkOpacityBase * (1 - distance / maxDistance);
             context.strokeStyle = `rgba(${LINK_COLOR}, ${opacity.toFixed(3)})`;
             context.lineWidth = 1;
             context.beginPath();

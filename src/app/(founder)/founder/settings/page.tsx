@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { ActionBtn } from "@/components/ActionBtn";
 import { Topbar } from "@/components/founder/Topbar";
 
 export default function SettingsPage() {
@@ -64,9 +65,9 @@ export default function SettingsPage() {
               Run bootstrap to ensure headers, admin columns, and Matches sheet exist.
             </p>
           </div>
-          <button className="btn primary" onClick={runBootstrap} disabled={loading}>
+          <ActionBtn as="button" variant="primary" onClick={runBootstrap} disabled={loading}>
             {loading ? "Running..." : "Run bootstrap"}
-          </button>
+          </ActionBtn>
         </div>
         <p className="founder-card__meta">Formatting actions will be wired in a later prompt.</p>
         <div className="founder-toolbar">
@@ -81,9 +82,9 @@ export default function SettingsPage() {
             <div className="founder-card__title">Format sheets</div>
             <p className="founder-card__meta">Reapply column widths, banding, and header styling.</p>
           </div>
-          <button className="btn ghost" onClick={runFormat} disabled={formatLoading}>
+          <ActionBtn as="button" variant="ghost" onClick={runFormat} disabled={formatLoading}>
             {formatLoading ? "Formatting..." : "Format sheets"}
-          </button>
+          </ActionBtn>
         </div>
         <div className="founder-toolbar">
           {formatMessage ? <div className="founder-pill founder-pill--muted">{formatMessage}</div> : null}

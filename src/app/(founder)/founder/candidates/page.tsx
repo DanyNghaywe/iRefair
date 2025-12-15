@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { ActionBtn } from "@/components/ActionBtn";
 import { Badge } from "@/components/founder/Badge";
 import { Drawer } from "@/components/founder/Drawer";
 import { OpsDataTable } from "@/components/founder/OpsDataTable";
@@ -251,22 +252,22 @@ export default function CandidatesPage() {
         description={selected?.email}
         actions={
           <div className="founder-actions">
-            <button
-              type="button"
-              className="btn primary"
+            <ActionBtn
+              as="button"
+              variant="primary"
               onClick={() => selected && patchCandidate(selected.irain, { status: "reviewed" })}
               disabled={!selected}
             >
               Mark Reviewed
-            </button>
-            <button
-              type="button"
-              className="btn ghost"
+            </ActionBtn>
+            <ActionBtn
+              as="button"
+              variant="ghost"
               onClick={handleRequestResume}
               disabled={!selected || actionLoading}
             >
               {actionLoading ? "Sending..." : "Request updated resume"}
-            </button>
+            </ActionBtn>
           </div>
         }
         footer={

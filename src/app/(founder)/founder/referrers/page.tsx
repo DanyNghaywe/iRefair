@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { ActionBtn } from "@/components/ActionBtn";
 import { Badge } from "@/components/founder/Badge";
 import { Drawer } from "@/components/founder/Drawer";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
@@ -190,14 +191,14 @@ export default function ReferrersPage() {
         description={selected?.email}
         actions={
           <div className="founder-actions">
-            <button
-              type="button"
-              className="btn primary"
+            <ActionBtn
+              as="button"
+              variant="primary"
               onClick={handleInvite}
               disabled={!selected || actionLoading}
             >
               {actionLoading ? "Sending..." : "Invite to Meet Founder"}
-            </button>
+            </ActionBtn>
           </div>
         }
         footer={

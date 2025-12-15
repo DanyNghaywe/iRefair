@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
+import { ActionBtn } from "@/components/ActionBtn";
 import { Badge } from "@/components/founder/Badge";
 import { Drawer } from "@/components/founder/Drawer";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
@@ -194,9 +195,15 @@ export default function MatchesPage() {
           <form className="founder-modal__panel modal-panel" onSubmit={handleCreateMatch}>
             <header className="founder-modal__header">
               <h3>Create match</h3>
-              <button type="button" className="founder-icon-button modal-close" onClick={() => setShowModal(false)} aria-label="Close">
+              <ActionBtn
+                as="button"
+                variant="ghost"
+                className="modal-close"
+                onClick={() => setShowModal(false)}
+                aria-label="Close"
+              >
                 &times;
-              </button>
+              </ActionBtn>
             </header>
             <div className="founder-modal__body">
               <label>
@@ -237,12 +244,12 @@ export default function MatchesPage() {
               <p className="founder-card__meta">Submission wiring coming in next prompt.</p>
             </div>
             <footer className="founder-modal__footer modal-footer">
-              <button type="button" className="btn ghost" onClick={() => setShowModal(false)}>
+              <ActionBtn as="button" variant="ghost" onClick={() => setShowModal(false)}>
                 Cancel
-              </button>
-              <button type="submit" className="btn primary" disabled>
+              </ActionBtn>
+              <ActionBtn as="button" variant="primary" type="submit" disabled>
                 Save match
-              </button>
+              </ActionBtn>
             </footer>
           </form>
         </div>,
@@ -270,9 +277,9 @@ export default function MatchesPage() {
                   </option>
                 ))}
             </select>
-            <button className="btn primary" type="button" onClick={() => setShowModal(true)}>
+            <ActionBtn as="button" variant="primary" type="button" onClick={() => setShowModal(true)}>
               Create match
-            </button>
+            </ActionBtn>
           </div>
         }
       />
@@ -292,14 +299,14 @@ export default function MatchesPage() {
         description={selected?.referrerIrain || "No referrer linked"}
         actions={
           <div className="founder-actions">
-            <button
-              type="button"
-              className="btn primary"
+            <ActionBtn
+              as="button"
+              variant="primary"
               onClick={handleSendIntro}
               disabled={!selected || actionLoading}
             >
               {actionLoading ? "Sending..." : "Send intro email"}
-            </button>
+            </ActionBtn>
           </div>
         }
         footer={

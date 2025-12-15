@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useNavigationLoader } from "@/components/NavigationLoader";
+import { ActionBtn } from "@/components/ActionBtn";
 
 type Status = "idle" | "submitting" | "error";
 
@@ -148,18 +148,25 @@ export default function LoginForm() {
           )}
         </div>
         <div className="actions">
-          <Link
+          <ActionBtn
+            as="link"
+            variant="ghost"
             href="/"
-            className="btn ghost"
             onClick={() => {
               startNavigation("/");
             }}
           >
             Back to home
-          </Link>
-          <button type="submit" className="btn primary" disabled={status === "submitting"} aria-busy={status === "submitting"}>
+          </ActionBtn>
+          <ActionBtn
+            as="button"
+            variant="primary"
+            type="submit"
+            disabled={status === "submitting"}
+            aria-busy={status === "submitting"}
+          >
             {status === "submitting" ? "Signing in..." : "Log in"}
-          </button>
+          </ActionBtn>
         </div>
       </div>
     </form>

@@ -2,6 +2,8 @@
 
 import React from "react";
 
+import { ActionBtn } from "@/components/ActionBtn";
+
 type Props = {
   open: boolean;
   title?: string;
@@ -24,9 +26,9 @@ export function Drawer({ open, title, description, onClose, actions, footer, chi
           </div>
           <div className="founder-drawer__header-actions">
             {actions}
-            <button type="button" className="founder-icon-button" onClick={onClose} aria-label="Close drawer">
+            <ActionBtn as="button" variant="ghost" onClick={onClose} aria-label="Close drawer">
               ×
-            </button>
+            </ActionBtn>
           </div>
         </header>
         <div className="founder-drawer__body">{children}</div>

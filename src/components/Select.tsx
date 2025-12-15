@@ -43,6 +43,8 @@ export function Select({
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [prefersNative, setPrefersNative] = useState(false);
+  const [isTouchMode, setIsTouchMode] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const typeaheadRef = useRef('');
   const typeaheadTimeoutRef = useRef<number | null>(null);
 
@@ -56,6 +58,8 @@ export function Select({
   const resolvedSelectedValues = isControlledMulti ? values ?? [] : selectedValues;
   const selectedIndex = normalizedOptions.findIndex((opt) => opt.value === resolvedSelectedValue);
   const shouldUseNative = !multi && prefersNative;
+  const shouldUseSheet = multi && isTouchMode;
+  const isExpanded = shouldUseSheet ? isSheetOpen : isOpen;
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -65,6 +69,7 @@ export function Select({
       const isCoarse = coarseHoverQuery.matches;
       const isNarrow = window.innerWidth < 720;
       setPrefersNative(isCoarse || isNarrow);
+      setIsTouchMode(isCoarse);
     };
 
     syncNativePreference();
@@ -215,6 +220,14 @@ export function Select({
   };
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement | HTMLUListElement>) => {
+    if (shouldUseSheet) {
+      if (event.key === ' ' || event.key === 'Enter' || event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        openSheet();
+      }
+      return;
+    }
+
     if (!isOpen && (event.key === ' ' || event.key === 'Enter' || event.key === 'ArrowDown' || event.key === 'ArrowUp')) {
       event.preventDefault();
       openDropdown();
@@ -267,6 +280,15 @@ export function Select({
       ? normalizedOptions.filter((opt) => resolvedSelectedValues.includes(opt.value)).map((opt) => opt.label)
       : [];
 
+  const openSheet = () => {
+    setIsSheetOpen(true);
+  };
+
+  const closeSheet = () => {
+    setIsSheetOpen(false);
+    triggerRef.current?.focus();
+  };
+
   if (shouldUseNative) {
     return (
       <div className="select-field is-native" ref={wrapperRef}>
@@ -293,8 +315,10 @@ export function Select({
     );
   }
 
+  const showDropdown = isOpen && !shouldUseSheet;
+
   return (
-    <div className={`select-field ${isOpen ? 'is-open' : ''}`} ref={wrapperRef}>
+    <div className={`select-field ${isExpanded ? 'is-open' : ''}`} ref={wrapperRef}>
       <select
         id={id}
         name={name}
@@ -325,10 +349,14 @@ export function Select({
         ref={triggerRef}
         className="select-trigger"
         aria-haspopup="listbox"
-        aria-expanded={isOpen}
+        aria-expanded={isExpanded}
         aria-controls={listboxId}
         aria-describedby={ariaDescribedBy}
         onClick={() => {
+          if (shouldUseSheet) {
+            openSheet();
+            return;
+          }
           setIsOpen((open) => {
             const next = !open;
             if (next) {
@@ -363,7 +391,7 @@ export function Select({
         </span>
       </button>
 
-      {isOpen && (
+      {showDropdown && (
         <ul
           className="select-dropdown"
           role="listbox"
@@ -398,6 +426,51 @@ export function Select({
             );
           })}
         </ul>
+      )}
+
+      {shouldUseSheet && isSheetOpen && (
+        <div
+          className="select-sheet-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-label={placeholder || 'Select options'}
+          onClick={closeSheet}
+        >
+          <div
+            className="select-sheet"
+            onClick={(event) => event.stopPropagation()}
+            role="document"
+          >
+            <div className="select-sheet__header">
+              <div className="select-sheet__title">{placeholder}</div>
+              <div className="select-sheet__hint">Tap to select multiple</div>
+            </div>
+            <ul className="select-sheet__list">
+              {normalizedOptions.map((opt, index) => {
+                const isSelected = resolvedSelectedValues.includes(opt.value);
+                return (
+                  <li key={opt.value}>
+                    <button
+                      type="button"
+                      className={`select-sheet__option ${isSelected ? 'is-selected' : ''}`}
+                      onClick={() => handleSelect(index)}
+                    >
+                      <span className="select-sheet__label">{opt.label}</span>
+                      <span className="select-sheet__check" aria-hidden="true">
+                        {isSelected ? '✅' : ''}
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+            <div className="select-sheet__footer">
+              <button type="button" className="btn primary" onClick={closeSheet}>
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
