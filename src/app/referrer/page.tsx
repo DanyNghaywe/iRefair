@@ -77,6 +77,11 @@ const translations: Record<
       companyIndustryOther: string;
       workType: string;
       linkedin: string;
+      referralType: string;
+      monthlySlots: string;
+      targetRoles: string;
+      regions: string;
+      constraints: string;
     };
     placeholders: {
       linkedin: string;
