@@ -42,6 +42,7 @@ export function Select({
   const [selectedValues, setSelectedValues] = useState<string[]>(values ?? []);
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [prefersNative, setPrefersNative] = useState(false);
   const typeaheadRef = useRef('');
   const typeaheadTimeoutRef = useRef<number | null>(null);
 
@@ -54,6 +55,43 @@ export function Select({
   const resolvedSelectedValue = isControlledSingle ? value : selectedValue;
   const resolvedSelectedValues = isControlledMulti ? values ?? [] : selectedValues;
   const selectedIndex = normalizedOptions.findIndex((opt) => opt.value === resolvedSelectedValue);
+  const shouldUseNative = !multi && prefersNative;
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const coarseHoverQuery = window.matchMedia('(hover: none) and (pointer: coarse)');
+
+    const syncNativePreference = () => {
+      const isCoarse = coarseHoverQuery.matches;
+      const isNarrow = window.innerWidth < 720;
+      setPrefersNative(isCoarse || isNarrow);
+    };
+
+    syncNativePreference();
+    const addListener = (media: MediaQueryList, handler: () => void) => {
+      if (typeof media.addEventListener === 'function') {
+        media.addEventListener('change', handler);
+      } else {
+        media.addListener(handler);
+      }
+    };
+
+    const removeListener = (media: MediaQueryList, handler: () => void) => {
+      if (typeof media.removeEventListener === 'function') {
+        media.removeEventListener('change', handler);
+      } else {
+        media.removeListener(handler);
+      }
+    };
+
+    addListener(coarseHoverQuery, syncNativePreference);
+    window.addEventListener('resize', syncNativePreference);
+
+    return () => {
+      removeListener(coarseHoverQuery, syncNativePreference);
+      window.removeEventListener('resize', syncNativePreference);
+    };
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -229,6 +267,32 @@ export function Select({
       ? normalizedOptions.filter((opt) => resolvedSelectedValues.includes(opt.value)).map((opt) => opt.label)
       : [];
 
+  if (shouldUseNative) {
+    return (
+      <div className="select-field is-native" ref={wrapperRef}>
+        <select
+          id={id}
+          name={name}
+          value={resolvedSelectedValue}
+          onChange={handleNativeChange}
+          required={required}
+          aria-describedby={ariaDescribedBy}
+          aria-invalid={ariaInvalid}
+          className="select-native is-visible"
+        >
+          <option value="" disabled>
+            {placeholder}
+          </option>
+          {normalizedOptions.map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
+        </select>
+      </div>
+    );
+  }
+
   return (
     <div className={`select-field ${isOpen ? 'is-open' : ''}`} ref={wrapperRef}>
       <select
@@ -312,7 +376,9 @@ export function Select({
         >
           {normalizedOptions.map((opt, index) => {
             const isHighlighted = index === highlightedIndex;
-            const isSelected = multi ? selectedValues.includes(opt.value) : opt.value === selectedValue;
+            const isSelected = multi
+              ? resolvedSelectedValues.includes(opt.value)
+              : opt.value === resolvedSelectedValue;
             return (
               <li
                 key={opt.value}

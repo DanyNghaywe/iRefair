@@ -4,6 +4,7 @@ import React from "react";
 
 import { Badge } from "@/components/founder/Badge";
 import { Topbar } from "@/components/founder/Topbar";
+import { LogoutButton } from "./LogoutButton";
 
 const cards = [
   { title: "Active candidates", value: "-", hint: "Realtime from Sheets" },
@@ -15,7 +16,11 @@ const cards = [
 export default function FounderDashboard() {
   return (
     <div className="founder-page">
-      <Topbar title="Ops Console" subtitle="Founder & Managing Director workspace" />
+      <Topbar
+        title="Ops Console"
+        subtitle="Founder & Managing Director workspace"
+        actions={<LogoutButton />}
+      />
 
       <div className="founder-grid">
         {cards.map((card) => (

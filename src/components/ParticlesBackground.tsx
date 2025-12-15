@@ -28,11 +28,21 @@ export function ParticlesBackground({ className }: { className?: string }) {
     const context = canvas.getContext('2d');
     if (!context) return undefined;
 
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (prefersReducedMotion.matches) {
+      canvas.style.display = 'none';
+      return () => {
+        canvas.style.display = '';
+      };
+    }
+
     const particles: Particle[] = [];
     const devicePixelRatio = window.devicePixelRatio || 1;
     let width = 0;
     let height = 0;
     let animationFrameId = 0;
+    let particleCount = PARTICLE_COUNT;
+    let maxDistance = MAX_DISTANCE;
 
     const randomVelocity = () => {
       const velocity = (Math.random() - 0.5) * (MAX_SPEED * 2);
@@ -48,9 +58,26 @@ export function ParticlesBackground({ className }: { className?: string }) {
       color: COLORS[Math.floor(Math.random() * COLORS.length)],
     });
 
+    const syncSettings = () => {
+      const isSmallScreen = window.innerWidth < 720;
+      particleCount = isSmallScreen ? 30 : PARTICLE_COUNT;
+      maxDistance = isSmallScreen ? 90 : MAX_DISTANCE;
+    };
+
+    const syncParticleCount = () => {
+      if (particles.length < particleCount) {
+        for (let i = particles.length; i < particleCount; i += 1) {
+          particles.push(createParticle());
+        }
+      } else if (particles.length > particleCount) {
+        particles.splice(particleCount);
+      }
+    };
+
     const resize = () => {
+      syncSettings();
       width = window.innerWidth;
-      height = Math.max(window.innerHeight, document.documentElement.scrollHeight);
+      height = window.innerHeight;
 
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
@@ -59,16 +86,11 @@ export function ParticlesBackground({ className }: { className?: string }) {
 
       context.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
 
-      if (particles.length === 0) {
-        for (let i = 0; i < PARTICLE_COUNT; i += 1) {
-          particles.push(createParticle());
-        }
-      } else {
-        particles.forEach((particle) => {
-          particle.x = Math.min(Math.max(particle.x, 0), width);
-          particle.y = Math.min(Math.max(particle.y, 0), height);
-        });
-      }
+      syncParticleCount();
+      particles.forEach((particle) => {
+        particle.x = Math.min(Math.max(particle.x, 0), width);
+        particle.y = Math.min(Math.max(particle.y, 0), height);
+      });
     };
 
     const draw = () => {
@@ -93,8 +115,8 @@ export function ParticlesBackground({ className }: { className?: string }) {
           const dy = particle.y - neighbor.y;
           const distance = Math.hypot(dx, dy);
 
-          if (distance < MAX_DISTANCE) {
-            const opacity = 0.6 * (1 - distance / MAX_DISTANCE);
+          if (distance < maxDistance) {
+            const opacity = 0.6 * (1 - distance / maxDistance);
             context.strokeStyle = `rgba(${LINK_COLOR}, ${opacity.toFixed(3)})`;
             context.lineWidth = 1;
             context.beginPath();
@@ -112,9 +134,6 @@ export function ParticlesBackground({ className }: { className?: string }) {
       animationFrameId = window.requestAnimationFrame(draw);
     };
 
-    const resizeObserver = new ResizeObserver(resize);
-    resizeObserver.observe(document.body);
-
     resize();
     animationFrameId = window.requestAnimationFrame(draw);
     window.addEventListener('resize', resize);
@@ -122,7 +141,6 @@ export function ParticlesBackground({ className }: { className?: string }) {
     return () => {
       window.cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', resize);
-      resizeObserver.disconnect();
     };
   }, []);
 

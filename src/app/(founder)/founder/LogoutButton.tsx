@@ -3,8 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import styles from "./founder.module.css";
-
 export function LogoutButton() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -25,11 +23,12 @@ export function LogoutButton() {
   return (
     <button
       type="button"
-      className={`${styles.button} ${styles.secondary}`}
+      className="btn ghost"
       onClick={handleLogout}
       disabled={loading}
+      aria-busy={loading}
     >
-      {loading ? "Signing out..." : "Sign out"}
+      {loading ? "Signing out..." : "Log out"}
     </button>
   );
 }
