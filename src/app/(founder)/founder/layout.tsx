@@ -86,7 +86,6 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
           <Sidebar
             items={navItems}
             collapsed={!sidebarOpen}
-            onToggle={() => setSidebarOpen((prev) => !prev)}
             ref={sidebarRef}
           />
           <section className="ops-main">{children}</section>

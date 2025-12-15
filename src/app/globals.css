@@ -3367,3 +3367,378 @@ textarea:-webkit-autofill {
     pointer-events: auto;
   }
 }
+
+/* FOUNDER LOGIN */
+.founder-login-screen {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 20px;
+  overflow: hidden;
+  color: #eaf7ff;
+}
+
+.founder-login-main {
+  position: relative;
+  z-index: 1;
+  width: min(520px, 100%);
+  display: flex;
+  justify-content: center;
+}
+
+.founder-login-card {
+  position: relative;
+  width: min(420px, 92vw);
+  padding: 32px 30px 30px;
+  border-radius: 18px;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  text-align: center;
+  color: #eaf7ff;
+}
+
+.founder-login-card form {
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.founder-login-card .founderField {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.founder-login-card .founderField label {
+  margin: 0;
+  line-height: 1.1;
+}
+
+.founder-login-card .founderField input {
+  padding: 0 0 8px 0;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.founder-login-header {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+}
+
+.founder-login-brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-weight: 800;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.founder-login-brand__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--accent-2), var(--accent));
+  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.14);
+}
+
+.founder-login-brand__text {
+  letter-spacing: 0.24em;
+}
+
+.founder-login-header h1 {
+  margin: 6px 0 0;
+  font-size: 32px;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.founder-login-lead {
+  margin: 6px 0 0;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 15px;
+  line-height: 1.6;
+  max-width: 320px;
+}
+
+.founder-login-loading {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.82);
+  padding: 12px 0;
+}
+
+.founder-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.founder-login-banner {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  color: #ffffff;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.22);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.founder-login-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.founder-login-field label {
+  display: block;
+  position: static;
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  letter-spacing: 0.2px;
+}
+
+.founder-login-screen input[type="email"],
+.founder-login-screen input[type="password"],
+.founder-login-screen input[type="text"] {
+  width: 100%;
+  padding: 0 0 10px;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.55);
+  border-radius: 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 1rem;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.25s ease, transform 0.15s ease;
+}
+
+.founderField label {
+  display: block;
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.88);
+  letter-spacing: 0.2px;
+}
+
+.founderField input {
+  width: 100%;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 12px;
+  padding: 0 0 10px;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.founderField input:focus {
+  outline: none;
+  background: inherit;
+  border-color: rgba(var(--accent-primary-rgb), 0.55);
+  box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.14);
+}
+
+.founder-login-screen input::placeholder {
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.founder-login-screen input::selection,
+.founder-login-screen textarea::selection {
+  background: rgba(var(--accent-primary-rgb), 0.35);
+  color: #ffffff;
+}
+
+.founder-login-screen input:focus {
+  background: inherit;
+  border-color: rgba(var(--accent-primary-rgb), 0.55);
+  box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.14);
+  transform: none;
+}
+
+.founder-login-screen input:focus-visible {
+  border-color: rgba(var(--accent-primary-rgb), 0.55);
+  box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.14);
+}
+
+.founder-login-field.has-error input {
+  border-bottom-color: rgba(255, 176, 204, 0.95);
+  box-shadow: 0 14px 32px rgba(255, 128, 160, 0.2);
+}
+
+.founder-login-field .field-error {
+  margin: 2px 0 0;
+  min-height: 18px;
+  color: #ffe4f0;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.founder-login-screen input:disabled {
+  opacity: 0.7;
+}
+
+.founder-login-screen input:-webkit-autofill,
+.founder-login-screen input:-webkit-autofill:hover,
+.founder-login-screen input:-webkit-autofill:focus {
+  -webkit-text-fill-color: rgba(255, 255, 255, 0.92);
+  transition: background-color 9999s ease-in-out 0s;
+  box-shadow: 0 0 0 1000px transparent inset !important;
+  caret-color: rgba(255, 255, 255, 0.92);
+}
+
+.founder-login-status {
+  text-align: center;
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.founder-login-status__message {
+  display: inline-block;
+  padding: 4px 10px;
+}
+
+.founder-login-screen .field,
+.founder-login-screen .inputWrap,
+.founder-login-screen .control {
+  background: transparent !important;
+}
+
+.founder-login-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.founder-login-submit {
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  min-height: 48px;
+  width: 100%;
+}
+
+.founderLoginBtn {
+  width: 100%;
+  border-radius: 999px !important;
+  min-height: 50px;
+}
+
+.founder-login-card .founderLoginBtn {
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  outline: none !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+}
+
+.founder-login-card .founderLoginBtn:focus,
+.founder-login-card .founderLoginBtn:focus-visible {
+  outline: none !important;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22), 0 0 0 3px rgba(var(--accent-primary-rgb), 0.25);
+}
+
+.founder-login-back {
+  display: inline-flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  transition: color 0.18s ease, text-decoration-color 0.18s ease;
+}
+
+.founder-login-back:hover {
+  color: #ffffff;
+  text-decoration: underline;
+}
+
+.founder-login-back:focus-visible {
+  outline: 2px solid rgba(255, 255, 255, 0.8);
+  outline-offset: 3px;
+}
+
+@media (max-width: 640px) {
+  .founder-login-screen {
+    padding: 32px 16px;
+  }
+
+  .founder-login-card {
+    padding: 26px 22px 24px;
+    width: min(460px, 100%);
+  }
+
+  .founder-login-header h1 {
+    font-size: 28px;
+  }
+}
+
+/* Founder login: remove the big global focus ring */
+.ops-scope .page-card input:focus,
+.ops-scope .page-card input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+  border-color: rgba(var(--accent-primary-rgb), 0.55) !important;
+}
+
+.ops-scope .page-card .field:focus-within {
+  box-shadow: none !important;
+  outline: none !important;
+}
+
+/* Founder login ONLY: kill the big blue focus ring */
+.founder-auth input:focus,
+.founder-auth input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Optional: keep a tiny focus indicator (underline only) */
+.founder-auth input:focus,
+.founder-auth input:focus-visible {
+  box-shadow: inset 0 -2px 0 rgba(var(--accent-primary-rgb), 0.55) !important;
+}
+
+/* Founder login ONLY: kill the global blue focus ring */
+section[aria-labelledby="founder-login-title"] input:focus,
+section[aria-labelledby="founder-login-title"] input:focus-visible,
+section[aria-labelledby="founder-login-title"] select:focus,
+section[aria-labelledby="founder-login-title"] select:focus-visible,
+section[aria-labelledby="founder-login-title"] textarea:focus,
+section[aria-labelledby="founder-login-title"] textarea:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+/* Optional: keep a subtle focus indication (border only, no glow) */
+section[aria-labelledby="founder-login-title"] input:focus,
+section[aria-labelledby="founder-login-title"] input:focus-visible {
+  border-color: rgba(var(--accent-primary-rgb), 0.55) !important;
+}
+
+section[aria-labelledby="founder-login-title"] .field:focus-within {
+  box-shadow: none !important;
+  outline: none !important;
+}

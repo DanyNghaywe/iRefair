@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { ChangeEvent, FormEvent, useRef, useState } from 'react';
 import { AppShell } from '@/components/AppShell';
 import { Select } from '@/components/Select';
-import { useNavigationLoader } from '@/components/NavigationLoader';
 
 const ALLOWED_RESUME_TYPES = [
   'application/pdf',
@@ -28,7 +27,6 @@ const IRCRN_OPTIONS = parseList(process.env.NEXT_PUBLIC_IRCRN_OPTIONS);
 type Status = 'idle' | 'submitting' | 'ok' | 'error';
 
 export default function ApplyPage() {
-  const { startNavigation } = useNavigationLoader();
   const hasCandidateIdOptions = CANDIDATE_ID_OPTIONS.length > 0;
   const hasICrnOptions = IRCRN_OPTIONS.length > 0;
 

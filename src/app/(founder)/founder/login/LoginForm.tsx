@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { useNavigationLoader } from "@/components/NavigationLoader";
 import { ActionBtn } from "@/components/ActionBtn";
+import { useNavigationLoader } from "@/components/NavigationLoader";
 
 type Status = "idle" | "submitting" | "error";
 
@@ -27,7 +28,7 @@ export default function LoginForm() {
       return next;
     });
 
-  const fieldClass = (name: string) => `field ${errors[name] ? "has-error" : ""}`.trim();
+  const fieldClass = (name: string) => `founder-login-field ${errors[name] ? "has-error" : ""}`.trim();
 
   const validate = () => {
     const nextErrors: Record<string, string> = {};
@@ -88,86 +89,86 @@ export default function LoginForm() {
   };
 
   return (
-    <form className="referral-form" onSubmit={handleSubmit} noValidate>
-      <div className="field-grid field-grid--two">
-        <div className={fieldClass("email")}>
-          <label htmlFor="email">Email</label>
-          <input
-            id="email"
-            name="email"
-            type="email"
-            autoComplete="email"
-            placeholder="founder@irefair.com"
-            value={email}
-            aria-invalid={Boolean(errors.email)}
-            aria-describedby="email-error"
-            onChange={(event) => {
-              setEmail(event.target.value);
-              clearError("email");
-            }}
-            disabled={status === "submitting"}
-            required
-          />
-          <p className="field-error" id="email-error" role="alert" aria-live="polite">
-            {errors.email}
-          </p>
+    <form className="founder-login-form" onSubmit={handleSubmit} noValidate>
+      {status === "error" && (
+      <div className="founder-login-banner" role="alert">
+          {bannerMessage || "Unable to sign in. Please check your details."}
         </div>
+      )}
 
-        <div className={fieldClass("password")}>
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            name="password"
-            type="password"
-            autoComplete="current-password"
-            placeholder="Enter password"
-            value={password}
-            aria-invalid={Boolean(errors.password)}
-            aria-describedby="password-error"
-            onChange={(event) => {
-              setPassword(event.target.value);
-              clearError("password");
-            }}
-            disabled={status === "submitting"}
-            required
-          />
-          <p className="field-error" id="password-error" role="alert" aria-live="polite">
-            {errors.password}
-          </p>
-        </div>
+      <div className={`founderField ${fieldClass("email")}`}>
+        <label htmlFor="email">Email</label>
+        <input
+          id="email"
+          name="email"
+          type="email"
+          autoComplete="username"
+          placeholder=""
+          value={email}
+          aria-invalid={Boolean(errors.email)}
+          aria-describedby="email-error"
+          onChange={(event) => {
+            setEmail(event.target.value);
+            clearError("email");
+          }}
+          disabled={status === "submitting"}
+          required
+        />
+        <p className="field-error" id="email-error" role="alert" aria-live="polite">
+          {errors.email}
+        </p>
       </div>
 
-      <div className="form-footer">
-        <div className="footer-status" aria-live="polite">
-          {status === "error" ? (
-            <div className="status-banner status-banner--error" role="alert" aria-live="assertive">
-              {bannerMessage}
-            </div>
-          ) : (
-            <span>{status === "submitting" ? "Signing you in..." : "Sessions expire after 7 days."}</span>
-          )}
+      <div className={`founderField ${fieldClass("password")}`}>
+        <label htmlFor="password">Password</label>
+        <input
+          id="password"
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          placeholder=""
+          value={password}
+          aria-invalid={Boolean(errors.password)}
+          aria-describedby="password-error"
+          onChange={(event) => {
+            setPassword(event.target.value);
+            clearError("password");
+          }}
+          disabled={status === "submitting"}
+          required
+        />
+        <p className="field-error" id="password-error" role="alert" aria-live="polite">
+          {errors.password}
+        </p>
+      </div>
+
+      {status === "submitting" ? (
+        <div className="founder-login-status" aria-live="polite" role="status">
+          <span className="founder-login-status__message">Signing you in...</span>
         </div>
-        <div className="actions">
-          <ActionBtn
-            as="link"
-            variant="ghost"
-            href="/"
-            onClick={() => {
-              startNavigation("/");
-            }}
-          >
-            Back to home
-          </ActionBtn>
-          <ActionBtn
-            as="button"
-            variant="primary"
-            type="submit"
-            disabled={status === "submitting"}
-            aria-busy={status === "submitting"}
-          >
-            {status === "submitting" ? "Signing in..." : "Log in"}
-          </ActionBtn>
-        </div>
+      ) : null}
+
+      <div className="founder-login-actions">
+        <ActionBtn
+          as="button"
+          variant="primary"
+          type="submit"
+          disabled={status === "submitting"}
+          className="founder-login-submit founderLoginBtn"
+          aria-busy={status === "submitting"}
+        >
+          {status === "submitting" ? "Signing in..." : "Log in"}
+        </ActionBtn>
+
+        <Link
+          href="/"
+          className="founder-login-back"
+          onClick={() => {
+            startNavigation("/");
+          }}
+        >
+          Back to home
+        </Link>
       </div>
     </form>
   );

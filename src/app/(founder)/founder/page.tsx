@@ -2,7 +2,6 @@
 
 import React from "react";
 
-import { Badge } from "@/components/founder/Badge";
 import { Topbar } from "@/components/founder/Topbar";
 import { LogoutButton } from "./LogoutButton";
 

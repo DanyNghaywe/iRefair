@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { ActionBtn } from "@/components/ActionBtn";
-import { Badge } from "@/components/founder/Badge";
 import { Drawer } from "@/components/founder/Drawer";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
@@ -123,7 +122,7 @@ export default function ReferrersPage() {
         setActionError(data?.error || "Unable to send invite.");
       } else {
         setActionMessage("Invite sent.");
-        updateLocal(selected.irain, { status: "meeting invited" } as any);
+        updateLocal(selected.irain, { status: "meeting invited" });
         setStatus("meeting invited");
       }
     } catch (error) {

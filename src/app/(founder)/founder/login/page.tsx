@@ -12,21 +12,24 @@ export const metadata: Metadata = {
 export default function FounderLoginPage() {
   return (
     <AppShell>
-      <main>
-        <section className="card page-card" aria-labelledby="founder-login-title">
-          <div className="card-header">
-            <div>
-              <p className="eyebrow">Founder access</p>
-              <h2 id="founder-login-title">Log in</h2>
-              <p className="lead">Access the founder console using your secure credentials.</p>
+      <div className="founder-login-screen" aria-labelledby="founder-login-title">
+        <main className="founder-login-main">
+          <section className="founder-login-card founder-auth">
+            <div className="founder-login-header">
+              <div className="founder-login-brand">
+                <span className="founder-login-brand__dot" aria-hidden="true" />
+                <span className="founder-login-brand__text">IREFair</span>
+              </div>
+              <h1 id="founder-login-title">Login</h1>
+              <p className="founder-login-lead">Access the founder console with your secure credentials.</p>
             </div>
-          </div>
 
-          <Suspense fallback={<div className="card__body">Loading...</div>}>
-            <LoginForm />
-          </Suspense>
-        </section>
-      </main>
+            <Suspense fallback={<div className="founder-login-loading">Loading...</div>}>
+              <LoginForm />
+            </Suspense>
+          </section>
+        </main>
+      </div>
     </AppShell>
   );
 }

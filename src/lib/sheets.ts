@@ -125,14 +125,6 @@ export async function applyProSheetFormatting(sheetName: string, headers: string
     endColumnIndex: headers.length,
   };
 
-  const bandingRange = {
-    sheetId,
-    startRowIndex: 0,
-    endRowIndex: 2000,
-    startColumnIndex: 0,
-    endColumnIndex: headers.length,
-  };
-
   const linkHeaderKeywords = ['linkedin', 'portfolio', 'cv', 'resume', 'url'];
   const columnWidthRequests = headers.map((header, index) => {
     const lower = header.toLowerCase();

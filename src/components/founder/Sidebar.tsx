@@ -12,10 +12,9 @@ type NavItem = {
 type Props = {
   items: NavItem[];
   collapsed: boolean;
-  onToggle: () => void;
 };
 
-export const Sidebar = React.forwardRef<HTMLDivElement, Props>(function Sidebar({ items, collapsed, onToggle }, ref) {
+export const Sidebar = React.forwardRef<HTMLDivElement, Props>(function Sidebar({ items, collapsed }, ref) {
   const pathname = usePathname();
 
   return (

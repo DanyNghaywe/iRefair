@@ -132,7 +132,7 @@ export default function CandidatesPage() {
         setActionError(data?.error || "Unable to send request.");
       } else {
         setActionMessage("Resume request sent.");
-        updateLocalCandidate(selected.irain, { status: "resume requested" } as any);
+        updateLocalCandidate(selected.irain, { status: "resume requested" });
         setStatus("resume requested");
       }
     } catch (error) {
@@ -212,7 +212,12 @@ export default function CandidatesPage() {
         onSearchChange={setSearchInput}
         actions={
           <div className="founder-toolbar">
-            <select value={eligibleFilter} onChange={(event) => setEligibleFilter(event.target.value as any)}>
+            <select
+              value={eligibleFilter}
+              onChange={(event) =>
+                setEligibleFilter(event.target.value as "all" | "eligible" | "ineligible")
+              }
+            >
               <option value="all">Eligibility</option>
               <option value="eligible">Eligible</option>
               <option value="ineligible">Ineligible</option>
