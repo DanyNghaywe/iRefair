@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { verifySessionEdge } from "@/lib/founderAuth";
+import { FOUNDER_SESSION_COOKIE, verifySessionEdge } from "@/lib/founderAuthEdge";
 
 export async function middleware(req: NextRequest) {
   const p = req.nextUrl.pathname;
@@ -15,7 +15,7 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  const token = req.cookies.get("irefair_founder")?.value;
+  const token = req.cookies.get(FOUNDER_SESSION_COOKIE)?.value;
   const session = token ? await verifySessionEdge(token) : null;
 
   if (!session) {
