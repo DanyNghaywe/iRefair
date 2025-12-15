@@ -1716,6 +1716,13 @@ textarea:-webkit-autofill {
   transform: none;
 }
 
+/* Founder scope: ghost buttons are light, so force dark text for contrast */
+.ops-scope .btn.ghost,
+.ops-scope .btn.ghost:hover,
+.ops-scope .btn.ghost:active {
+  color: rgba(15, 23, 42, 0.95) !important;
+}
+
 .loading-indicator {
   display: inline-block;
   width: 14px;
@@ -2502,8 +2509,8 @@ textarea:-webkit-autofill {
 .ops-scope {
   --ink: rgba(255, 255, 255, 0.92);
   --muted: rgba(255, 255, 255, 0.68);
-  --accent-primary: rgba(54, 170, 185, 1);
-  --accent-primary-rgb: 54, 170, 185;
+  --accent-primary: var(--accent-2);
+  --accent-primary-rgb: 61, 139, 253;
   --glass-bg: rgba(10, 20, 35, 0.55);
   --glass-bg-2: rgba(255, 255, 255, 0.1);
   --glass-border: rgba(255, 255, 255, 0.14);
