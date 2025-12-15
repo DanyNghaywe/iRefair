@@ -11,7 +11,9 @@ type PatchBody = {
   introSentAt?: string;
 };
 
-export async function PATCH(request: NextRequest, { params }: { params: { matchId: string } }) {
+export async function PATCH(request: NextRequest, context: { params: Promise<{ matchId: string }> }) {
+  const params = await context.params;
+
   try {
     requireFounder(request);
   } catch {

@@ -10,7 +10,9 @@ type PatchBody = {
   ownerNotes?: string;
 };
 
-export async function PATCH(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const params = await context.params;
+
   try {
     requireFounder(request);
   } catch {

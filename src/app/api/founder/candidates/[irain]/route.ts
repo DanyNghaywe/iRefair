@@ -15,8 +15,10 @@ type PatchBody = {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { irain: string } },
+  context: { params: Promise<{ irain: string }> },
 ) {
+  const params = await context.params;
+
   try {
     requireFounder(request);
   } catch {

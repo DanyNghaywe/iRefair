@@ -7,7 +7,9 @@ import { findCandidateByIdentifier, updateCandidateAdmin } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(_request: NextRequest, { params }: { params: { irain: string } }) {
+export async function POST(_request: NextRequest, context: { params: Promise<{ irain: string }> }) {
+  const params = await context.params;
+
   try {
     requireFounder(_request);
   } catch {

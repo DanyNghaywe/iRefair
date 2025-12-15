@@ -12,7 +12,9 @@ import {
 
 export const dynamic = 'force-dynamic';
 
-export async function POST(_request: NextRequest, { params }: { params: { matchId: string } }) {
+export async function POST(_request: NextRequest, context: { params: Promise<{ matchId: string }> }) {
+  const params = await context.params;
+
   try {
     requireFounder(_request);
   } catch {
