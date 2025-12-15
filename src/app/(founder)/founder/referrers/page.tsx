@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/founder/Badge";
 import { Drawer } from "@/components/founder/Drawer";
-import { OpsDataTable } from "@/components/founder/OpsDataTable";
+import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
 
 type ReferrerRecord = {
@@ -133,7 +133,7 @@ export default function ReferrersPage() {
     }
   };
 
-  const columns = useMemo(
+  const columns = useMemo<OpsColumn<ReferrerRecord>[]>(
     () => [
       { key: "irain", label: "iRAIN", sortable: true, nowrap: true, width: "200px" },
       { key: "name", label: "Name", sortable: true, ellipsis: true, width: "200px" },

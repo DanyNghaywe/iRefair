@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/founder/Badge";
 import { Drawer } from "@/components/founder/Drawer";
-import { OpsDataTable } from "@/components/founder/OpsDataTable";
+import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
 
 type ApplicationRecord = {
@@ -93,7 +93,7 @@ export default function ApplicationsPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notes, status]);
 
-  const columns = useMemo(
+  const columns = useMemo<OpsColumn<ApplicationRecord>[]>(
     () => [
       { key: "id", label: "ID", sortable: true, nowrap: true, width: "160px" },
       { key: "candidateId", label: "Candidate", sortable: true, ellipsis: true, width: "240px" },

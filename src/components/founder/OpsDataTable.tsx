@@ -4,7 +4,7 @@ import React, { useMemo } from "react";
 
 import { DataTable, type Column } from "./DataTable";
 
-type OpsColumn<T> = {
+export type OpsColumn<T> = {
   key: keyof T | string;
   label: string;
   width?: string;

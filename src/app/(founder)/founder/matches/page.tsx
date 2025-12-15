@@ -5,7 +5,7 @@ import { createPortal } from "react-dom";
 
 import { Badge } from "@/components/founder/Badge";
 import { Drawer } from "@/components/founder/Drawer";
-import { OpsDataTable } from "@/components/founder/OpsDataTable";
+import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
 
 type MatchRecord = {
@@ -134,7 +134,7 @@ export default function MatchesPage() {
     }
   };
 
-  const columns = useMemo(
+  const columns = useMemo<OpsColumn<MatchRecord>[]>(
     () => [
       { key: "matchId", label: "Match ID", sortable: true, width: "180px", nowrap: true },
       { key: "candidateIrain", label: "Candidate", sortable: true, width: "240px", ellipsis: true },
