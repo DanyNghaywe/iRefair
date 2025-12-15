@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { AppShell } from "@/components/AppShell";
 import LoginForm from "./LoginForm";
@@ -21,7 +22,9 @@ export default function FounderLoginPage() {
             </div>
           </div>
 
-          <LoginForm />
+          <Suspense fallback={<div className="card__body">Loading...</div>}>
+            <LoginForm />
+          </Suspense>
         </section>
       </main>
     </AppShell>
