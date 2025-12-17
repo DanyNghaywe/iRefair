@@ -21,7 +21,7 @@ const ALLOWED_RESUME_TYPES = [
 const ALLOWED_RESUME_EXTENSIONS = ['pdf', 'doc', 'docx'];
 const MAX_RESUME_SIZE = 10 * 1024 * 1024; // 10MB
 
-const normalize = (value?: FormDataEntryValue | string) =>
+const normalize = (value?: FormDataEntryValue | string | null) =>
   typeof value === 'string' ? value.trim() : '';
 
 const isAllowedResume = (file: File) => {
