@@ -40,6 +40,7 @@ export const REFERRER_HEADERS = [
   'Country',
   'Company',
   'Company Industry',
+  'Careers Portal',
   'Work Type',
   'LinkedIn',
 ];
@@ -363,6 +364,9 @@ export const APPLICATION_HEADERS = [
   'Position',
   'Reference Number',
   'Resume File Name',
+  'Resume URL',
+  'Referrer iRAIN',
+  'Referrer Email',
 ];
 export const APPLICATION_SHEET_NAME = 'Applications';
 
@@ -394,6 +398,7 @@ type ReferrerRow = {
   country: string;
   company: string;
   companyIndustry: string;
+  careersPortal?: string;
   workType: string;
   linkedin: string;
 };
@@ -405,6 +410,9 @@ type ApplicationRow = {
   position: string;
   referenceNumber: string;
   resumeFileName: string;
+  resumeUrl?: string;
+  referrerIrain?: string;
+  referrerEmail?: string;
 };
 
 let sheetsClient: ReturnType<typeof google.sheets> | null = null;
@@ -846,6 +854,7 @@ export async function appendReferrerRow(row: ReferrerRow) {
     row.country,
     row.company,
     row.companyIndustry,
+    row.careersPortal ?? '',
     row.workType,
     row.linkedin,
   ]);
@@ -862,6 +871,9 @@ export async function appendApplicationRow(row: ApplicationRow) {
     row.position,
     row.referenceNumber,
     row.resumeFileName,
+    row.resumeUrl ?? '',
+    row.referrerIrain ?? '',
+    row.referrerEmail ?? '',
   ]);
 }
 
@@ -1300,6 +1312,7 @@ export async function listCandidates(params: CandidateListParams) {
 
 export async function listReferrers(params: ReferrerListParams) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN']);
 
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
@@ -1329,6 +1342,7 @@ export async function listReferrers(params: ReferrerListParams) {
       if (!getHeaderValue(headerMap, row, 'Email')) missingFields.push('Email');
       if (!getHeaderValue(headerMap, row, 'Phone')) missingFields.push('Phone');
       if (!getHeaderValue(headerMap, row, 'Company')) missingFields.push('Company');
+      if (!getHeaderValue(headerMap, row, 'Careers Portal')) missingFields.push('Careers Portal');
 
       return {
         irain: getHeaderValue(headerMap, row, 'iRAIN'),
@@ -1339,6 +1353,7 @@ export async function listReferrers(params: ReferrerListParams) {
         country: getHeaderValue(headerMap, row, 'Country'),
         company: getHeaderValue(headerMap, row, 'Company'),
         companyIndustry: getHeaderValue(headerMap, row, 'Company Industry'),
+        careersPortal: getHeaderValue(headerMap, row, 'Careers Portal'),
         workType: getHeaderValue(headerMap, row, 'Work Type'),
         linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
         status: getHeaderValue(headerMap, row, 'Status'),
@@ -1376,10 +1391,120 @@ export async function listReferrers(params: ReferrerListParams) {
       return true;
     });
 
+  const ordered = items.sort((a, b) => {
+    const aTime = a.timestamp ? Date.parse(a.timestamp) : 0;
+    const bTime = b.timestamp ? Date.parse(b.timestamp) : 0;
+    if (aTime !== bTime) return bTime - aTime;
+    return (b.irain || '').localeCompare(a.irain || '');
+  });
+
   return {
-    total: items.length,
-    items: paginate(items, params.offset, params.limit),
+    total: ordered.length,
+    items: paginate(ordered, params.offset, params.limit),
   };
+}
+
+export async function countRowsInSheet(sheetName: string): Promise<number> {
+  await ensureHeaders(sheetName, sheetName === APPLICATION_SHEET_NAME ? APPLICATION_HEADERS : []);
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+  const column = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!A:A`,
+    majorDimension: 'COLUMNS',
+  });
+  const rows = column.data.values?.[0] ?? [];
+  const count = Math.max(0, rows.length - 1);
+  return count;
+}
+
+export async function countApplicationsSince(date: Date): Promise<number> {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+  const column = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${APPLICATION_SHEET_NAME}!B:B`,
+    majorDimension: 'COLUMNS',
+  });
+  const rows = column.data.values?.[0] ?? [];
+  let count = 0;
+  for (let i = 1; i < rows.length; i++) {
+    const value = rows[i];
+    const ts = Array.isArray(value) ? String(value[0] ?? '') : String(value ?? '');
+    const parsed = Date.parse(ts);
+    if (!Number.isNaN(parsed) && parsed >= date.getTime()) {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+type ReferrerLookupResult = {
+  irain: string;
+  name: string;
+  email: string;
+  phone?: string;
+  company?: string;
+  companyIrcrn?: string;
+};
+
+export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookupResult | null> {
+  const normalizedIrcrn = ircrn.trim().toLowerCase();
+  if (!normalizedIrcrn) return null;
+
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN']);
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${REFERRER_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  if (!headers.length) return null;
+
+  const lastCol = toColumnLetter(headers.length - 1);
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${REFERRER_SHEET_NAME}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const headerMap = buildHeaderMap(headers);
+  const rows = (existing.data.values ?? []).slice(1);
+  const companyMatch = companies.find((company) => company.code.toLowerCase() === normalizedIrcrn);
+  const companyNameLower = companyMatch?.name?.toLowerCase();
+
+  const pickRecord = (row: (string | number | null | undefined)[]) => ({
+    irain: getHeaderValue(headerMap, row, 'iRAIN'),
+    name: getHeaderValue(headerMap, row, 'Name'),
+    email: getHeaderValue(headerMap, row, 'Email'),
+    phone: getHeaderValue(headerMap, row, 'Phone'),
+    company: getHeaderValue(headerMap, row, 'Company'),
+    companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
+  });
+
+  for (const row of rows) {
+    const rowIrcrn = getHeaderValue(headerMap, row, 'Company iRCRN').toLowerCase();
+    if (rowIrcrn && rowIrcrn === normalizedIrcrn) {
+      const record = pickRecord(row);
+      if (record.email) return record;
+    }
+  }
+
+  if (companyNameLower) {
+    for (const row of rows) {
+      const rowCompany = getHeaderValue(headerMap, row, 'Company').toLowerCase();
+      if (rowCompany && rowCompany === companyNameLower) {
+        const record = pickRecord(row);
+        if (record.email) return record;
+      }
+    }
+  }
+
+  return null;
 }
 
 export async function listApplications(params: ApplicationListParams) {
@@ -1422,6 +1547,9 @@ export async function listApplications(params: ApplicationListParams) {
         position: getHeaderValue(headerMap, row, 'Position'),
         referenceNumber: getHeaderValue(headerMap, row, 'Reference Number'),
         resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name'),
+        resumeUrl: getHeaderValue(headerMap, row, 'Resume URL'),
+        referrerIrain: getHeaderValue(headerMap, row, 'Referrer iRAIN'),
+        referrerEmail: getHeaderValue(headerMap, row, 'Referrer Email'),
         status: getHeaderValue(headerMap, row, 'Status'),
         ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
         missingFields,
@@ -1436,6 +1564,8 @@ export async function listApplications(params: ApplicationListParams) {
           record.position,
           record.referenceNumber,
           record.ownerNotes,
+          record.referrerEmail,
+          record.resumeUrl,
         ]
           .filter(Boolean)
           .map((value) => value.toLowerCase());

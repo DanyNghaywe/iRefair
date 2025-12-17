@@ -1,26 +1,9 @@
 ﻿import { NextResponse } from "next/server";
+import { ensureResumeLooksLikeCv, scanBufferForViruses } from "@/lib/fileScan";
+import { uploadFileToDrive } from "@/lib/drive";
 import { sendMail } from "@/lib/mailer";
-import { generateIRAIN, upsertCandidateRow } from "@/lib/sheets";
+import { ensureColumns, generateIRAIN, updateRowById, upsertCandidateRow } from "@/lib/sheets";
 import { jobOpeningsUrl } from "@/lib/urls";
-
-type CandidatePayload = {
-  firstName?: string;
-  middleName?: string;
-  familyName?: string;
-  email?: string;
-  language?: string;
-  phone?: string;
-  locatedCanada?: string;
-  province?: string;
-  authorizedCanada?: string;
-  eligibleMoveCanada?: string;
-  industryType?: string;
-  industryOther?: string;
-  employmentStatus?: string;
-  countryOfOrigin?: string;
-  languages?: string;
-  languagesOther?: string;
-};
 
 type EmailLanguage = "en" | "fr";
 
@@ -31,6 +14,8 @@ const ineligibleSubject = "About your referral request - iRefair";
 const subjectFr = "Nous avons bien recu votre demande de recommandation - iRefair";
 const updatedSubjectFr = "Nous avons mis a jour votre demande de recommandation - iRefair";
 const ineligibleSubjectFr = "A propos de votre demande de recommandation - iRefair";
+
+export const runtime = "nodejs";
 
 const htmlTemplate = `<html><body style="font-family:Arial, sans-serif; color:#1f2a37; background:#f6f7fb; padding:20px;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e6e8ee;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.06);">
@@ -241,22 +226,25 @@ function sanitize(value: unknown) {
 
 export async function POST(request: Request) {
   try {
-    const body: CandidatePayload = await request.json();
-    const firstName = sanitize(body.firstName);
-    const middleName = sanitize(body.middleName);
-    const familyName = sanitize(body.familyName);
-    const email = sanitize(body.email);
-    const phone = sanitize(body.phone);
-    const locatedCanada = sanitize(body.locatedCanada);
-    const province = sanitize(body.province);
-    const authorizedCanada = sanitize(body.authorizedCanada);
-    const eligibleMoveCanada = sanitize(body.eligibleMoveCanada);
-    const countryOfOrigin = sanitize(body.countryOfOrigin);
-    const industryType = sanitize(body.industryType);
-    const industryOther = sanitize(body.industryOther);
-    const employmentStatus = sanitize(body.employmentStatus);
-    const languagesOther = sanitize(body.languagesOther);
-    const language = sanitize(body.language).toLowerCase();
+    const form = await request.formData();
+    const valueOf = (key: string) => sanitize(form.get(key));
+    const firstName = valueOf("firstName");
+    const middleName = valueOf("middleName");
+    const familyName = valueOf("familyName");
+    const email = valueOf("email");
+    const phone = valueOf("phone");
+    const locatedCanada = valueOf("locatedCanada");
+    const province = valueOf("province");
+    const authorizedCanada = valueOf("authorizedCanada");
+    const eligibleMoveCanada = valueOf("eligibleMoveCanada");
+    const countryOfOrigin = valueOf("countryOfOrigin");
+    const industryType = valueOf("industryType");
+    const industryOther = valueOf("industryOther");
+    const employmentStatus = valueOf("employmentStatus");
+    const languagesOther = valueOf("languagesOther");
+    const language = valueOf("language").toLowerCase();
+    const languagesRaw = valueOf("languages");
+    const resumeEntry = form.get("resume");
     const locale: EmailLanguage = language === "fr" ? "fr" : "en";
 
     if (!firstName || !email) {
@@ -275,6 +263,42 @@ export async function POST(request: Request) {
 
     const iRain = await generateIRAIN();
     const isIneligible = locatedCanada.toLowerCase() === "no" && eligibleMoveCanada.toLowerCase() === "no";
+    let resumeUrl: string | undefined;
+    let resumeFileName: string | undefined;
+
+    if (resumeEntry instanceof File && resumeEntry.size > 0) {
+      if (resumeEntry.size > 10 * 1024 * 1024) {
+        return NextResponse.json(
+          { ok: false, error: "Please upload a PDF or DOC/DOCX file under 10MB." },
+          { status: 400 },
+        );
+      }
+      const fileBuffer = Buffer.from(await resumeEntry.arrayBuffer());
+      const virusScan = await scanBufferForViruses(fileBuffer, resumeEntry.name);
+      if (!virusScan.ok) {
+        return NextResponse.json(
+          { ok: false, error: virusScan.message || "Your file failed virus scanning." },
+          { status: 400 },
+        );
+      }
+
+      const resumeCheck = await ensureResumeLooksLikeCv(fileBuffer, resumeEntry.type, resumeEntry.name);
+      if (!resumeCheck.ok) {
+        return NextResponse.json(
+          { ok: false, error: resumeCheck.message || "Please upload a complete resume (PDF/DOCX)." },
+          { status: 400 },
+        );
+      }
+
+      const upload = await uploadFileToDrive({
+        buffer: fileBuffer,
+        name: `${iRain}-${resumeEntry.name}`,
+        mimeType: resumeEntry.type || "application/octet-stream",
+        folderId: process.env.GDRIVE_FOLDER_ID || "",
+      });
+      resumeUrl = upload.webViewLink || upload.webContentLink || undefined;
+      resumeFileName = resumeEntry.name;
+    }
 
     const locationSnapshot = (() => {
       if (locatedCanada === "Yes" || locatedCanada === "yes") return province ? `Canada - ${province}` : "Canada";
@@ -303,7 +327,6 @@ export async function POST(request: Request) {
     })();
 
     const languagesSnapshot = (() => {
-      const languagesRaw = sanitize(body.languages);
       const baseList = languagesRaw
         .split(",")
         .map((item) => item.trim())
@@ -331,6 +354,13 @@ export async function POST(request: Request) {
       industryOther,
       employmentStatus,
     });
+    if (resumeUrl || resumeFileName) {
+      await ensureColumns("Candidates", ["Resume File Name", "Resume URL"]);
+      await updateRowById("Candidates", "iRAIN", upsertResult.id, {
+        "Resume File Name": resumeFileName,
+        "Resume URL": resumeUrl,
+      });
+    }
 
     const finalIRain = upsertResult.id;
     const shouldIncludeStatusNote = upsertResult.wasUpdated && !isIneligible;
@@ -397,7 +427,7 @@ export async function POST(request: Request) {
       text,
     });
 
-    return NextResponse.json({ ok: true, updated: upsertResult.wasUpdated, iRain: finalIRain });
+    return NextResponse.json({ ok: true, updated: upsertResult.wasUpdated, iRain: finalIRain, resumeUrl });
   } catch (error) {
     console.error("Candidate email API error", error);
     return NextResponse.json({ ok: false, error: "Failed to send email" }, { status: 500 });

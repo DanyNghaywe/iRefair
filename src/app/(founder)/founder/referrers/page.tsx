@@ -16,6 +16,7 @@ type ReferrerRecord = {
   country: string;
   company: string;
   companyIndustry: string;
+  careersPortal?: string;
   workType: string;
   linkedin: string;
   status: string;
@@ -219,6 +220,16 @@ export default function ReferrersPage() {
               <div className="founder-field">
                 <span>Company</span>
                 <strong>{selected.company || "-"}</strong>
+              </div>
+              <div className="founder-field">
+                <span>Careers Portal</span>
+                {selected.careersPortal ? (
+                  <a href={selected.careersPortal} target="_blank" rel="noreferrer">
+                    Open
+                  </a>
+                ) : (
+                  <strong>-</strong>
+                )}
               </div>
               <div className="founder-field">
                 <span>Industry</span>

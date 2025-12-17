@@ -621,30 +621,31 @@ export default function CandidatePage() {
     setStatus('submitting');
     setSubmitting(true);
 
-    const payload = {
-      firstName: values.firstName,
-      middleName: values.middleName,
-      familyName: values.familyName,
-      email: values.email,
-      language,
-      locatedCanada: values.locatedCanada,
-      province: values.province,
-      authorizedCanada: values.authorizedCanada,
-      eligibleMoveCanada: values.eligibleMoveCanada,
-      languages: values.languages.join(', '),
-      languagesOther: values.languagesOther,
-      industryType: values.industryType,
-      industryOther: values.industryOther,
-      employmentStatus: values.employmentStatus,
-      countryOfOrigin: values.countryOfOrigin,
-      phone: values.phone,
-    };
+    const formBody = new FormData();
+    formBody.append('firstName', values.firstName);
+    formBody.append('middleName', values.middleName);
+    formBody.append('familyName', values.familyName);
+    formBody.append('email', values.email);
+    formBody.append('language', language);
+    formBody.append('locatedCanada', values.locatedCanada);
+    formBody.append('province', values.province);
+    formBody.append('authorizedCanada', values.authorizedCanada);
+    formBody.append('eligibleMoveCanada', values.eligibleMoveCanada);
+    formBody.append('languages', values.languages.join(', '));
+    formBody.append('languagesOther', values.languagesOther);
+    formBody.append('industryType', values.industryType);
+    formBody.append('industryOther', values.industryOther);
+    formBody.append('employmentStatus', values.employmentStatus);
+    formBody.append('countryOfOrigin', values.countryOfOrigin);
+    formBody.append('phone', values.phone);
+    if (resumeFile) {
+      formBody.append('resume', resumeFile);
+    }
 
     try {
       const response = await fetch('/api/candidate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: formBody,
       });
       const data = await response.json();
 

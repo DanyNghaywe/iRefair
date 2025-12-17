@@ -64,7 +64,7 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
   }
 
   return (
-    <AppShell>
+    <AppShell variant="wide">
       <div className="ops-scope">
         <main className="ops-layout">
           <ActionBtn

@@ -124,7 +124,9 @@ export default function ApplyPage() {
     if (!position.trim()) nextErrors.position = 'Please enter the position you are applying for.';
 
     const resumeFile = resumeInputRef.current?.files?.[0];
-    if (resumeFile && (!isAllowedResume(resumeFile) || resumeFile.size > MAX_RESUME_SIZE)) {
+    if (!resumeFile) {
+      nextErrors.resume = 'Please upload your resume (PDF or DOC/DOCX under 10MB).';
+    } else if (!isAllowedResume(resumeFile) || resumeFile.size > MAX_RESUME_SIZE) {
       nextErrors.resume = 'Please upload a PDF or DOC/DOCX file under 10MB.';
     }
 
@@ -148,16 +150,19 @@ export default function ApplyPage() {
     setStatus('submitting');
 
     try {
+      const resumeFile = resumeInputRef.current?.files?.[0];
+      const formData = new FormData();
+      formData.append('candidateId', candidateId.trim());
+      formData.append('iCrn', iCrn.trim());
+      formData.append('position', position.trim());
+      formData.append('referenceNumber', referenceNumber.trim());
+      if (resumeFile) {
+        formData.append('resume', resumeFile);
+      }
+
       const response = await fetch('/api/apply', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          candidateId: candidateId.trim(),
-          iCrn: iCrn.trim(),
-          position: position.trim(),
-          referenceNumber: referenceNumber.trim(),
-          resumeFileName: resumeName,
-        }),
+        body: formData,
       });
 
       const data = await response.json();
@@ -375,10 +380,7 @@ export default function ApplyPage() {
               </div>
 
               <div className={`${fieldClass('resume')} field-full`}>
-                <label htmlFor="resume">
-                  To increase your chances of success, please attach a customized CV here if you wish to submit one{' '}
-                  <span className="optional">(optional)</span>
-                </label>
+                <label htmlFor="resume">Attach your CV (required)</label>
                 <div className="file-upload">
                   <input
                     ref={resumeInputRef}
@@ -403,7 +405,8 @@ export default function ApplyPage() {
                   </span>
                 </div>
                 <p id="resume-helper" className="field-hint">
-                  Upload 1 supported file: PDF or document. Max 10 MB.
+                  Upload 1 supported file: PDF or document. Max 10 MB. Files are scanned for security and may be
+                  reviewed/removed if not a CV.
                 </p>
                 <p className="field-error" id="resume-error" role="alert" aria-live="polite">
                   {errors.resume}

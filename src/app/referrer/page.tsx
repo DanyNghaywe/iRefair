@@ -73,6 +73,7 @@ const translations: Record<
       phone: string;
       country: string;
       company: string;
+      careersPortal: string;
       companyIndustry: string;
       companyIndustryOther: string;
       workType: string;
@@ -89,6 +90,7 @@ const translations: Record<
       country: string;
       workTypeOther: string;
       companyIndustryOther: string;
+      careersPortal?: string;
     };
     selects: { selectLabel: string };
     optional: string;
@@ -136,6 +138,7 @@ const translations: Record<
       phone: 'Phone Number',
       country: 'Country of Origin',
       company: 'Company  Name',
+      careersPortal: 'Careers Portal URL *',
       companyIndustry: 'Industry of the company',
       workType: 'Type of work',
       companyIndustryOther: 'Other company industry',
@@ -152,6 +155,7 @@ const translations: Record<
       country: 'e.g. Canada',
       companyIndustryOther: 'Please specify',
       workTypeOther: 'Please specify',
+      careersPortal: 'https://company.com/careers',
     },
     selects: {
       selectLabel: 'Select',
@@ -219,6 +223,7 @@ const translations: Record<
       phone: 'Numéro de téléphone',
       country: "Pays d'origine",
       company: 'Entreprise',
+      careersPortal: 'Portail carrières *',
       companyIndustry: "Secteur de l'entreprise",
       workType: 'Type de travail',
       companyIndustryOther: 'Autre secteur',
@@ -235,6 +240,7 @@ const translations: Record<
       country: 'ex. France',
       companyIndustryOther: 'Précisez',
       workTypeOther: 'Précisez',
+      careersPortal: 'https://entreprise.com/careers',
     },
     selects: {
       selectLabel: 'Sélectionner',
@@ -364,6 +370,15 @@ export default function ReferrerPage() {
     }
   };
 
+  const isValidUrl = (value: string) => {
+    try {
+      const url = new URL(value);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch {
+      return false;
+    }
+  };
+
   const renderConsentPoint = (point: string) => {
     const email = 'info@andbeyondca.com';
     if (!point.includes(email)) return point;
@@ -383,6 +398,7 @@ export default function ReferrerPage() {
       name: valueOf('referrer-name'),
       email: valueOf('referrer-email'),
       company: valueOf('referrer-company'),
+      careersPortal: valueOf('referrer-careers-portal'),
       companyIndustry: valueOf('referrer-company-industry'),
       companyIndustryOther: valueOf('referrer-company-industry-other'),
       workType: valueOf('work-type'),
@@ -410,6 +426,11 @@ export default function ReferrerPage() {
     if (!values.workType) nextErrors['work-type'] = 'Please select a work type.';
     if (!values.phone) nextErrors['referrer-phone'] = 'Please enter your phone number.';
     if (!values.country) nextErrors['referrer-country'] = 'Please select your country of origin.';
+    if (!values.careersPortal) {
+      nextErrors['referrer-careers-portal'] = 'Please enter the careers portal URL.';
+    } else if (!isValidUrl(values.careersPortal)) {
+      nextErrors['referrer-careers-portal'] = 'Please enter a valid URL (http/https).';
+    }
 
     return nextErrors;
   };
@@ -461,6 +482,7 @@ export default function ReferrerPage() {
       phone: values.phone,
       country: values.country,
       company: values.company,
+      careersPortal: values.careersPortal,
       companyIndustry: values.companyIndustry,
       companyIndustryOther: values.companyIndustryOther,
       workType: values.workType,
@@ -726,10 +748,10 @@ export default function ReferrerPage() {
                         id="referrer-company-industry-other-error"
                         role="alert"
                         aria-live="polite"
-                      >
-                        {errors['referrer-company-industry-other']}
-                      </p>
-                    </div>
+                    >
+                      {errors['referrer-company-industry-other']}
+                    </p>
+                  </div>
                   )}
                   <div className={fieldClass('field', 'work-type')}>
                     <label htmlFor="work-type">{t.labels.workType}</label>
@@ -749,6 +771,27 @@ export default function ReferrerPage() {
                     />
                     <p className="field-error" id="work-type-error" role="alert" aria-live="polite">
                       {errors['work-type']}
+                    </p>
+                  </div>
+                  <div className={fieldClass('field', 'referrer-careers-portal')}>
+                    <label htmlFor="referrer-careers-portal">{t.labels.careersPortal}</label>
+                    <input
+                      id="referrer-careers-portal"
+                      name="referrer-careers-portal"
+                      type="url"
+                      required
+                      placeholder={t.placeholders.careersPortal || 'https://company.com/careers'}
+                      aria-invalid={Boolean(errors['referrer-careers-portal'])}
+                      aria-describedby="referrer-careers-portal-error"
+                      onChange={handleFieldChange('referrer-careers-portal')}
+                    />
+                    <p
+                      className="field-error"
+                      id="referrer-careers-portal-error"
+                      role="alert"
+                      aria-live="polite"
+                    >
+                      {errors['referrer-careers-portal']}
                     </p>
                   </div>
                 </div>

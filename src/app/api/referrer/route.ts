@@ -11,6 +11,7 @@ type ReferrerPayload = {
   company?: string;
   companyIndustry?: string;
   companyIndustryOther?: string;
+  careersPortal?: string;
   workType?: string;
   referralType?: string;
   roles?: string;
@@ -79,6 +80,10 @@ const htmlTemplate = `<!DOCTYPE html>
                       <td align="right" style="padding:10px 0;border-bottom:1px solid #eceff5;font-size:14px;color:#3b4251;">{{company}}</td>
                     </tr>
                     <tr>
+                      <td style="padding:10px 0;border-bottom:1px solid #eceff5;font-size:14px;color:#1f2a37;"><strong>Careers Portal</strong></td>
+                      <td align="right" style="padding:10px 0;border-bottom:1px solid #eceff5;font-size:14px;color:#3b4251;">{{careersPortal}}</td>
+                    </tr>
+                    <tr>
                       <td style="padding:10px 0;border-bottom:1px solid #eceff5;font-size:14px;color:#1f2a37;"><strong>Industry</strong></td>
                       <td align="right" style="padding:10px 0;border-bottom:1px solid #eceff5;font-size:14px;color:#3b4251;">{{companyIndustry}}</td>
                     </tr>
@@ -143,6 +148,7 @@ What happens next
 
 Snapshot you shared
 - Company: {{company}}
+- Careers portal: {{careersPortal}}
 - Industry: {{companyIndustry}}
 - Roles you cover: {{roles}}
 - Regions: {{regions}}
@@ -210,6 +216,10 @@ const htmlTemplateFr = `<!DOCTYPE html>
                       <td align="right" style="padding:10px 0;border-bottom:1px solid #eceff5;font-size:14px;color:#3b4251;">{{company}}</td>
                     </tr>
                     <tr>
+                      <td style="padding:10px 0;border-bottom:1px solid #eceff5;font-size:14px;color:#1f2a37;"><strong>Portail carrières</strong></td>
+                      <td align="right" style="padding:10px 0;border-bottom:1px solid #eceff5;font-size:14px;color:#3b4251;">{{careersPortal}}</td>
+                    </tr>
+                    <tr>
                       <td style="padding:10px 0;border-bottom:1px solid #eceff5;font-size:14px;color:#1f2a37;"><strong>Secteur</strong></td>
                       <td align="right" style="padding:10px 0;border-bottom:1px solid #eceff5;font-size:14px;color:#3b4251;">{{companyIndustry}}</td>
                     </tr>
@@ -274,6 +284,7 @@ Prochaines &eacute;tapes
 
 R&eacute;sum&eacute; partag&eacute;
 - Entreprise : {{company}}
+- Portail carrières : {{careersPortal}}
 - Secteur : {{companyIndustry}}
 - R&ocirc;les couverts : {{roles}}
 - R&eacute;gions : {{regions}}
@@ -309,13 +320,14 @@ export async function POST(request: Request) {
     const phone = sanitize(body.phone);
     const country = sanitize(body.country);
     const company = sanitize(body.company);
-    const companyIndustry = sanitize(body.companyIndustry);
-    const companyIndustryOther = sanitize(body.companyIndustryOther);
-    const workType = sanitize(body.workType);
-    const referralType = sanitize(body.referralType || body.workType);
-    const roles = sanitize(body.roles);
-    const regions = sanitize(body.regions);
-    const monthlySlots = sanitize(body.monthlySlots);
+  const companyIndustry = sanitize(body.companyIndustry);
+  const companyIndustryOther = sanitize(body.companyIndustryOther);
+  const careersPortal = sanitize(body.careersPortal);
+  const workType = sanitize(body.workType);
+  const referralType = sanitize(body.referralType || body.workType);
+  const roles = sanitize(body.roles);
+  const regions = sanitize(body.regions);
+  const monthlySlots = sanitize(body.monthlySlots);
     const linkedin = sanitize(body.linkedin);
     const language = sanitize(body.language).toLowerCase();
     const locale: EmailLanguage = language === 'fr' ? 'fr' : 'en';
@@ -334,6 +346,9 @@ export async function POST(request: Request) {
 
     const companyIndustryText = resolveIndustry(companyIndustry, companyIndustryOther, notProvidedText);
     const companyIndustryHtml = resolveIndustry(companyIndustry, companyIndustryOther, notProvidedHtml);
+    const careersPortalHtml = careersPortal
+      ? `<a href="${careersPortal}" target="_blank" rel="noreferrer">${careersPortal}</a>`
+      : notProvidedHtml;
 
     const textValues = {
       iRain,
@@ -344,6 +359,7 @@ export async function POST(request: Request) {
       roles: roles || notProvidedText,
       regions: regions || notProvidedText,
       referralType: referralType || workType || notProvidedText,
+      careersPortal: careersPortal || notProvidedText,
       monthlySlots: monthlySlots || notProvidedText,
     };
 
@@ -354,6 +370,7 @@ export async function POST(request: Request) {
       roles: roles || notProvidedHtml,
       regions: regions || notProvidedHtml,
       referralType: referralType || workType || notProvidedHtml,
+      careersPortal: careersPortalHtml,
       monthlySlots: monthlySlots || notProvidedHtml,
     };
 
@@ -368,6 +385,7 @@ export async function POST(request: Request) {
       country,
       company,
       companyIndustry: resolveIndustry(companyIndustry, companyIndustryOther, companyIndustry),
+      careersPortal,
       workType,
       linkedin,
     });

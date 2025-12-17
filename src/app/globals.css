@@ -122,6 +122,10 @@ main {
   backdrop-filter: none;
 }
 
+.board--wide {
+  width: min(1600px, 100%);
+}
+
 .topbar {
   display: flex;
   align-items: flex-start;
