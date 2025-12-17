@@ -34,11 +34,8 @@ export async function scanBufferForViruses(
 
   try {
     const form = new FormData();
-    const arrayBuffer = buffer.buffer.slice(
-      buffer.byteOffset,
-      buffer.byteOffset + buffer.byteLength,
-    );
-    form.append('file', new Blob([arrayBuffer]), filename || 'upload.bin');
+    const uint8 = Uint8Array.from(buffer);
+    form.append('file', new Blob([uint8.buffer]), filename || 'upload.bin');
 
     const uploadRes = await fetch('https://www.virustotal.com/api/v3/files', {
       method: 'POST',
