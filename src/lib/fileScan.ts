@@ -34,7 +34,11 @@ export async function scanBufferForViruses(
 
   try {
     const form = new FormData();
-    form.append('file', new Blob([buffer]), filename || 'upload.bin');
+    const arrayBuffer = buffer.buffer.slice(
+      buffer.byteOffset,
+      buffer.byteOffset + buffer.byteLength,
+    );
+    form.append('file', new Blob([arrayBuffer]), filename || 'upload.bin');
 
     const uploadRes = await fetch('https://www.virustotal.com/api/v3/files', {
       method: 'POST',
@@ -77,19 +81,19 @@ export async function scanBufferForViruses(
     const malicious = stats.malicious ?? 0;
     const suspicious = stats.suspicious ?? 0;
     if (malicious > 0 || suspicious > 0) {
-    return { ok: false, message: 'File flagged by antivirus scan.' };
-  }
+      return { ok: false, message: 'File flagged by antivirus scan.' };
+    }
 
-  return { ok: true };
-} catch (error) {
-  const name = (error as Error | undefined)?.name;
-  if (name === 'AbortError' || name === 'TimeoutError') {
-    console.warn('VirusTotal scan timeout; skipping', error);
-    return { ok: true, skipped: true, message: 'Virus scan skipped (timeout).' };
+    return { ok: true };
+  } catch (error) {
+    const name = (error as Error | undefined)?.name;
+    if (name === 'AbortError' || name === 'TimeoutError') {
+      console.warn('VirusTotal scan timeout; skipping', error);
+      return { ok: true, skipped: true, message: 'Virus scan skipped (timeout).' };
+    }
+    console.error('VirusTotal scan error', error);
+    return { ok: false, message: 'Virus scan failed (service unavailable).' };
   }
-  console.error('VirusTotal scan error', error);
-  return { ok: false, message: 'Virus scan failed (service unavailable).' };
-}
 }
 
 async function extractText(buffer: Buffer, mimeType?: string, filename?: string): Promise<string | null> {
