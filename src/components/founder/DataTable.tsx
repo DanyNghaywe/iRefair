@@ -20,6 +20,7 @@ type Props<T> = {
   loading?: boolean;
   emptyState?: string;
   onRowClick?: (row: T) => void;
+  rowAriaLabel?: (row: T) => string;
   tableClassName?: string;
 };
 
@@ -28,8 +29,30 @@ type SortState = {
   direction: "asc" | "desc";
 };
 
-export function DataTable<T>({ columns, data, loading, emptyState, onRowClick, tableClassName }: Props<T>) {
+export function DataTable<T>({
+  columns,
+  data,
+  loading,
+  emptyState,
+  onRowClick,
+  rowAriaLabel,
+  tableClassName,
+}: Props<T>) {
   const [sort, setSort] = useState<SortState>({ key: null, direction: "asc" });
+
+  const shouldIgnoreRowClick = (target: EventTarget | null) => {
+    const element = target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
+    if (!element) return false;
+    if (element.closest("[data-no-row-click]")) return true;
+    return Boolean(element.closest("a, button, input, select, textarea, [role='button']"));
+  };
+
+  const handleRowClick = (event: React.MouseEvent<HTMLTableRowElement>, row: T) => {
+    if (!onRowClick) return;
+    if (event.defaultPrevented) return;
+    if (shouldIgnoreRowClick(event.target)) return;
+    onRowClick(row);
+  };
 
   const sorted = useMemo(() => {
     if (!sort.key) return data;
@@ -55,6 +78,15 @@ export function DataTable<T>({ columns, data, loading, emptyState, onRowClick, t
       }
       return { key, direction: "asc" };
     });
+  };
+
+  const handleRowKeyDown = (event: React.KeyboardEvent<HTMLTableRowElement>, row: T) => {
+    if (!onRowClick) return;
+    if (shouldIgnoreRowClick(event.target)) return;
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      onRowClick(row);
+    }
   };
 
   const renderSkeletonRows = () => {
@@ -117,7 +149,11 @@ export function DataTable<T>({ columns, data, loading, emptyState, onRowClick, t
                 <tr
                   key={rowIndex}
                   className={onRowClick ? "is-clickable" : undefined}
-                  onClick={() => onRowClick?.(row)}
+                  onClick={onRowClick ? (event) => handleRowClick(event, row) : undefined}
+                  onKeyDown={onRowClick ? (event) => handleRowKeyDown(event, row) : undefined}
+                  tabIndex={onRowClick ? 0 : undefined}
+                  role={onRowClick ? "link" : undefined}
+                  aria-label={rowAriaLabel ? rowAriaLabel(row) : undefined}
                 >
                   {columns.map((column) => (
                     <td

@@ -22,6 +22,7 @@ type OpsDataTableProps<T> = {
   loading?: boolean;
   emptyState?: string;
   onRowClick?: (row: T) => void;
+  rowAriaLabel?: (row: T) => string;
   tableClassName?: string;
 };
 
@@ -31,6 +32,7 @@ export function OpsDataTable<T>({
   loading,
   emptyState,
   onRowClick,
+  rowAriaLabel,
   tableClassName,
 }: OpsDataTableProps<T>) {
   const combinedTableClassName = ["data-table", "ops-table", tableClassName].filter(Boolean).join(" ") || undefined;
@@ -68,6 +70,7 @@ export function OpsDataTable<T>({
           loading={loading}
           emptyState={emptyState}
           onRowClick={onRowClick}
+          rowAriaLabel={rowAriaLabel}
           tableClassName={combinedTableClassName}
         />
       </div>

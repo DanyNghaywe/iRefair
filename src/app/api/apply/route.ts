@@ -77,7 +77,7 @@ export async function POST(request: Request) {
       (await findReferrerByIrcrn(iCrn)) ||
       (process.env.APPLICATION_FALLBACK_REFERRER_EMAIL
         ? {
-            irain: 'fallback',
+            irref: 'fallback',
             name: process.env.APPLICATION_FALLBACK_REFERRER_NAME || 'Referrer',
             email: process.env.APPLICATION_FALLBACK_REFERRER_EMAIL,
           }
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
       referenceNumber,
       resumeFileName: resumeEntry.name,
       resumeUrl,
-      referrerIrain: referrer.irain,
+      referrerIrref: referrer.irref,
       referrerEmail: referrer.email,
     });
 

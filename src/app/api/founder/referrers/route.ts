@@ -16,11 +16,12 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get('search') ?? undefined;
   const status = searchParams.get('status') ?? undefined;
   const company = searchParams.get('company') ?? undefined;
+  const approval = searchParams.get('approval') ?? undefined;
   const limit = Number.parseInt(searchParams.get('limit') || '', 10);
   const offset = Number.parseInt(searchParams.get('offset') || '', 10);
 
   try {
-    const data = await listReferrers({ search, status, company, limit, offset });
+    const data = await listReferrers({ search, status, company, approval, limit, offset });
     return NextResponse.json({ ok: true, ...data });
   } catch (error) {
     console.error('Error listing referrers', error);

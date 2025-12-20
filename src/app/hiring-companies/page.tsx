@@ -2,13 +2,28 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { AppShell } from '@/components/AppShell';
 import { companies, type CompanyRow } from '@/lib/hiringCompanies';
+import { listApprovedReferrerCompanies } from '@/lib/sheets';
+
+export const dynamic = 'force-dynamic';
 
 export const metadata: Metadata = {
   title: 'iRefair | Hiring companies & iRCRN list',
   description: 'Steps to apply plus the latest iRefair company reference numbers (iRCRN) and career site links.',
 };
 
-export default function HiringCompaniesPage() {
+export default async function HiringCompaniesPage() {
+  const approved = await listApprovedReferrerCompanies();
+  const mergedMap = new Map<string, CompanyRow>();
+  for (const company of companies) {
+    mergedMap.set(company.code, company);
+  }
+  for (const company of approved) {
+    if (!mergedMap.has(company.code)) {
+      mergedMap.set(company.code, company);
+    }
+  }
+  const mergedCompanies = Array.from(mergedMap.values());
+
   return (
     <AppShell>
       <main>
@@ -49,7 +64,7 @@ export default function HiringCompaniesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {companies.map((company: CompanyRow) => (
+                  {mergedCompanies.map((company: CompanyRow) => (
                     <tr key={company.code}>
                       <td>{company.code}</td>
                       <td>{company.name}</td>

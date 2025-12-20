@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { sendMail } from '@/lib/mailer';
-import { appendReferrerRow, generateIRAIN } from '@/lib/sheets';
+import { appendReferrerRow, generateIRREF } from '@/lib/sheets';
 
 type ReferrerPayload = {
   name?: string;
@@ -22,8 +22,8 @@ type ReferrerPayload = {
 
 type EmailLanguage = 'en' | 'fr';
 
-const subject = 'Thanks for offering referrals (iRAIN saved) - iRefair';
-const subjectFr = "Merci d'offrir des recommandations (iRAIN enregistr\u00e9) - iRefair";
+const subject = 'Thanks for offering referrals (iRREF saved) - iRefair';
+const subjectFr = "Merci d'offrir des recommandations (iRREF enregistr\u00e9) - iRefair";
 
 const htmlTemplate = `<!DOCTYPE html>
 <html lang="en">
@@ -34,7 +34,7 @@ const htmlTemplate = `<!DOCTYPE html>
   </head>
   <body style="margin:0;padding:0;background:#f6f7fb;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
     <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:#f6f7fb;">
-      Thanks for offering referrals with iRefair. Your iRAIN is saved; we will reach out when we have a match.
+      Thanks for offering referrals with iRefair. Your iRREF is saved; we will reach out when we have a match.
     </div>
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="padding:32px 14px;">
       <tr>
@@ -45,7 +45,7 @@ const htmlTemplate = `<!DOCTYPE html>
                 <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
                   <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
                   <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">Referral offer received</div>
-                  <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRAIN: <strong style="color:#1f2a37;">{{iRain}}</strong></div>
+                  <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRREF: <strong style="color:#1f2a37;">{{iRref}}</strong></div>
                 </div>
               </td>
             </tr>
@@ -64,7 +64,7 @@ const htmlTemplate = `<!DOCTYPE html>
               <td style="padding:6px 28px 18px 28px;">
                 <div style="margin:0 0 10px 0;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5c6675;font-weight:700;">What happens next</div>
                 <ol style="margin:0;padding-left:18px;font-size:14px;line-height:1.7;color:#3b4251;">
-                  <li>We review your details and iRAIN to understand where you can help.</li>
+                  <li>We review your details and iRREF to understand where you can help.</li>
                   <li>We keep you on our radar for teams, industries, and regions that match your snapshot.</li>
                   <li>When there is a fit, we'll reach out before sharing any candidate details.</li>
                 </ol>
@@ -137,12 +137,12 @@ const textTemplate = `Hi {{name}},
 
 Thank you for offering referrals. We'll reach out when we have a candidate who matches the teams and roles you cover.
 
-iRAIN: {{iRain}}
+iRREF: {{iRref}}
 
 Thank you for contributing to the community and helping others find work in Canada. You can reply to this email anytime to adjust your availability or update how you want to help.
 
 What happens next
-1) We review your details and iRAIN to understand where you can help.
+1) We review your details and iRREF to understand where you can help.
 2) We keep you on our radar for teams, industries, and regions that match your snapshot.
 3) When there is a fit, we'll reach out before sharing any candidate details.
 
@@ -170,7 +170,7 @@ const htmlTemplateFr = `<!DOCTYPE html>
   </head>
   <body style="margin:0;padding:0;background:#f6f7fb;font-family:system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
     <div style="display:none;max-height:0;overflow:hidden;font-size:1px;line-height:1px;color:#f6f7fb;">
-      Merci d'offrir des recommandations avec iRefair. Votre iRAIN est enregistr&eacute;; nous vous contacterons d&egrave;s qu'il y a une correspondance.
+      Merci d'offrir des recommandations avec iRefair. Votre iRREF est enregistr&eacute;; nous vous contacterons d&egrave;s qu'il y a une correspondance.
     </div>
     <table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="padding:32px 14px;">
       <tr>
@@ -181,7 +181,7 @@ const htmlTemplateFr = `<!DOCTYPE html>
                 <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
                   <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
                   <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">Offre de recommandation re&ccedil;ue</div>
-                  <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRAIN : <strong style="color:#1f2a37;">{{iRain}}</strong></div>
+                  <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRREF : <strong style="color:#1f2a37;">{{iRref}}</strong></div>
                 </div>
               </td>
             </tr>
@@ -200,7 +200,7 @@ const htmlTemplateFr = `<!DOCTYPE html>
               <td style="padding:6px 28px 18px 28px;">
                 <div style="margin:0 0 10px 0;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5c6675;font-weight:700;">Prochaines &eacute;tapes</div>
                 <ol style="margin:0;padding-left:18px;font-size:14px;line-height:1.7;color:#3b4251;">
-                  <li>Nous passons en revue vos informations et votre iRAIN pour voir o&ugrave; vous pouvez aider.</li>
+                  <li>Nous passons en revue vos informations et votre iRREF pour voir o&ugrave; vous pouvez aider.</li>
                   <li>Nous vous gardons en t&ecirc;te pour les &eacute;quipes, secteurs et r&eacute;gions correspondant &agrave; votre profil.</li>
                   <li>En cas d'ad&eacute;quation, nous vous contactons avant de partager tout d&eacute;tail sur un candidat.</li>
                 </ol>
@@ -273,12 +273,12 @@ const textTemplateFr = `Bonjour {{name}},
 
 Merci de proposer des recommandations. Nous vous contacterons quand nous aurons un candidat correspondant aux &eacute;quipes et aux r&ocirc;les que vous couvrez.
 
-iRAIN : {{iRain}}
+iRREF : {{iRref}}
 
 Merci de contribuer &agrave; la communaut&eacute; et d'aider d'autres personnes &agrave; trouver un emploi au Canada. Vous pouvez r&eacute;pondre &agrave; cet e-mail &agrave; tout moment pour ajuster votre disponibilit&eacute; ou mettre &agrave; jour vos modalit&eacute;s.
 
 Prochaines &eacute;tapes
-1) Nous passons en revue vos informations et votre iRAIN pour identifier o&ugrave; vous pouvez aider.
+1) Nous passons en revue vos informations et votre iRREF pour identifier o&ugrave; vous pouvez aider.
 2) Nous vous gardons en t&ecirc;te pour les &eacute;quipes, secteurs et r&eacute;gions correspondant &agrave; votre profil.
 3) En cas d'ad&eacute;quation, nous vous contactons avant de partager des d&eacute;tails sur un candidat.
 
@@ -320,14 +320,14 @@ export async function POST(request: Request) {
     const phone = sanitize(body.phone);
     const country = sanitize(body.country);
     const company = sanitize(body.company);
-  const companyIndustry = sanitize(body.companyIndustry);
-  const companyIndustryOther = sanitize(body.companyIndustryOther);
-  const careersPortal = sanitize(body.careersPortal);
-  const workType = sanitize(body.workType);
-  const referralType = sanitize(body.referralType || body.workType);
-  const roles = sanitize(body.roles);
-  const regions = sanitize(body.regions);
-  const monthlySlots = sanitize(body.monthlySlots);
+    const companyIndustry = sanitize(body.companyIndustry);
+    const companyIndustryOther = sanitize(body.companyIndustryOther);
+    const careersPortal = sanitize(body.careersPortal);
+    const workType = sanitize(body.workType);
+    const referralType = sanitize(body.referralType || body.workType);
+    const roles = sanitize(body.roles);
+    const regions = sanitize(body.regions);
+    const monthlySlots = sanitize(body.monthlySlots);
     const linkedin = sanitize(body.linkedin);
     const language = sanitize(body.language).toLowerCase();
     const locale: EmailLanguage = language === 'fr' ? 'fr' : 'en';
@@ -342,7 +342,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: 'Missing required field: email.' }, { status: 400 });
     }
 
-    const iRain = await generateIRAIN();
+    const iRref = await generateIRREF();
 
     const companyIndustryText = resolveIndustry(companyIndustry, companyIndustryOther, notProvidedText);
     const companyIndustryHtml = resolveIndustry(companyIndustry, companyIndustryOther, notProvidedHtml);
@@ -351,8 +351,7 @@ export async function POST(request: Request) {
       : notProvidedHtml;
 
     const textValues = {
-      iRain,
-      irain: iRain,
+      iRref,
       name: fallbackName,
       company: company || notProvidedText,
       companyIndustry: companyIndustryText,
@@ -378,12 +377,13 @@ export async function POST(request: Request) {
     const text = fillTemplate(locale === 'fr' ? textTemplateFr : textTemplate, textValues);
 
     await appendReferrerRow({
-      iRain,
+      iRref,
       name,
       email,
       phone,
       country,
       company,
+      companyApproval: 'pending',
       companyIndustry: resolveIndustry(companyIndustry, companyIndustryOther, companyIndustry),
       careersPortal,
       workType,
@@ -398,7 +398,7 @@ export async function POST(request: Request) {
       text,
     });
 
-    return NextResponse.json({ ok: true, iRain });
+    return NextResponse.json({ ok: true, iRref });
   } catch (error) {
     console.error('Referrer email API error', error);
     return NextResponse.json({ ok: false, error: 'Failed to send email' }, { status: 500 });

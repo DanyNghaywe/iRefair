@@ -17,11 +17,9 @@ export default function FounderLoginPage() {
           <section className="founder-login-card founder-auth">
             <div className="founder-login-header">
               <div className="founder-login-brand">
-                <span className="founder-login-brand__dot" aria-hidden="true" />
                 <span className="founder-login-brand__text">IREFair</span>
               </div>
               <h1 id="founder-login-title">Login</h1>
-              <p className="founder-login-lead">Access the founder console with your secure credentials.</p>
             </div>
 
             <Suspense fallback={<div className="founder-login-loading">Loading...</div>}>

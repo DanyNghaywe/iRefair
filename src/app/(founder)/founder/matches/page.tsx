@@ -13,7 +13,7 @@ type MatchRecord = {
   matchId: string;
   createdAt: string;
   candidateIrain: string;
-  referrerIrain: string;
+  referrerIrref: string;
   companyIrcrn: string;
   positionContext: string;
   stage: string;
@@ -41,7 +41,7 @@ export default function MatchesPage() {
   const [mounted, setMounted] = useState(false);
   const [newMatch, setNewMatch] = useState({
     candidateIrain: "",
-    referrerIrain: "",
+    referrerIrref: "",
     companyIrcrn: "",
     positionContext: "",
   });
@@ -139,7 +139,7 @@ export default function MatchesPage() {
     () => [
       { key: "matchId", label: "Match ID", sortable: true, width: "180px", nowrap: true },
       { key: "candidateIrain", label: "Candidate", sortable: true, width: "240px", ellipsis: true },
-      { key: "referrerIrain", label: "Referrer", sortable: true, width: "240px", ellipsis: true },
+      { key: "referrerIrref", label: "Referrer", sortable: true, width: "240px", ellipsis: true },
       { key: "companyIrcrn", label: "iRCRN", sortable: true, width: "200px", nowrap: true },
       {
         key: "stage",
@@ -216,11 +216,11 @@ export default function MatchesPage() {
                 />
               </label>
               <label>
-                Referrer iRAIN (optional)
+                Referrer iRREF (optional)
                 <input
                   type="text"
-                  value={newMatch.referrerIrain}
-                  onChange={(event) => setNewMatch((prev) => ({ ...prev, referrerIrain: event.target.value }))}
+                  value={newMatch.referrerIrref}
+                  onChange={(event) => setNewMatch((prev) => ({ ...prev, referrerIrref: event.target.value }))}
                 />
               </label>
               <label>
@@ -296,7 +296,7 @@ export default function MatchesPage() {
         open={Boolean(selected)}
         onClose={() => setSelected(null)}
         title={selected ? `${selected.candidateIrain} ƒ+' ${selected.companyIrcrn}` : ""}
-        description={selected?.referrerIrain || "No referrer linked"}
+        description={selected?.referrerIrref || "No referrer linked"}
         actions={
           <div className="founder-actions">
             <ActionBtn

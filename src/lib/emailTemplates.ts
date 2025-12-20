@@ -12,14 +12,14 @@ const baseStyles = {
   footer: "margin-top: 18px; color: #64748b; font-size: 13px;",
 };
 
-export function meetFounderInvite(referrerName: string, irain: string, link?: string): TemplateResult {
+export function meetFounderInvite(referrerName: string, irref: string, link?: string): TemplateResult {
   const subject = "Invitation: Meet the Founder at iRefair";
   const joinLink = link || "Schedule link not provided yet — we will follow up with a calendar invitation.";
   const greeting = referrerName ? `Hi ${referrerName},` : "Hi there,";
 
   const text = `${greeting}
 
-Thank you for being part of the iRefair community (iRAIN ${irain}). I'd like to invite you to a brief call to learn more about your referrals and how we can collaborate.
+Thank you for being part of the iRefair community (iRREF ${irref}). I'd like to invite you to a brief call to learn more about your referrals and how we can collaborate.
 
 Meet link: ${joinLink}
 
@@ -31,7 +31,7 @@ If the link is unavailable, reply with your availability and we will send you a 
   <div style="${baseStyles.card}">
     <h2 style="${baseStyles.heading}">Invitation to meet</h2>
     <p style="${baseStyles.paragraph}">${greeting}</p>
-    <p style="${baseStyles.paragraph}">Thank you for being part of the iRefair community (iRAIN ${irain}). I'd like to invite you to a brief call to learn more about your referrals and how we can collaborate.</p>
+    <p style="${baseStyles.paragraph}">Thank you for being part of the iRefair community (iRREF ${irref}). I'd like to invite you to a brief call to learn more about your referrals and how we can collaborate.</p>
     <p style="${baseStyles.paragraph}"><strong>Meet link:</strong><br>${joinLink}</p>
     <p style="${baseStyles.paragraph}">If the link is unavailable, reply with your availability and we will send you a calendar invite.</p>
     <p style="${baseStyles.paragraph}">— Founder, iRefair</p>

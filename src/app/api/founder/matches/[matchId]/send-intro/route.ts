@@ -6,7 +6,7 @@ import { sendMail } from '@/lib/mailer';
 import {
   findCandidateByIdentifier,
   getMatchById,
-  getReferrerByIrain,
+  getReferrerByIrref,
   updateMatch,
 } from '@/lib/sheets';
 
@@ -29,8 +29,8 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ m
   const candidate = match.record.candidateIrain
     ? await findCandidateByIdentifier(match.record.candidateIrain)
     : null;
-  const referrer = match.record.referrerIrain
-    ? await getReferrerByIrain(match.record.referrerIrain)
+  const referrer = match.record.referrerIrref
+    ? await getReferrerByIrref(match.record.referrerIrref)
     : null;
 
   if (!candidate?.record.email || !referrer?.record.email) {

@@ -112,7 +112,7 @@ const translations: Record<
     success: {
       title: string;
       thankYou: string;
-      iRainLabel: string;
+      iRrefLabel: string;
       founderIntro: string;
       founderCtaLabel: string;
       founderCtaNote: string;
@@ -197,7 +197,7 @@ const translations: Record<
       title: 'Thank you for contributing to iRefair',
       thankYou:
         'Thank you for sharing your referrer details and supporting iRefair. Your contribution helps candidates who are actively looking for work and rely on community referrals.',
-      iRainLabel: 'Your iRefair referral ID (iRAIN):',
+      iRrefLabel: 'Your iRefair referral ID (iRREF):',
       founderIntro:
         'Our Founder & Managing Director would also like to meet you, get to know you better, and explore how we can collaborate together.',
       founderCtaLabel: 'Schedule a meeting with the Founder',
@@ -282,7 +282,7 @@ const translations: Record<
       title: 'Merci de contribuer Aÿ iRefair',
       thankYou:
         "Merci d’avoir partagAc vos informations de rAcfArent et de soutenir iRefair. Votre contribution aide des candidats qui recherchent activement un emploi et comptent sur les recommandations de la communautAc.",
-      iRainLabel: 'Votre identifiant de recommandation iRefair (iRAIN) :',
+      iRrefLabel: 'Votre identifiant de recommandation iRefair (iRREF) :',
       founderIntro:
         "Le fondateur et directeur gAcnAc ral d’iRefair souhaiterait AAcgalement vous rencontrer pour mieux vous connaAAtre et voir comment vous pourriez collaborer ensemble.",
       founderCtaLabel: 'Planifier un rendez-vous avec le fondateur',
@@ -302,7 +302,7 @@ export default function ReferrerPage() {
   const [companyIndustrySelection, setCompanyIndustrySelection] = useState('');
   const [countrySelection, setCountrySelection] = useState('');
   const [workTypeSelection, setWorkTypeSelection] = useState('');
-  const [iRain, setIRain] = useState<string | null>(null);
+  const [iRref, setIRref] = useState<string | null>(null);
   const t = translations[language];
 
   useEffect(() => {
@@ -501,10 +501,10 @@ export default function ReferrerPage() {
         throw new Error(data?.error || t.errors.submissionFailed);
       }
 
-      setIRain(typeof data.iRain === 'string' ? data.iRain : null);
+      setIRref(typeof data.iRref === 'string' ? data.iRref : null);
       setStatus('ok');
     } catch {
-      setIRain(null);
+      setIRref(null);
       setStatus('error');
     } finally {
       setSubmitting(false);
@@ -554,7 +554,7 @@ export default function ReferrerPage() {
             </div>
           </div>
 
-            {status === 'ok' && iRain && (
+            {status === 'ok' && iRref && (
               <section
                 className="success-panel"
                 aria-live="polite"
@@ -565,8 +565,8 @@ export default function ReferrerPage() {
                 <p className="success-text">{t.success.thankYou}</p>
 
                 <p className="success-irain">
-                  <span className="success-irain-label">{t.success.iRainLabel} </span>
-                  <code className="success-irain-value">{iRain}</code>
+                  <span className="success-irain-label">{t.success.iRrefLabel} </span>
+                  <code className="success-irain-value">{iRref}</code>
                 </p>
 
                 <p className="success-founder">{t.success.founderIntro}</p>
@@ -596,7 +596,7 @@ export default function ReferrerPage() {
                 setErrors({});
                 linkedinInputRef.current?.setCustomValidity('');
                 setStatus('idle');
-                setIRain(null);
+                setIRref(null);
                 setCompanyIndustrySelection('');
                 setCountrySelection('');
                 setWorkTypeSelection('');

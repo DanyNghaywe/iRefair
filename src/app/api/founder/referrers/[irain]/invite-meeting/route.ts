@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireFounder } from '@/lib/founderAuth';
 import { meetFounderInvite } from '@/lib/emailTemplates';
 import { sendMail } from '@/lib/mailer';
-import { getReferrerByIrain, updateReferrerAdmin } from '@/lib/sheets';
+import { getReferrerByIrref, updateReferrerAdmin } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +16,7 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 
-  const referrer = await getReferrerByIrain(params.irain);
+  const referrer = await getReferrerByIrref(params.irain);
   if (!referrer) {
     return NextResponse.json({ ok: false, error: 'Referrer not found' }, { status: 404 });
   }
@@ -31,7 +31,7 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
   const meetLink =
     process.env.FOUNDER_MEET_LINK ||
     'Scheduling link not configured yet. We will follow up with a calendar invitation.';
-  const template = meetFounderInvite(referrer.record.name, referrer.record.irain, meetLink);
+  const template = meetFounderInvite(referrer.record.name, referrer.record.irref, meetLink);
 
   await sendMail({
     to: referrer.record.email,
@@ -40,9 +40,9 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
     html: template.html,
   });
 
-  console.log('Founder invite sent', { irain: referrer.record.irain, email: referrer.record.email });
+  console.log('Founder invite sent', { irref: referrer.record.irref, email: referrer.record.email });
 
-  await updateReferrerAdmin(referrer.record.irain, {
+  await updateReferrerAdmin(referrer.record.irref, {
     status: 'meeting invited',
     lastContactedAt: new Date().toISOString(),
   });

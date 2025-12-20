@@ -1,4 +1,4 @@
-import { companies } from '@/lib/hiringCompanies';
+import { companies, type CompanyRow } from '@/lib/hiringCompanies';
 import { google } from 'googleapis';
 import { randomUUID } from 'crypto';
 
@@ -32,13 +32,15 @@ const CANDIDATE_EMAIL_COLUMN_INDEX = 5; // zero-based (Column F)
 const LEGACY_CANDIDATE_ID_COLUMN_INDEX = CANDIDATE_HEADERS.length - 1;
 export const REFERRER_SHEET_NAME = 'Referrers';
 export const REFERRER_HEADERS = [
-  'iRAIN',
+  'iRREF',
   'Timestamp',
   'Name',
   'Email',
   'Phone',
   'Country',
   'Company',
+  'Company iRCRN',
+  'Company Approval',
   'Company Industry',
   'Careers Portal',
   'Work Type',
@@ -49,7 +51,7 @@ export const MATCH_HEADERS = [
   'Match ID',
   'Created At',
   'Candidate iRAIN',
-  'Referrer iRAIN',
+  'Referrer iRREF',
   'Company iRCRN',
   'Position / Context',
   'Stage',
@@ -61,6 +63,7 @@ export const APPLICATION_ADMIN_COLUMNS = ['Status', 'Owner Notes'];
 
 const IRCRN_REGEX = /^iRCRN(\d{10})$/i;
 const IRAIN_REGEX = /^iRAIN(\d{10})$/i;
+const IRREF_REGEX = /^iRREF(\d{10})$/i;
 const REFERRER_LEGACY_PREFIX = 'Referrers_Legacy_';
 
 export function isIrain(value: string) {
@@ -365,7 +368,7 @@ export const APPLICATION_HEADERS = [
   'Reference Number',
   'Resume File Name',
   'Resume URL',
-  'Referrer iRAIN',
+  'Referrer iRREF',
   'Referrer Email',
 ];
 export const APPLICATION_SHEET_NAME = 'Applications';
@@ -391,12 +394,14 @@ type CandidateRow = {
 };
 
 type ReferrerRow = {
-  iRain: string; // iRefair referrer ID, e.g. iRAIN0000000016
+  iRref: string; // iRefair referrer ID, e.g. iRREF0000000016
   name: string;
   email: string;
   phone: string;
   country: string;
   company: string;
+  companyIrcrn?: string;
+  companyApproval?: string;
   companyIndustry: string;
   careersPortal?: string;
   workType: string;
@@ -411,7 +416,7 @@ type ApplicationRow = {
   referenceNumber: string;
   resumeFileName: string;
   resumeUrl?: string;
-  referrerIrain?: string;
+  referrerIrref?: string;
   referrerEmail?: string;
 };
 
@@ -584,44 +589,18 @@ export async function ensureHeaders(
     const rows = fullSheet.data.values ?? [];
     const dataRows = Math.max(rows.length - 1, 0);
     const headersMatch =
-      firstRow.length === headers.length && firstRow.every((value, index) => value === headers[index]);
+      firstRow.length >= headers.length && headers.every((value, index) => value === headers[index]);
+    const hasHeaderContent = firstRow.some((value) => String(value ?? '').trim() !== '');
 
     if (!headersMatch && rows.length) {
-      if (dataRows <= 2) {
-        await sheets.spreadsheets.values.clear({ spreadsheetId, range: sheetName });
+      if (!hasHeaderContent && dataRows <= 2) {
         firstRow = [];
         await writeHeaders();
         needsFormatting = true;
       } else {
-        const now = new Date();
-        const backupTitle = `${REFERRER_LEGACY_PREFIX}${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
-
-        await sheets.spreadsheets.batchUpdate({
-          spreadsheetId,
-          requestBody: {
-            requests: [
-              {
-                addSheet: {
-                  properties: {
-                    title: backupTitle,
-                  },
-                },
-              },
-            ],
-          },
-        });
-
-        await sheets.spreadsheets.values.update({
-          spreadsheetId,
-          range: `${backupTitle}!A1:${toColumnLetter((rows[0]?.length ?? 1) - 1)}${rows.length}`,
-          valueInputOption: 'RAW',
-          requestBody: { majorDimension: 'ROWS', values: rows },
-        });
-
-        await sheets.spreadsheets.values.clear({ spreadsheetId, range: sheetName });
-        firstRow = [];
-        await writeHeaders();
-        needsFormatting = true;
+        console.warn(
+          'Referrer sheet headers do not match expected format; preserving existing headers to avoid data loss.',
+        );
       }
     }
 
@@ -764,6 +743,42 @@ function getMaxIrcrnFromCompanies() {
   return max;
 }
 
+async function getMaxIrcrnFromReferrers(spreadsheetId: string) {
+  const sheets = getSheetsClient();
+  try {
+    const existing = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${REFERRER_SHEET_NAME}!1:1`,
+    });
+    const headers = existing.data.values?.[0] ?? [];
+    const headerMap = buildHeaderMap(headers);
+    const lastCol = toColumnLetter(headers.length - 1);
+    const rows = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${REFERRER_SHEET_NAME}!A:${lastCol}`,
+      majorDimension: 'ROWS',
+    });
+    const values = rows.data.values ?? [];
+    let max = 0;
+    for (let i = 1; i < values.length; i++) {
+      const row = values[i] ?? [];
+      const value = getHeaderValue(headerMap, row, 'Company iRCRN');
+      const match = IRCRN_REGEX.exec(String(value).trim());
+      if (!match) continue;
+      const parsed = Number.parseInt(match[1], 10);
+      if (!Number.isNaN(parsed) && parsed > max) {
+        max = parsed;
+      }
+    }
+    return max;
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `Unable to read iRCRN values from referrers sheet. Original error: ${message}`,
+    );
+  }
+}
+
 async function fetchMaxIrainFromSheet(sheetName: string, spreadsheetId: string) {
   const sheets = getSheetsClient();
 
@@ -795,19 +810,43 @@ async function fetchMaxIrainFromSheet(sheetName: string, spreadsheetId: string) 
   }
 }
 
-async function findMaxIrainInSheets(spreadsheetId: string) {
-  const [candidateMax, referrerMax] = await Promise.all([
-    fetchMaxIrainFromSheet(CANDIDATE_SHEET_NAME, spreadsheetId),
-    fetchMaxIrainFromSheet(REFERRER_SHEET_NAME, spreadsheetId),
-  ]);
+async function fetchMaxIrrefFromSheet(spreadsheetId: string) {
+  const sheets = getSheetsClient();
+  try {
+    const existing = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${REFERRER_SHEET_NAME}!A:A`,
+      majorDimension: 'COLUMNS',
+    });
+    const values = existing.data.values?.[0] ?? [];
 
-  return Math.max(candidateMax, referrerMax);
+    let max = 0;
+    for (const value of values) {
+      const match = IRREF_REGEX.exec(String(value).trim());
+      if (!match) continue;
+
+      const parsed = Number.parseInt(match[1], 10);
+      if (!Number.isNaN(parsed) && parsed > max) {
+        max = parsed;
+      }
+    }
+
+    return max;
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    throw new Error(
+      `Unable to read iRREF values from sheet "${REFERRER_SHEET_NAME}". Original error: ${message}`,
+    );
+  }
 }
 
-async function getMaxExistingIrainNumber(spreadsheetId: string) {
-  const maxIrcrn = getMaxIrcrnFromCompanies();
-  const maxIrainFromSheets = await findMaxIrainInSheets(spreadsheetId);
-  return Math.max(maxIrcrn, maxIrainFromSheets);
+async function findMaxIrainInSheets(spreadsheetId: string) {
+  const candidateMax = await fetchMaxIrainFromSheet(CANDIDATE_SHEET_NAME, spreadsheetId);
+  return Math.max(candidateMax, getMaxIrcrnFromCompanies());
+}
+
+async function getMaxExistingIrrefNumber(spreadsheetId: string) {
+  return await fetchMaxIrrefFromSheet(spreadsheetId);
 }
 
 function getSpreadsheetIdOrThrow() {
@@ -833,8 +872,22 @@ export async function generateSubmissionId(prefix: SubmissionPrefix) {
 
 export async function generateIRAIN(): Promise<string> {
   const spreadsheetId = getSpreadsheetIdOrThrow();
-  const next = (await getMaxExistingIrainNumber(spreadsheetId)) + 1;
+  const next = (await findMaxIrainInSheets(spreadsheetId)) + 1;
   return formatIrainNumber(next);
+}
+
+export async function generateIRREF(): Promise<string> {
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const next = (await getMaxExistingIrrefNumber(spreadsheetId)) + 1;
+  return `iRREF${String(next).padStart(10, '0')}`;
+}
+
+export async function generateIRCRN(): Promise<string> {
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const maxCompanies = getMaxIrcrnFromCompanies();
+  const maxReferrers = await getMaxIrcrnFromReferrers(spreadsheetId);
+  const next = Math.max(maxCompanies, maxReferrers) + 1;
+  return `iRCRN${String(next).padStart(10, '0')}`;
 }
 
 export async function appendCandidateRow(row: CandidateRow) {
@@ -846,13 +899,15 @@ export async function appendReferrerRow(row: ReferrerRow) {
 
   const timestamp = new Date().toISOString();
   await appendRow(REFERRER_SHEET_NAME, [
-    row.iRain,
+    row.iRref,
     timestamp,
     row.name,
     row.email,
     row.phone,
     row.country,
     row.company,
+    row.companyIrcrn ?? '',
+    row.companyApproval ?? '',
     row.companyIndustry,
     row.careersPortal ?? '',
     row.workType,
@@ -872,7 +927,7 @@ export async function appendApplicationRow(row: ApplicationRow) {
     row.referenceNumber,
     row.resumeFileName,
     row.resumeUrl ?? '',
-    row.referrerIrain ?? '',
+    row.referrerIrref ?? '',
     row.referrerEmail ?? '',
   ]);
 }
@@ -1142,6 +1197,7 @@ type ReferrerListParams = {
   search?: string;
   status?: string;
   company?: string;
+  approval?: string;
   limit?: number;
   offset?: number;
 };
@@ -1150,6 +1206,7 @@ type ApplicationListParams = {
   search?: string;
   status?: string;
   ircrn?: string;
+  referrerIrref?: string;
   limit?: number;
   offset?: number;
 };
@@ -1312,7 +1369,7 @@ export async function listCandidates(params: CandidateListParams) {
 
 export async function listReferrers(params: ReferrerListParams) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
-  await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN']);
+  await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN', 'Company Approval']);
 
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
@@ -1335,6 +1392,7 @@ export async function listReferrers(params: ReferrerListParams) {
   const searchTerm = normalizeSearch(params.search);
   const statusFilter = normalizeSearch(params.status);
   const companyFilter = normalizeSearch(params.company);
+  const approvalFilter = normalizeSearch(params.approval);
 
   const items = rows
     .map((row) => {
@@ -1345,13 +1403,15 @@ export async function listReferrers(params: ReferrerListParams) {
       if (!getHeaderValue(headerMap, row, 'Careers Portal')) missingFields.push('Careers Portal');
 
       return {
-        irain: getHeaderValue(headerMap, row, 'iRAIN'),
+        irref: getHeaderValue(headerMap, row, 'iRREF'),
         timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
         name: getHeaderValue(headerMap, row, 'Name'),
         email: getHeaderValue(headerMap, row, 'Email'),
         phone: getHeaderValue(headerMap, row, 'Phone'),
         country: getHeaderValue(headerMap, row, 'Country'),
         company: getHeaderValue(headerMap, row, 'Company'),
+        companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
+        companyApproval: getHeaderValue(headerMap, row, 'Company Approval'),
         companyIndustry: getHeaderValue(headerMap, row, 'Company Industry'),
         careersPortal: getHeaderValue(headerMap, row, 'Careers Portal'),
         workType: getHeaderValue(headerMap, row, 'Work Type'),
@@ -1367,7 +1427,7 @@ export async function listReferrers(params: ReferrerListParams) {
     .filter((record) => {
       if (searchTerm) {
         const haystack = [
-          record.irain,
+          record.irref,
           record.email,
           record.name,
           record.phone,
@@ -1385,6 +1445,14 @@ export async function listReferrers(params: ReferrerListParams) {
       }
 
       if (statusFilter && record.status.toLowerCase() !== statusFilter) return false;
+      if (approvalFilter) {
+        const approvalValue = record.companyApproval.toLowerCase();
+        if (approvalFilter === 'approved' && approvalValue === '') {
+          // Treat legacy blank approvals as approved for now.
+        } else if (approvalValue !== approvalFilter) {
+          return false;
+        }
+      }
       if (companyFilter && record.company.toLowerCase().includes(companyFilter) === false) {
         return false;
       }
@@ -1395,13 +1463,56 @@ export async function listReferrers(params: ReferrerListParams) {
     const aTime = a.timestamp ? Date.parse(a.timestamp) : 0;
     const bTime = b.timestamp ? Date.parse(b.timestamp) : 0;
     if (aTime !== bTime) return bTime - aTime;
-    return (b.irain || '').localeCompare(a.irain || '');
+    return (b.irref || '').localeCompare(a.irref || '');
   });
 
   return {
     total: ordered.length,
     items: paginate(ordered, params.offset, params.limit),
   };
+}
+
+export async function listApprovedReferrerCompanies(): Promise<CompanyRow[]> {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN', 'Company Approval']);
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${REFERRER_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  if (!headers.length) return [];
+
+  const lastCol = toColumnLetter(headers.length - 1);
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${REFERRER_SHEET_NAME}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const headerMap = buildHeaderMap(headers);
+  const rows = (existing.data.values ?? []).slice(1);
+  const items: CompanyRow[] = [];
+
+  for (const row of rows) {
+    const approval = getHeaderValue(headerMap, row, 'Company Approval').toLowerCase();
+    if (approval && approval !== 'approved') continue;
+
+    const code = getHeaderValue(headerMap, row, 'Company iRCRN');
+    const name = getHeaderValue(headerMap, row, 'Company');
+    if (!code || !name) continue;
+
+    items.push({
+      code,
+      name,
+      industry: getHeaderValue(headerMap, row, 'Company Industry') || 'Not specified',
+      careersUrl: getHeaderValue(headerMap, row, 'Careers Portal') || undefined,
+    });
+  }
+
+  return items;
 }
 
 export async function countRowsInSheet(sheetName: string): Promise<number> {
@@ -1441,7 +1552,7 @@ export async function countApplicationsSince(date: Date): Promise<number> {
 }
 
 type ReferrerLookupResult = {
-  irain: string;
+  irref: string;
   name: string;
   email: string;
   phone?: string;
@@ -1454,7 +1565,7 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
   if (!normalizedIrcrn) return null;
 
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
-  await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN']);
+  await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN', 'Company Approval']);
 
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
@@ -1478,7 +1589,7 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
   const companyNameLower = companyMatch?.name?.toLowerCase();
 
   const pickRecord = (row: (string | number | null | undefined)[]) => ({
-    irain: getHeaderValue(headerMap, row, 'iRAIN'),
+    irref: getHeaderValue(headerMap, row, 'iRREF'),
     name: getHeaderValue(headerMap, row, 'Name'),
     email: getHeaderValue(headerMap, row, 'Email'),
     phone: getHeaderValue(headerMap, row, 'Phone'),
@@ -1486,9 +1597,15 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
     companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
   });
 
+  const isApproved = (row: (string | number | null | undefined)[]) => {
+    const approval = getHeaderValue(headerMap, row, 'Company Approval').toLowerCase();
+    return approval === '' || approval === 'approved';
+  };
+
   for (const row of rows) {
     const rowIrcrn = getHeaderValue(headerMap, row, 'Company iRCRN').toLowerCase();
     if (rowIrcrn && rowIrcrn === normalizedIrcrn) {
+      if (!isApproved(row)) continue;
       const record = pickRecord(row);
       if (record.email) return record;
     }
@@ -1498,6 +1615,7 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
     for (const row of rows) {
       const rowCompany = getHeaderValue(headerMap, row, 'Company').toLowerCase();
       if (rowCompany && rowCompany === companyNameLower) {
+        if (!isApproved(row)) continue;
         const record = pickRecord(row);
         if (record.email) return record;
       }
@@ -1531,6 +1649,7 @@ export async function listApplications(params: ApplicationListParams) {
   const searchTerm = normalizeSearch(params.search);
   const statusFilter = normalizeSearch(params.status);
   const ircrnFilter = normalizeSearch(params.ircrn);
+  const referrerFilter = normalizeSearch(params.referrerIrref);
 
   const items = rows
     .map((row) => {
@@ -1548,7 +1667,7 @@ export async function listApplications(params: ApplicationListParams) {
         referenceNumber: getHeaderValue(headerMap, row, 'Reference Number'),
         resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name'),
         resumeUrl: getHeaderValue(headerMap, row, 'Resume URL'),
-        referrerIrain: getHeaderValue(headerMap, row, 'Referrer iRAIN'),
+        referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
         referrerEmail: getHeaderValue(headerMap, row, 'Referrer Email'),
         status: getHeaderValue(headerMap, row, 'Status'),
         ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
@@ -1575,6 +1694,7 @@ export async function listApplications(params: ApplicationListParams) {
 
       if (statusFilter && record.status.toLowerCase() !== statusFilter) return false;
       if (ircrnFilter && record.iCrn.toLowerCase() !== ircrnFilter) return false;
+      if (referrerFilter && record.referrerIrref.toLowerCase() !== referrerFilter) return false;
       return true;
     });
 
@@ -1582,6 +1702,51 @@ export async function listApplications(params: ApplicationListParams) {
     total: items.length,
     items: paginate(items, params.offset, params.limit),
   };
+}
+
+export async function getApplicationById(id: string) {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${APPLICATION_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  const headerMap = buildHeaderMap(headers);
+  const lastCol = toColumnLetter(headers.length - 1);
+  const rows = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${APPLICATION_SHEET_NAME}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const values = rows.data.values ?? [];
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i] ?? [];
+    const value = cellValue(row, 0).toLowerCase();
+    if (value === id.trim().toLowerCase()) {
+      return {
+        rowIndex: i + 1,
+        record: {
+          id: getHeaderValue(headerMap, row, 'ID'),
+          timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
+          candidateId: getHeaderValue(headerMap, row, 'Candidate ID'),
+          iCrn: getHeaderValue(headerMap, row, 'iRCRN'),
+          position: getHeaderValue(headerMap, row, 'Position'),
+          referenceNumber: getHeaderValue(headerMap, row, 'Reference Number'),
+          resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name'),
+          resumeUrl: getHeaderValue(headerMap, row, 'Resume URL'),
+          referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
+          referrerEmail: getHeaderValue(headerMap, row, 'Referrer Email'),
+          status: getHeaderValue(headerMap, row, 'Status'),
+          ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
+        },
+      };
+    }
+  }
+  return null;
 }
 
 export async function listMatches(params: MatchListParams) {
@@ -1612,14 +1777,14 @@ export async function listMatches(params: MatchListParams) {
     .map((row) => {
       const missingFields: string[] = [];
       if (!getHeaderValue(headerMap, row, 'Candidate iRAIN')) missingFields.push('Candidate iRAIN');
-      if (!getHeaderValue(headerMap, row, 'Referrer iRAIN')) missingFields.push('Referrer iRAIN');
+      if (!getHeaderValue(headerMap, row, 'Referrer iRREF')) missingFields.push('Referrer iRREF');
       if (!getHeaderValue(headerMap, row, 'Company iRCRN')) missingFields.push('Company iRCRN');
 
       return {
         matchId: getHeaderValue(headerMap, row, 'Match ID'),
         createdAt: getHeaderValue(headerMap, row, 'Created At'),
         candidateIrain: getHeaderValue(headerMap, row, 'Candidate iRAIN'),
-        referrerIrain: getHeaderValue(headerMap, row, 'Referrer iRAIN'),
+        referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
         companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
         positionContext: getHeaderValue(headerMap, row, 'Position / Context'),
         stage: getHeaderValue(headerMap, row, 'Stage'),
@@ -1633,7 +1798,7 @@ export async function listMatches(params: MatchListParams) {
         const haystack = [
           record.matchId,
           record.candidateIrain,
-          record.referrerIrain,
+          record.referrerIrref,
           record.companyIrcrn,
           record.positionContext,
           record.stage,
@@ -1750,16 +1915,42 @@ export async function updateCandidateAdmin(irain: string, patch: AdminPatch) {
   });
 }
 
-export async function updateReferrerAdmin(irain: string, patch: AdminPatch) {
+export async function updateReferrerAdmin(irref: string, patch: AdminPatch) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
 
-  return updateRowById(REFERRER_SHEET_NAME, 'iRAIN', irain, {
+  return updateRowById(REFERRER_SHEET_NAME, 'iRREF', irref, {
     Status: patch.status,
     'Owner Notes': patch.ownerNotes,
     Tags: patch.tags,
     'Last Contacted At': patch.lastContactedAt,
     'Next Action At': patch.nextActionAt,
   });
+}
+
+export async function updateReferrerCompanyApproval(irref: string, approval: string) {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN', 'Company Approval']);
+
+  const referrer = await getReferrerByIrref(irref);
+  if (!referrer) {
+    return { reason: 'not_found' as const };
+  }
+
+  const patch: Record<string, string> = {
+    'Company Approval': approval,
+  };
+
+  if (approval === 'approved' && !referrer.record.companyIrcrn) {
+    patch['Company iRCRN'] = await generateIRCRN();
+  }
+
+  const result = await updateRowById(REFERRER_SHEET_NAME, 'iRREF', irref, patch);
+  return {
+    reason: result.reason,
+    updated: result.updated,
+    companyIrcrn: patch['Company iRCRN'] ?? referrer.record.companyIrcrn ?? '',
+    companyApproval: approval,
+  };
 }
 
 export async function updateApplicationAdmin(id: string, patch: ApplicationAdminPatch) {
@@ -1787,7 +1978,7 @@ export async function updateMatch(matchId: string, patch: MatchPatch) {
   });
 }
 
-export async function getReferrerByIrain(irain: string) {
+export async function getReferrerByIrref(irref: string) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
@@ -1809,17 +2000,19 @@ export async function getReferrerByIrain(irain: string) {
   for (let i = 1; i < values.length; i++) {
     const row = values[i] ?? [];
     const value = cellValue(row, 0).toLowerCase();
-    if (value === irain.trim().toLowerCase()) {
+    if (value === irref.trim().toLowerCase()) {
       return {
         rowIndex: i + 1,
         record: {
-          irain: getHeaderValue(headerMap, row, 'iRAIN'),
+          irref: getHeaderValue(headerMap, row, 'iRREF'),
           timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
           name: getHeaderValue(headerMap, row, 'Name'),
           email: getHeaderValue(headerMap, row, 'Email'),
           phone: getHeaderValue(headerMap, row, 'Phone'),
           country: getHeaderValue(headerMap, row, 'Country'),
           company: getHeaderValue(headerMap, row, 'Company'),
+          companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
+          companyApproval: getHeaderValue(headerMap, row, 'Company Approval'),
           companyIndustry: getHeaderValue(headerMap, row, 'Company Industry'),
           workType: getHeaderValue(headerMap, row, 'Work Type'),
           linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
@@ -1864,7 +2057,7 @@ export async function getMatchById(matchId: string) {
           matchId: getHeaderValue(headerMap, row, 'Match ID'),
           createdAt: getHeaderValue(headerMap, row, 'Created At'),
           candidateIrain: getHeaderValue(headerMap, row, 'Candidate iRAIN'),
-          referrerIrain: getHeaderValue(headerMap, row, 'Referrer iRAIN'),
+          referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
           companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
           positionContext: getHeaderValue(headerMap, row, 'Position / Context'),
           stage: getHeaderValue(headerMap, row, 'Stage'),
