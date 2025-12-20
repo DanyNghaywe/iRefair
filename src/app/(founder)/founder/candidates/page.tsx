@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { ActionBtn } from "@/components/ActionBtn";
 import { Badge } from "@/components/founder/Badge";
 import { Drawer } from "@/components/founder/Drawer";
-import { OpsDataTable } from "@/components/founder/OpsDataTable";
+import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Skeleton } from "@/components/founder/Skeleton";
 import { Topbar } from "@/components/founder/Topbar";
 
@@ -313,7 +313,7 @@ export default function CandidatesPage() {
     [locatedCanada, eligibleMoveCanada],
   );
 
-  const columns = useMemo(
+  const columns = useMemo<OpsColumn<CandidateRecord>[]>(
     () => [
       { key: "irain", label: "iRAIN", sortable: true, width: "220px", nowrap: true },
       {
