@@ -2014,6 +2014,7 @@ export async function getReferrerByIrref(irref: string) {
           companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
           companyApproval: getHeaderValue(headerMap, row, 'Company Approval'),
           companyIndustry: getHeaderValue(headerMap, row, 'Company Industry'),
+          careersPortal: getHeaderValue(headerMap, row, 'Careers Portal'),
           workType: getHeaderValue(headerMap, row, 'Work Type'),
           linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
           status: getHeaderValue(headerMap, row, 'Status'),
