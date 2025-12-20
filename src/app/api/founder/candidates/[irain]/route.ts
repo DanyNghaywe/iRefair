@@ -1,11 +1,26 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
-import { updateCandidateAdmin } from '@/lib/sheets';
+import { updateCandidateFields } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
 type PatchBody = {
+  firstName?: string;
+  middleName?: string;
+  familyName?: string;
+  email?: string;
+  phone?: string;
+  locatedCanada?: string;
+  province?: string;
+  workAuthorization?: string;
+  eligibleMoveCanada?: string;
+  countryOfOrigin?: string;
+  languages?: string;
+  languagesOther?: string;
+  industryType?: string;
+  industryOther?: string;
+  employmentStatus?: string;
   status?: string;
   ownerNotes?: string;
   tags?: string;
@@ -28,14 +43,37 @@ export async function PATCH(
   const body: PatchBody = await request.json().catch(() => ({}));
   const patch: PatchBody = {};
 
-  if ('status' in body) patch.status = body.status ?? '';
-  if ('ownerNotes' in body) patch.ownerNotes = body.ownerNotes ?? '';
-  if ('tags' in body) patch.tags = body.tags ?? '';
-  if ('lastContactedAt' in body) patch.lastContactedAt = body.lastContactedAt ?? '';
-  if ('nextActionAt' in body) patch.nextActionAt = body.nextActionAt ?? '';
+  const allowedKeys: (keyof PatchBody)[] = [
+    'firstName',
+    'middleName',
+    'familyName',
+    'email',
+    'phone',
+    'locatedCanada',
+    'province',
+    'workAuthorization',
+    'eligibleMoveCanada',
+    'countryOfOrigin',
+    'languages',
+    'languagesOther',
+    'industryType',
+    'industryOther',
+    'employmentStatus',
+    'status',
+    'ownerNotes',
+    'tags',
+    'lastContactedAt',
+    'nextActionAt',
+  ];
+
+  for (const key of allowedKeys) {
+    if (Object.prototype.hasOwnProperty.call(body, key)) {
+      patch[key] = body[key] ?? '';
+    }
+  }
 
   try {
-    const result = await updateCandidateAdmin(params.irain, patch);
+    const result = await updateCandidateFields(params.irain, patch);
     if (result.reason === 'not_found') {
       return NextResponse.json({ ok: false, error: 'Candidate not found' }, { status: 404 });
     }

@@ -1850,6 +1850,36 @@ type AdminPatch = {
   nextActionAt?: string;
 };
 
+type CandidatePatch = AdminPatch & {
+  firstName?: string;
+  middleName?: string;
+  familyName?: string;
+  email?: string;
+  phone?: string;
+  locatedCanada?: string;
+  province?: string;
+  workAuthorization?: string;
+  eligibleMoveCanada?: string;
+  countryOfOrigin?: string;
+  languages?: string;
+  languagesOther?: string;
+  industryType?: string;
+  industryOther?: string;
+  employmentStatus?: string;
+};
+
+type ReferrerPatch = AdminPatch & {
+  name?: string;
+  email?: string;
+  phone?: string;
+  country?: string;
+  company?: string;
+  companyIndustry?: string;
+  careersPortal?: string;
+  workType?: string;
+  linkedin?: string;
+};
+
 type ApplicationAdminPatch = {
   status?: string;
   ownerNotes?: string;
@@ -1925,10 +1955,25 @@ export async function updateRowById(
   return { updated: true };
 }
 
-export async function updateCandidateAdmin(irain: string, patch: AdminPatch) {
+export async function updateCandidateFields(irain: string, patch: CandidatePatch) {
   await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
 
   return updateRowById(CANDIDATE_SHEET_NAME, 'iRAIN', irain, {
+    'First Name': patch.firstName,
+    'Middle Name': patch.middleName,
+    'Family Name': patch.familyName,
+    Email: patch.email,
+    Phone: patch.phone,
+    'Located in Canada': patch.locatedCanada,
+    Province: patch.province,
+    'Work Authorization': patch.workAuthorization,
+    'Eligible to Move (6 Months)': patch.eligibleMoveCanada,
+    'Country of Origin': patch.countryOfOrigin,
+    Languages: patch.languages,
+    'Languages Other': patch.languagesOther,
+    'Industry Type': patch.industryType,
+    'Industry Other': patch.industryOther,
+    'Employment Status': patch.employmentStatus,
     Status: patch.status,
     'Owner Notes': patch.ownerNotes,
     Tags: patch.tags,
@@ -1937,16 +1982,33 @@ export async function updateCandidateAdmin(irain: string, patch: AdminPatch) {
   });
 }
 
-export async function updateReferrerAdmin(irref: string, patch: AdminPatch) {
+export async function updateReferrerFields(irref: string, patch: ReferrerPatch) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
 
   return updateRowById(REFERRER_SHEET_NAME, 'iRREF', irref, {
+    Name: patch.name,
+    Email: patch.email,
+    Phone: patch.phone,
+    Country: patch.country,
+    Company: patch.company,
+    'Company Industry': patch.companyIndustry,
+    'Careers Portal': patch.careersPortal,
+    'Work Type': patch.workType,
+    LinkedIn: patch.linkedin,
     Status: patch.status,
     'Owner Notes': patch.ownerNotes,
     Tags: patch.tags,
     'Last Contacted At': patch.lastContactedAt,
     'Next Action At': patch.nextActionAt,
   });
+}
+
+export async function updateCandidateAdmin(irain: string, patch: AdminPatch) {
+  return updateCandidateFields(irain, patch);
+}
+
+export async function updateReferrerAdmin(irref: string, patch: AdminPatch) {
+  return updateReferrerFields(irref, patch);
 }
 
 export async function updateReferrerCompanyApproval(irref: string, approval: string) {

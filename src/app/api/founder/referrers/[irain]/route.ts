@@ -1,11 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
-import { getReferrerByIrref, updateReferrerAdmin } from '@/lib/sheets';
+import { getReferrerByIrref, updateReferrerFields } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
 type PatchBody = {
+  name?: string;
+  email?: string;
+  phone?: string;
+  country?: string;
+  company?: string;
+  companyIndustry?: string;
+  careersPortal?: string;
+  workType?: string;
+  linkedin?: string;
   status?: string;
   ownerNotes?: string;
   tags?: string;
@@ -90,14 +99,31 @@ export async function PATCH(
   const body: PatchBody = await request.json().catch(() => ({}));
   const patch: PatchBody = {};
 
-  if ('status' in body) patch.status = body.status ?? '';
-  if ('ownerNotes' in body) patch.ownerNotes = body.ownerNotes ?? '';
-  if ('tags' in body) patch.tags = body.tags ?? '';
-  if ('lastContactedAt' in body) patch.lastContactedAt = body.lastContactedAt ?? '';
-  if ('nextActionAt' in body) patch.nextActionAt = body.nextActionAt ?? '';
+  const allowedKeys: (keyof PatchBody)[] = [
+    'name',
+    'email',
+    'phone',
+    'country',
+    'company',
+    'companyIndustry',
+    'careersPortal',
+    'workType',
+    'linkedin',
+    'status',
+    'ownerNotes',
+    'tags',
+    'lastContactedAt',
+    'nextActionAt',
+  ];
+
+  for (const key of allowedKeys) {
+    if (Object.prototype.hasOwnProperty.call(body, key)) {
+      patch[key] = body[key] ?? '';
+    }
+  }
 
   try {
-    const result = await updateReferrerAdmin(params.irain, patch);
+    const result = await updateReferrerFields(params.irain, patch);
     if (result.reason === 'not_found') {
       return NextResponse.json({ ok: false, error: 'Referrer not found' }, { status: 404 });
     }

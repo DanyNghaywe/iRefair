@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
 import { Topbar } from "@/components/founder/Topbar";
@@ -29,12 +29,147 @@ type ReferrerRecord = {
 };
 
 const statusOptions = ["", "New", "Engaged", "Active", "Paused", "Closed"];
+const LINK_PREVIEW_MAX = 42;
+
+const truncateText = (value: string, max: number) => {
+  if (value.length <= max) return value;
+  return `${value.slice(0, max - 3)}...`;
+};
+
+const buildLinkPreview = (url?: string | null) => {
+  const raw = typeof url === "string" ? url.trim() : "";
+  if (!raw) {
+    return { preview: "Not provided", href: "", isMissing: true };
+  }
+
+  const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  try {
+    const parsed = new URL(normalized);
+    const host = parsed.hostname.replace(/^www\./i, "");
+    const segments = parsed.pathname.split("/").filter(Boolean);
+    const snippet = segments.slice(0, 2).join("/");
+    const path = snippet ? `/${snippet}` : "";
+    const suffix = segments.length > 2 ? "/..." : "";
+    const preview = truncateText(`${host}${path}${suffix}`, LINK_PREVIEW_MAX);
+    return { preview, href: normalized, isMissing: false };
+  } catch {
+    return { preview: truncateText(raw, LINK_PREVIEW_MAX), href: normalized, isMissing: false };
+  }
+};
+
+type LinkRowProps = {
+  icon: ReactNode;
+  label: string;
+  url?: string | null;
+  actionLabel: string;
+  onAction?: () => void;
+  isLoading?: boolean;
+  previewOverride?: string;
+};
+
+const IconLink = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <circle cx="12" cy="12" r="8" />
+    <path d="M4 12h16" />
+    <path d="M12 4c3.5 4 3.5 12 0 16" />
+    <path d="M12 4c-3.5 4-3.5 12 0 16" />
+  </svg>
+);
+
+const IconLinkedIn = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <rect x="4" y="4" width="16" height="16" rx="3" />
+    <circle cx="8" cy="9" r="1" />
+    <path d="M7.5 11v5" />
+    <path d="M11 16v-3.2c0-1 .8-1.8 1.8-1.8s1.8.8 1.8 1.8V16" />
+  </svg>
+);
+
+const IconMeet = () => (
+  <svg viewBox="0 0 24 24" aria-hidden="true">
+    <rect x="4" y="5" width="16" height="14" rx="2" />
+    <path d="M8 3v4M16 3v4M4 9h16" />
+    <circle cx="12" cy="14" r="2" />
+    <path d="M9.5 18c.7-1.2 1.7-2 2.5-2s1.8.8 2.5 2" />
+  </svg>
+);
+
+function LinkRow({ icon, label, url, actionLabel, onAction, isLoading, previewOverride }: LinkRowProps) {
+  const { preview, href, isMissing: linkMissing } = buildLinkPreview(url);
+  const hasCustomAction = Boolean(onAction);
+  const isMissing = hasCustomAction ? false : linkMissing;
+  const hasAction = hasCustomAction || Boolean(href);
+  const isDisabled = isMissing || !hasAction || Boolean(isLoading);
+  const previewText = previewOverride ?? preview;
+  const previewMuted = !previewOverride && isMissing;
+
+  const handleAction = () => {
+    if (isDisabled || !hasAction) return;
+    if (onAction) {
+      onAction();
+      return;
+    }
+    if (href && typeof window !== "undefined") {
+      window.open(href, "_blank", "noopener,noreferrer");
+    }
+  };
+
+  const role = isDisabled ? undefined : onAction ? "button" : "link";
+
+  return (
+    <div
+      className={`referrer-review__link-row ${isDisabled ? "is-disabled" : "is-clickable"}`}
+      role={role}
+      tabIndex={isDisabled ? -1 : 0}
+      onClick={isDisabled ? undefined : handleAction}
+      onKeyDown={
+        isDisabled
+          ? undefined
+          : (event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                handleAction();
+              }
+            }
+      }
+      aria-disabled={isDisabled || undefined}
+    >
+      <span className="referrer-review__link-icon">{icon}</span>
+      <span className="referrer-review__link-label">{label}</span>
+      <span className={`referrer-review__link-preview${previewMuted ? " is-muted" : ""}`}>
+        {previewText}
+      </span>
+      {!isMissing ? (
+        <ActionBtn
+          as="button"
+          variant="ghost"
+          size="sm"
+          className="referrer-review__link-chip"
+          onClick={(event) => {
+            event.stopPropagation();
+            handleAction();
+          }}
+          disabled={isDisabled}
+        >
+          {isLoading ? "Sending..." : actionLabel}
+        </ActionBtn>
+      ) : (
+        <span className="referrer-review__link-chip-spacer" aria-hidden="true" />
+      )}
+      <span className="referrer-review__link-chevron" aria-hidden="true">
+        &gt;
+      </span>
+    </div>
+  );
+}
 
 export default function ReferrerReviewPage() {
   const params = useParams();
   const rawId = params?.iRREF ?? params?.irref;
   const irref = Array.isArray(rawId) ? rawId[0] : rawId;
   const cleanIrref = typeof irref === "string" ? irref.trim() : "";
+  const searchParams = useSearchParams();
+  const initialEdit = searchParams?.get("edit") === "1";
 
   const [referrer, setReferrer] = useState<ReferrerRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -42,6 +177,16 @@ export default function ReferrerReviewPage() {
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState("");
   const [status, setStatus] = useState("");
+  const [editDetails, setEditDetails] = useState(initialEdit);
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [country, setCountry] = useState("");
+  const [company, setCompany] = useState("");
+  const [companyIndustry, setCompanyIndustry] = useState("");
+  const [careersPortal, setCareersPortal] = useState("");
+  const [workType, setWorkType] = useState("");
+  const [linkedin, setLinkedin] = useState("");
   const [saving, setSaving] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
   const [approvalLoading, setApprovalLoading] = useState(false);
@@ -49,6 +194,7 @@ export default function ReferrerReviewPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [rejectConfirm, setRejectConfirm] = useState(false);
   const skipAutosaveRef = useRef(true);
+  const skipDetailsAutosaveRef = useRef(true);
 
   const approvalValue = useMemo(() => {
     const value = (referrer?.companyApproval || "approved").toLowerCase();
@@ -101,10 +247,20 @@ export default function ReferrerReviewPage() {
     setNotes(referrer.ownerNotes || "");
     setTags(referrer.tags || "");
     setStatus((referrer.status || "").toLowerCase());
+    setName(referrer.name || "");
+    setEmail(referrer.email || "");
+    setPhone(referrer.phone || "");
+    setCountry(referrer.country || "");
+    setCompany(referrer.company || "");
+    setCompanyIndustry(referrer.companyIndustry || "");
+    setCareersPortal(referrer.careersPortal || "");
+    setWorkType(referrer.workType || "");
+    setLinkedin(referrer.linkedin || "");
     setActionMessage(null);
     setActionError(null);
     setRejectConfirm(false);
     skipAutosaveRef.current = true;
+    skipDetailsAutosaveRef.current = true;
   }, [referrer?.irref]);
 
   const updateLocal = (patch: Partial<ReferrerRecord>) => {
@@ -135,6 +291,46 @@ export default function ReferrerReviewPage() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notes, tags, status, referrer?.irref]);
+
+  useEffect(() => {
+    if (!referrer) return;
+    if (skipDetailsAutosaveRef.current) {
+      skipDetailsAutosaveRef.current = false;
+      return;
+    }
+    const patch: Record<string, string> = {};
+    const addIfChanged = (key: string, value: string, current: string) => {
+      if (value !== current) patch[key] = value;
+    };
+    addIfChanged("name", name, referrer.name || "");
+    addIfChanged("email", email, referrer.email || "");
+    addIfChanged("phone", phone, referrer.phone || "");
+    addIfChanged("country", country, referrer.country || "");
+    addIfChanged("company", company, referrer.company || "");
+    addIfChanged("companyIndustry", companyIndustry, referrer.companyIndustry || "");
+    addIfChanged("careersPortal", careersPortal, referrer.careersPortal || "");
+    addIfChanged("workType", workType, referrer.workType || "");
+    addIfChanged("linkedin", linkedin, referrer.linkedin || "");
+
+    if (!Object.keys(patch).length) return;
+
+    const timer = setTimeout(() => {
+      patchReferrer(patch);
+    }, 600);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    name,
+    email,
+    phone,
+    country,
+    company,
+    companyIndustry,
+    careersPortal,
+    workType,
+    linkedin,
+    referrer?.irref,
+  ]);
 
   const handleInvite = async () => {
     if (!referrer) return;
@@ -241,14 +437,14 @@ export default function ReferrerReviewPage() {
   return (
     <div className="founder-page">
       <Topbar
-        title={referrer.name ? `${referrer.name} - Review` : "Referrer Review"}
-        subtitle={referrer.email || referrer.irref}
+        title={name ? `${name} - Review` : "Referrer Review"}
+        subtitle={email || referrer.irref}
       />
 
       <div className="referrer-review">
         <div className="referrer-review__main">
           <section className="card">
-            <p className="hiring-table-title">Status + Approval</p>
+            <p className="referrer-review__section-title">Status + Approval</p>
             <div className="field-grid field-grid--two">
               <div className="field">
                 <label htmlFor="referrer-status">Status</label>
@@ -282,15 +478,51 @@ export default function ReferrerReviewPage() {
           </section>
 
           <section className="card">
-            <p className="hiring-table-title">Profile</p>
+            <p className="referrer-review__section-title">Profile</p>
             <div className="field-grid field-grid--two">
               <div className="field">
+                <label htmlFor="profile-name">Name</label>
+                <input
+                  id="profile-name"
+                  type="text"
+                  value={editDetails ? name : name || "-"}
+                  readOnly={!editDetails}
+                  tabIndex={editDetails ? 0 : -1}
+                  onChange={(event) => setName(event.target.value)}
+                />
+              </div>
+              <div className="field">
+                <label htmlFor="profile-email">Email</label>
+                <input
+                  id="profile-email"
+                  type="email"
+                  value={editDetails ? email : email || "-"}
+                  readOnly={!editDetails}
+                  tabIndex={editDetails ? 0 : -1}
+                  onChange={(event) => setEmail(event.target.value)}
+                />
+              </div>
+              <div className="field">
                 <label htmlFor="profile-phone">Phone</label>
-                <input id="profile-phone" type="text" value={referrer.phone || "-"} readOnly tabIndex={-1} />
+                <input
+                  id="profile-phone"
+                  type="text"
+                  value={editDetails ? phone : phone || "-"}
+                  readOnly={!editDetails}
+                  tabIndex={editDetails ? 0 : -1}
+                  onChange={(event) => setPhone(event.target.value)}
+                />
               </div>
               <div className="field">
                 <label htmlFor="profile-country">Country</label>
-                <input id="profile-country" type="text" value={referrer.country || "-"} readOnly tabIndex={-1} />
+                <input
+                  id="profile-country"
+                  type="text"
+                  value={editDetails ? country : country || "-"}
+                  readOnly={!editDetails}
+                  tabIndex={editDetails ? 0 : -1}
+                  onChange={(event) => setCountry(event.target.value)}
+                />
               </div>
               <div className="field">
                 <label htmlFor="profile-irref">Referrer iRREF</label>
@@ -304,11 +536,18 @@ export default function ReferrerReviewPage() {
           </section>
 
           <section className="card">
-            <p className="hiring-table-title">Company</p>
+            <p className="referrer-review__section-title">Company</p>
             <div className="field-grid field-grid--two">
               <div className="field">
                 <label htmlFor="company-name">Company</label>
-                <input id="company-name" type="text" value={referrer.company || "-"} readOnly tabIndex={-1} />
+                <input
+                  id="company-name"
+                  type="text"
+                  value={editDetails ? company : company || "-"}
+                  readOnly={!editDetails}
+                  tabIndex={editDetails ? 0 : -1}
+                  onChange={(event) => setCompany(event.target.value)}
+                />
               </div>
               <div className="field">
                 <label htmlFor="company-ircrn">Company iRCRN</label>
@@ -319,108 +558,71 @@ export default function ReferrerReviewPage() {
                 <input
                   id="company-industry"
                   type="text"
-                  value={referrer.companyIndustry || "-"}
-                  readOnly
-                  tabIndex={-1}
+                  value={editDetails ? companyIndustry : companyIndustry || "-"}
+                  readOnly={!editDetails}
+                  tabIndex={editDetails ? 0 : -1}
+                  onChange={(event) => setCompanyIndustry(event.target.value)}
                 />
               </div>
               <div className="field">
                 <label htmlFor="company-work-type">Work Type</label>
-                <input id="company-work-type" type="text" value={referrer.workType || "-"} readOnly tabIndex={-1} />
+                <input
+                  id="company-work-type"
+                  type="text"
+                  value={editDetails ? workType : workType || "-"}
+                  readOnly={!editDetails}
+                  tabIndex={editDetails ? 0 : -1}
+                  onChange={(event) => setWorkType(event.target.value)}
+                />
               </div>
             </div>
           </section>
 
           <section className="card">
-            <p className="hiring-table-title">Links</p>
+            <p className="referrer-review__section-title">Links</p>
             <div className="field-grid field-grid--two">
               <div className="field">
-                <label htmlFor="careers-portal">Careers Portal</label>
+                <label htmlFor="link-careers">Careers Portal</label>
                 <input
-                  id="careers-portal"
-                  type="text"
-                  value={referrer.careersPortal || "Not provided"}
-                  readOnly
-                  tabIndex={-1}
+                  id="link-careers"
+                  type="url"
+                  value={editDetails ? careersPortal : careersPortal || "-"}
+                  readOnly={!editDetails}
+                  tabIndex={editDetails ? 0 : -1}
+                  onChange={(event) => setCareersPortal(event.target.value)}
                 />
-                <ActionBtn
-                  as="link"
-                  variant="ghost"
-                  size="sm"
-                  href={referrer.careersPortal || "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  disabled={!referrer.careersPortal}
-                >
-                  Open
-                </ActionBtn>
               </div>
               <div className="field">
-                <label htmlFor="linkedin">LinkedIn</label>
+                <label htmlFor="link-linkedin">LinkedIn</label>
                 <input
-                  id="linkedin"
-                  type="text"
-                  value={referrer.linkedin || "Not provided"}
-                  readOnly
-                  tabIndex={-1}
+                  id="link-linkedin"
+                  type="url"
+                  value={editDetails ? linkedin : linkedin || "-"}
+                  readOnly={!editDetails}
+                  tabIndex={editDetails ? 0 : -1}
+                  onChange={(event) => setLinkedin(event.target.value)}
                 />
-                <ActionBtn
-                  as="link"
-                  variant="ghost"
-                  size="sm"
-                  href={referrer.linkedin || "#"}
-                  target="_blank"
-                  rel="noreferrer"
-                  disabled={!referrer.linkedin}
-                >
-                  View
-                </ActionBtn>
               </div>
-              <div className="field field-full">
-                <label>Meet Founder</label>
-                <ActionBtn
-                  as="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={handleInvite}
-                  disabled={actionLoading}
-                >
-                  {actionLoading ? "Sending..." : "Invite to Meet Founder"}
-                </ActionBtn>
-              </div>
+            </div>
+            <div className="referrer-review__link-list">
+              <LinkRow icon={<IconLink />} label="Careers Portal" url={careersPortal} actionLabel="Open" />
+              <LinkRow icon={<IconLinkedIn />} label="LinkedIn" url={linkedin} actionLabel="View" />
+              <LinkRow
+                icon={<IconMeet />}
+                label="Meet Founder"
+                actionLabel="Invite"
+                onAction={handleInvite}
+                isLoading={actionLoading}
+                previewOverride={actionLoading ? "Sending invite..." : "Send invite email"}
+              />
             </div>
           </section>
 
-          <section className="card">
-            <p className="hiring-table-title">Notes + Tags</p>
-            <div className="field-grid field-grid--two">
-              <div className="field">
-                <label htmlFor="referrer-notes">Owner Notes</label>
-                <textarea
-                  id="referrer-notes"
-                  rows={4}
-                  value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
-                  placeholder="Add context, fit, expectations..."
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="referrer-tags">Tags</label>
-                <input
-                  id="referrer-tags"
-                  type="text"
-                  value={tags}
-                  onChange={(event) => setTags(event.target.value)}
-                  placeholder="Comma separated tags"
-                />
-              </div>
-            </div>
-          </section>
         </div>
 
         <aside className="referrer-review__sidebar">
           <section className="card referrer-review__decision">
-            <p className="hiring-table-title">Decision</p>
+            <p className="referrer-review__section-title">Decision</p>
             <div className="field">
               <label htmlFor="decision-status">Current status</label>
               <input
@@ -433,6 +635,9 @@ export default function ReferrerReviewPage() {
               />
             </div>
             <div className="flow-stack">
+              <ActionBtn as="button" variant="ghost" onClick={() => setEditDetails((prev) => !prev)}>
+                {editDetails ? "Done editing" : "Edit details"}
+              </ActionBtn>
               <ActionBtn
                 as="button"
                 variant="primary"

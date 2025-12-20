@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { ActionBtn } from "@/components/ActionBtn";
 import { Badge } from "@/components/founder/Badge";
@@ -49,6 +49,19 @@ type ApplicationRecord = {
 };
 
 const statusOptions = ["", "New", "Reviewed", "In Progress", "On Hold", "Closed"];
+const yesNoOptions = ["", "Yes", "No"];
+const employmentOptions = ["", "Yes", "No", "Temporary Work"];
+
+function PencilIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        fill="currentColor"
+        d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Zm2.92 2.83H5v-.92l8.06-8.06.92.92L5.92 20.08ZM20.71 7.04a1 1 0 0 0 0-1.41L18.37 3.29a1 1 0 0 0-1.41 0l-1.35 1.35 3.75 3.75 1.35-1.35Z"
+      />
+    </svg>
+  );
+}
 
 export default function CandidatesPage() {
   const [items, setItems] = useState<CandidateRecord[]>([]);
@@ -59,6 +72,22 @@ export default function CandidatesPage() {
   const [statusFilter, setStatusFilter] = useState("");
   const [eligibleFilter, setEligibleFilter] = useState<"all" | "eligible" | "ineligible">("all");
   const [selected, setSelected] = useState<CandidateRecord | null>(null);
+  const [editProfile, setEditProfile] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [familyName, setFamilyName] = useState("");
+  const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
+  const [locatedCanada, setLocatedCanada] = useState("");
+  const [province, setProvince] = useState("");
+  const [workAuthorization, setWorkAuthorization] = useState("");
+  const [eligibleMoveCanada, setEligibleMoveCanada] = useState("");
+  const [countryOfOrigin, setCountryOfOrigin] = useState("");
+  const [languages, setLanguages] = useState("");
+  const [languagesOther, setLanguagesOther] = useState("");
+  const [industryType, setIndustryType] = useState("");
+  const [industryOther, setIndustryOther] = useState("");
+  const [employmentStatus, setEmploymentStatus] = useState("");
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState("");
   const [status, setStatus] = useState("");
@@ -69,6 +98,7 @@ export default function CandidatesPage() {
   const [actionLoading, setActionLoading] = useState(false);
   const [applications, setApplications] = useState<ApplicationRecord[]>([]);
   const [appsLoading, setAppsLoading] = useState(false);
+  const skipProfileAutosaveRef = useRef(true);
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(searchInput.trim()), 300);
@@ -108,6 +138,26 @@ export default function CandidatesPage() {
     setActionError(null);
   }, [selected]);
 
+  useEffect(() => {
+    if (!selected) return;
+    setFirstName(selected.firstName || "");
+    setMiddleName(selected.middleName || "");
+    setFamilyName(selected.familyName || "");
+    setEmail(selected.email || "");
+    setPhone(selected.phone || "");
+    setLocatedCanada(selected.locatedCanada || "");
+    setProvince(selected.province || "");
+    setWorkAuthorization(selected.workAuthorization || "");
+    setEligibleMoveCanada(selected.eligibleMoveCanada || "");
+    setCountryOfOrigin(selected.countryOfOrigin || "");
+    setLanguages(selected.languages || "");
+    setLanguagesOther(selected.languagesOther || "");
+    setIndustryType(selected.industryType || "");
+    setIndustryOther(selected.industryOther || "");
+    setEmploymentStatus(selected.employmentStatus || "");
+    skipProfileAutosaveRef.current = true;
+  }, [selected?.irain]);
+
   const fetchApplications = async (irain: string) => {
     setAppsLoading(true);
     const params = new URLSearchParams({ search: irain, limit: "10", offset: "0" });
@@ -144,13 +194,38 @@ export default function CandidatesPage() {
   };
 
   const handleRowClick = (row: CandidateRecord) => {
+    setEditProfile(false);
     setSelected(row);
     fetchApplications(row.irain);
   };
 
+  const computeEligibility = (located: string, eligibleMove: string) => {
+    const locatedYes = located.trim().toLowerCase() === "yes";
+    const eligibleYes = eligibleMove.trim().toLowerCase() === "yes";
+    const eligible = locatedYes || eligibleYes;
+    const reason = eligible ? (locatedYes ? "In Canada" : "Can move in 6 months") : "Not eligible";
+    return { eligible, reason };
+  };
+
   const updateLocalCandidate = (irain: string, patch: Partial<CandidateRecord>) => {
-    setItems((prev) => prev.map((item) => (item.irain === irain ? { ...item, ...patch } : item)));
-    setSelected((prev) => (prev && prev.irain === irain ? { ...prev, ...patch } : prev));
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.irain !== irain) return item;
+        const next = { ...item, ...patch };
+        if ("locatedCanada" in patch || "eligibleMoveCanada" in patch) {
+          next.eligibility = computeEligibility(next.locatedCanada, next.eligibleMoveCanada);
+        }
+        return next;
+      }),
+    );
+    setSelected((prev) => {
+      if (!prev || prev.irain !== irain) return prev;
+      const next = { ...prev, ...patch };
+      if ("locatedCanada" in patch || "eligibleMoveCanada" in patch) {
+        next.eligibility = computeEligibility(next.locatedCanada, next.eligibleMoveCanada);
+      }
+      return next;
+    });
   };
 
   const patchCandidate = async (irain: string, patch: Record<string, string>) => {
@@ -175,10 +250,68 @@ export default function CandidatesPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notes, tags, status]);
 
-  const eligibilityBadge = (record: CandidateRecord) => {
-    const tone = record.eligibility.eligible ? "success" : "danger";
-    return <Badge tone={tone}>{record.eligibility.reason}</Badge>;
+  useEffect(() => {
+    if (!selected) return;
+    if (skipProfileAutosaveRef.current) {
+      skipProfileAutosaveRef.current = false;
+      return;
+    }
+    const patch: Record<string, string> = {};
+    const addIfChanged = (key: string, value: string, current: string) => {
+      if (value !== current) patch[key] = value;
+    };
+    addIfChanged("firstName", firstName, selected.firstName || "");
+    addIfChanged("middleName", middleName, selected.middleName || "");
+    addIfChanged("familyName", familyName, selected.familyName || "");
+    addIfChanged("email", email, selected.email || "");
+    addIfChanged("phone", phone, selected.phone || "");
+    addIfChanged("locatedCanada", locatedCanada, selected.locatedCanada || "");
+    addIfChanged("province", province, selected.province || "");
+    addIfChanged("workAuthorization", workAuthorization, selected.workAuthorization || "");
+    addIfChanged("eligibleMoveCanada", eligibleMoveCanada, selected.eligibleMoveCanada || "");
+    addIfChanged("countryOfOrigin", countryOfOrigin, selected.countryOfOrigin || "");
+    addIfChanged("languages", languages, selected.languages || "");
+    addIfChanged("languagesOther", languagesOther, selected.languagesOther || "");
+    addIfChanged("industryType", industryType, selected.industryType || "");
+    addIfChanged("industryOther", industryOther, selected.industryOther || "");
+    addIfChanged("employmentStatus", employmentStatus, selected.employmentStatus || "");
+
+    if (!Object.keys(patch).length) return;
+
+    const timer = setTimeout(() => {
+      patchCandidate(selected.irain, patch);
+    }, 600);
+
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    firstName,
+    middleName,
+    familyName,
+    email,
+    phone,
+    locatedCanada,
+    province,
+    workAuthorization,
+    eligibleMoveCanada,
+    countryOfOrigin,
+    languages,
+    languagesOther,
+    industryType,
+    industryOther,
+    employmentStatus,
+    selected?.irain,
+  ]);
+
+  const eligibilityBadge = (eligibility: CandidateRecord["eligibility"]) => {
+    const tone = eligibility.eligible ? "success" : "danger";
+    return <Badge tone={tone}>{eligibility.reason}</Badge>;
   };
+
+  const profileEligibility = useMemo(
+    () => computeEligibility(locatedCanada, eligibleMoveCanada),
+    [locatedCanada, eligibleMoveCanada],
+  );
 
   const columns = useMemo(
     () => [
@@ -195,9 +328,41 @@ export default function CandidatesPage() {
       },
       { key: "email", label: "Email", width: "320px", nowrap: true, ellipsis: true },
       { key: "phone", label: "Phone", width: "180px", nowrap: true },
-      { key: "eligibility", label: "Eligibility", width: "140px", nowrap: true, render: eligibilityBadge },
+      {
+        key: "eligibility",
+        label: "Eligibility",
+        width: "140px",
+        nowrap: true,
+        render: (row: CandidateRecord) => eligibilityBadge(row.eligibility),
+      },
       { key: "status", label: "Status", width: "140px", nowrap: true, sortable: true },
       { key: "province", label: "Province", width: "140px", nowrap: true, sortable: true },
+      {
+        key: "quickEdit",
+        label: "",
+        width: "84px",
+        align: "center",
+        render: (row: CandidateRecord) => (
+          <span data-no-row-click>
+            <ActionBtn
+              as="button"
+              variant="ghost"
+              size="sm"
+              title="Quick edit"
+              aria-label="Quick edit candidate"
+              className="founder-quick-edit-btn"
+              onClick={(event) => {
+                event.stopPropagation();
+                setSelected(row);
+                setEditProfile(true);
+                fetchApplications(row.irain);
+              }}
+            >
+              <PencilIcon />
+            </ActionBtn>
+          </span>
+        ),
+      },
     ],
     [],
   );
@@ -273,6 +438,14 @@ export default function CandidatesPage() {
             >
               {actionLoading ? "Sending..." : "Request updated resume"}
             </ActionBtn>
+            <ActionBtn
+              as="button"
+              variant="ghost"
+              onClick={() => setEditProfile((prev) => !prev)}
+              disabled={!selected}
+            >
+              {editProfile ? "Done editing" : "Edit profile"}
+            </ActionBtn>
           </div>
         }
         footer={
@@ -287,29 +460,178 @@ export default function CandidatesPage() {
           <div className="founder-drawer__grid">
             <section>
               <h3>Profile</h3>
-              <div className="founder-field">
-                <span>Location</span>
-                <strong>{selected.locatedCanada || "Unknown"}</strong>
-              </div>
+              {editProfile ? (
+                <>
+                  <div className="founder-fieldset">
+                    <label>First Name</label>
+                    <input type="text" value={firstName} onChange={(event) => setFirstName(event.target.value)} />
+                  </div>
+                  <div className="founder-fieldset">
+                    <label>Middle Name</label>
+                    <input type="text" value={middleName} onChange={(event) => setMiddleName(event.target.value)} />
+                  </div>
+                  <div className="founder-fieldset">
+                    <label>Family Name</label>
+                    <input type="text" value={familyName} onChange={(event) => setFamilyName(event.target.value)} />
+                  </div>
+                  <div className="founder-fieldset">
+                    <label>Email</label>
+                    <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} />
+                  </div>
+                  <div className="founder-fieldset">
+                    <label>Phone</label>
+                    <input type="tel" value={phone} onChange={(event) => setPhone(event.target.value)} />
+                  </div>
+                  <div className="founder-fieldset">
+                    <label>Located in Canada</label>
+                    <select value={locatedCanada} onChange={(event) => setLocatedCanada(event.target.value)}>
+                      {yesNoOptions.map((value) => (
+                        <option key={value} value={value}>
+                          {value || "Select"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="founder-fieldset">
+                    <label>Province</label>
+                    <input type="text" value={province} onChange={(event) => setProvince(event.target.value)} />
+                  </div>
+                  <div className="founder-fieldset">
+                    <label>Work Authorization</label>
+                    <select
+                      value={workAuthorization}
+                      onChange={(event) => setWorkAuthorization(event.target.value)}
+                    >
+                      {yesNoOptions.map((value) => (
+                        <option key={value} value={value}>
+                          {value || "Select"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="founder-fieldset">
+                    <label>Eligible to Move (6 Months)</label>
+                    <select
+                      value={eligibleMoveCanada}
+                      onChange={(event) => setEligibleMoveCanada(event.target.value)}
+                    >
+                      {yesNoOptions.map((value) => (
+                        <option key={value} value={value}>
+                          {value || "Select"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="founder-fieldset">
+                    <label>Country of Origin</label>
+                    <input
+                      type="text"
+                      value={countryOfOrigin}
+                      onChange={(event) => setCountryOfOrigin(event.target.value)}
+                    />
+                  </div>
+                  <div className="founder-fieldset">
+                    <label>Languages</label>
+                    <input type="text" value={languages} onChange={(event) => setLanguages(event.target.value)} />
+                  </div>
+                  <div className="founder-fieldset">
+                    <label>Languages Other</label>
+                    <input
+                      type="text"
+                      value={languagesOther}
+                      onChange={(event) => setLanguagesOther(event.target.value)}
+                    />
+                  </div>
+                  <div className="founder-fieldset">
+                    <label>Industry Type</label>
+                    <input type="text" value={industryType} onChange={(event) => setIndustryType(event.target.value)} />
+                  </div>
+                  <div className="founder-fieldset">
+                    <label>Industry Other</label>
+                    <input
+                      type="text"
+                      value={industryOther}
+                      onChange={(event) => setIndustryOther(event.target.value)}
+                    />
+                  </div>
+                  <div className="founder-fieldset">
+                    <label>Employment Status</label>
+                    <select value={employmentStatus} onChange={(event) => setEmploymentStatus(event.target.value)}>
+                      {employmentOptions.map((value) => (
+                        <option key={value} value={value}>
+                          {value || "Select"}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="founder-field">
+                    <span>First Name</span>
+                    <strong>{firstName || "-"}</strong>
+                  </div>
+                  <div className="founder-field">
+                    <span>Middle Name</span>
+                    <strong>{middleName || "-"}</strong>
+                  </div>
+                  <div className="founder-field">
+                    <span>Family Name</span>
+                    <strong>{familyName || "-"}</strong>
+                  </div>
+                  <div className="founder-field">
+                    <span>Email</span>
+                    <strong>{email || "-"}</strong>
+                  </div>
+                  <div className="founder-field">
+                    <span>Phone</span>
+                    <strong>{phone || "-"}</strong>
+                  </div>
+                  <div className="founder-field">
+                    <span>Located in Canada</span>
+                    <strong>{locatedCanada || "Unknown"}</strong>
+                  </div>
+                  <div className="founder-field">
+                    <span>Province</span>
+                    <strong>{province || "-"}</strong>
+                  </div>
+                  <div className="founder-field">
+                    <span>Work Authorization</span>
+                    <strong>{workAuthorization || "-"}</strong>
+                  </div>
+                  <div className="founder-field">
+                    <span>Eligible to Move (6 Months)</span>
+                    <strong>{eligibleMoveCanada || "-"}</strong>
+                  </div>
+                  <div className="founder-field">
+                    <span>Country of Origin</span>
+                    <strong>{countryOfOrigin || "-"}</strong>
+                  </div>
+                  <div className="founder-field">
+                    <span>Languages</span>
+                    <strong>{languages || "-"}</strong>
+                  </div>
+                  <div className="founder-field">
+                    <span>Languages Other</span>
+                    <strong>{languagesOther || "-"}</strong>
+                  </div>
+                  <div className="founder-field">
+                    <span>Industry Type</span>
+                    <strong>{industryType || "-"}</strong>
+                  </div>
+                  <div className="founder-field">
+                    <span>Industry Other</span>
+                    <strong>{industryOther || "-"}</strong>
+                  </div>
+                  <div className="founder-field">
+                    <span>Employment Status</span>
+                    <strong>{employmentStatus || "-"}</strong>
+                  </div>
+                </>
+              )}
               <div className="founder-field">
                 <span>Eligibility</span>
-                {eligibilityBadge(selected)}
-              </div>
-              <div className="founder-field">
-                <span>Province</span>
-                <strong>{selected.province || "-"}</strong>
-              </div>
-              <div className="founder-field">
-                <span>Work Authorization</span>
-                <strong>{selected.workAuthorization || "-"}</strong>
-              </div>
-              <div className="founder-field">
-                <span>Languages</span>
-                <strong>{selected.languages || "-"}</strong>
-              </div>
-              <div className="founder-field">
-                <span>Industry</span>
-                <strong>{selected.industryType || "-"}</strong>
+                {eligibilityBadge(profileEligibility)}
               </div>
             </section>
 

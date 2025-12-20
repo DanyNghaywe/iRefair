@@ -9,7 +9,9 @@ type BaseProps = {
   variant?: Variant;
   size?: Size;
   className?: string;
+  title?: string;
   "aria-label"?: string;
+  "data-no-row-click"?: string | boolean;
 };
 
 type ButtonProps = BaseProps & {
@@ -46,6 +48,9 @@ export function ActionBtn(props: ButtonProps | LinkProps) {
 
   if (props.as === "link") {
     const { href, target, rel, disabled, onClick, children, ...rest } = props;
+    if ("as" in rest) {
+      delete (rest as { as?: unknown }).as;
+    }
 
     if (disabled) {
       return (

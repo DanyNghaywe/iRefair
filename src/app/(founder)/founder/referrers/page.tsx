@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { ActionBtn } from "@/components/ActionBtn";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
 
@@ -29,6 +30,17 @@ type ReferrerRecord = {
 };
 
 const statusOptions = ["", "New", "Engaged", "Active", "Paused", "Closed"];
+
+function PencilIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        fill="currentColor"
+        d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Zm2.92 2.83H5v-.92l8.06-8.06.92.92L5.92 20.08ZM20.71 7.04a1 1 0 0 0 0-1.41L18.37 3.29a1 1 0 0 0-1.41 0l-1.35 1.35 3.75 3.75 1.35-1.35Z"
+      />
+    </svg>
+  );
+}
 
 export default function ReferrersPage() {
   const router = useRouter();
@@ -130,6 +142,32 @@ export default function ReferrersPage() {
       },
       { key: "workType", label: "Work Type", nowrap: true, width: "160px" },
       { key: "status", label: "Status", sortable: true, nowrap: true, width: "140px", align: "center" },
+      {
+        key: "quickEdit",
+        label: "",
+        width: "72px",
+        align: "right",
+        render: (row) => {
+          const id = row.irref?.trim();
+          if (!id) return null;
+          const href = `/founder/referrers/${encodeURIComponent(id)}?edit=1`;
+          return (
+            <ActionBtn
+              as="link"
+              href={href}
+              variant="ghost"
+              size="sm"
+              title="Quick edit"
+              aria-label="Quick edit"
+              className="founder-quick-edit-btn"
+              data-no-row-click
+              onClick={(event) => event.stopPropagation()}
+            >
+              <PencilIcon />
+            </ActionBtn>
+          );
+        },
+      },
     ],
     [],
   );

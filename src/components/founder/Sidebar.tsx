@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import React from "react";
+
+import { ActionBtn } from "@/components/ActionBtn";
 
 type NavItem = {
   href: string;
@@ -16,25 +17,32 @@ type Props = {
 
 export const Sidebar = React.forwardRef<HTMLDivElement, Props>(function Sidebar({ items, collapsed }, ref) {
   const pathname = usePathname();
+  const currentPath = pathname ?? "";
 
   return (
     <aside ref={ref} className={`ops-sidebar founder-sidebar ${collapsed ? "is-collapsed" : "is-open"}`}>
       <div className="founder-sidebar__header">
         <div className="founder-sidebar__brand">
           <span className="dot" />
-          <span>Ops Console</span>
+          <span>Moe's Console</span>
         </div>
-      </div>
-      <div className="founder-card__meta" aria-hidden="true" style={{ margin: "6px 0 2px" }}>
-        Navigation
       </div>
       <nav className="founder-sidebar__nav">
         {items.map((item) => {
-          const active = pathname.startsWith(item.href);
+          const isRoot = item.href === "/founder";
+          const active = isRoot ? currentPath === item.href : currentPath.startsWith(item.href);
           return (
-            <Link key={item.href} href={item.href} className={`founder-sidebar__link ${active ? "is-active" : ""}`}>
+            <ActionBtn
+              key={item.href}
+              as="link"
+              href={item.href}
+              variant={active ? "primary" : "ghost"}
+              size="sm"
+              className="founder-nav-btn"
+              aria-current={active ? "page" : undefined}
+            >
               {item.label}
-            </Link>
+            </ActionBtn>
           );
         })}
       </nav>
