@@ -1211,6 +1211,22 @@ type ApplicationListParams = {
   offset?: number;
 };
 
+type ApplicationListItem = {
+  id: string;
+  timestamp: string;
+  candidateId: string;
+  iCrn: string;
+  position: string;
+  referenceNumber: string;
+  resumeFileName: string;
+  resumeUrl: string;
+  referrerIrref: string;
+  referrerEmail: string;
+  status: string;
+  ownerNotes: string;
+  missingFields: string[];
+};
+
 type MatchListParams = {
   search?: string;
   stage?: string;
@@ -1625,7 +1641,9 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
   return null;
 }
 
-export async function listApplications(params: ApplicationListParams) {
+export async function listApplications(
+  params: ApplicationListParams,
+): Promise<{ total: number; items: ApplicationListItem[] }> {
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
 
   const spreadsheetId = getSpreadsheetIdOrThrow();
@@ -1635,7 +1653,7 @@ export async function listApplications(params: ApplicationListParams) {
     range: `${APPLICATION_SHEET_NAME}!1:1`,
   });
   const headers = headerRow.data.values?.[0] ?? [];
-  if (!headers.length) return { total: 0, items: [] as unknown[] };
+  if (!headers.length) return { total: 0, items: [] };
 
   const lastCol = toColumnLetter(headers.length - 1);
   const existing = await sheets.spreadsheets.values.get({
@@ -1651,7 +1669,7 @@ export async function listApplications(params: ApplicationListParams) {
   const ircrnFilter = normalizeSearch(params.ircrn);
   const referrerFilter = normalizeSearch(params.referrerIrref);
 
-  const items = rows
+  const items: ApplicationListItem[] = rows
     .map((row) => {
       const missingFields: string[] = [];
       if (!getHeaderValue(headerMap, row, 'Candidate ID')) missingFields.push('Candidate ID');
