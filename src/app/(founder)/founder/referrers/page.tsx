@@ -98,7 +98,15 @@ export default function ReferrersPage() {
 
   const columns = useMemo<OpsColumn<ReferrerRecord>[]>(
     () => [
-      { key: "irref", label: "iRREF", sortable: true, nowrap: true, width: "200px" },
+      {
+        key: "irref",
+        label: "iRREF",
+        sortable: true,
+        nowrap: true,
+        ellipsis: true,
+        width: "200px",
+        render: (row) => <span title={row.irref}>{row.irref}</span>,
+      },
       { key: "name", label: "Name", sortable: true, ellipsis: true, width: "200px" },
       { key: "email", label: "Email", ellipsis: true, width: "320px" },
       { key: "company", label: "Company", sortable: true, ellipsis: true, width: "240px" },

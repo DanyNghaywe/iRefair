@@ -315,7 +315,15 @@ export default function CandidatesPage() {
 
   const columns = useMemo<OpsColumn<CandidateRecord>[]>(
     () => [
-      { key: "irain", label: "iRAIN", sortable: true, width: "220px", nowrap: true },
+      {
+        key: "irain",
+        label: "iRAIN",
+        sortable: true,
+        width: "220px",
+        nowrap: true,
+        ellipsis: true,
+        render: (row: CandidateRecord) => <span title={row.irain}>{row.irain}</span>,
+      },
       {
         key: "firstName",
         label: "Name",

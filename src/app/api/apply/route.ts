@@ -37,7 +37,12 @@ export async function POST(request: Request) {
     const candidateId = normalize(form.get('candidateId'));
     const iCrn = normalize(form.get('iCrn'));
     const position = normalize(form.get('position'));
-    const referenceNumber = normalize(form.get('referenceNumber'));
+    const referenceNumberInput = normalize(form.get('referenceNumber'));
+    const referenceNumber =
+      referenceNumberInput &&
+      referenceNumberInput.toLowerCase() !== position.toLowerCase()
+        ? referenceNumberInput
+        : '';
     const resumeEntry = form.get('resume');
 
     if (!candidateId || !iCrn || !position) {

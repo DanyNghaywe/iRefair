@@ -3234,6 +3234,12 @@ textarea:-webkit-autofill {
   white-space: nowrap;
 }
 
+/* Prevent long nowrap text from bleeding into adjacent columns */
+.ops-scope .founder-table td.col-nowrap,
+.ops-scope .founder-table th.col-nowrap {
+  overflow: hidden;
+}
+
 .ops-scope .col-clip {
   white-space: nowrap;
   overflow: hidden;

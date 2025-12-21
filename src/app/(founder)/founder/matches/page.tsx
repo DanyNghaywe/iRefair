@@ -137,7 +137,15 @@ export default function MatchesPage() {
 
   const columns = useMemo<OpsColumn<MatchRecord>[]>(
     () => [
-      { key: "matchId", label: "Match ID", sortable: true, width: "180px", nowrap: true },
+      {
+        key: "matchId",
+        label: "Match ID",
+        sortable: true,
+        nowrap: true,
+        ellipsis: true,
+        width: "220px",
+        render: (row: MatchRecord) => <span title={row.matchId}>{row.matchId}</span>,
+      },
       { key: "candidateIrain", label: "Candidate", sortable: true, width: "240px", ellipsis: true },
       { key: "referrerIrref", label: "Referrer", sortable: true, width: "240px", ellipsis: true },
       { key: "companyIrcrn", label: "iRCRN", sortable: true, width: "200px", nowrap: true },

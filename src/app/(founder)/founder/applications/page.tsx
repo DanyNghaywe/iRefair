@@ -95,7 +95,15 @@ export default function ApplicationsPage() {
 
   const columns = useMemo<OpsColumn<ApplicationRecord>[]>(
     () => [
-      { key: "id", label: "ID", sortable: true, nowrap: true, width: "160px" },
+      {
+        key: "id",
+        label: "ID",
+        sortable: true,
+        nowrap: true,
+        ellipsis: true,
+        width: "220px",
+        render: (row: ApplicationRecord) => <span title={row.id}>{row.id}</span>,
+      },
       { key: "candidateId", label: "Candidate", sortable: true, ellipsis: true, width: "240px" },
       { key: "iCrn", label: "iRCRN", sortable: true, nowrap: true, width: "200px" },
       { key: "position", label: "Position", sortable: true, ellipsis: true, width: "320px" },
