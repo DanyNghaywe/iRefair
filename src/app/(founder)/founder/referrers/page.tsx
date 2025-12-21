@@ -102,6 +102,7 @@ export default function ReferrersPage() {
       { key: "name", label: "Name", sortable: true, ellipsis: true, width: "200px" },
       { key: "email", label: "Email", ellipsis: true, width: "320px" },
       { key: "company", label: "Company", sortable: true, ellipsis: true, width: "240px" },
+      { key: "companyIndustry", label: "Industry", sortable: true, ellipsis: true, width: "240px" },
       {
         key: "companyApproval",
         label: "Approval",

@@ -122,6 +122,7 @@ const translations: Record<
     title: string;
     lead: string;
     success: string;
+    statusMessages: { ok: string; error: string };
     legends: Record<string, string>;
     labels: Record<string, string>;
     placeholders: Record<string, string>;
@@ -160,6 +161,10 @@ const translations: Record<
     title: 'Candidate referral request',
     lead: "Tell us your background and target roles. We'll pair you with referrers when they're available.",
     success: 'Request sent. We will notify you when a referrer is available.',
+    statusMessages: {
+      ok: "We've received your request. We'll follow up by email soon.",
+      error: "We couldn't send your request right now. Please try again in a moment.",
+    },
     legends: {
       details: 'Personal Information',
       profiles: 'Your profiles',
@@ -270,6 +275,10 @@ const translations: Record<
     title: 'Demande de recommandation candidat',
     lead: 'Parlez-nous de votre parcours et des postes visés. Nous vous mettrons en relation avec des référents disponibles.',
     success: 'Demande envoyée. Nous vous informerons lorsqu’un référent sera disponible.',
+    statusMessages: {
+      ok: 'Nous avons bien reçu votre demande. Nous vous contacterons bientôt par e-mail.',
+      error: "Nous ne pouvons pas envoyer votre demande pour l'instant. Veuillez réessayer dans un moment.",
+    },
     legends: {
       details: 'Informations personnelles',
       profiles: 'Vos profils',
@@ -1125,13 +1134,13 @@ export default function CandidatePage() {
                   {status === 'ok' && (
                     <div className="status-banner status-banner--ok" role="status" aria-live="polite">
                       <span className="status-icon" aria-hidden="true">✓</span>
-                      <span>We’ve received your request. We’ll follow up by email soon.</span>
+                      <span>{t.statusMessages.ok}</span>
                     </div>
                   )}
                   {status === 'error' && (
                     <div className="status-banner status-banner--error" role="alert" aria-live="assertive">
                       <span className="status-icon" aria-hidden="true">!</span>
-                      <span>We couldn’t send your request right now. Please try again in a moment.</span>
+                      <span>{t.statusMessages.error}</span>
                     </div>
                   )}
                 </div>
