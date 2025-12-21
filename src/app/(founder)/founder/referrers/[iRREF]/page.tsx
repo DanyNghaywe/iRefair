@@ -67,6 +67,7 @@ type LinkRowProps = {
   actionLabel: string;
   onAction?: () => void;
   isLoading?: boolean;
+  loadingLabel?: string;
   previewOverride?: string;
 };
 
@@ -97,7 +98,16 @@ const IconMeet = () => (
   </svg>
 );
 
-function LinkRow({ icon, label, url, actionLabel, onAction, isLoading, previewOverride }: LinkRowProps) {
+function LinkRow({
+  icon,
+  label,
+  url,
+  actionLabel,
+  onAction,
+  isLoading,
+  loadingLabel,
+  previewOverride,
+}: LinkRowProps) {
   const { preview, href, isMissing: linkMissing } = buildLinkPreview(url);
   const hasCustomAction = Boolean(onAction);
   const isMissing = hasCustomAction ? false : linkMissing;
@@ -154,7 +164,7 @@ function LinkRow({ icon, label, url, actionLabel, onAction, isLoading, previewOv
           }}
           disabled={isDisabled}
         >
-          {isLoading ? "Sending..." : actionLabel}
+          {isLoading ? loadingLabel || "Sending..." : actionLabel}
         </ActionBtn>
       ) : (
         <span className="referrer-review__link-chip-spacer" aria-hidden="true" />
@@ -195,6 +205,10 @@ export default function ReferrerReviewPage() {
   const [approvalLoading, setApprovalLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [portalLink, setPortalLink] = useState("");
+  const [portalLoading, setPortalLoading] = useState(false);
+  const [portalMessage, setPortalMessage] = useState<string | null>(null);
+  const [portalError, setPortalError] = useState<string | null>(null);
   const [rejectConfirm, setRejectConfirm] = useState(false);
   const skipAutosaveRef = useRef(true);
   const skipDetailsAutosaveRef = useRef(true);
@@ -261,6 +275,9 @@ export default function ReferrerReviewPage() {
     setLinkedin(referrer.linkedin || "");
     setActionMessage(null);
     setActionError(null);
+    setPortalLink("");
+    setPortalMessage(null);
+    setPortalError(null);
     setRejectConfirm(false);
     skipAutosaveRef.current = true;
     skipDetailsAutosaveRef.current = true;
@@ -334,6 +351,40 @@ export default function ReferrerReviewPage() {
     linkedin,
     referrer?.irref,
   ]);
+
+  const handlePortalLink = async () => {
+    if (!referrer || portalLoading) return;
+    setPortalMessage(null);
+    setPortalError(null);
+
+    if (portalLink) {
+      if (typeof window !== "undefined") {
+        window.open(portalLink, "_blank", "noopener,noreferrer");
+      }
+      return;
+    }
+
+    setPortalLoading(true);
+    try {
+      const response = await fetch("/api/referrer/portal/link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ irref: referrer.irref }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.ok || !data?.link) {
+        setPortalError(data?.error || "Unable to generate portal link.");
+        return;
+      }
+      setPortalLink(data.link);
+      setPortalMessage(referrer.email ? "Portal link generated and emailed." : "Portal link generated.");
+    } catch (error) {
+      console.error("Generate portal link failed", error);
+      setPortalError("Unable to generate portal link.");
+    } finally {
+      setPortalLoading(false);
+    }
+  };
 
   const handleInvite = async () => {
     if (!referrer) return;
@@ -608,6 +659,16 @@ export default function ReferrerReviewPage() {
                 <LinkRow icon={<IconLink />} label="Careers Portal" url={careersPortal} actionLabel="Open" />
                 <LinkRow icon={<IconLinkedIn />} label="LinkedIn" url={linkedin} actionLabel="View" />
                 <LinkRow
+                  icon={<IconLink />}
+                  label="Referrer Portal"
+                  url={portalLink}
+                  actionLabel={portalLink ? "Open" : "Generate"}
+                  onAction={handlePortalLink}
+                  isLoading={portalLoading}
+                  loadingLabel="Generating..."
+                  previewOverride={portalLink ? undefined : "Generate a portal link for this referrer"}
+                />
+                <LinkRow
                   icon={<IconMeet />}
                   label="Meet Founder"
                   actionLabel="Invite"
@@ -616,6 +677,16 @@ export default function ReferrerReviewPage() {
                   previewOverride={actionLoading ? "Sending invite..." : "Send invite email"}
                 />
               </div>
+              {portalMessage ? (
+                <div className="status-banner status-banner--ok" role="status" aria-live="polite">
+                  {portalMessage}
+                </div>
+              ) : null}
+              {portalError ? (
+                <div className="status-banner status-banner--error" role="alert">
+                  {portalError}
+                </div>
+              ) : null}
             </DetailSection>
           </>
         }

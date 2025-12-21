@@ -129,26 +129,28 @@ export default function CandidatesPage() {
       {
         key: "quickEdit",
         label: "",
-        width: "84px",
-        align: "center",
-        render: (row: CandidateRecord) => (
-          <span data-no-row-click>
+        width: "72px",
+        align: "right",
+        render: (row: CandidateRecord) => {
+          const id = row.irain?.trim();
+          if (!id) return null;
+          const href = `/founder/candidates/${encodeURIComponent(id)}?edit=1`;
+          return (
             <ActionBtn
-              as="button"
+              as="link"
+              href={href}
               variant="ghost"
               size="sm"
               title="Quick edit"
-              aria-label="Quick edit candidate"
+              aria-label="Quick edit"
               className="founder-quick-edit-btn"
-              onClick={(event) => {
-                event.stopPropagation();
-                router.push(`/founder/candidates/${encodeURIComponent(row.irain)}?edit=1`);
-              }}
+              data-no-row-click
+              onClick={(event) => event.stopPropagation()}
             >
               <PencilIcon />
             </ActionBtn>
-          </span>
-        ),
+          );
+        },
       },
     ],
     [router],
