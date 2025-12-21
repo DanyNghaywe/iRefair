@@ -4,6 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } fro
 import { useParams, useSearchParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
+import { AutosaveHint } from "@/components/founder/AutosaveHint";
+import { DetailPageShell } from "@/components/founder/DetailPageShell";
+import { DetailSection } from "@/components/founder/DetailSection";
 import { Topbar } from "@/components/founder/Topbar";
 
 type ReferrerRecord = {
@@ -441,188 +444,183 @@ export default function ReferrerReviewPage() {
         subtitle={email || referrer.irref}
       />
 
-      <div className="referrer-review">
-        <div className="referrer-review__main">
-          <section className="card">
-            <p className="referrer-review__section-title">Status + Approval</p>
-            <div className="field-grid field-grid--two">
-              <div className="field">
-                <label htmlFor="referrer-status">Status</label>
-                <select
-                  id="referrer-status"
-                  value={status}
-                  onChange={(event) => setStatus(event.target.value)}
-                >
-                  <option value="">Unassigned</option>
-                  {statusOptions
-                    .filter((value) => value)
-                    .map((value) => (
-                      <option key={value} value={value.toLowerCase()}>
-                        {value}
-                      </option>
-                    ))}
-                </select>
+      <DetailPageShell
+        main={
+          <>
+            <DetailSection title="Status + Approval">
+              <div className="field-grid field-grid--two">
+                <div className="field">
+                  <label htmlFor="referrer-status">Status</label>
+                  <select
+                    id="referrer-status"
+                    value={status}
+                    onChange={(event) => setStatus(event.target.value)}
+                  >
+                    <option value="">Unassigned</option>
+                    {statusOptions
+                      .filter((value) => value)
+                      .map((value) => (
+                        <option key={value} value={value.toLowerCase()}>
+                          {value}
+                        </option>
+                      ))}
+                  </select>
+                </div>
+                <div className="field">
+                  <label htmlFor="company-approval">Company Approval</label>
+                  <input
+                    id="company-approval"
+                    type="text"
+                    value={approvalLabel}
+                    readOnly
+                    tabIndex={-1}
+                    aria-readonly="true"
+                  />
+                </div>
               </div>
-              <div className="field">
-                <label htmlFor="company-approval">Company Approval</label>
-                <input
-                  id="company-approval"
-                  type="text"
-                  value={approvalLabel}
-                  readOnly
-                  tabIndex={-1}
-                  aria-readonly="true"
-                />
-              </div>
-            </div>
-          </section>
+            </DetailSection>
 
-          <section className="card">
-            <p className="referrer-review__section-title">Profile</p>
-            <div className="field-grid field-grid--two">
-              <div className="field">
-                <label htmlFor="profile-name">Name</label>
-                <input
-                  id="profile-name"
-                  type="text"
-                  value={editDetails ? name : name || "-"}
-                  readOnly={!editDetails}
-                  tabIndex={editDetails ? 0 : -1}
-                  onChange={(event) => setName(event.target.value)}
-                />
+            <DetailSection title="Profile">
+              <div className="field-grid field-grid--two">
+                <div className="field">
+                  <label htmlFor="profile-name">Name</label>
+                  <input
+                    id="profile-name"
+                    type="text"
+                    value={editDetails ? name : name || "-"}
+                    readOnly={!editDetails}
+                    tabIndex={editDetails ? 0 : -1}
+                    onChange={(event) => setName(event.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="profile-email">Email</label>
+                  <input
+                    id="profile-email"
+                    type="email"
+                    value={editDetails ? email : email || "-"}
+                    readOnly={!editDetails}
+                    tabIndex={editDetails ? 0 : -1}
+                    onChange={(event) => setEmail(event.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="profile-phone">Phone</label>
+                  <input
+                    id="profile-phone"
+                    type="text"
+                    value={editDetails ? phone : phone || "-"}
+                    readOnly={!editDetails}
+                    tabIndex={editDetails ? 0 : -1}
+                    onChange={(event) => setPhone(event.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="profile-country">Country</label>
+                  <input
+                    id="profile-country"
+                    type="text"
+                    value={editDetails ? country : country || "-"}
+                    readOnly={!editDetails}
+                    tabIndex={editDetails ? 0 : -1}
+                    onChange={(event) => setCountry(event.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="profile-irref">Referrer iRREF</label>
+                  <input id="profile-irref" type="text" value={referrer.irref || "-"} readOnly tabIndex={-1} />
+                </div>
+                <div className="field">
+                  <label htmlFor="profile-missing">Missing Fields</label>
+                  <input id="profile-missing" type="text" value={missingFieldsLabel} readOnly tabIndex={-1} />
+                </div>
               </div>
-              <div className="field">
-                <label htmlFor="profile-email">Email</label>
-                <input
-                  id="profile-email"
-                  type="email"
-                  value={editDetails ? email : email || "-"}
-                  readOnly={!editDetails}
-                  tabIndex={editDetails ? 0 : -1}
-                  onChange={(event) => setEmail(event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="profile-phone">Phone</label>
-                <input
-                  id="profile-phone"
-                  type="text"
-                  value={editDetails ? phone : phone || "-"}
-                  readOnly={!editDetails}
-                  tabIndex={editDetails ? 0 : -1}
-                  onChange={(event) => setPhone(event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="profile-country">Country</label>
-                <input
-                  id="profile-country"
-                  type="text"
-                  value={editDetails ? country : country || "-"}
-                  readOnly={!editDetails}
-                  tabIndex={editDetails ? 0 : -1}
-                  onChange={(event) => setCountry(event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="profile-irref">Referrer iRREF</label>
-                <input id="profile-irref" type="text" value={referrer.irref || "-"} readOnly tabIndex={-1} />
-              </div>
-              <div className="field">
-                <label htmlFor="profile-missing">Missing Fields</label>
-                <input id="profile-missing" type="text" value={missingFieldsLabel} readOnly tabIndex={-1} />
-              </div>
-            </div>
-          </section>
+            </DetailSection>
 
-          <section className="card">
-            <p className="referrer-review__section-title">Company</p>
-            <div className="field-grid field-grid--two">
-              <div className="field">
-                <label htmlFor="company-name">Company</label>
-                <input
-                  id="company-name"
-                  type="text"
-                  value={editDetails ? company : company || "-"}
-                  readOnly={!editDetails}
-                  tabIndex={editDetails ? 0 : -1}
-                  onChange={(event) => setCompany(event.target.value)}
-                />
+            <DetailSection title="Company">
+              <div className="field-grid field-grid--two">
+                <div className="field">
+                  <label htmlFor="company-name">Company</label>
+                  <input
+                    id="company-name"
+                    type="text"
+                    value={editDetails ? company : company || "-"}
+                    readOnly={!editDetails}
+                    tabIndex={editDetails ? 0 : -1}
+                    onChange={(event) => setCompany(event.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="company-ircrn">Company iRCRN</label>
+                  <input id="company-ircrn" type="text" value={referrer.companyIrcrn || "-"} readOnly tabIndex={-1} />
+                </div>
+                <div className="field">
+                  <label htmlFor="company-industry">Industry</label>
+                  <input
+                    id="company-industry"
+                    type="text"
+                    value={editDetails ? companyIndustry : companyIndustry || "-"}
+                    readOnly={!editDetails}
+                    tabIndex={editDetails ? 0 : -1}
+                    onChange={(event) => setCompanyIndustry(event.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="company-work-type">Work Type</label>
+                  <input
+                    id="company-work-type"
+                    type="text"
+                    value={editDetails ? workType : workType || "-"}
+                    readOnly={!editDetails}
+                    tabIndex={editDetails ? 0 : -1}
+                    onChange={(event) => setWorkType(event.target.value)}
+                  />
+                </div>
               </div>
-              <div className="field">
-                <label htmlFor="company-ircrn">Company iRCRN</label>
-                <input id="company-ircrn" type="text" value={referrer.companyIrcrn || "-"} readOnly tabIndex={-1} />
-              </div>
-              <div className="field">
-                <label htmlFor="company-industry">Industry</label>
-                <input
-                  id="company-industry"
-                  type="text"
-                  value={editDetails ? companyIndustry : companyIndustry || "-"}
-                  readOnly={!editDetails}
-                  tabIndex={editDetails ? 0 : -1}
-                  onChange={(event) => setCompanyIndustry(event.target.value)}
-                />
-              </div>
-              <div className="field">
-                <label htmlFor="company-work-type">Work Type</label>
-                <input
-                  id="company-work-type"
-                  type="text"
-                  value={editDetails ? workType : workType || "-"}
-                  readOnly={!editDetails}
-                  tabIndex={editDetails ? 0 : -1}
-                  onChange={(event) => setWorkType(event.target.value)}
-                />
-              </div>
-            </div>
-          </section>
+            </DetailSection>
 
-          <section className="card">
-            <p className="referrer-review__section-title">Links</p>
-            <div className="field-grid field-grid--two">
-              <div className="field">
-                <label htmlFor="link-careers">Careers Portal</label>
-                <input
-                  id="link-careers"
-                  type="url"
-                  value={editDetails ? careersPortal : careersPortal || "-"}
-                  readOnly={!editDetails}
-                  tabIndex={editDetails ? 0 : -1}
-                  onChange={(event) => setCareersPortal(event.target.value)}
+            <DetailSection title="Links">
+              <div className="field-grid field-grid--two">
+                <div className="field">
+                  <label htmlFor="link-careers">Careers Portal</label>
+                  <input
+                    id="link-careers"
+                    type="url"
+                    value={editDetails ? careersPortal : careersPortal || "-"}
+                    readOnly={!editDetails}
+                    tabIndex={editDetails ? 0 : -1}
+                    onChange={(event) => setCareersPortal(event.target.value)}
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="link-linkedin">LinkedIn</label>
+                  <input
+                    id="link-linkedin"
+                    type="url"
+                    value={editDetails ? linkedin : linkedin || "-"}
+                    readOnly={!editDetails}
+                    tabIndex={editDetails ? 0 : -1}
+                    onChange={(event) => setLinkedin(event.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="referrer-review__link-list">
+                <LinkRow icon={<IconLink />} label="Careers Portal" url={careersPortal} actionLabel="Open" />
+                <LinkRow icon={<IconLinkedIn />} label="LinkedIn" url={linkedin} actionLabel="View" />
+                <LinkRow
+                  icon={<IconMeet />}
+                  label="Meet Founder"
+                  actionLabel="Invite"
+                  onAction={handleInvite}
+                  isLoading={actionLoading}
+                  previewOverride={actionLoading ? "Sending invite..." : "Send invite email"}
                 />
               </div>
-              <div className="field">
-                <label htmlFor="link-linkedin">LinkedIn</label>
-                <input
-                  id="link-linkedin"
-                  type="url"
-                  value={editDetails ? linkedin : linkedin || "-"}
-                  readOnly={!editDetails}
-                  tabIndex={editDetails ? 0 : -1}
-                  onChange={(event) => setLinkedin(event.target.value)}
-                />
-              </div>
-            </div>
-            <div className="referrer-review__link-list">
-              <LinkRow icon={<IconLink />} label="Careers Portal" url={careersPortal} actionLabel="Open" />
-              <LinkRow icon={<IconLinkedIn />} label="LinkedIn" url={linkedin} actionLabel="View" />
-              <LinkRow
-                icon={<IconMeet />}
-                label="Meet Founder"
-                actionLabel="Invite"
-                onAction={handleInvite}
-                isLoading={actionLoading}
-                previewOverride={actionLoading ? "Sending invite..." : "Send invite email"}
-              />
-            </div>
-          </section>
-
-        </div>
-
-        <aside className="referrer-review__sidebar">
-          <section className="card referrer-review__decision">
-            <p className="referrer-review__section-title">Decision</p>
+            </DetailSection>
+          </>
+        }
+        sidebar={
+          <DetailSection title="Decision" className="referrer-review__decision">
             <div className="field">
               <label htmlFor="decision-status">Current status</label>
               <input
@@ -677,7 +675,7 @@ export default function ReferrerReviewPage() {
               )}
             </div>
             <div>
-              {saving ? <p className="field-hint">Saving...</p> : null}
+              <AutosaveHint saving={saving} />
               {actionMessage ? (
                 <div className="status-banner status-banner--ok" role="status" aria-live="polite">
                   {actionMessage}
@@ -692,9 +690,9 @@ export default function ReferrerReviewPage() {
             <ActionBtn as="link" href="/founder/referrers" variant="ghost">
               &larr; Back to Referrers
             </ActionBtn>
-          </section>
-        </aside>
-      </div>
+          </DetailSection>
+        }
+      />
     </div>
   );
 }

@@ -2062,6 +2062,92 @@ export async function updateMatch(matchId: string, patch: MatchPatch) {
   });
 }
 
+export async function getCandidateByIrain(irain: string) {
+  await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${CANDIDATE_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  if (!headers.length) return null;
+
+  const headerMap = buildHeaderMap(headers);
+  const lastCol = toColumnLetter(headers.length - 1);
+  const rows = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${CANDIDATE_SHEET_NAME}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const normalized = irain.trim().toLowerCase();
+  const irainIndex = headerIndex(headers, 'iRAIN');
+  const values = rows.data.values ?? [];
+
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i] ?? [];
+    const rawValue = cellValue(row, irainIndex === -1 ? 0 : irainIndex).toLowerCase();
+    if (rawValue !== normalized) continue;
+
+    const locatedCanada = getHeaderValue(headerMap, row, 'Located in Canada');
+    const eligibleMove = getHeaderValue(headerMap, row, 'Eligible to Move (6 Months)');
+    const eligible =
+      locatedCanada.trim().toLowerCase() === 'yes' || eligibleMove.trim().toLowerCase() === 'yes';
+    const eligibilityReason = eligible
+      ? locatedCanada.trim().toLowerCase() === 'yes'
+        ? 'In Canada'
+        : 'Can move in 6 months'
+      : 'Not eligible';
+
+    const missingFields: string[] = [];
+    if (!getHeaderValue(headerMap, row, 'Email')) missingFields.push('Email');
+    if (!getHeaderValue(headerMap, row, 'Phone')) missingFields.push('Phone');
+    if (!locatedCanada) missingFields.push('Located in Canada');
+    if (!getHeaderValue(headerMap, row, 'Work Authorization')) {
+      missingFields.push('Work Authorization');
+    }
+
+    return {
+      rowIndex: i + 1,
+      record: {
+        irain: getHeaderValue(headerMap, row, 'iRAIN'),
+        timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
+        firstName: getHeaderValue(headerMap, row, 'First Name'),
+        middleName: getHeaderValue(headerMap, row, 'Middle Name'),
+        familyName: getHeaderValue(headerMap, row, 'Family Name'),
+        email: getHeaderValue(headerMap, row, 'Email'),
+        phone: getHeaderValue(headerMap, row, 'Phone'),
+        locatedCanada,
+        province: getHeaderValue(headerMap, row, 'Province'),
+        workAuthorization: getHeaderValue(headerMap, row, 'Work Authorization'),
+        eligibleMoveCanada: eligibleMove,
+        countryOfOrigin: getHeaderValue(headerMap, row, 'Country of Origin'),
+        languages: getHeaderValue(headerMap, row, 'Languages'),
+        languagesOther: getHeaderValue(headerMap, row, 'Languages Other'),
+        industryType: getHeaderValue(headerMap, row, 'Industry Type'),
+        industryOther: getHeaderValue(headerMap, row, 'Industry Other'),
+        employmentStatus: getHeaderValue(headerMap, row, 'Employment Status'),
+        legacyCandidateId: getHeaderValue(headerMap, row, LEGACY_CANDIDATE_ID_HEADER),
+        status: getHeaderValue(headerMap, row, 'Status'),
+        ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
+        tags: getHeaderValue(headerMap, row, 'Tags'),
+        lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
+        nextActionAt: getHeaderValue(headerMap, row, 'Next Action At'),
+        eligibility: {
+          eligible,
+          reason: eligibilityReason,
+        },
+        missingFields,
+      },
+    };
+  }
+
+  return null;
+}
+
 export async function getReferrerByIrref(irref: string) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
   const spreadsheetId = getSpreadsheetIdOrThrow();

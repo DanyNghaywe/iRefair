@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
-import { updateCandidateFields } from '@/lib/sheets';
+import { getCandidateByIrain, updateCandidateFields } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,6 +27,33 @@ type PatchBody = {
   lastContactedAt?: string;
   nextActionAt?: string;
 };
+
+export async function GET(
+  request: NextRequest,
+  context: { params: Promise<{ irain: string }> },
+) {
+  const params = await context.params;
+
+  try {
+    requireFounder(request);
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const candidate = await getCandidateByIrain(params.irain);
+    if (!candidate) {
+      return NextResponse.json({ ok: false, error: 'Candidate not found' }, { status: 404 });
+    }
+    return NextResponse.json({ ok: true, item: candidate.record });
+  } catch (error) {
+    console.error('Error fetching candidate', error);
+    return NextResponse.json(
+      { ok: false, error: 'Unable to load candidate right now.' },
+      { status: 500 },
+    );
+  }
+}
 
 export async function PATCH(
   request: NextRequest,
