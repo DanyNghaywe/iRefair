@@ -6,7 +6,7 @@ import { verifyReferrerToken } from '@/lib/referrerPortalToken';
 export const dynamic = 'force-dynamic';
 
 async function buildItems(referrerIrref: string) {
-  const apps = await listApplications({ referrerIrref, limit: 500 });
+  const apps = await listApplications({ referrerIrref, limit: 0 });
   const items = await Promise.all(
     apps.items.map(async (app) => {
       const candidate = app.candidateId

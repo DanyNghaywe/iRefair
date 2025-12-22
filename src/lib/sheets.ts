@@ -74,6 +74,14 @@ export function isLegacyCandidateId(value: string) {
   return /^CAND-/i.test(value.trim());
 }
 
+export function isIrcrn(value: string) {
+  return IRCRN_REGEX.test(value.trim());
+}
+
+export function isIrref(value: string) {
+  return IRREF_REGEX.test(value.trim());
+}
+
 function toColumnLetter(index: number) {
   let n = index;
   let letters = '';
@@ -1262,6 +1270,7 @@ function getHeaderValue(
 
 function paginate<T>(items: T[], offset?: number, limit?: number) {
   const safeOffset = Number.isFinite(offset) && offset && offset > 0 ? offset : 0;
+  if (limit === 0) return items.slice(safeOffset);
   const safeLimit = Number.isFinite(limit) && limit && limit > 0 ? limit : DEFAULT_LIMIT;
   return items.slice(safeOffset, safeOffset + safeLimit);
 }
@@ -1580,6 +1589,24 @@ type ReferrerLookupResult = {
   companyIrcrn?: string;
 };
 
+type ReferrerLookupErrorCode =
+  | 'missing_ircrn'
+  | 'invalid_ircrn'
+  | 'not_found'
+  | 'duplicate'
+  | 'missing_email'
+  | 'invalid_irref';
+
+export class ReferrerLookupError extends Error {
+  code: ReferrerLookupErrorCode;
+
+  constructor(code: ReferrerLookupErrorCode, message: string) {
+    super(message);
+    this.name = 'ReferrerLookupError';
+    this.code = code;
+  }
+}
+
 export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookupResult | null> {
   const normalizedIrcrn = ircrn.trim().toLowerCase();
   if (!normalizedIrcrn) return null;
@@ -1643,6 +1670,81 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
   }
 
   return null;
+}
+
+export async function findReferrerByIrcrnStrict(ircrn: string): Promise<ReferrerLookupResult> {
+  const normalizedIrcrn = ircrn.trim().toLowerCase();
+  if (!normalizedIrcrn) {
+    throw new ReferrerLookupError('missing_ircrn', 'Missing iRCRN.');
+  }
+  if (!isIrcrn(ircrn)) {
+    throw new ReferrerLookupError('invalid_ircrn', 'Invalid iRCRN format.');
+  }
+
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN', 'Company Approval']);
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${REFERRER_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  if (!headers.length) {
+    throw new ReferrerLookupError('not_found', 'Referrer sheet is missing headers.');
+  }
+
+  const lastCol = toColumnLetter(headers.length - 1);
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${REFERRER_SHEET_NAME}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const headerMap = buildHeaderMap(headers);
+  const rows = (existing.data.values ?? []).slice(1);
+
+  const pickRecord = (row: (string | number | null | undefined)[]) => ({
+    irref: getHeaderValue(headerMap, row, 'iRREF'),
+    name: getHeaderValue(headerMap, row, 'Name'),
+    email: getHeaderValue(headerMap, row, 'Email'),
+    phone: getHeaderValue(headerMap, row, 'Phone'),
+    company: getHeaderValue(headerMap, row, 'Company'),
+    companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
+  });
+
+  const isApproved = (row: (string | number | null | undefined)[]) => {
+    const approval = getHeaderValue(headerMap, row, 'Company Approval').toLowerCase();
+    return approval === '' || approval === 'approved';
+  };
+
+  const matches = rows
+    .filter((row) => {
+      const rowIrcrn = getHeaderValue(headerMap, row, 'Company iRCRN').toLowerCase();
+      return rowIrcrn && rowIrcrn === normalizedIrcrn && isApproved(row);
+    })
+    .map((row) => pickRecord(row));
+
+  if (!matches.length) {
+    throw new ReferrerLookupError('not_found', 'No approved referrer found for this iRCRN.');
+  }
+  if (matches.length > 1) {
+    throw new ReferrerLookupError(
+      'duplicate',
+      'Multiple referrers found for this iRCRN. Please resolve duplicates in the Referrers sheet.',
+    );
+  }
+
+  const record = matches[0];
+  if (!record.email) {
+    throw new ReferrerLookupError('missing_email', 'Referrer is missing an email address.');
+  }
+  if (!record.irref || !isIrref(record.irref)) {
+    throw new ReferrerLookupError('invalid_irref', 'Referrer is missing a valid iRREF.');
+  }
+
+  return record;
 }
 
 export async function listApplications(

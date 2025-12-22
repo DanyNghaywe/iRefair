@@ -7,7 +7,11 @@ import {
   appendApplicationRow,
   findCandidateByIdentifier,
   findReferrerByIrcrn,
+  findReferrerByIrcrnStrict,
   generateSubmissionId,
+  isIrain,
+  isIrcrn,
+  ReferrerLookupError,
 } from '@/lib/sheets';
 import { ensureResumeLooksLikeCv, scanBufferForViruses } from '@/lib/fileScan';
 
@@ -56,6 +60,16 @@ export async function POST(request: Request) {
       );
     }
 
+    const strictMode = ['true', '1', 'yes'].includes(
+      (process.env.STRICT_REFERRAL_LINKING || '').toLowerCase(),
+    );
+    if (strictMode && !isIrcrn(iCrn)) {
+      return NextResponse.json(
+        { ok: false, error: 'Invalid iRCRN format. Please use the iRCRN########## code.' },
+        { status: 400 },
+      );
+    }
+
     if (!(resumeEntry instanceof File) || resumeEntry.size === 0) {
       return NextResponse.json(
         { ok: false, error: 'Please upload your resume (PDF or DOC/DOCX, max 10MB).' },
@@ -77,16 +91,34 @@ export async function POST(request: Request) {
         { status: 404 },
       );
     }
+    if (strictMode && !isIrain(candidateRecord.record.id)) {
+      return NextResponse.json(
+        { ok: false, error: 'Candidate record is missing a valid iRAIN. Please update the candidate record.' },
+        { status: 409 },
+      );
+    }
 
-    const referrer =
-      (await findReferrerByIrcrn(iCrn)) ||
-      (process.env.APPLICATION_FALLBACK_REFERRER_EMAIL
-        ? {
-            irref: 'fallback',
-            name: process.env.APPLICATION_FALLBACK_REFERRER_NAME || 'Referrer',
-            email: process.env.APPLICATION_FALLBACK_REFERRER_EMAIL,
-          }
-        : null);
+    let referrer = null;
+    if (strictMode) {
+      try {
+        referrer = await findReferrerByIrcrnStrict(iCrn);
+      } catch (error) {
+        if (error instanceof ReferrerLookupError) {
+          return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
+        }
+        throw error;
+      }
+    } else {
+      referrer =
+        (await findReferrerByIrcrn(iCrn)) ||
+        (process.env.APPLICATION_FALLBACK_REFERRER_EMAIL
+          ? {
+              irref: 'fallback',
+              name: process.env.APPLICATION_FALLBACK_REFERRER_NAME || 'Referrer',
+              email: process.env.APPLICATION_FALLBACK_REFERRER_EMAIL,
+            }
+          : null);
+    }
 
     if (!referrer) {
       return NextResponse.json(
