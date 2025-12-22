@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 type PortalItem = {
   id: string;
@@ -38,6 +39,8 @@ type PortalClientProps = {
 };
 
 export default function PortalClient({ token }: PortalClientProps) {
+  const searchParams = useSearchParams();
+  const resolvedToken = token || searchParams?.get("token") || "";
   const [loading, setLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,7 +49,7 @@ export default function PortalClient({ token }: PortalClientProps) {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      if (!token) {
+      if (!resolvedToken) {
         setError("Missing token");
         setLoading(false);
         return;
@@ -54,9 +57,12 @@ export default function PortalClient({ token }: PortalClientProps) {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/referrer/portal/data?token=${encodeURIComponent(token)}`, {
-          cache: "no-store",
-        });
+        const res = await fetch(
+          `/api/referrer/portal/data?token=${encodeURIComponent(resolvedToken)}`,
+          {
+            cache: "no-store",
+          },
+        );
         const json = await res.json();
         if (!res.ok || !json?.ok) {
           throw new Error(json?.error || "Unable to load portal");
@@ -72,7 +78,7 @@ export default function PortalClient({ token }: PortalClientProps) {
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [resolvedToken]);
 
   const handleFeedback = async (applicationId: string, action: string) => {
     setSubmittingId(applicationId);
@@ -81,7 +87,7 @@ export default function PortalClient({ token }: PortalClientProps) {
       const res = await fetch("/api/referrer/portal/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, applicationId, action }),
+        body: JSON.stringify({ token: resolvedToken, applicationId, action }),
       });
       const json = await res.json();
       if (!res.ok || !json?.ok) {
@@ -111,7 +117,7 @@ export default function PortalClient({ token }: PortalClientProps) {
     return [...data.items].sort((a, b) => a.id.localeCompare(b.id));
   }, [data]);
 
-  if (!token) {
+  if (!resolvedToken) {
     return <div style={{ padding: "24px" }}>Missing token.</div>;
   }
 

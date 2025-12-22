@@ -1,5 +1,7 @@
 import PortalClient from "./PortalClient";
 
+export const dynamic = "force-dynamic";
+
 type ReferrerPortalPageProps = {
   searchParams?: { token?: string | string[] };
 };
