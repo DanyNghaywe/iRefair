@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
   try {
     const { buffer, mimeType, name } = await downloadFileFromDrive(resumeFileId);
     const filename = sanitizeFilename(application.record.resumeFileName || name || 'resume');
-    const body = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    const body = new Uint8Array(buffer);
     return new NextResponse(body, {
       status: 200,
       headers: {
