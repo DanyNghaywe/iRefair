@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
+import { EmptyState } from "@/components/founder/EmptyState";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
 
@@ -221,7 +222,13 @@ export default function ReferrersPage() {
         columns={columns}
         data={items}
         loading={loading}
-        emptyState="No referrers match your filters."
+        emptyState={
+          <EmptyState
+            variant="referrers"
+            title="No referrers yet"
+            description="Referrers will appear here once they sign up through the referrer registration form. Try adjusting your filters if you expected to see results."
+          />
+        }
         onRowClick={handleRowClick}
         rowAriaLabel={(row) =>
           row.email ? `Open referrer review for ${row.email}` : `Open referrer review for ${row.irref}`

@@ -223,9 +223,40 @@ export default function PortalClient() {
                     <tr>
                       <td colSpan={5} className="portal-table-empty">
                         <div className="portal-empty">
-                          <div className="portal-empty__icon" aria-hidden="true" />
-                          <p className="portal-empty__title">No applications yet</p>
-                          <p className="portal-empty__message">We'll list new referrals as soon as they arrive.</p>
+                          <svg
+                            width="64"
+                            height="64"
+                            viewBox="0 0 64 64"
+                            fill="none"
+                            xmlns="http://www.w3.org/2000/svg"
+                            aria-hidden="true"
+                            className="portal-empty__icon portal-empty__icon--svg"
+                          >
+                            <circle cx="32" cy="32" r="30" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.15" />
+                            <circle cx="32" cy="32" r="22" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.1" />
+                            <rect
+                              x="20"
+                              y="18"
+                              width="24"
+                              height="28"
+                              rx="3"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeOpacity="0.4"
+                            />
+                            <path
+                              d="M26 26h12M26 32h12M26 38h8"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeOpacity="0.3"
+                              strokeLinecap="round"
+                            />
+                            <circle cx="40" cy="38" r="2" fill="currentColor" fillOpacity="0.2" />
+                          </svg>
+                          <p className="portal-empty__title">No applications assigned</p>
+                          <p className="portal-empty__message">
+                            Candidate applications will appear here once they're assigned to you. Check back soon for new referrals to review.
+                          </p>
                         </div>
                       </td>
                     </tr>

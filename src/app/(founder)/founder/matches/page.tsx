@@ -6,6 +6,7 @@ import { createPortal } from "react-dom";
 import { ActionBtn } from "@/components/ActionBtn";
 import { Badge } from "@/components/founder/Badge";
 import { Drawer } from "@/components/founder/Drawer";
+import { EmptyState } from "@/components/founder/EmptyState";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
 
@@ -301,7 +302,15 @@ export default function MatchesPage() {
         columns={columns}
         data={items}
         loading={loading}
-        emptyState="No matches match your filters."
+        emptyState={
+          <EmptyState
+            variant="matches"
+            title="No matches yet"
+            description="Matches connect candidates with referrers and opportunities. Create your first match or adjust your filters to see existing ones."
+            actionLabel={matchCreateEnabled ? "Create match" : undefined}
+            onAction={matchCreateEnabled ? () => setShowModal(true) : undefined}
+          />
+        }
         onRowClick={(row) => setSelected(row)}
       />
 

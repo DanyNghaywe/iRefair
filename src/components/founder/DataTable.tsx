@@ -18,7 +18,7 @@ type Props<T> = {
   columns: Column<T>[];
   data: T[];
   loading?: boolean;
-  emptyState?: string;
+  emptyState?: React.ReactNode;
   onRowClick?: (row: T) => void;
   rowAriaLabel?: (row: T) => string;
   tableClassName?: string;

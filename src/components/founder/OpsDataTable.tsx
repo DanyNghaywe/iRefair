@@ -20,7 +20,7 @@ type OpsDataTableProps<T> = {
   columns: OpsColumn<T>[];
   data: T[];
   loading?: boolean;
-  emptyState?: string;
+  emptyState?: React.ReactNode;
   onRowClick?: (row: T) => void;
   rowAriaLabel?: (row: T) => string;
   tableClassName?: string;

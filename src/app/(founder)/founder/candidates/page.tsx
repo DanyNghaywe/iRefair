@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
 import { Badge } from "@/components/founder/Badge";
+import { EmptyState } from "@/components/founder/EmptyState";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
 
@@ -199,7 +200,13 @@ export default function CandidatesPage() {
         columns={columns}
         data={items}
         loading={loading}
-        emptyState="No candidates match your filters."
+        emptyState={
+          <EmptyState
+            variant="candidates"
+            title="No candidates yet"
+            description="Candidates will appear here once they register through the intake form. Check back soon or adjust your filters."
+          />
+        }
         onRowClick={handleRowClick}
         tableClassName="candidates-table"
       />

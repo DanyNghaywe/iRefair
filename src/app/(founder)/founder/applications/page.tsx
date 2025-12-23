@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { Badge } from "@/components/founder/Badge";
 import { Drawer } from "@/components/founder/Drawer";
+import { EmptyState } from "@/components/founder/EmptyState";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
 
@@ -153,7 +154,13 @@ export default function ApplicationsPage() {
         columns={columns}
         data={items}
         loading={loading}
-        emptyState="No applications match your filters."
+        emptyState={
+          <EmptyState
+            variant="applications"
+            title="No applications yet"
+            description="Applications will appear here when candidates submit their resumes for positions. Try adjusting your filters or check back later."
+          />
+        }
         onRowClick={(row) => setSelected(row)}
       />
 
