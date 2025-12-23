@@ -28,16 +28,12 @@ export function ParticlesBackground({ className }: { className?: string }) {
     const context = canvas.getContext('2d');
     if (!context) return undefined;
 
-    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    if (prefersReducedMotion.matches) {
-      canvas.style.display = 'none';
-      return () => {
-        canvas.style.display = '';
-      };
-    }
-
     const particles: Particle[] = [];
     const devicePixelRatio = window.devicePixelRatio || 1;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    let reducedMotion = prefersReducedMotion.matches;
+    let isVisible = !document.hidden;
+    let isRunning = false;
     let width = 0;
     let height = 0;
     let animationFrameId = 0;
@@ -63,7 +59,7 @@ export function ParticlesBackground({ className }: { className?: string }) {
       const isSmallScreen = window.innerWidth < 720 || (window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
       particleCount = isSmallScreen ? 20 : PARTICLE_COUNT;
       maxDistance = isSmallScreen ? 90 : MAX_DISTANCE;
-      linkOpacityBase = isSmallScreen ? 0 : 0.2;
+      linkOpacityBase = reducedMotion ? 0 : isSmallScreen ? 0 : 0.2;
     };
 
     const syncParticleCount = () => {
@@ -93,22 +89,25 @@ export function ParticlesBackground({ className }: { className?: string }) {
         particle.x = Math.min(Math.max(particle.x, 0), width);
         particle.y = Math.min(Math.max(particle.y, 0), height);
       });
+      renderFrame(false);
     };
 
-    const draw = () => {
+    const renderFrame = (animate: boolean) => {
       context.clearRect(0, 0, width, height);
 
       for (let i = 0; i < particles.length; i += 1) {
         const particle = particles[i];
-        particle.x += particle.vx;
-        particle.y += particle.vy;
+        if (animate) {
+          particle.x += particle.vx;
+          particle.y += particle.vy;
 
-        if (particle.x <= 0 || particle.x >= width) {
-          particle.vx *= -1;
-        }
+          if (particle.x <= 0 || particle.x >= width) {
+            particle.vx *= -1;
+          }
 
-        if (particle.y <= 0 || particle.y >= height) {
-          particle.vy *= -1;
+          if (particle.y <= 0 || particle.y >= height) {
+            particle.vy *= -1;
+          }
         }
 
         for (let j = i + 1; j < particles.length; j += 1) {
@@ -132,17 +131,78 @@ export function ParticlesBackground({ className }: { className?: string }) {
         const halfSize = particle.size / 2;
         context.fillRect(particle.x - halfSize, particle.y - halfSize, particle.size, particle.size);
       }
+    };
 
+    const draw = () => {
+      if (!isRunning) return;
+      renderFrame(true);
       animationFrameId = window.requestAnimationFrame(draw);
     };
 
+    const stopAnimation = () => {
+      if (!isRunning) return;
+      isRunning = false;
+      window.cancelAnimationFrame(animationFrameId);
+      animationFrameId = 0;
+    };
+
+    const startAnimation = () => {
+      if (isRunning || reducedMotion || !isVisible) return;
+      isRunning = true;
+      animationFrameId = window.requestAnimationFrame(draw);
+    };
+
+    const handleVisibilityChange = () => {
+      isVisible = !document.hidden;
+      if (!isVisible) {
+        stopAnimation();
+      } else {
+        startAnimation();
+      }
+    };
+
+    const handleReducedMotionChange = (event: MediaQueryListEvent) => {
+      reducedMotion = event.matches;
+      syncSettings();
+      if (reducedMotion) {
+        stopAnimation();
+        renderFrame(false);
+      } else {
+        startAnimation();
+      }
+    };
+
+    const addListener = (media: MediaQueryList, handler: (event: MediaQueryListEvent) => void) => {
+      if (typeof media.addEventListener === 'function') {
+        media.addEventListener('change', handler);
+      } else {
+        media.addListener(handler);
+      }
+    };
+
+    const removeListener = (media: MediaQueryList, handler: (event: MediaQueryListEvent) => void) => {
+      if (typeof media.removeEventListener === 'function') {
+        media.removeEventListener('change', handler);
+      } else {
+        media.removeListener(handler);
+      }
+    };
+
     resize();
-    animationFrameId = window.requestAnimationFrame(draw);
+    if (reducedMotion) {
+      renderFrame(false);
+    } else {
+      startAnimation();
+    }
     window.addEventListener('resize', resize);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    addListener(prefersReducedMotion, handleReducedMotionChange);
 
     return () => {
-      window.cancelAnimationFrame(animationFrameId);
+      stopAnimation();
       window.removeEventListener('resize', resize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      removeListener(prefersReducedMotion, handleReducedMotionChange);
     };
   }, []);
 

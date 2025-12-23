@@ -122,11 +122,12 @@ main {
   width: min(1180px, 100%);
   min-height: 86vh;
   padding: 26px 24px;
-  background: transparent;
-  border: none;
-  border-radius: 0;
-  box-shadow: none;
-  backdrop-filter: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 26px;
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.08);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
 }
 
 .board--wide {
@@ -170,6 +171,7 @@ h1 {
   margin: 6px 0 0;
   font-size: calc(var(--font-size-lead) - 2px);
   line-height: var(--line-height-lead);
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .flow-toggle {
@@ -1460,6 +1462,22 @@ textarea {
   background: rgba(255, 255, 255, 0.7);
 }
 
+.combo-field {
+  position: relative;
+}
+
+.combo-input {
+  padding-right: 46px;
+  background-repeat: no-repeat;
+  background-position: right 14px center;
+  background-size: 14px 10px;
+  background-image: url("data:image/svg+xml,%3Csvg width='14' height='10' viewBox='0 0 14 10' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M2 3l5 4 5-4' stroke='%234b5563' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+.combo-field .select-dropdown {
+  margin-top: 6px;
+}
+
 select {
   appearance: none;
   -webkit-appearance: none;
@@ -1486,12 +1504,11 @@ textarea::placeholder {
   color: rgba(93, 97, 116, 0.75);
 }
 
-input:focus,
-select:focus,
-textarea:focus {
+input:focus:not(:focus-visible),
+select:focus:not(:focus-visible),
+textarea:focus:not(:focus-visible) {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.35);
-  background: rgba(255, 255, 255, 0.6);
+  box-shadow: none;
 }
 
 input:focus-visible,
@@ -1500,6 +1517,18 @@ textarea:focus-visible {
   outline: none;
   box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.45);
   background: rgba(255, 255, 255, 0.64);
+}
+
+a:focus:not(:focus-visible),
+button:focus:not(:focus-visible) {
+  outline: none;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid rgba(var(--accent-primary-rgb), 0.55);
+  outline-offset: 2px;
+  border-radius: 8px;
 }
 
 input:-webkit-autofill,
@@ -1614,16 +1643,25 @@ textarea:-webkit-autofill {
 
 .field-hint {
   margin: 8px 0 0;
-  color: rgba(255, 255, 255, 0.82);
+  color: rgba(255, 255, 255, 0.9);
   font-size: var(--font-size-small);
   line-height: 1.5;
 }
 
 .field-error {
   margin: 6px 0 0;
-  color: var(--error);
+  color: rgba(var(--error-rgb), 0.95);
   font-size: var(--font-size-small);
   line-height: 1.4;
+  font-weight: 600;
+}
+
+.ops-scope .field-hint {
+  color: rgba(15, 23, 42, 0.68);
+}
+
+.ops-scope .field-error {
+  color: rgba(var(--error-rgb), 0.9);
 }
 
 .field.has-error input,
@@ -1881,6 +1919,109 @@ textarea:-webkit-autofill {
   font-size: var(--font-size-small);      /* 14px */
 }
 
+.public-footer {
+  margin-top: 22px;
+  display: grid;
+  gap: 14px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.public-footer__grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  align-items: start;
+}
+
+.public-footer__title {
+  margin: 0;
+  font-weight: 800;
+  color: #ffffff;
+}
+
+.public-footer__text {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.public-footer__label {
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.public-footer__links,
+.public-footer__contact {
+  display: grid;
+  gap: 8px;
+}
+
+.public-footer__link-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.public-footer__link-row a,
+.public-footer__contact a {
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 600;
+}
+
+.public-footer__meta {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+.legal-card {
+  gap: 16px;
+}
+
+.legal-stack {
+  display: grid;
+  gap: 16px;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.legal-stack h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #ffffff;
+}
+
+.legal-stack p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.legal-list {
+  margin: 8px 0 0 18px;
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.legal-list li {
+  margin-bottom: 6px;
+}
+
+.legal-contact {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.legal-contact a {
+  color: #ffffff;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  font-weight: 600;
+}
+
 @media (max-width: 1080px) {
   .board {
     min-height: auto;
@@ -1959,6 +2100,12 @@ textarea:-webkit-autofill {
 
   .lead {
     font-size: calc(var(--font-size-lead) - 1px);
+  }
+
+  .field-hint,
+  .field-error {
+    font-size: 15px;
+    line-height: 1.5;
   }
 
   .actions {
@@ -3096,8 +3243,8 @@ textarea:-webkit-autofill {
 }
 
 .ops-scope .founder-table thead th {
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.35));
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.4));
+  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
   color: var(--ink);
   backdrop-filter: blur(12px);
 }
@@ -3151,17 +3298,25 @@ textarea:-webkit-autofill {
 .founder-table td {
   padding: 12px;
   text-align: left;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
 }
 
 .founder-table thead th {
   position: sticky;
   top: 0;
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.35));
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.4));
   backdrop-filter: blur(12px);
   z-index: 1;
   font-weight: 600;
   color: var(--ink);
+}
+
+.founder-table tbody tr:nth-child(odd) td {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.founder-table tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .founder-table tr:hover td {
@@ -4110,7 +4265,7 @@ textarea:-webkit-autofill {
   color: rgba(255, 255, 255, 0.92);
 }
 
-.founderField input:focus {
+.founderField input:focus-visible {
   outline: none;
   background: inherit;
   border-color: rgba(var(--accent-primary-rgb), 0.55);
@@ -4127,16 +4282,11 @@ textarea:-webkit-autofill {
   color: #ffffff;
 }
 
-.founder-login-screen input:focus {
+.founder-login-screen input:focus-visible {
   background: inherit;
   border-color: rgba(var(--accent-primary-rgb), 0.55);
   box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.14);
   transform: none;
-}
-
-.founder-login-screen input:focus-visible {
-  border-color: rgba(var(--accent-primary-rgb), 0.55);
-  box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.14);
 }
 
 .founder-login-field.has-error input {
@@ -4158,7 +4308,7 @@ textarea:-webkit-autofill {
 
 .founder-login-screen input:-webkit-autofill,
 .founder-login-screen input:-webkit-autofill:hover,
-.founder-login-screen input:-webkit-autofill:focus {
+.founder-login-screen input:-webkit-autofill:focus-visible {
   -webkit-text-fill-color: rgba(255, 255, 255, 0.92);
   transition: background-color 9999s ease-in-out 0s;
   box-shadow: 0 0 0 1000px transparent inset !important;
@@ -4209,7 +4359,6 @@ textarea:-webkit-autofill {
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
 }
 
-.founder-login-card .founderLoginBtn:focus,
 .founder-login-card .founderLoginBtn:focus-visible {
   outline: none !important;
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22), 0 0 0 3px rgba(var(--accent-primary-rgb), 0.25);
@@ -4253,7 +4402,6 @@ textarea:-webkit-autofill {
 }
 
 /* Founder login: remove the big global focus ring */
-.ops-scope .page-card input:focus,
 .ops-scope .page-card input:focus-visible {
   outline: none !important;
   box-shadow: none !important;
@@ -4267,7 +4415,6 @@ textarea:-webkit-autofill {
 }
 
 /* Founder login ONLY: kill the big blue focus ring */
-.founder-auth input:focus,
 .founder-auth input:focus-visible {
   outline: none !important;
   box-shadow: none !important;
@@ -4275,17 +4422,13 @@ textarea:-webkit-autofill {
 }
 
 /* Optional: keep a tiny focus indicator (underline only) */
-.founder-auth input:focus,
 .founder-auth input:focus-visible {
   box-shadow: inset 0 -2px 0 rgba(var(--accent-primary-rgb), 0.55) !important;
 }
 
 /* Founder login ONLY: kill the global blue focus ring */
-section[aria-labelledby="founder-login-title"] input:focus,
 section[aria-labelledby="founder-login-title"] input:focus-visible,
-section[aria-labelledby="founder-login-title"] select:focus,
 section[aria-labelledby="founder-login-title"] select:focus-visible,
-section[aria-labelledby="founder-login-title"] textarea:focus,
 section[aria-labelledby="founder-login-title"] textarea:focus-visible {
   outline: none !important;
   box-shadow: none !important;
@@ -4293,7 +4436,6 @@ section[aria-labelledby="founder-login-title"] textarea:focus-visible {
 }
 
 /* Optional: keep a subtle focus indication (border only, no glow) */
-section[aria-labelledby="founder-login-title"] input:focus,
 section[aria-labelledby="founder-login-title"] input:focus-visible {
   border-color: rgba(var(--accent-primary-rgb), 0.55) !important;
 }
@@ -4301,4 +4443,58 @@ section[aria-labelledby="founder-login-title"] input:focus-visible {
 section[aria-labelledby="founder-login-title"] .field:focus-within {
   box-shadow: none !important;
   outline: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .title-animate,
+  .role-select__trigger::before,
+  .role-select__option,
+  .role-select__option::before,
+  .role-select__option:hover::before,
+  .role-select__option:focus-visible::before,
+  .ripple,
+  .founder-skeleton,
+  .loading-indicator,
+  .portal-state__icon--loading {
+    animation: none !important;
+  }
+
+  .ripple {
+    display: none;
+  }
+
+  .role-select__option {
+    opacity: 1;
+    transform: none;
+  }
+
+  .role-select__option:hover,
+  .role-select__option:focus-visible {
+    transform: none;
+  }
+
+  .role-select__option::before {
+    transition: none;
+  }
+
+  .route-loading__animation {
+    width: 120px;
+    height: 120px;
+    display: grid;
+    place-items: center;
+  }
+
+  .route-loading__animation::before {
+    content: "";
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 255, 255, 0.45);
+    box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.08);
+  }
+
+  .route-loading .wrapper,
+  .route-loading .box {
+    display: none;
+  }
 }

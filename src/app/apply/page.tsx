@@ -1,9 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { ChangeEvent, FormEvent, useRef, useState } from 'react';
+import { ChangeEvent, FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { AppShell } from '@/components/AppShell';
-import { Select } from '@/components/Select';
+import { PublicFooter } from '@/components/PublicFooter';
+import { usePersistedLanguage } from '@/lib/usePersistedLanguage';
 
 const ALLOWED_RESUME_TYPES = [
   'application/pdf',
@@ -26,12 +27,170 @@ const IRCRN_OPTIONS = parseList(process.env.NEXT_PUBLIC_IRCRN_OPTIONS);
 
 type Status = 'idle' | 'submitting' | 'ok' | 'error';
 
-export default function ApplyPage() {
-  const hasCandidateIdOptions = CANDIDATE_ID_OPTIONS.length > 0;
-  const hasICrnOptions = IRCRN_OPTIONS.length > 0;
+type ComboInputProps = {
+  id: string;
+  name: string;
+  value: string;
+  placeholder?: string;
+  options: string[];
+  required?: boolean;
+  ariaDescribedBy?: string;
+  ariaInvalid?: boolean;
+  onChange: (value: string) => void;
+};
 
-  const [useManualCandidateId, setUseManualCandidateId] = useState(!hasCandidateIdOptions);
-  const [useManualICrn, setUseManualICrn] = useState(!hasICrnOptions);
+function ComboInput({
+  id,
+  name,
+  value,
+  placeholder,
+  options,
+  required,
+  ariaDescribedBy,
+  ariaInvalid,
+  onChange,
+}: ComboInputProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const listId = `${id}-listbox`;
+
+  const filteredOptions = useMemo(() => {
+    if (!options.length) return [];
+    const query = value.trim().toLowerCase();
+    if (!query) return options;
+    return options.filter((option) => option.toLowerCase().includes(query));
+  }, [options, value]);
+
+  const visibleOptions = useMemo(() => filteredOptions.slice(0, 8), [filteredOptions]);
+  const activeOptionId =
+    isOpen && visibleOptions.length > 0 ? `${id}-option-${highlightedIndex}` : undefined;
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (highlightedIndex >= visibleOptions.length) {
+      setHighlightedIndex(0);
+    }
+  }, [highlightedIndex, isOpen, visibleOptions.length]);
+
+  const openDropdown = () => {
+    if (!options.length) return;
+    setIsOpen(true);
+    setHighlightedIndex(0);
+  };
+
+  const closeDropdown = () => {
+    setIsOpen(false);
+  };
+
+  const selectOption = (option: string) => {
+    onChange(option);
+    closeDropdown();
+    requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    const hasVisibleOptions = visibleOptions.length > 0;
+
+    switch (event.key) {
+      case 'ArrowDown':
+        if (!hasVisibleOptions) {
+          openDropdown();
+          return;
+        }
+        event.preventDefault();
+        if (!isOpen) {
+          openDropdown();
+          return;
+        }
+        setHighlightedIndex((current) => (current + 1) % visibleOptions.length);
+        break;
+      case 'ArrowUp':
+        if (!hasVisibleOptions) {
+          openDropdown();
+          return;
+        }
+        event.preventDefault();
+        if (!isOpen) {
+          openDropdown();
+          return;
+        }
+        setHighlightedIndex((current) =>
+          current - 1 < 0 ? visibleOptions.length - 1 : current - 1,
+        );
+        break;
+      case 'Enter':
+        if (isOpen && hasVisibleOptions) {
+          event.preventDefault();
+          selectOption(visibleOptions[highlightedIndex]);
+        }
+        break;
+      case 'Escape':
+        closeDropdown();
+        break;
+      default:
+        break;
+    }
+  };
+
+  return (
+    <div className="combo-field">
+      <input
+        ref={inputRef}
+        id={id}
+        name={name}
+        type="text"
+        required={required}
+        placeholder={placeholder}
+        value={value}
+        autoComplete="off"
+        className="combo-input"
+        role="combobox"
+        aria-autocomplete="list"
+        aria-expanded={isOpen && visibleOptions.length > 0}
+        aria-controls={listId}
+        aria-activedescendant={activeOptionId}
+        aria-describedby={ariaDescribedBy}
+        aria-invalid={ariaInvalid}
+        onFocus={openDropdown}
+        onBlur={closeDropdown}
+        onChange={(event) => {
+          onChange(event.target.value);
+          openDropdown();
+        }}
+        onKeyDown={handleKeyDown}
+      />
+      {isOpen && visibleOptions.length > 0 && (
+        <ul id={listId} className="select-dropdown combo-dropdown" role="listbox">
+          {visibleOptions.map((option, index) => (
+            <li
+              key={`${option}-${index}`}
+              id={`${id}-option-${index}`}
+              role="option"
+              aria-selected={option === value}
+              className={`select-option ${index === highlightedIndex ? 'is-highlighted' : ''} ${
+                option === value ? 'is-selected' : ''
+              }`}
+              onMouseEnter={() => setHighlightedIndex(index)}
+              onMouseDown={(event) => {
+                event.preventDefault();
+                selectOption(option);
+              }}
+            >
+              {option}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+export default function ApplyPage() {
+  usePersistedLanguage();
+  const candidateIdOptions = CANDIDATE_ID_OPTIONS;
+  const iCrnOptions = IRCRN_OPTIONS;
+
   const [candidateId, setCandidateId] = useState('');
   const [candidateKey, setCandidateKey] = useState('');
   const [iCrn, setICrn] = useState('');
@@ -44,11 +203,6 @@ export default function ApplyPage() {
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const resumeInputRef = useRef<HTMLInputElement | null>(null);
-
-  const candidateIdSelectOptions = hasCandidateIdOptions
-    ? CANDIDATE_ID_OPTIONS.map((value) => ({ value, label: value }))
-    : [];
-  const iCrnSelectOptions = hasICrnOptions ? IRCRN_OPTIONS.map((value) => ({ value, label: value })) : [];
 
   const fieldClass = (name: string) => `field ${errors[name] ? 'has-error' : ''}`.trim();
 
@@ -72,8 +226,6 @@ export default function ApplyPage() {
     setPosition('');
     setReferenceNumber('');
     setResumeName('');
-    setUseManualCandidateId(!hasCandidateIdOptions);
-    setUseManualICrn(!hasICrnOptions);
     if (resumeInputRef.current) resumeInputRef.current.value = '';
   };
 
@@ -242,57 +394,21 @@ export default function ApplyPage() {
               <div className={fieldClass('candidateId')}>
                 <div className="field-label-row">
                   <label htmlFor="candidate-id">Your iRAIN *</label>
-                  {hasCandidateIdOptions && (
-                    <button
-                      type="button"
-                      className="inline-toggle"
-                      onClick={() => {
-                        setUseManualCandidateId((prev) => !prev);
-                        setCandidateId('');
-                        clearError('candidateId');
-                      }}
-                    >
-                      {useManualCandidateId ? 'Choose from list' : 'Type it instead'}
-                    </button>
-                  )}
                 </div>
-                {hasCandidateIdOptions && !useManualCandidateId ? (
-                  <Select
-                    id="candidate-id"
-                    name="candidate-id"
-                    options={[...candidateIdSelectOptions, { value: '__manual__', label: 'Type it instead' }]}
-                    placeholder="Choose"
-                    required
-                    value={candidateId}
-                    ariaDescribedBy="candidate-id-error"
-                    ariaInvalid={Boolean(errors.candidateId)}
-                    onChange={(value) => {
-                      if (value === '__manual__') {
-                        setUseManualCandidateId(true);
-                        setCandidateId('');
-                        return;
-                      }
-                      const next = Array.isArray(value) ? value[0] ?? '' : value ?? '';
-                      setCandidateId(next);
-                      clearError('candidateId');
-                    }}
-                  />
-                ) : (
-                  <input
-                    id="candidate-id"
-                    name="candidate-id"
-                    type="text"
-                    required
-                    placeholder="Enter your iRAIN (legacy CAND-... also accepted)"
-                    value={candidateId}
-                    aria-invalid={Boolean(errors.candidateId)}
-                    aria-describedby="candidate-id-error"
-                    onChange={(event) => {
-                      setCandidateId(event.target.value);
-                      clearError('candidateId');
-                    }}
-                  />
-                )}
+                <ComboInput
+                  id="candidate-id"
+                  name="candidate-id"
+                  options={candidateIdOptions}
+                  required
+                  value={candidateId}
+                  placeholder="Enter your iRAIN (legacy CAND-... also accepted)"
+                  ariaDescribedBy="candidate-id-error"
+                  ariaInvalid={Boolean(errors.candidateId)}
+                  onChange={(nextValue) => {
+                    setCandidateId(nextValue);
+                    clearError('candidateId');
+                  }}
+                />
                 <p className="field-error" id="candidate-id-error" role="alert" aria-live="polite">
                   {errors.candidateId}
                 </p>
@@ -322,57 +438,21 @@ export default function ApplyPage() {
               <div className={fieldClass('iCrn')}>
                 <div className="field-label-row">
                   <label htmlFor="ircrn">Enter the iRCRN of the company you wish to join *</label>
-                  {hasICrnOptions && (
-                    <button
-                      type="button"
-                      className="inline-toggle"
-                      onClick={() => {
-                        setUseManualICrn((prev) => !prev);
-                        setICrn('');
-                        clearError('iCrn');
-                      }}
-                    >
-                      {useManualICrn ? 'Choose from list' : 'Type it instead'}
-                    </button>
-                  )}
                 </div>
-                {hasICrnOptions && !useManualICrn ? (
-                  <Select
-                    id="ircrn"
-                    name="ircrn"
-                    options={[...iCrnSelectOptions, { value: '__manual__', label: 'Type it instead' }]}
-                    placeholder="Choose"
-                    required
-                    value={iCrn}
-                    ariaDescribedBy="ircrn-error"
-                    ariaInvalid={Boolean(errors.iCrn)}
-                    onChange={(value) => {
-                      if (value === '__manual__') {
-                        setUseManualICrn(true);
-                        setICrn('');
-                        return;
-                      }
-                      const next = Array.isArray(value) ? value[0] ?? '' : value ?? '';
-                      setICrn(next);
-                      clearError('iCrn');
-                    }}
-                  />
-                ) : (
-                  <input
-                    id="ircrn"
-                    name="ircrn"
-                    type="text"
-                    required
-                    placeholder="Enter the iRCRN"
-                    value={iCrn}
-                    aria-invalid={Boolean(errors.iCrn)}
-                    aria-describedby="ircrn-error"
-                    onChange={(event) => {
-                      setICrn(event.target.value);
-                      clearError('iCrn');
-                    }}
-                  />
-                )}
+                <ComboInput
+                  id="ircrn"
+                  name="ircrn"
+                  options={iCrnOptions}
+                  required
+                  value={iCrn}
+                  placeholder="Enter the iRCRN"
+                  ariaDescribedBy="ircrn-error"
+                  ariaInvalid={Boolean(errors.iCrn)}
+                  onChange={(nextValue) => {
+                    setICrn(nextValue);
+                    clearError('iCrn');
+                  }}
+                />
                 <p className="field-error" id="ircrn-error" role="alert" aria-live="polite">
                   {errors.iCrn}
                 </p>
@@ -472,6 +552,7 @@ export default function ApplyPage() {
           </form>
         </section>
       </main>
+      <PublicFooter />
     </AppShell>
   );
 }

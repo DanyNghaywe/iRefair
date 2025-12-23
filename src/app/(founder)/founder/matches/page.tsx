@@ -23,6 +23,7 @@ type MatchRecord = {
 };
 
 const stageOptions = ["", "Draft", "Intro Sent", "Interviewing", "Offer", "Closed"];
+const matchCreateEnabled = (process.env.NEXT_PUBLIC_ENABLE_MATCH_CREATE || "").toLowerCase() === "true";
 
 export default function MatchesPage() {
   const [items, setItems] = useState<MatchRecord[]>([]);
@@ -196,7 +197,7 @@ export default function MatchesPage() {
     };
   }, [showModal]);
 
-  const modal = mounted && showModal
+  const modal = matchCreateEnabled && mounted && showModal
     ? createPortal(
         <div ref={modalRef} className="founder-modal modal-root is-open" role="dialog" aria-modal="true">
           <div className="founder-modal__overlay modal-backdrop" onClick={() => setShowModal(false)} />
@@ -285,9 +286,13 @@ export default function MatchesPage() {
                   </option>
                 ))}
             </select>
-            <ActionBtn as="button" variant="primary" type="button" onClick={() => setShowModal(true)}>
-              Create match
-            </ActionBtn>
+            {matchCreateEnabled ? (
+              <ActionBtn as="button" variant="primary" type="button" onClick={() => setShowModal(true)}>
+                Create match
+              </ActionBtn>
+            ) : (
+              <span className="founder-card__meta">Create match: disabled</span>
+            )}
           </div>
         }
       />

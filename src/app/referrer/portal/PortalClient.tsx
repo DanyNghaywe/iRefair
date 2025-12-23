@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 
+import { ActionBtn } from "@/components/ActionBtn";
+
 type PortalItem = {
   id: string;
   candidateId: string;
@@ -102,124 +104,187 @@ export default function PortalClient() {
     return [...data.items].sort((a, b) => a.id.localeCompare(b.id));
   }, [data]);
 
+  const header = (
+    <section className="card page-card portal-card" aria-labelledby="portal-title">
+      <div className="card-header portal-header">
+        <div className="portal-header__copy">
+          <p className="eyebrow">Referrer portal</p>
+          <h2 id="portal-title">Track your referrals</h2>
+          <p className="lead">Review candidates, download CVs, and send quick A-G feedback.</p>
+        </div>
+        {data ? (
+          <dl className="portal-meta">
+            <div className="portal-meta__item">
+              <dt>Referrer</dt>
+              <dd>
+                {data.referrer.name || "Referrer"} - {data.referrer.irref}
+              </dd>
+            </div>
+            <div className="portal-meta__item">
+              <dt>Email</dt>
+              <dd>{data.referrer.email || "No email on file"}</dd>
+            </div>
+            {data.referrer.company ? (
+              <div className="portal-meta__item">
+                <dt>Company</dt>
+                <dd>{data.referrer.company}</dd>
+              </div>
+            ) : null}
+            <div className="portal-meta__item">
+              <dt>Total</dt>
+              <dd>{data.total}</dd>
+            </div>
+          </dl>
+        ) : null}
+      </div>
+    </section>
+  );
+
   if (loading) {
-    return <div style={{ padding: "24px" }}>Loading portal...</div>;
+    return (
+      <div className="portal-stack">
+        {header}
+        <section className="card page-card portal-card portal-state-card" aria-live="polite">
+          <div className="portal-state">
+            <div className="portal-state__icon portal-state__icon--loading" aria-hidden="true" />
+            <div>
+              <p className="portal-state__title">Loading portal</p>
+              <p className="portal-state__message">Fetching your referrals and status updates.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   if (error) {
     return (
-      <div style={{ padding: "24px", color: "#b00020" }}>
-        <p>Error: {error}</p>
+      <div className="portal-stack">
+        {header}
+        <section className="card page-card portal-card portal-state-card portal-state-card--error" role="alert">
+          <div className="portal-state">
+            <div className="portal-state__icon portal-state__icon--error" aria-hidden="true" />
+            <div>
+              <p className="portal-state__title">We could not load the portal</p>
+              <p className="portal-state__message">Error: {error}</p>
+            </div>
+          </div>
+        </section>
       </div>
     );
   }
 
   if (!data) {
-    return <div style={{ padding: "24px" }}>No data available.</div>;
+    return (
+      <div className="portal-stack">
+        {header}
+        <section className="card page-card portal-card portal-state-card">
+          <div className="portal-state">
+            <div className="portal-state__icon" aria-hidden="true" />
+            <div>
+              <p className="portal-state__title">No data available</p>
+              <p className="portal-state__message">Please refresh to try again.</p>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
   }
 
   return (
-    <div style={{ padding: "24px", maxWidth: "1100px", margin: "0 auto", color: "#0f172a" }}>
-      <header style={{ marginBottom: "20px" }}>
-        <h1 style={{ margin: 0, fontSize: "24px", fontWeight: 700 }}>Referrer portal</h1>
-        <p style={{ margin: "4px 0 0 0", color: "#475569" }}>
-          {data.referrer.name || "Referrer"} - {data.referrer.irref} -{" "}
-          {data.referrer.email || "No email"}
-        </p>
-        {data.referrer.company ? (
-          <p style={{ margin: "4px 0 0 0", color: "#475569" }}>Company: {data.referrer.company}</p>
-        ) : null}
-      </header>
-
-      <div style={{ overflowX: "auto", border: "1px solid #e2e8f0", borderRadius: "12px" }}>
-        <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "780px" }}>
-          <thead style={{ background: "#f8fafc" }}>
-            <tr>
-              <th style={th}>Candidate</th>
-              <th style={th}>Position / iRCRN</th>
-              <th style={th}>CV</th>
-              <th style={th}>Status</th>
-              <th style={th}>Feedback (A-G)</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedItems.map((item) => (
-              <tr key={item.id} style={{ borderTop: "1px solid #e2e8f0" }}>
-                <td style={td}>
-                  <div style={{ fontWeight: 600 }}>{item.candidateName || item.candidateId}</div>
-                  <div style={{ fontSize: "12px", color: "#64748b" }}>{item.candidateEmail}</div>
-                  <div style={{ fontSize: "12px", color: "#64748b" }}>{item.candidatePhone}</div>
-                  <div style={{ fontSize: "12px", color: "#94a3b8" }}>App ID: {item.id}</div>
-                </td>
-                <td style={td}>
-                  <div style={{ fontWeight: 600 }}>{item.position}</div>
-                  <div style={{ fontSize: "12px", color: "#64748b" }}>
-                    iRCRN: {item.iCrn || "-"}
-                  </div>
-                </td>
-                <td style={td}>
-                  {item.resumeDownloadUrl ? (
-                    <a
-                      href={item.resumeDownloadUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{ color: "#2563eb" }}
-                    >
-                      Download CV
-                    </a>
+    <div className="portal-stack">
+      {header}
+      <section className="card page-card portal-card portal-table-card">
+        <div className="portal-table-header">
+          <div>
+            <p className="portal-table-title">Applications</p>
+            <p className="portal-table-sub">{sortedItems.length} active referrals</p>
+          </div>
+          <div className="portal-table-meta">
+            <span className="portal-count-pill">{data.total} total</span>
+          </div>
+        </div>
+        <div className="portal-table-wrapper">
+          <div className="founder-table portal-table">
+            <div className="founder-table__container portal-table__scroll">
+              <table>
+                <caption className="sr-only">Referrer portal applications</caption>
+                <thead>
+                  <tr>
+                    <th className="portal-col-candidate">Candidate</th>
+                    <th className="portal-col-position">Position / iRCRN</th>
+                    <th className="portal-col-cv">CV</th>
+                    <th className="portal-col-status">Status</th>
+                    <th className="portal-col-feedback">Feedback (A-G)</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedItems.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="portal-table-empty">
+                        <div className="portal-empty">
+                          <div className="portal-empty__icon" aria-hidden="true" />
+                          <p className="portal-empty__title">No applications yet</p>
+                          <p className="portal-empty__message">We'll list new referrals as soon as they arrive.</p>
+                        </div>
+                      </td>
+                    </tr>
                   ) : (
-                    <span style={{ color: "#94a3b8" }}>No CV available</span>
+                    sortedItems.map((item) => (
+                      <tr key={item.id}>
+                        <td className="portal-col-candidate">
+                          <div className="portal-cell-title">{item.candidateName || item.candidateId}</div>
+                          <div className="portal-cell-sub">{item.candidateEmail}</div>
+                          <div className="portal-cell-sub">{item.candidatePhone}</div>
+                          <div className="portal-cell-meta">App ID: {item.id}</div>
+                        </td>
+                        <td className="portal-col-position">
+                          <div className="portal-cell-title">{item.position}</div>
+                          <div className="portal-cell-sub">iRCRN: {item.iCrn || "-"}</div>
+                        </td>
+                        <td className="portal-col-cv">
+                          {item.resumeDownloadUrl ? (
+                            <a href={item.resumeDownloadUrl} target="_blank" rel="noreferrer" className="portal-link">
+                              Download CV
+                            </a>
+                          ) : (
+                            <span className="portal-muted">No CV available</span>
+                          )}
+                        </td>
+                        <td className="portal-col-status">
+                          <div className="portal-cell-title">{item.status || "-"}</div>
+                          <div className="portal-cell-meta">{item.ownerNotes || ""}</div>
+                        </td>
+                        <td className="portal-col-feedback">
+                          <div className="portal-actions">
+                            {actions.map((action) => {
+                              const actionLabel = `${action.code} - ${action.label}. ${action.hint}`;
+                              return (
+                                <ActionBtn
+                                  key={action.code}
+                                  size="sm"
+                                  variant="ghost"
+                                  className="pill portal-action-btn"
+                                  onClick={() => handleFeedback(item.id, action.code)}
+                                  disabled={submittingId === item.id}
+                                  title={actionLabel}
+                                  aria-label={actionLabel}
+                                >
+                                  {action.code}
+                                </ActionBtn>
+                              );
+                            })}
+                          </div>
+                        </td>
+                      </tr>
+                    ))
                   )}
-                </td>
-                <td style={td}>
-                  <div style={{ fontWeight: 600 }}>{item.status || "-"}</div>
-                  <div style={{ fontSize: "12px", color: "#94a3b8" }}>{item.ownerNotes || ""}</div>
-                </td>
-                <td style={td}>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-                    {actions.map((action) => (
-                      <button
-                        key={action.code}
-                        onClick={() => handleFeedback(item.id, action.code)}
-                        disabled={submittingId === item.id}
-                        style={{
-                          padding: "6px 10px",
-                          borderRadius: "8px",
-                          border: "1px solid #cbd5e1",
-                          background: submittingId === item.id ? "#e2e8f0" : "#fff",
-                          cursor: "pointer",
-                          fontSize: "12px",
-                          minWidth: "46px",
-                        }}
-                        title={`${action.code} - ${action.label}. ${action.hint}`}
-                      >
-                        {action.code}
-                      </button>
-                    ))}
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      {data.items.length === 0 ? <p style={{ marginTop: "12px", color: "#94a3b8" }}>No applications yet.</p> : null}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
-
-const th: React.CSSProperties = {
-  textAlign: "left",
-  padding: "12px",
-  fontSize: "13px",
-  color: "#475569",
-  borderBottom: "1px solid #e2e8f0",
-  fontWeight: 700,
-};
-
-const td: React.CSSProperties = {
-  padding: "12px",
-  verticalAlign: "top",
-  fontSize: "13px",
-  color: "#0f172a",
-};

@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { FormEvent, useEffect, useRef, useState } from 'react';
+import { FormEvent, useRef, useState } from 'react';
 import { AppShell } from '@/components/AppShell';
+import { PublicFooter } from '@/components/PublicFooter';
 import { Select } from '@/components/Select';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 import { countryOptions } from '@/lib/countries';
+import { usePersistedLanguage } from '@/lib/usePersistedLanguage';
 
 type Language = 'en' | 'fr';
 
@@ -295,7 +297,7 @@ export default function ReferrerPage() {
   const { startNavigation } = useNavigationLoader();
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
-  const [language, setLanguage] = useState<Language>('en');
+  const { language, setLanguage, withLanguage } = usePersistedLanguage();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const formRef = useRef<HTMLFormElement | null>(null);
   const linkedinInputRef = useRef<HTMLInputElement | null>(null);
@@ -304,10 +306,8 @@ export default function ReferrerPage() {
   const [workTypeSelection, setWorkTypeSelection] = useState('');
   const [iRref, setIRref] = useState<string | null>(null);
   const t = translations[language];
-
-  useEffect(() => {
-    document.documentElement.lang = language;
-  }, [language]);
+  const founderMeetLink = (process.env.FOUNDER_MEET_LINK || '').trim();
+  const showFounderMeetCta = Boolean(founderMeetLink);
 
   const fieldClass = (base: string, field: string) => `${base}${errors[field] ? ' has-error' : ''}`;
 
@@ -521,7 +521,7 @@ export default function ReferrerPage() {
             <span className="role-switch__text">
               {t.roleSwitch.prompt}{' '}
               <Link
-                href="/candidate"
+                href={withLanguage('/candidate')}
                 onClick={() => {
                   startNavigation('/candidate');
                 }}
@@ -573,18 +573,13 @@ export default function ReferrerPage() {
 
                 <p className="success-founder">{t.success.founderIntro}</p>
 
-                <div className="success-founder-actions">
-                  <button
-                    type="button"
-                    className="btn secondary"
-                    disabled
-                    aria-disabled="true"
-                    title={t.success.founderCtaNote}
-                  >
-                    {t.success.founderCtaLabel}
-                  </button>
-                  <p className="success-founder-note">{t.success.founderCtaNote}</p>
-                </div>
+                {showFounderMeetCta ? (
+                  <div className="success-founder-actions">
+                    <Link href={founderMeetLink} className="btn ghost" target="_blank" rel="noreferrer">
+                      {t.success.founderCtaLabel}
+                    </Link>
+                  </div>
+                ) : null}
               </section>
             )}
 
@@ -868,7 +863,8 @@ export default function ReferrerPage() {
               </div>
             </form>
           </section>
-        </main>
-      </AppShell>
-    );
+      </main>
+      <PublicFooter />
+    </AppShell>
+  );
 }

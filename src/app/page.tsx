@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/AppShell';
+import { PublicFooter } from '@/components/PublicFooter';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 
 type RoleOption = {
@@ -262,6 +263,7 @@ export default function Home() {
           </div>
         </section>
       </main>
+      <PublicFooter />
     </AppShell>
   );
 }

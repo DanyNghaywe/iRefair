@@ -142,12 +142,12 @@
   transition: 0.18s cubic-bezier(0.25, 0.8, 0.4, 1);
 }
 
-.founder-login-field input:focus {
+.founder-login-field input:focus-visible {
   border-bottom-color: #ffffff;
   box-shadow: 0 12px 26px rgba(6, 55, 112, 0.32);
 }
 
-.founder-login-field input:focus ~ label,
+.founder-login-field input:focus-visible ~ label,
 .founder-login-field input:not(:placeholder-shown) ~ label {
   top: -16px;
   font-size: 0.82rem;
@@ -174,7 +174,7 @@
 
 .founder-login-field input:-webkit-autofill,
 .founder-login-field input:-webkit-autofill:hover,
-.founder-login-field input:-webkit-autofill:focus {
+.founder-login-field input:-webkit-autofill:focus-visible {
   -webkit-text-fill-color: #ffffff;
   transition: background-color 9999s ease-in-out 0s;
   background-color: transparent !important;

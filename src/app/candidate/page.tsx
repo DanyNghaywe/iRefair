@@ -1,11 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, FormEvent, useRef, useState } from 'react';
 import { AppShell } from '@/components/AppShell';
+import { PublicFooter } from '@/components/PublicFooter';
 import { Select } from '@/components/Select';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 import { countryOptions } from '@/lib/countries';
+import { usePersistedLanguage } from '@/lib/usePersistedLanguage';
 
 type Language = 'en' | 'fr';
 
@@ -389,11 +391,11 @@ const translations: Record<
 
 export default function CandidatePage() {
   const { startNavigation } = useNavigationLoader();
+  const { language, setLanguage, withLanguage } = usePersistedLanguage();
   const [resumeName, setResumeName] = useState('');
   const resumeInputRef = useRef<HTMLInputElement | null>(null);
   const linkedinInputRef = useRef<HTMLInputElement | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [language, setLanguage] = useState<Language>('en');
   const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
   const formRef = useRef<HTMLFormElement | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -407,10 +409,6 @@ export default function CandidatePage() {
   const [employmentStatus, setEmploymentStatus] = useState('');
 
   const t = translations[language];
-
-  useEffect(() => {
-    document.documentElement.lang = language;
-  }, [language]);
 
   const fieldClass = (base: string, field: string) => `${base}${errors[field] ? ' has-error' : ''}`;
 
@@ -680,7 +678,7 @@ export default function CandidatePage() {
             <span className="role-switch__text">
               {t.switchText.prompt}{' '}
               <Link
-                href="/referrer"
+                href={withLanguage('/referrer')}
                 onClick={() => {
                   startNavigation('/referrer');
                 }}
@@ -1178,7 +1176,8 @@ export default function CandidatePage() {
               </div>
             </form>
           </section>
-        </main>
-      </AppShell>
-    );
+      </main>
+      <PublicFooter />
+    </AppShell>
+  );
 }
