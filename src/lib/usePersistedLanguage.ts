@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 export type PersistedLanguage = 'en' | 'fr';
 
@@ -20,17 +20,16 @@ const withLanguageParam = (href: string, language: PersistedLanguage) => {
 export function usePersistedLanguage(defaultLanguage: PersistedLanguage = 'en') {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const queryLang = searchParams?.get('lang');
 
   const [language, setLanguageState] = useState<PersistedLanguage>(defaultLanguage);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const stored = window.localStorage.getItem(STORAGE_KEY);
+    const queryLang = new URLSearchParams(window.location.search).get('lang');
     const next = isLanguage(queryLang) ? queryLang : isLanguage(stored) ? stored : defaultLanguage;
     setLanguageState((prev) => (prev === next ? prev : next));
-  }, [defaultLanguage, queryLang]);
+  }, [defaultLanguage, pathname]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -41,13 +40,13 @@ export function usePersistedLanguage(defaultLanguage: PersistedLanguage = 'en') 
   const setLanguage = useCallback(
     (next: PersistedLanguage) => {
       setLanguageState(next);
-      if (!pathname) return;
-      if (queryLang === next) return;
-      const params = new URLSearchParams(searchParams?.toString() || '');
+      if (typeof window === 'undefined' || !pathname) return;
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('lang') === next) return;
       params.set('lang', next);
       router.replace(`${pathname}?${params.toString()}`, { scroll: false });
     },
-    [pathname, queryLang, router, searchParams],
+    [pathname, router],
   );
 
   const withLanguage = useCallback((href: string) => withLanguageParam(href, language), [language]);
