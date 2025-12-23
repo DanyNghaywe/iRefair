@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { callChatGPT, getOpenAIConfig, type ChatMessage } from '@/lib/chatgpt';
+import { requireFounder } from '@/lib/founderAuth';
+import { rateLimit, rateLimitHeaders, RATE_LIMITS } from '@/lib/rateLimit';
 
 const DEFAULT_SYSTEM_PROMPT = 'You are a helpful assistant for iRefair. Keep responses concise and plain text.';
 
@@ -14,6 +16,30 @@ type ChatRequestBody = {
 };
 
 export async function POST(request: NextRequest) {
+  const disabledInProd = ['true', '1', 'yes'].includes((process.env.CHATGPT_PROXY_DISABLED || '').toLowerCase());
+  if (process.env.NODE_ENV === 'production' && disabledInProd) {
+    return NextResponse.json({ ok: false, error: 'ChatGPT proxy is disabled.' }, { status: 403 });
+  }
+
+  const proxySecret = process.env.CHATGPT_PROXY_SECRET;
+  const proxyHeader = request.headers.get('x-irefair-chatgpt-secret')?.trim();
+  const proxyAuthorized = Boolean(proxySecret && proxyHeader && proxyHeader === proxySecret);
+  if (!proxyAuthorized) {
+    try {
+      requireFounder(request);
+    } catch {
+      return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+    }
+  }
+
+  const rate = await rateLimit(request, { keyPrefix: 'chatgpt', ...RATE_LIMITS.chatgpt });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { ok: false, error: 'Too many requests. Please try again shortly.' },
+      { status: 429, headers: rateLimitHeaders(rate) },
+    );
+  }
+
   const statusOnly = request.nextUrl.searchParams.get('statusOnly') === 'true';
   const { configured, model } = getOpenAIConfig();
 
@@ -45,7 +71,12 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true, reply: result.text, model: result.model });
   } catch (error) {
     console.error('ChatGPT call failed', error);
-    const message = error instanceof Error ? error.message : 'Unable to reach ChatGPT.';
+    const message =
+      process.env.NODE_ENV === 'production'
+        ? 'Unable to reach ChatGPT.'
+        : error instanceof Error
+          ? error.message
+          : 'Unable to reach ChatGPT.';
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }

@@ -1,4 +1,4 @@
-import mammoth from 'mammoth';
+import { Worker } from 'worker_threads';
 
 type ScanResult =
   | { ok: true; skipped?: boolean; message?: string }
@@ -8,6 +8,8 @@ const DEFAULT_TIMEOUT_MS = 8000;
 const POLL_DELAY_MS = 2000;
 const MAX_POLLS = 4;
 const MIN_TEXT_LENGTH = 400;
+const MAX_EXTRACTION_CHARS = 200_000;
+const PARSE_TIMEOUT_MS = 3000;
 const KEYWORDS = [
   'experience',
   'education',
@@ -93,50 +95,143 @@ export async function scanBufferForViruses(
   }
 }
 
-async function extractText(buffer: Buffer, mimeType?: string, filename?: string): Promise<string | null> {
+type ExtractResult =
+  | { ok: true; text: string }
+  | { ok: false; skipped?: boolean; error?: string };
+
+const ZIP_SIGNATURES = [
+  Buffer.from([0x50, 0x4b, 0x03, 0x04]),
+  Buffer.from([0x50, 0x4b, 0x05, 0x06]),
+  Buffer.from([0x50, 0x4b, 0x07, 0x08]),
+];
+
+function hasPdfMagic(buffer: Buffer) {
+  return buffer.length >= 4 && buffer.subarray(0, 4).toString('utf8') === '%PDF';
+}
+
+function hasZipMagic(buffer: Buffer) {
+  if (buffer.length < 4) return false;
+  return ZIP_SIGNATURES.some((signature) => buffer.subarray(0, 4).equals(signature));
+}
+
+function hasDocxEntry(buffer: Buffer) {
+  return buffer.includes(Buffer.from('word/document.xml'));
+}
+
+async function extractTextInWorker(
+  buffer: Buffer,
+  kind: 'pdf' | 'docx',
+): Promise<ExtractResult> {
+  const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+
+  return new Promise((resolve) => {
+    let settled = false;
+
+    const worker = new Worker(
+      `
+        const { parentPort, workerData } = require('worker_threads');
+
+        const finish = (payload) => {
+          if (parentPort) parentPort.postMessage(payload);
+        };
+
+        (async () => {
+          const { kind, buffer, maxChars } = workerData;
+          const fileBuffer = Buffer.from(buffer);
+          if (kind === 'pdf') {
+            const pdfParseModule = require('pdf-parse');
+            const pdfParse = typeof pdfParseModule === 'function' ? pdfParseModule : pdfParseModule.default;
+            if (typeof pdfParse !== 'function') {
+              finish({ ok: false, error: 'PDF parsing unavailable.' });
+              return;
+            }
+            const parsed = await pdfParse(fileBuffer);
+            const text = (parsed && parsed.text ? parsed.text : '').slice(0, maxChars);
+            finish({ ok: true, text });
+            return;
+          }
+          if (kind === 'docx') {
+            const mammoth = require('mammoth');
+            const result = await mammoth.extractRawText({ buffer: fileBuffer });
+            const text = (result && result.value ? result.value : '').slice(0, maxChars);
+            finish({ ok: true, text });
+            return;
+          }
+          finish({ ok: false, error: 'Unsupported file type.' });
+        })().catch((error) => {
+          finish({ ok: false, error: error && error.message ? error.message : 'File parsing failed.' });
+        });
+      `,
+      {
+        eval: true,
+        workerData: { buffer: arrayBuffer, kind, maxChars: MAX_EXTRACTION_CHARS },
+      },
+    );
+
+    const finalize = (result: ExtractResult) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      worker.terminate().catch(() => undefined);
+      resolve(result);
+    };
+
+    const timeout = setTimeout(() => {
+      worker
+        .terminate()
+        .catch(() => undefined)
+        .finally(() => {
+          finalize({ ok: false, error: 'File parsing timed out.' });
+        });
+    }, PARSE_TIMEOUT_MS);
+
+    worker.on('message', (message) => {
+      finalize(message as ExtractResult);
+    });
+
+    worker.on('error', (error) => {
+      finalize({ ok: false, error: error?.message || 'File parsing failed.' });
+    });
+
+    worker.on('exit', (code) => {
+      if (settled) return;
+      if (code !== 0) {
+        finalize({ ok: false, error: 'File parsing failed.' });
+      }
+    });
+  });
+}
+
+async function extractText(buffer: Buffer, mimeType?: string, filename?: string): Promise<ExtractResult> {
   const lowerName = filename?.toLowerCase() || '';
   const lowerMime = mimeType?.toLowerCase() || '';
 
   const isPdf = lowerMime.includes('pdf') || lowerName.endsWith('.pdf');
-  const isDocx = lowerMime.includes('openxmlformats-officedocument.wordprocessingml.document') || lowerName.endsWith('.docx');
+  const isDocx =
+    lowerMime.includes('openxmlformats-officedocument.wordprocessingml.document') ||
+    lowerName.endsWith('.docx');
   const isDoc = lowerMime.includes('msword') || lowerName.endsWith('.doc');
 
-  try {
-    if (isPdf) {
-      try {
-        // Require inside to avoid eagerly loading canvas/polyfills
-        const pdfParseModule = require('pdf-parse') as {
-          default?: (data: Buffer) => Promise<{ text: string }>;
-        };
-        const pdfParse =
-          typeof pdfParseModule === 'function'
-            ? (pdfParseModule as (data: Buffer) => Promise<{ text: string }>)
-            : pdfParseModule?.default;
-
-        if (typeof pdfParse !== 'function') return null;
-        const parsed = await pdfParse(buffer);
-        return parsed?.text || '';
-      } catch (error) {
-        console.warn('PDF parse unavailable; skipping PDF text extraction', error);
-        return null;
-      }
+  if (isPdf) {
+    if (!hasPdfMagic(buffer)) {
+      return { ok: false, error: 'Invalid PDF file.' };
     }
-
-    if (isDocx) {
-      const result = await mammoth.extractRawText({ buffer });
-      return result.value || '';
-    }
-
-    if (isDoc) {
-      // Legacy .doc not supported for text extraction here.
-      return null;
-    }
-  } catch (error) {
-    console.error('Resume text extraction failed', { mimeType, filename, error });
-    return null;
+    return extractTextInWorker(buffer, 'pdf');
   }
 
-  return null;
+  if (isDocx) {
+    if (!hasZipMagic(buffer) || !hasDocxEntry(buffer)) {
+      return { ok: false, error: 'Invalid DOCX file.' };
+    }
+    return extractTextInWorker(buffer, 'docx');
+  }
+
+  if (isDoc) {
+    // Legacy .doc not supported for text extraction here.
+    return { ok: false, skipped: true };
+  }
+
+  return { ok: false, skipped: true };
 }
 
 export async function ensureResumeLooksLikeCv(
@@ -144,7 +239,20 @@ export async function ensureResumeLooksLikeCv(
   mimeType?: string,
   filename?: string,
 ): Promise<ScanResult> {
-  const text = await extractText(buffer, mimeType, filename);
+  const extraction = await extractText(buffer, mimeType, filename);
+  if (!extraction.ok) {
+    if (extraction.skipped) {
+      console.warn('Resume text extraction unavailable; skipping CV heuristic');
+      return {
+        ok: true,
+        skipped: true,
+        message: 'Text extraction unavailable; CV heuristic skipped.',
+      };
+    }
+    return { ok: false, message: extraction.error || 'Unable to read resume.' };
+  }
+
+  const text = extraction.text;
   if (!text) {
     console.warn('Resume text extraction unavailable; skipping CV heuristic');
     return {

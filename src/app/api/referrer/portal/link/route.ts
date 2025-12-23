@@ -2,9 +2,16 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
 import { sendMail } from '@/lib/mailer';
-import { getReferrerByIrref } from '@/lib/sheets';
-import { createReferrerToken } from '@/lib/referrerPortalToken';
+import {
+  REFERRER_PORTAL_TOKEN_VERSION_HEADER,
+  REFERRER_SHEET_NAME,
+  ensureColumns,
+  getReferrerByIrref,
+  updateRowById,
+} from '@/lib/sheets';
+import { createReferrerToken, normalizePortalTokenVersion } from '@/lib/referrerPortalToken';
 import { jobOpeningsUrl } from '@/lib/urls';
+import { escapeHtml, normalizeHttpUrl } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,17 +48,36 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Referrer not found' }, { status: 404 });
   }
 
-  const token = createReferrerToken(irref);
-  const portalLink = `${appBaseUrl()}/referrer/portal?token=${encodeURIComponent(token)}`;
+  const storedVersionRaw = referrer.record.portalTokenVersion?.trim() || '';
+  const portalTokenVersion = normalizePortalTokenVersion(storedVersionRaw);
+  if (!storedVersionRaw || String(portalTokenVersion) !== storedVersionRaw) {
+    await ensureColumns(REFERRER_SHEET_NAME, [REFERRER_PORTAL_TOKEN_VERSION_HEADER]);
+    await updateRowById(REFERRER_SHEET_NAME, 'iRREF', irref, {
+      [REFERRER_PORTAL_TOKEN_VERSION_HEADER]: String(portalTokenVersion),
+    });
+  }
+
+  const token = createReferrerToken(irref, portalTokenVersion);
+  const portalLinkRaw = `${appBaseUrl()}/referrer/portal?token=${encodeURIComponent(token)}`;
+  const portalLink = normalizeHttpUrl(portalLinkRaw);
+  if (!portalLink) {
+    return NextResponse.json({ ok: false, error: 'Invalid portal link URL.' }, { status: 500 });
+  }
+  const openingsLink = normalizeHttpUrl(jobOpeningsUrl);
 
   if (referrer.record.email) {
+    const safeName = escapeHtml(referrer.record.name || 'there');
+    const safePortalLink = escapeHtml(portalLink);
+    const safeOpeningsLink = openingsLink ? escapeHtml(openingsLink) : '';
     const html = `
-      <p>Hi ${referrer.record.name || 'there'},</p>
+      <p>Hi ${safeName},</p>
       <p>Here is your iRefair referrer portal link. It lets you view your candidates, CVs, statuses, and send feedback (A–G).</p>
-      <p><a href="${portalLink}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2f5fb3;color:#fff;text-decoration:none;font-weight:700;">Open your portal</a></p>
-      <p>If the button doesn't work, paste this URL in your browser:<br/><code>${portalLink}</code></p>
+      <p><a href="${safePortalLink}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2f5fb3;color:#fff;text-decoration:none;font-weight:700;">Open your portal</a></p>
+      <p>If the button doesn't work, paste this URL in your browser:<br/><code>${safePortalLink}</code></p>
       <hr/>
-      <p>Current openings (public): <a href="${jobOpeningsUrl}">${jobOpeningsUrl}</a></p>
+      <p>Current openings (public): ${
+        safeOpeningsLink ? `<a href="${safeOpeningsLink}">${safeOpeningsLink}</a>` : 'Not provided yet'
+      }</p>
     `;
     const text = `Hi ${referrer.record.name || 'there'},
 
@@ -60,7 +86,7 @@ ${portalLink}
 
 You can view your candidates, CVs, statuses, and send feedback (A–G).
 
-Openings: ${jobOpeningsUrl}
+Openings: ${openingsLink || 'Not provided yet'}
 `;
     await sendMail({
       to: referrer.record.email,

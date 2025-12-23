@@ -207,6 +207,7 @@ export default function ReferrerReviewPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [portalLink, setPortalLink] = useState("");
   const [portalLoading, setPortalLoading] = useState(false);
+  const [portalRotateLoading, setPortalRotateLoading] = useState(false);
   const [portalMessage, setPortalMessage] = useState<string | null>(null);
   const [portalError, setPortalError] = useState<string | null>(null);
   const [rejectConfirm, setRejectConfirm] = useState(false);
@@ -383,6 +384,31 @@ export default function ReferrerReviewPage() {
       setPortalError("Unable to generate portal link.");
     } finally {
       setPortalLoading(false);
+    }
+  };
+
+  const handleRotatePortalToken = async () => {
+    if (!referrer || portalRotateLoading) return;
+    setPortalMessage(null);
+    setPortalError(null);
+    setPortalRotateLoading(true);
+    try {
+      const response = await fetch(
+        `/api/founder/referrers/${encodeURIComponent(referrer.irref)}/rotate-portal-token`,
+        { method: "POST" },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.ok) {
+        setPortalError(data?.error || "Unable to rotate portal token.");
+        return;
+      }
+      setPortalLink("");
+      setPortalMessage("Portal tokens rotated. Generate a new link to share.");
+    } catch (error) {
+      console.error("Rotate portal token failed", error);
+      setPortalError("Unable to rotate portal token.");
+    } finally {
+      setPortalRotateLoading(false);
     }
   };
 
@@ -667,6 +693,15 @@ export default function ReferrerReviewPage() {
                   isLoading={portalLoading}
                   loadingLabel="Generating..."
                   previewOverride={portalLink ? undefined : "Generate a portal link for this referrer"}
+                />
+                <LinkRow
+                  icon={<IconLink />}
+                  label="Rotate Portal Token"
+                  actionLabel="Rotate"
+                  onAction={handleRotatePortalToken}
+                  isLoading={portalRotateLoading}
+                  loadingLabel="Rotating..."
+                  previewOverride="Invalidate existing portal tokens"
                 />
                 <LinkRow
                   icon={<IconMeet />}

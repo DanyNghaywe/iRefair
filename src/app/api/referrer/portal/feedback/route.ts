@@ -6,8 +6,10 @@ import {
   getReferrerByIrref,
   updateApplicationAdmin,
 } from '@/lib/sheets';
-import { verifyReferrerToken } from '@/lib/referrerPortalToken';
+import { normalizePortalTokenVersion, verifyReferrerToken } from '@/lib/referrerPortalToken';
 import { sendMail } from '@/lib/mailer';
+import { escapeHtml, normalizeHttpUrl } from '@/lib/validation';
+import { getReferrerPortalToken } from '@/lib/referrerPortalAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -24,12 +26,12 @@ const ACTION_LABELS: Record<FeedbackAction, string> = {
 };
 
 function getMeetLink() {
-  return (
+  const raw =
     process.env.REFERRER_MEET_LINK ||
     process.env.FOUNDER_MEET_LINK ||
     process.env.NEXT_PUBLIC_BASE_URL ||
-    ''
-  );
+    '';
+  return raw ? normalizeHttpUrl(raw) || '' : '';
 }
 
 function candidateEmailTemplate(action: FeedbackAction, name: string, position: string, ircrn: string) {
@@ -115,10 +117,11 @@ function candidateEmailTemplate(action: FeedbackAction, name: string, position: 
       body = `${greeting}\n\nUpdate on your application.`;
   }
 
+  const safeBody = escapeHtml(body);
   return {
     subject: subjectMap[action],
     text: body,
-    html: body.replace(/\n/g, '<br/>'),
+    html: safeBody.replace(/\n/g, '<br/>'),
   };
 }
 
@@ -135,7 +138,7 @@ export async function POST(request: NextRequest) {
     /* noop */
   }
 
-  const token = body.token || '';
+  const token = getReferrerPortalToken(request, body.token);
   const applicationId = (body.applicationId || '').trim();
   const action = body.action ? normalizeAction(body.action) : null;
   const note = (body.note || '').trim();
@@ -154,19 +157,39 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Invalid or expired token' }, { status: 401 });
   }
 
-  const referrer = await getReferrerByIrref(payload.irref);
-  if (!referrer) {
-    return NextResponse.json({ ok: false, error: 'Referrer not found' }, { status: 404 });
-  }
-
   const application = await getApplicationById(applicationId);
   if (!application?.record?.candidateId) {
     return NextResponse.json({ ok: false, error: 'Application not found.' }, { status: 404 });
   }
 
-  const candidate = await findCandidateByIdentifier(application.record.candidateId).catch(() => null);
+  const applicationRecord = application.record;
+  const normalizedPayloadIrref = payload.irref.trim().toLowerCase();
+  const normalizedApplicationIrref = (applicationRecord.referrerIrref || '').trim().toLowerCase();
+  if (!normalizedApplicationIrref || normalizedApplicationIrref !== normalizedPayloadIrref) {
+    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  }
+
+  const referrer = await getReferrerByIrref(payload.irref);
+  if (!referrer) {
+    return NextResponse.json({ ok: false, error: 'Referrer not found' }, { status: 404 });
+  }
+  const expectedVersion = normalizePortalTokenVersion(referrer.record.portalTokenVersion);
+  if (payload.v !== expectedVersion) {
+    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+  }
 
   const status = ACTION_LABELS[action];
+  const currentStatus = (applicationRecord.status || '').trim().toLowerCase();
+  const hiredStatus = ACTION_LABELS.G.toLowerCase();
+  if (currentStatus === hiredStatus && status.toLowerCase() !== hiredStatus) {
+    return NextResponse.json(
+      { ok: false, error: 'Application status is locked.' },
+      { status: 403 },
+    );
+  }
+
+  const candidate = await findCandidateByIdentifier(applicationRecord.candidateId).catch(() => null);
+
   const ownerNotes = [
     `[Referrer ${referrer.record.name || referrer.record.irref}] ${status}`,
     note,
@@ -202,11 +225,15 @@ export async function POST(request: NextRequest) {
     const rewardRecipient =
       process.env.REFERRAL_REWARD_EMAIL || process.env.FOUNDER_EMAIL || process.env.SMTP_FROM_EMAIL;
     if (rewardRecipient) {
+      const safeCandidateId = escapeHtml(application.record.candidateId);
+      const safeIrcrn = escapeHtml(application.record.iCrn);
+      const safePosition = escapeHtml(application.record.position || '');
+      const safeIrref = escapeHtml(referrer.record.irref);
       await sendMail({
         to: rewardRecipient,
         subject: `Referral reward triggered: ${application.record.id}`,
         text: `Candidate ${application.record.candidateId} marked as hired for ${application.record.iCrn} (${application.record.position}). Referrer: ${referrer.record.irref}.`,
-        html: `Candidate <strong>${application.record.candidateId}</strong> marked as hired for <strong>${application.record.iCrn}</strong> (${application.record.position}).<br/>Referrer: <strong>${referrer.record.irref}</strong>.`,
+        html: `Candidate <strong>${safeCandidateId}</strong> marked as hired for <strong>${safeIrcrn}</strong> (${safePosition}).<br/>Referrer: <strong>${safeIrref}</strong>.`,
       });
     }
   }

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { AppShell } from '@/components/AppShell';
 import { companies, type CompanyRow } from '@/lib/hiringCompanies';
 import { listApprovedReferrerCompanies } from '@/lib/sheets';
+import { normalizeHttpUrl } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -64,28 +65,31 @@ export default async function HiringCompaniesPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {mergedCompanies.map((company: CompanyRow) => (
-                    <tr key={company.code}>
-                      <td>{company.code}</td>
-                      <td>{company.name}</td>
-                      <td>{company.industry}</td>
-                      <td>
-                        {company.careersUrl ? (
-                          <Link
-                            href={company.careersUrl}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="hiring-link"
-                            aria-label={`Open careers website for ${company.name}`}
-                          >
-                            Open careers website
-                          </Link>
-                        ) : (
-                          <span className="hiring-missing">Not provided yet</span>
-                        )}
-                      </td>
-                    </tr>
-                  ))}
+                  {mergedCompanies.map((company: CompanyRow) => {
+                    const careersUrl = normalizeHttpUrl(company.careersUrl || '');
+                    return (
+                      <tr key={company.code}>
+                        <td>{company.code}</td>
+                        <td>{company.name}</td>
+                        <td>{company.industry}</td>
+                        <td>
+                          {careersUrl ? (
+                            <Link
+                              href={careersUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="hiring-link"
+                              aria-label={`Open careers website for ${company.name}`}
+                            >
+                              Open careers website
+                            </Link>
+                          ) : (
+                            <span className="hiring-missing">Not provided yet</span>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

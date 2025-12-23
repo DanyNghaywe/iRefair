@@ -405,6 +405,7 @@ export default function ReferrerPage() {
       linkedin: valueOf('referrer-linkedin'),
       phone: valueOf('referrer-phone'),
       country: valueOf('referrer-country'),
+      website: valueOf('website'),
     };
   };
 
@@ -487,6 +488,7 @@ export default function ReferrerPage() {
       companyIndustryOther: values.companyIndustryOther,
       workType: values.workType,
       linkedin: values.linkedin,
+      website: values.website,
     };
 
     try {
@@ -602,6 +604,20 @@ export default function ReferrerPage() {
                 setWorkTypeSelection('');
               }}
             >
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '-10000px',
+                  top: 'auto',
+                  width: '1px',
+                  height: '1px',
+                  overflow: 'hidden',
+                }}
+                aria-hidden="true"
+              >
+                <label htmlFor="website">Website</label>
+                <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+              </div>
               <fieldset>
                 <legend>{t.legends.personal}</legend>
                 <div className="field-grid field-grid--two">

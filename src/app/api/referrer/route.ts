@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { sendMail } from '@/lib/mailer';
+import { rateLimit, rateLimitHeaders, RATE_LIMITS } from '@/lib/rateLimit';
 import { appendReferrerRow, generateIRREF } from '@/lib/sheets';
+import { escapeHtml, normalizeHttpUrl } from '@/lib/validation';
 
 type ReferrerPayload = {
   name?: string;
@@ -18,6 +20,7 @@ type ReferrerPayload = {
   regions?: string;
   monthlySlots?: string;
   linkedin?: string;
+  website?: string;
 };
 
 type EmailLanguage = 'en' | 'fr';
@@ -313,8 +316,20 @@ function resolveIndustry(industry: string, industryOther: string, fallback: stri
 }
 
 export async function POST(request: Request) {
+  const rate = await rateLimit(request, { keyPrefix: 'referrer', ...RATE_LIMITS.referrer });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { ok: false, error: 'Too many requests. Please try again shortly.' },
+      { status: 429, headers: rateLimitHeaders(rate) },
+    );
+  }
+
   try {
     const body: ReferrerPayload = await request.json();
+    const honeypot = sanitize(body.website);
+    if (honeypot) {
+      return NextResponse.json({ ok: true });
+    }
     const name = sanitize(body.name);
     const email = sanitize(body.email);
     const phone = sanitize(body.phone);
@@ -322,13 +337,13 @@ export async function POST(request: Request) {
     const company = sanitize(body.company);
     const companyIndustry = sanitize(body.companyIndustry);
     const companyIndustryOther = sanitize(body.companyIndustryOther);
-    const careersPortal = sanitize(body.careersPortal);
+    const careersPortalInput = sanitize(body.careersPortal);
     const workType = sanitize(body.workType);
     const referralType = sanitize(body.referralType || body.workType);
     const roles = sanitize(body.roles);
     const regions = sanitize(body.regions);
     const monthlySlots = sanitize(body.monthlySlots);
-    const linkedin = sanitize(body.linkedin);
+    const linkedinInput = sanitize(body.linkedin);
     const language = sanitize(body.language).toLowerCase();
     const locale: EmailLanguage = language === 'fr' ? 'fr' : 'en';
     const notProvidedText = locale === 'fr' ? 'Non fourni' : 'Not provided';
@@ -342,13 +357,36 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: 'Missing required field: email.' }, { status: 400 });
     }
 
+    const careersPortalUrl = careersPortalInput ? normalizeHttpUrl(careersPortalInput) : null;
+    if (careersPortalInput && !careersPortalUrl) {
+      return NextResponse.json({ ok: false, error: 'Invalid careers portal URL.' }, { status: 400 });
+    }
+
+    const linkedinUrl = linkedinInput ? normalizeHttpUrl(linkedinInput) : null;
+    if (linkedinInput && !linkedinUrl) {
+      return NextResponse.json({ ok: false, error: 'Invalid LinkedIn URL.' }, { status: 400 });
+    }
+
+    const careersPortal = careersPortalUrl || '';
+    const linkedin = linkedinUrl || '';
+
     const iRref = await generateIRREF();
 
-    const companyIndustryText = resolveIndustry(companyIndustry, companyIndustryOther, notProvidedText);
-    const companyIndustryHtml = resolveIndustry(companyIndustry, companyIndustryOther, notProvidedHtml);
-    const careersPortalHtml = careersPortal
-      ? `<a href="${careersPortal}" target="_blank" rel="noreferrer">${careersPortal}</a>`
+    const companyIndustryRaw = resolveIndustry(companyIndustry, companyIndustryOther, '');
+    const companyIndustryText = companyIndustryRaw || notProvidedText;
+    const companyIndustryHtml = companyIndustryRaw ? escapeHtml(companyIndustryRaw) : notProvidedHtml;
+    const careersPortalHtml = careersPortalUrl
+      ? `<a href="${escapeHtml(careersPortalUrl)}" target="_blank" rel="noreferrer">${escapeHtml(careersPortalUrl)}</a>`
       : notProvidedHtml;
+    const referralTypeValue = referralType || workType;
+    const referralTypeText = referralTypeValue || notProvidedText;
+    const referralTypeHtml = referralTypeValue ? escapeHtml(referralTypeValue) : notProvidedHtml;
+    const safeNameHtml = escapeHtml(fallbackName);
+    const safeIRrefHtml = escapeHtml(iRref);
+    const companyHtml = company ? escapeHtml(company) : notProvidedHtml;
+    const rolesHtml = roles ? escapeHtml(roles) : notProvidedHtml;
+    const regionsHtml = regions ? escapeHtml(regions) : notProvidedHtml;
+    const monthlySlotsHtml = monthlySlots ? escapeHtml(monthlySlots) : notProvidedHtml;
 
     const textValues = {
       iRref,
@@ -357,20 +395,21 @@ export async function POST(request: Request) {
       companyIndustry: companyIndustryText,
       roles: roles || notProvidedText,
       regions: regions || notProvidedText,
-      referralType: referralType || workType || notProvidedText,
-      careersPortal: careersPortal || notProvidedText,
+      referralType: referralTypeText,
+      careersPortal: careersPortalUrl || notProvidedText,
       monthlySlots: monthlySlots || notProvidedText,
     };
 
     const htmlValues = {
-      ...textValues,
-      company: company || notProvidedHtml,
+      iRref: safeIRrefHtml,
+      name: safeNameHtml,
+      company: companyHtml,
       companyIndustry: companyIndustryHtml,
-      roles: roles || notProvidedHtml,
-      regions: regions || notProvidedHtml,
-      referralType: referralType || workType || notProvidedHtml,
+      roles: rolesHtml,
+      regions: regionsHtml,
+      referralType: referralTypeHtml,
       careersPortal: careersPortalHtml,
-      monthlySlots: monthlySlots || notProvidedHtml,
+      monthlySlots: monthlySlotsHtml,
     };
 
     const html = fillTemplate(locale === 'fr' ? htmlTemplateFr : htmlTemplate, htmlValues);

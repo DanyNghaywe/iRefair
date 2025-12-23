@@ -33,6 +33,7 @@ export default function ApplyPage() {
   const [useManualCandidateId, setUseManualCandidateId] = useState(!hasCandidateIdOptions);
   const [useManualICrn, setUseManualICrn] = useState(!hasICrnOptions);
   const [candidateId, setCandidateId] = useState('');
+  const [candidateKey, setCandidateKey] = useState('');
   const [iCrn, setICrn] = useState('');
   const [position, setPosition] = useState('');
   const [referenceNumber, setReferenceNumber] = useState('');
@@ -66,6 +67,7 @@ export default function ApplyPage() {
     if (!preserveStatus) setStatus('idle');
     setSubmitting(false);
     setCandidateId('');
+    setCandidateKey('');
     setICrn('');
     setPosition('');
     setReferenceNumber('');
@@ -120,6 +122,7 @@ export default function ApplyPage() {
   const validate = () => {
     const nextErrors: Record<string, string> = {};
     if (!candidateId.trim()) nextErrors.candidateId = 'Please enter your iRAIN or legacy CAND ID.';
+    if (!candidateKey.trim()) nextErrors.candidateKey = 'Please enter your Candidate Key.';
     if (!iCrn.trim()) nextErrors.iCrn = 'Please enter the iRCRN.';
     if (!position.trim()) nextErrors.position = 'Please enter the position you are applying for.';
 
@@ -135,6 +138,8 @@ export default function ApplyPage() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const websiteInput = event.currentTarget.elements.namedItem('website');
+    const honeypot = websiteInput instanceof HTMLInputElement ? websiteInput.value.trim() : '';
     setStatus('idle');
     const validationErrors = validate();
     const hasErrors = Object.keys(validationErrors).length > 0;
@@ -153,9 +158,11 @@ export default function ApplyPage() {
       const resumeFile = resumeInputRef.current?.files?.[0];
       const formData = new FormData();
       formData.append('candidateId', candidateId.trim());
+      formData.append('candidateKey', candidateKey.trim());
       formData.append('iCrn', iCrn.trim());
       formData.append('position', position.trim());
       formData.append('referenceNumber', referenceNumber.trim());
+      formData.append('website', honeypot);
       if (resumeFile) {
         formData.append('resume', resumeFile);
       }
@@ -217,6 +224,20 @@ export default function ApplyPage() {
           )}
 
           <form ref={formRef} className="referral-form" onSubmit={handleSubmit} onReset={() => resetForm()} noValidate>
+            <div
+              style={{
+                position: 'absolute',
+                left: '-10000px',
+                top: 'auto',
+                width: '1px',
+                height: '1px',
+                overflow: 'hidden',
+              }}
+              aria-hidden="true"
+            >
+              <label htmlFor="website">Website</label>
+              <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+            </div>
             <div className="field-grid field-grid--two">
               <div className={fieldClass('candidateId')}>
                 <div className="field-label-row">
@@ -274,6 +295,27 @@ export default function ApplyPage() {
                 )}
                 <p className="field-error" id="candidate-id-error" role="alert" aria-live="polite">
                   {errors.candidateId}
+                </p>
+              </div>
+
+              <div className={fieldClass('candidateKey')}>
+                <label htmlFor="candidate-key">Candidate Key *</label>
+                <input
+                  id="candidate-key"
+                  name="candidate-key"
+                  type="text"
+                  required
+                  placeholder="Enter the Candidate Key from your email"
+                  value={candidateKey}
+                  aria-invalid={Boolean(errors.candidateKey)}
+                  aria-describedby="candidate-key-error"
+                  onChange={(event) => {
+                    setCandidateKey(event.target.value);
+                    clearError('candidateKey');
+                  }}
+                />
+                <p className="field-error" id="candidate-key-error" role="alert" aria-live="polite">
+                  {errors.candidateKey}
                 </p>
               </div>
 

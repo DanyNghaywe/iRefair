@@ -2,10 +2,53 @@
 import { ensureResumeLooksLikeCv, scanBufferForViruses } from "@/lib/fileScan";
 import { uploadFileToDrive } from "@/lib/drive";
 import { sendMail } from "@/lib/mailer";
-import { ensureColumns, generateIRAIN, updateRowById, upsertCandidateRow } from "@/lib/sheets";
+import { rateLimit, rateLimitHeaders, RATE_LIMITS } from "@/lib/rateLimit";
+import {
+  CANDIDATE_SECRET_HASH_HEADER,
+  CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER,
+  CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER,
+  CANDIDATE_UPDATE_TOKEN_HASH_HEADER,
+  CANDIDATE_SHEET_NAME,
+  ensureColumns,
+  generateIRAIN,
+  getCandidateByEmail,
+  isIrain,
+  updateRowById,
+  upsertCandidateRow,
+} from "@/lib/sheets";
 import { jobOpeningsUrl } from "@/lib/urls";
+import { escapeHtml, normalizeHttpUrl } from "@/lib/validation";
+import {
+  createCandidateSecret,
+  createCandidateUpdateToken,
+  hashCandidateSecret,
+  hashToken,
+} from "@/lib/candidateUpdateToken";
 
 type EmailLanguage = "en" | "fr";
+
+type PendingCandidateUpdatePayload = {
+  id?: string;
+  legacyCandidateId?: string;
+  firstName: string;
+  middleName: string;
+  familyName: string;
+  email: string;
+  phone: string;
+  locatedCanada: string;
+  province: string;
+  authorizedCanada: string;
+  eligibleMoveCanada: string;
+  countryOfOrigin: string;
+  languages: string;
+  languagesOther: string;
+  industryType: string;
+  industryOther: string;
+  employmentStatus: string;
+  resumeFileId?: string;
+  resumeFileName?: string;
+  locale: EmailLanguage;
+};
 
 const subject = "We have received your referral request - iRefair";
 const updatedSubject = "We updated your referral request - iRefair";
@@ -14,8 +57,67 @@ const ineligibleSubject = "About your referral request - iRefair";
 const subjectFr = "Nous avons bien recu votre demande de recommandation - iRefair";
 const updatedSubjectFr = "Nous avons mis a jour votre demande de recommandation - iRefair";
 const ineligibleSubjectFr = "A propos de votre demande de recommandation - iRefair";
+const confirmUpdateSubject = "Confirm your iRefair profile update";
+const confirmUpdateSubjectFr = "Confirmez la mise a jour de votre profil iRefair";
+
+const confirmUpdateHtmlTemplate = `<html><body style="font-family:Arial, sans-serif; color:#1f2a37; background:#f6f7fb; padding:20px;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e6e8ee;border-radius:14px;padding:20px;">
+    <tr><td style="padding:6px 0 12px 0;">
+      <div style="font-size:20px;font-weight:700;color:#2f5fb3;">iRefair</div>
+    </td></tr>
+    <tr><td>
+      <p style="margin:0 0 10px 0;font-size:15px;color:#1f2a37;">Hi {{firstName}},</p>
+      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#3b4251;">We received a request to update your iRefair profile. Please confirm the update below:</p>
+      <p style="margin:0 0 14px 0;"><a href="{{confirmUrl}}" style="display:inline-block;padding:10px 16px;border-radius:8px;background:#2f5fb3;color:#fff;text-decoration:none;font-weight:700;">Confirm update</a></p>
+      <p style="margin:0;font-size:13px;line-height:1.6;color:#5c6675;">This link expires in 24 hours. If you did not request this, you can ignore this email.</p>
+    </td></tr>
+  </table>
+</body></html>`;
+
+const confirmUpdateTextTemplate = `Hi {{firstName}},
+
+We received a request to update your iRefair profile.
+Confirm update: {{confirmUrl}}
+
+This link expires in 24 hours. If you did not request this, you can ignore this email.
+
+- The iRefair team`;
+
+const confirmUpdateHtmlTemplateFr = `<html><body style="font-family:Arial, sans-serif; color:#1f2a37; background:#f6f7fb; padding:20px;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e6e8ee;border-radius:14px;padding:20px;">
+    <tr><td style="padding:6px 0 12px 0;">
+      <div style="font-size:20px;font-weight:700;color:#2f5fb3;">iRefair</div>
+    </td></tr>
+    <tr><td>
+      <p style="margin:0 0 10px 0;font-size:15px;color:#1f2a37;">Bonjour {{firstName}},</p>
+      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#3b4251;">Nous avons recu une demande de mise a jour de votre profil iRefair. Merci de la confirmer ici :</p>
+      <p style="margin:0 0 14px 0;"><a href="{{confirmUrl}}" style="display:inline-block;padding:10px 16px;border-radius:8px;background:#2f5fb3;color:#fff;text-decoration:none;font-weight:700;">Confirmer la mise a jour</a></p>
+      <p style="margin:0;font-size:13px;line-height:1.6;color:#5c6675;">Ce lien expire dans 24 heures. Si ce n'etait pas vous, ignorez ce message.</p>
+    </td></tr>
+  </table>
+</body></html>`;
+
+const confirmUpdateTextTemplateFr = `Bonjour {{firstName}},
+
+Nous avons recu une demande de mise a jour de votre profil iRefair.
+Confirmer la mise a jour : {{confirmUrl}}
+
+Ce lien expire dans 24 heures. Si ce n'etait pas vous, ignorez ce message.
+
+- L'equipe iRefair`;
 
 export const runtime = "nodejs";
+
+const safeJobOpeningsUrl = normalizeHttpUrl(jobOpeningsUrl) || "https://irefair.com/hiring-companies";
+const UPDATE_TOKEN_TTL_SECONDS = 60 * 60 * 24;
+
+const baseFromEnv =
+  process.env.NEXT_PUBLIC_APP_URL ||
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  process.env.NEXT_PUBLIC_BASE_URL ||
+  process.env.VERCEL_URL;
+const appBaseUrl =
+  baseFromEnv && baseFromEnv.startsWith("http") ? baseFromEnv : baseFromEnv ? `https://${baseFromEnv}` : "https://irefair.com";
 
 const htmlTemplate = `<html><body style="font-family:Arial, sans-serif; color:#1f2a37; background:#f6f7fb; padding:20px;">
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e6e8ee;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.06);">
@@ -28,6 +130,7 @@ const htmlTemplate = `<html><body style="font-family:Arial, sans-serif; color:#1
       <h1 style="margin:0 0 10px 0;font-size:22px;color:#1f2a37;">Hi {{firstName}}, we have your details.</h1>
       <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;">Thanks for submitting your referral request to iRefair. We will review your profile and look for referrers whose roles match your experience and preferences.</p>
       {{statusNote}}
+      {{candidateKeySection}}
     </td></tr>
     <tr><td style="padding:10px 24px 4px 24px;">
       <div style="border:1px solid #e6e8ee;border-radius:12px;padding:14px 16px;background:#fafbfe;">
@@ -50,7 +153,7 @@ const htmlTemplate = `<html><body style="font-family:Arial, sans-serif; color:#1
     </td></tr>
     <tr><td style="padding:14px 24px 20px 24px;text-align:center;">
       <div style="margin:0 0 8px 0;font-size:14px;color:#3b4251;">See which companies are hiring in Canada right now:</div>
-      <div style="margin:0 0 8px 0;"><a href="${jobOpeningsUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2f5fb3;color:#fff;font-weight:700;text-decoration:none;border:1px solid #2f5fb3;">View live openings</a></div>
+      <div style="margin:0 0 8px 0;"><a href="${safeJobOpeningsUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2f5fb3;color:#fff;font-weight:700;text-decoration:none;border:1px solid #2f5fb3;">View live openings</a></div>
       <div style="font-size:13px;color:#68707f;">Quick notes on companies, what they need, and links to apply.</div>
     </td></tr>
   </table>
@@ -61,6 +164,8 @@ const textTemplate = `Hi {{firstName}},
 Thanks for submitting your referral request to iRefair.
 
 {{statusNote}}
+
+{{candidateKeySection}}
 
 iRAIN: {{iRain}}
 
@@ -75,7 +180,7 @@ What happens next
 2) We look for referrers whose teams and roles match what you are targeting.
 3) When there is a potential match, we will contact you before any intro is made.
 
-See companies hiring in Canada right now: ${jobOpeningsUrl}
+See companies hiring in Canada right now: ${safeJobOpeningsUrl}
 
 - The iRefair team`;
 
@@ -90,11 +195,12 @@ const ineligibleHtmlTemplate = `<html><body style="font-family:Arial, sans-serif
       <h1 style="margin:0 0 12px 0;font-size:22px;color:#1f2a37;">Hi {{firstName}}, thank you for your interest in iRefair.</h1>
       <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;">We reviewed the details you shared. Because you are not located in Canada and are not able to move and work in Canada within the next 6 months, we cannot move forward with a referral at this time. This means you are not eligible for our referral program right now.</p>
       {{statusNote}}
+      {{candidateKeySection}}
       <div style="border:1px solid #e6e8ee;border-radius:10px;padding:14px 16px;margin:10px 0 14px 0;color:#2f3b4b;background:#fafbfe;font-size:14px;line-height:1.6;">
         Our program currently supports candidates who are in Canada and have work authorization. If your situation changes, reply to this email or submit a new request and we will gladly revisit it. We appreciate you taking the time to reach out.
       </div>
       <p style="margin:0 0 10px 0;font-size:14px;line-height:1.6;">If you become eligible later, we would be happy to hear from you again.</p>
-      <div style="text-align:center;margin:6px 0 6px 0;"><a href="${jobOpeningsUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2f5fb3;color:#fff;font-weight:700;text-decoration:none;border:1px solid #2f5fb3;">Explore current openings</a></div>
+      <div style="text-align:center;margin:6px 0 6px 0;"><a href="${safeJobOpeningsUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2f5fb3;color:#fff;font-weight:700;text-decoration:none;border:1px solid #2f5fb3;">Explore current openings</a></div>
       <div style="font-size:13px;color:#68707f;text-align:center;">Browse live roles and requirements any time.</div>
     </td></tr>
   </table>
@@ -108,11 +214,13 @@ We reviewed the details you shared. Because you are not located in Canada and ar
 
 {{statusNote}}
 
+{{candidateKeySection}}
+
 iRAIN: {{iRain}}
 
 If you become eligible later, we would be happy to hear from you again.
 
-You can also browse current openings and requirements: ${jobOpeningsUrl}
+You can also browse current openings and requirements: ${safeJobOpeningsUrl}
 
 - The iRefair team`;
 
@@ -127,6 +235,7 @@ const htmlTemplateFr = `<html><body style="font-family:Arial, sans-serif; color:
       <h1 style="margin:0 0 10px 0;font-size:22px;color:#1f2a37;">Bonjour {{firstName}}, nous avons bien recu vos informations.</h1>
       <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;">Merci d'avoir soumis votre demande de recommandation a iRefair. Nous examinerons votre profil et rechercherons des referents dont les roles correspondent a votre experience et a vos preferences.</p>
       {{statusNote}}
+      {{candidateKeySection}}
     </td></tr>
     <tr><td style="padding:10px 24px 4px 24px;">
       <div style="border:1px solid #e6e8ee;border-radius:12px;padding:14px 16px;background:#fafbfe;">
@@ -149,7 +258,7 @@ const htmlTemplateFr = `<html><body style="font-family:Arial, sans-serif; color:
     </td></tr>
     <tr><td style="padding:14px 24px 20px 24px;text-align:center;">
       <div style="margin:0 0 8px 0;font-size:14px;color:#3b4251;">Decouvrez les entreprises qui recrutent actuellement au Canada :</div>
-      <div style="margin:0 0 8px 0;"><a href="${jobOpeningsUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2f5fb3;color:#fff;font-weight:700;text-decoration:none;border:1px solid #2f5fb3;">Voir les offres en direct</a></div>
+      <div style="margin:0 0 8px 0;"><a href="${safeJobOpeningsUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2f5fb3;color:#fff;font-weight:700;text-decoration:none;border:1px solid #2f5fb3;">Voir les offres en direct</a></div>
       <div style="font-size:13px;color:#68707f;">Notes rapides sur les entreprises, leurs besoins et des liens pour postuler.</div>
     </td></tr>
   </table>
@@ -160,6 +269,8 @@ const textTemplateFr = `Bonjour {{firstName}},
 Merci d'avoir soumis votre demande de recommandation a iRefair.
 
 {{statusNote}}
+
+{{candidateKeySection}}
 
 Votre iRAIN : {{iRain}}
 
@@ -174,7 +285,7 @@ Prochaines etapes
 2) Nous cherchons des referents dont les equipes et les roles correspondent a vos objectifs.
 3) Lorsqu'il y a une correspondance potentielle, nous vous contactons avant toute introduction.
 
-Decouvrez les entreprises qui recrutent actuellement au Canada : ${jobOpeningsUrl}
+Decouvrez les entreprises qui recrutent actuellement au Canada : ${safeJobOpeningsUrl}
 
 - L'equipe iRefair`;
 
@@ -189,11 +300,12 @@ const ineligibleHtmlTemplateFr = `<html><body style="font-family:Arial, sans-ser
       <h1 style="margin:0 0 12px 0;font-size:22px;color:#1f2a37;">Bonjour {{firstName}}, merci pour votre interet pour iRefair.</h1>
       <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;">Nous avons examine les informations fournies. Comme vous n'etes pas au Canada et ne pouvez pas vous y installer et y travailler dans les 6 prochains mois, nous ne pouvons pas poursuivre une recommandation pour le moment. Vous n'etes donc pas eligible a notre programme pour l'instant.</p>
       {{statusNote}}
+      {{candidateKeySection}}
       <div style="border:1px solid #e6e8ee;border-radius:10px;padding:14px 16px;margin:10px 0 14px 0;color:#2f3b4b;background:#fafbfe;font-size:14px;line-height:1.6;">
         Notre programme soutient actuellement les candidats situes au Canada et disposant d'une autorisation de travail. Si votre situation change, repondez a cet e-mail ou soumettez une nouvelle demande et nous reevaluerons avec plaisir. Merci d'avoir pris le temps de nous ecrire.
       </div>
       <p style="margin:0 0 10px 0;font-size:14px;line-height:1.6;">Si votre situation evolue, nous serons heureux de revoir votre demande.</p>
-      <div style="text-align:center;margin:6px 0 6px 0;"><a href="${jobOpeningsUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2f5fb3;color:#fff;font-weight:700;text-decoration:none;border:1px solid #2f5fb3;">Consulter les offres en cours</a></div>
+      <div style="text-align:center;margin:6px 0 6px 0;"><a href="${safeJobOpeningsUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2f5fb3;color:#fff;font-weight:700;text-decoration:none;border:1px solid #2f5fb3;">Consulter les offres en cours</a></div>
       <div style="font-size:13px;color:#68707f;text-align:center;">Parcourez les roles disponibles et leurs besoins a tout moment.</div>
     </td></tr>
   </table>
@@ -207,11 +319,13 @@ Nous avons examine les informations fournies. Comme vous avez indique ne pas etr
 
 {{statusNote}}
 
+{{candidateKeySection}}
+
 Votre iRAIN : {{iRain}}
 
 Si votre situation evolue, nous serons heureux de revoir votre demande.
 
-Vous pouvez aussi consulter les roles ouverts : ${jobOpeningsUrl}
+Vous pouvez aussi consulter les roles ouverts : ${safeJobOpeningsUrl}
 
 - L'equipe iRefair`;
 
@@ -224,7 +338,30 @@ function sanitize(value: unknown) {
   return String(value).trim();
 }
 
+function buildCandidateKeySectionHtml(candidateKey?: string) {
+  if (!candidateKey) return "";
+  const safeKey = escapeHtml(candidateKey);
+  return `<div style="margin:12px 0 0 0;padding:12px 14px;border-radius:10px;border:1px solid #e0e7ef;background:#f7f9fc;">
+  <p style="margin:0 0 6px 0;font-size:14px;line-height:1.6;"><strong>Your Candidate Key:</strong> ${safeKey}</p>
+  <p style="margin:0;font-size:13px;line-height:1.6;color:#4b5563;">Keep this private. You will need it to apply with your iRAIN.</p>
+</div>`;
+}
+
+function buildCandidateKeySectionText(candidateKey?: string) {
+  if (!candidateKey) return "";
+  return `Your Candidate Key: ${candidateKey}
+Keep this private. You will need it to apply with your iRAIN.`;
+}
+
 export async function POST(request: Request) {
+  const rate = await rateLimit(request, { keyPrefix: "candidate", ...RATE_LIMITS.candidate });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { ok: false, error: "Too many requests. Please try again shortly." },
+      { status: 429, headers: rateLimitHeaders(rate) },
+    );
+  }
+
   try {
     const form = await request.formData();
     const valueOf = (key: string) => sanitize(form.get(key));
@@ -246,6 +383,11 @@ export async function POST(request: Request) {
     const languagesRaw = valueOf("languages");
     const resumeEntry = form.get("resume");
     const locale: EmailLanguage = language === "fr" ? "fr" : "en";
+    const honeypot = valueOf("website");
+
+    if (honeypot) {
+      return NextResponse.json({ ok: true });
+    }
 
     if (!firstName || !email) {
       return NextResponse.json({ ok: false, error: "Missing required fields: firstName and email." }, { status: 400 });
@@ -261,9 +403,15 @@ export async function POST(request: Request) {
       return trimmed;
     };
 
-    const iRain = await generateIRAIN();
+    const existingCandidate = await getCandidateByEmail(email);
+    const existingId = existingCandidate?.record.id || "";
+    const shouldAssignNewIrain = Boolean(existingCandidate) && !isIrain(existingId);
+    const iRain = shouldAssignNewIrain || !existingCandidate ? await generateIRAIN() : existingId;
+    const legacyCandidateId = shouldAssignNewIrain
+      ? existingCandidate?.record.legacyCandidateId || existingId || undefined
+      : undefined;
     const isIneligible = locatedCanada.toLowerCase() === "no" && eligibleMoveCanada.toLowerCase() === "no";
-    let resumeUrl: string | undefined;
+    let resumeFileId: string | undefined;
     let resumeFileName: string | undefined;
 
     if (resumeEntry instanceof File && resumeEntry.size > 0) {
@@ -296,7 +444,7 @@ export async function POST(request: Request) {
         mimeType: resumeEntry.type || "application/octet-stream",
         folderId: process.env.GDRIVE_FOLDER_ID || "",
       });
-      resumeUrl = upload.webViewLink || upload.webContentLink || undefined;
+      resumeFileId = upload.fileId;
       resumeFileName = resumeEntry.name;
     }
 
@@ -336,6 +484,81 @@ export async function POST(request: Request) {
       return combined || notProvided;
     })();
 
+    if (existingCandidate) {
+      const exp = Math.floor(Date.now() / 1000) + UPDATE_TOKEN_TTL_SECONDS;
+      const token = createCandidateUpdateToken({
+        email,
+        rowIndex: existingCandidate.rowIndex,
+        exp,
+      });
+      const tokenHash = hashToken(token);
+      const pendingPayload: PendingCandidateUpdatePayload = {
+        firstName,
+        middleName,
+        familyName,
+        email,
+        phone,
+        locatedCanada,
+        province,
+        authorizedCanada,
+        eligibleMoveCanada,
+        countryOfOrigin,
+        languages: languagesSnapshot,
+        languagesOther,
+        industryType,
+        industryOther,
+        employmentStatus,
+        resumeFileId,
+        resumeFileName,
+        locale,
+      };
+
+      if (shouldAssignNewIrain) {
+        pendingPayload.id = iRain;
+        if (legacyCandidateId) {
+          pendingPayload.legacyCandidateId = legacyCandidateId;
+        }
+      }
+
+      await ensureColumns(CANDIDATE_SHEET_NAME, [
+        CANDIDATE_UPDATE_TOKEN_HASH_HEADER,
+        CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER,
+        CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER,
+      ]);
+
+      const updateResult = await updateRowById(CANDIDATE_SHEET_NAME, "Email", email, {
+        [CANDIDATE_UPDATE_TOKEN_HASH_HEADER]: tokenHash,
+        [CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER]: new Date(exp * 1000).toISOString(),
+        [CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER]: JSON.stringify(pendingPayload),
+      });
+      if (!updateResult.updated) {
+        return NextResponse.json({ ok: false, error: "Failed to start update confirmation." }, { status: 500 });
+      }
+
+      const confirmUrl = new URL("/api/candidate/confirm-update", appBaseUrl);
+      confirmUrl.searchParams.set("token", token);
+      const confirmTemplate = locale === "fr" ? confirmUpdateHtmlTemplateFr : confirmUpdateHtmlTemplate;
+      const confirmTextTemplate = locale === "fr" ? confirmUpdateTextTemplateFr : confirmUpdateTextTemplate;
+      const confirmHtml = fillTemplate(confirmTemplate, {
+        firstName: escapeHtml(firstName),
+        confirmUrl: escapeHtml(confirmUrl.toString()),
+      });
+      const confirmText = fillTemplate(confirmTextTemplate, {
+        firstName,
+        confirmUrl: confirmUrl.toString(),
+      });
+      const confirmSubject = locale === "fr" ? confirmUpdateSubjectFr : confirmUpdateSubject;
+
+      await sendMail({
+        to: email,
+        subject: confirmSubject,
+        html: confirmHtml,
+        text: confirmText,
+      });
+
+      return NextResponse.json({ ok: true, needsEmailConfirm: true });
+    }
+
     const upsertResult = await upsertCandidateRow({
       id: iRain,
       firstName,
@@ -354,20 +577,31 @@ export async function POST(request: Request) {
       industryOther,
       employmentStatus,
     });
-    if (resumeUrl || resumeFileName) {
-      await ensureColumns("Candidates", ["Resume File Name", "Resume URL"]);
-      await updateRowById("Candidates", "iRAIN", upsertResult.id, {
-        "Resume File Name": resumeFileName,
-        "Resume URL": resumeUrl,
-      });
+    const candidateSecret = createCandidateSecret();
+    const candidateSecretHash = hashCandidateSecret(candidateSecret);
+    const candidateRowUpdates: Record<string, string | undefined> = {
+      [CANDIDATE_SECRET_HASH_HEADER]: candidateSecretHash,
+    };
+    const requiredColumns = [CANDIDATE_SECRET_HASH_HEADER];
+    if (resumeFileId || resumeFileName) {
+      candidateRowUpdates["Resume File Name"] = resumeFileName;
+      candidateRowUpdates["Resume File ID"] = resumeFileId;
+      candidateRowUpdates["Resume URL"] = "";
+      requiredColumns.push("Resume File Name", "Resume File ID", "Resume URL");
+    }
+    await ensureColumns(CANDIDATE_SHEET_NAME, requiredColumns);
+    const updateResult = await updateRowById(CANDIDATE_SHEET_NAME, "iRAIN", upsertResult.id, candidateRowUpdates);
+    if (!updateResult.updated) {
+      return NextResponse.json({ ok: false, error: "Failed to save candidate profile." }, { status: 500 });
     }
 
     const finalIRain = upsertResult.id;
+    const safeFinalIRain = escapeHtml(finalIRain);
     const shouldIncludeStatusNote = upsertResult.wasUpdated && !isIneligible;
     const statusNoteHtml = shouldIncludeStatusNote
       ? locale === "fr"
-        ? `<p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#2f4760;background:#eef4fb;border:1px solid #dfe7f2;border-radius:10px;padding:10px 12px;">Nous avons mis a jour votre demande avec les dernieres informations fournies. Votre iRAIN reste <strong style="color:#0f2d46;">${finalIRain}</strong>.</p>`
-        : `<p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#2f4760;background:#eef4fb;border:1px solid #dfe7f2;border-radius:10px;padding:10px 12px;">We updated your referral request with the latest details you shared. Your iRAIN remains <strong style="color:#0f2d46;">${finalIRain}</strong>.</p>`
+        ? `<p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#2f4760;background:#eef4fb;border:1px solid #dfe7f2;border-radius:10px;padding:10px 12px;">Nous avons mis a jour votre demande avec les dernieres informations fournies. Votre iRAIN reste <strong style="color:#0f2d46;">${safeFinalIRain}</strong>.</p>`
+        : `<p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#2f4760;background:#eef4fb;border:1px solid #dfe7f2;border-radius:10px;padding:10px 12px;">We updated your referral request with the latest details you shared. Your iRAIN remains <strong style="color:#0f2d46;">${safeFinalIRain}</strong>.</p>`
       : "";
     const statusNoteText = shouldIncludeStatusNote
       ? locale === "fr"
@@ -375,6 +609,8 @@ export async function POST(request: Request) {
         : "We updated your referral request with the latest details you shared."
       : "";
 
+    const candidateKeySectionHtml = buildCandidateKeySectionHtml(candidateSecret);
+    const candidateKeySectionText = buildCandidateKeySectionText(candidateSecret);
     const values = {
       iRain: finalIRain,
       firstName,
@@ -382,10 +618,20 @@ export async function POST(request: Request) {
       authorization: authorizationSnapshot,
       industry: industrySnapshot,
       languages: languagesSnapshot,
+      candidateKeySection: candidateKeySectionText,
     };
 
-    const htmlValues = { ...values, statusNote: statusNoteHtml };
-    const textValues = { ...values, statusNote: statusNoteText };
+    const htmlValues = {
+      iRain: escapeHtml(finalIRain),
+      firstName: escapeHtml(firstName),
+      location: escapeHtml(locationSnapshot),
+      authorization: escapeHtml(authorizationSnapshot),
+      industry: escapeHtml(industrySnapshot),
+      languages: escapeHtml(languagesSnapshot),
+      statusNote: statusNoteHtml,
+      candidateKeySection: candidateKeySectionHtml,
+    };
+    const textValues = { ...values, statusNote: statusNoteText, candidateKeySection: candidateKeySectionText };
 
     const html = fillTemplate(
       isIneligible
@@ -427,7 +673,7 @@ export async function POST(request: Request) {
       text,
     });
 
-    return NextResponse.json({ ok: true, updated: upsertResult.wasUpdated, iRain: finalIRain, resumeUrl });
+    return NextResponse.json({ ok: true, updated: upsertResult.wasUpdated, iRain: finalIRain });
   } catch (error) {
     console.error("Candidate email API error", error);
     return NextResponse.json({ ok: false, error: "Failed to send email" }, { status: 500 });

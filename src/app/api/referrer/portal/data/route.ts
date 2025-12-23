@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { findCandidateByIdentifier, getReferrerByIrref, listApplications } from '@/lib/sheets';
-import { verifyReferrerToken } from '@/lib/referrerPortalToken';
+import { normalizePortalTokenVersion, verifyReferrerToken } from '@/lib/referrerPortalToken';
+import { getReferrerPortalToken } from '@/lib/referrerPortalAuth';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,6 +16,9 @@ async function buildItems(referrerIrref: string) {
       const candidateName = candidate
         ? [candidate.record.firstName, candidate.record.familyName].filter(Boolean).join(' ').trim()
         : '';
+      const resumeDownloadUrl = app.resumeFileId
+        ? `/api/referrer/portal/resume?applicationId=${encodeURIComponent(app.id)}`
+        : '';
       return {
         id: app.id,
         candidateId: app.candidateId,
@@ -24,7 +28,7 @@ async function buildItems(referrerIrref: string) {
         position: app.position,
         iCrn: app.iCrn,
         resumeFileName: app.resumeFileName,
-        resumeUrl: app.resumeUrl,
+        resumeDownloadUrl,
         status: app.status || '',
         ownerNotes: app.ownerNotes || '',
       };
@@ -34,7 +38,7 @@ async function buildItems(referrerIrref: string) {
 }
 
 export async function GET(request: NextRequest) {
-  const token = request.nextUrl.searchParams.get('token') || '';
+  const token = getReferrerPortalToken(request);
   if (!token) {
     return NextResponse.json({ ok: false, error: 'Missing token' }, { status: 400 });
   }
@@ -49,6 +53,10 @@ export async function GET(request: NextRequest) {
   const referrer = await getReferrerByIrref(payload.irref);
   if (!referrer) {
     return NextResponse.json({ ok: false, error: 'Referrer not found' }, { status: 404 });
+  }
+  const expectedVersion = normalizePortalTokenVersion(referrer.record.portalTokenVersion);
+  if (payload.v !== expectedVersion) {
+    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   }
 
   const data = await buildItems(payload.irref);

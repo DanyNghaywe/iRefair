@@ -593,6 +593,7 @@ export default function CandidatePage() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
+    const honeypot = (formData.get('website') as string | null)?.trim() || '';
     const values = getFormValues(formData);
     const validationErrors = validateValues(values);
 
@@ -647,6 +648,7 @@ export default function CandidatePage() {
     formBody.append('employmentStatus', values.employmentStatus);
     formBody.append('countryOfOrigin', values.countryOfOrigin);
     formBody.append('phone', values.phone);
+    formBody.append('website', honeypot);
     if (resumeFile) {
       formBody.append('resume', resumeFile);
     }
@@ -733,6 +735,20 @@ export default function CandidatePage() {
                 setEmploymentStatus('');
               }}
             >
+              <div
+                style={{
+                  position: 'absolute',
+                  left: '-10000px',
+                  top: 'auto',
+                  width: '1px',
+                  height: '1px',
+                  overflow: 'hidden',
+                }}
+                aria-hidden="true"
+              >
+                <label htmlFor="website">Website</label>
+                <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
+              </div>
               <fieldset>
                 <legend>{t.legends.details}</legend>
                 <div className="field-grid">

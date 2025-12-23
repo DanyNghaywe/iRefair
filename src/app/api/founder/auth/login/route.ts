@@ -2,6 +2,7 @@ import bcrypt from "bcryptjs";
 import { NextRequest, NextResponse } from "next/server";
 
 import { FOUNDER_SESSION_COOKIE, signSession } from "@/lib/founderAuth";
+import { rateLimit, rateLimitHeaders, RATE_LIMITS } from "@/lib/rateLimit";
 
 type LoginPayload = {
   email?: string;
@@ -9,6 +10,14 @@ type LoginPayload = {
 };
 
 export async function POST(request: NextRequest) {
+  const rate = await rateLimit(request, { keyPrefix: "founder-login", ...RATE_LIMITS.founderLogin });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { ok: false, error: "Too many login attempts. Please try again shortly." },
+      { status: 429, headers: rateLimitHeaders(rate) },
+    );
+  }
+
   const { email, password }: LoginPayload = await request.json();
 
   const envEmail = process.env.FOUNDER_EMAIL;

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 
 type PortalItem = {
   id: string;
@@ -12,7 +11,7 @@ type PortalItem = {
   position: string;
   iCrn: string;
   resumeFileName: string;
-  resumeUrl?: string;
+  resumeDownloadUrl?: string;
   status: string;
   ownerNotes: string;
 };
@@ -34,13 +33,7 @@ const actions: { code: string; label: string; hint: string }[] = [
   { code: "G", label: "He got the job!", hint: "Triggers referral reward workflow." },
 ];
 
-type PortalClientProps = {
-  token: string;
-};
-
-export default function PortalClient({ token }: PortalClientProps) {
-  const searchParams = useSearchParams();
-  const resolvedToken = token || searchParams?.get("token") || "";
+export default function PortalClient() {
   const [loading, setLoading] = useState(true);
   const [submittingId, setSubmittingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,20 +42,12 @@ export default function PortalClient({ token }: PortalClientProps) {
   useEffect(() => {
     let cancelled = false;
     async function load() {
-      if (!resolvedToken) {
-        setError("Missing token");
-        setLoading(false);
-        return;
-      }
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(
-          `/api/referrer/portal/data?token=${encodeURIComponent(resolvedToken)}`,
-          {
-            cache: "no-store",
-          },
-        );
+        const res = await fetch("/api/referrer/portal/data", {
+          cache: "no-store",
+        });
         const json = await res.json();
         if (!res.ok || !json?.ok) {
           throw new Error(json?.error || "Unable to load portal");
@@ -78,7 +63,7 @@ export default function PortalClient({ token }: PortalClientProps) {
     return () => {
       cancelled = true;
     };
-  }, [resolvedToken]);
+  }, []);
 
   const handleFeedback = async (applicationId: string, action: string) => {
     setSubmittingId(applicationId);
@@ -87,7 +72,7 @@ export default function PortalClient({ token }: PortalClientProps) {
       const res = await fetch("/api/referrer/portal/feedback", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token: resolvedToken, applicationId, action }),
+        body: JSON.stringify({ applicationId, action }),
       });
       const json = await res.json();
       if (!res.ok || !json?.ok) {
@@ -116,10 +101,6 @@ export default function PortalClient({ token }: PortalClientProps) {
     if (!data?.items) return [];
     return [...data.items].sort((a, b) => a.id.localeCompare(b.id));
   }, [data]);
-
-  if (!resolvedToken) {
-    return <div style={{ padding: "24px" }}>Missing token.</div>;
-  }
 
   if (loading) {
     return <div style={{ padding: "24px" }}>Loading portal...</div>;
@@ -177,12 +158,17 @@ export default function PortalClient({ token }: PortalClientProps) {
                   </div>
                 </td>
                 <td style={td}>
-                  {item.resumeUrl ? (
-                    <a href={item.resumeUrl} target="_blank" rel="noreferrer" style={{ color: "#2563eb" }}>
-                      View / Download
+                  {item.resumeDownloadUrl ? (
+                    <a
+                      href={item.resumeDownloadUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{ color: "#2563eb" }}
+                    >
+                      Download CV
                     </a>
                   ) : (
-                    <span style={{ color: "#94a3b8" }}>No CV link</span>
+                    <span style={{ color: "#94a3b8" }}>No CV available</span>
                   )}
                 </td>
                 <td style={td}>

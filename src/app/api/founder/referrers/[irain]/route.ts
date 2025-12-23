@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
 import { getReferrerByIrref, updateReferrerFields } from '@/lib/sheets';
+import { normalizeHttpUrl } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -119,6 +120,32 @@ export async function PATCH(
   for (const key of allowedKeys) {
     if (Object.prototype.hasOwnProperty.call(body, key)) {
       patch[key] = body[key] ?? '';
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'careersPortal')) {
+    const raw = String(patch.careersPortal ?? '').trim();
+    if (!raw) {
+      patch.careersPortal = '';
+    } else {
+      const normalized = normalizeHttpUrl(raw);
+      if (!normalized) {
+        return NextResponse.json({ ok: false, error: 'Invalid careers portal URL.' }, { status: 400 });
+      }
+      patch.careersPortal = normalized;
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(patch, 'linkedin')) {
+    const raw = String(patch.linkedin ?? '').trim();
+    if (!raw) {
+      patch.linkedin = '';
+    } else {
+      const normalized = normalizeHttpUrl(raw);
+      if (!normalized) {
+        return NextResponse.json({ ok: false, error: 'Invalid LinkedIn URL.' }, { status: 400 });
+      }
+      patch.linkedin = normalized;
     }
   }
 

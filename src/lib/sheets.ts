@@ -6,6 +6,17 @@ const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 type SubmissionPrefix = 'CAND' | 'REF' | 'APP';
 export const LEGACY_CANDIDATE_ID_HEADER = 'Legacy Candidate ID';
+export const CANDIDATE_SECRET_HASH_HEADER = 'Candidate Secret Hash';
+export const CANDIDATE_UPDATE_TOKEN_HASH_HEADER = 'Update Token Hash';
+export const CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER = 'Update Token Expires At';
+export const CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER = 'Update Pending Payload';
+
+const CANDIDATE_SECURITY_COLUMNS = [
+  CANDIDATE_SECRET_HASH_HEADER,
+  CANDIDATE_UPDATE_TOKEN_HASH_HEADER,
+  CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER,
+  CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER,
+];
 
 export const CANDIDATE_HEADERS = [
   'iRAIN',
@@ -46,6 +57,7 @@ export const REFERRER_HEADERS = [
   'Work Type',
   'LinkedIn',
 ];
+export const REFERRER_PORTAL_TOKEN_VERSION_HEADER = 'Portal Token Version';
 export const MATCH_SHEET_NAME = 'Matches';
 export const MATCH_HEADERS = [
   'Match ID',
@@ -59,6 +71,7 @@ export const MATCH_HEADERS = [
   'Intro Sent At',
 ];
 export const ADMIN_TRACKING_COLUMNS = ['Status', 'Owner Notes', 'Tags', 'Last Contacted At', 'Next Action At'];
+const REFERRER_SECURITY_COLUMNS = [REFERRER_PORTAL_TOKEN_VERSION_HEADER];
 export const APPLICATION_ADMIN_COLUMNS = ['Status', 'Owner Notes'];
 
 const IRCRN_REGEX = /^iRCRN(\d{10})$/i;
@@ -375,6 +388,7 @@ export const APPLICATION_HEADERS = [
   'Position',
   'Reference Number',
   'Resume File Name',
+  'Resume File ID',
   'Resume URL',
   'Referrer iRREF',
   'Referrer Email',
@@ -399,6 +413,10 @@ type CandidateRow = {
   industryOther: string;
   employmentStatus: string;
   legacyCandidateId?: string;
+  candidateSecretHash?: string;
+  updateTokenHash?: string;
+  updateTokenExpiresAt?: string;
+  updatePendingPayload?: string;
 };
 
 type ReferrerRow = {
@@ -414,6 +432,7 @@ type ReferrerRow = {
   careersPortal?: string;
   workType: string;
   linkedin: string;
+  portalTokenVersion?: string;
 };
 
 type ApplicationRow = {
@@ -423,7 +442,7 @@ type ApplicationRow = {
   position: string;
   referenceNumber: string;
   resumeFileName: string;
-  resumeUrl?: string;
+  resumeFileId?: string;
   referrerIrref?: string;
   referrerEmail?: string;
 };
@@ -470,6 +489,36 @@ function buildCandidateRecordFromRow(row: (string | number | null | undefined)[]
     industryOther: cellValue(row, 15),
     employmentStatus: cellValue(row, 16),
     legacyCandidateId: cellValue(row, LEGACY_CANDIDATE_ID_COLUMN_INDEX),
+  };
+}
+
+function buildCandidateRecordFromHeaderMap(
+  headerMap: Map<string, number>,
+  row: (string | number | null | undefined)[],
+): CandidateRow & { timestamp: string; legacyCandidateId: string } {
+  return {
+    id: getHeaderValue(headerMap, row, 'iRAIN'),
+    timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
+    firstName: getHeaderValue(headerMap, row, 'First Name'),
+    middleName: getHeaderValue(headerMap, row, 'Middle Name'),
+    familyName: getHeaderValue(headerMap, row, 'Family Name'),
+    email: getHeaderValue(headerMap, row, 'Email'),
+    phone: getHeaderValue(headerMap, row, 'Phone'),
+    locatedCanada: getHeaderValue(headerMap, row, 'Located in Canada'),
+    province: getHeaderValue(headerMap, row, 'Province'),
+    authorizedCanada: getHeaderValue(headerMap, row, 'Work Authorization'),
+    eligibleMoveCanada: getHeaderValue(headerMap, row, 'Eligible to Move (6 Months)'),
+    countryOfOrigin: getHeaderValue(headerMap, row, 'Country of Origin'),
+    languages: getHeaderValue(headerMap, row, 'Languages'),
+    languagesOther: getHeaderValue(headerMap, row, 'Languages Other'),
+    industryType: getHeaderValue(headerMap, row, 'Industry Type'),
+    industryOther: getHeaderValue(headerMap, row, 'Industry Other'),
+    employmentStatus: getHeaderValue(headerMap, row, 'Employment Status'),
+    legacyCandidateId: getHeaderValue(headerMap, row, LEGACY_CANDIDATE_ID_HEADER),
+    candidateSecretHash: getHeaderValue(headerMap, row, CANDIDATE_SECRET_HASH_HEADER),
+    updateTokenHash: getHeaderValue(headerMap, row, CANDIDATE_UPDATE_TOKEN_HASH_HEADER),
+    updateTokenExpiresAt: getHeaderValue(headerMap, row, CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER),
+    updatePendingPayload: getHeaderValue(headerMap, row, CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER),
   };
 }
 
@@ -929,6 +978,7 @@ export async function appendReferrerRow(row: ReferrerRow) {
 
 export async function appendApplicationRow(row: ApplicationRow) {
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  await ensureColumns(APPLICATION_SHEET_NAME, ['Resume File ID']);
   const timestamp = new Date().toISOString();
   await appendRow(APPLICATION_SHEET_NAME, [
     row.id,
@@ -938,7 +988,8 @@ export async function appendApplicationRow(row: ApplicationRow) {
     row.position,
     row.referenceNumber,
     row.resumeFileName,
-    row.resumeUrl ?? '',
+    row.resumeFileId ?? '',
+    '',
     row.referrerIrref ?? '',
     row.referrerEmail ?? '',
   ]);
@@ -981,21 +1032,32 @@ async function findCandidateRowByEmail(email: string) {
   const sheets = getSheetsClient();
   const normalizedEmail = email.trim().toLowerCase();
 
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${CANDIDATE_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  if (!headers.length) return null;
+
+  const emailIndex = headerIndex(headers, 'Email');
+  const idIndex = headerIndex(headers, 'iRAIN');
+  const legacyIndex = headerIndex(headers, LEGACY_CANDIDATE_ID_HEADER);
+  const lastCol = toColumnLetter(headers.length - 1);
   const existing = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!A:${CANDIDATE_LAST_COLUMN_LETTER}`,
+    range: `${CANDIDATE_SHEET_NAME}!A:${lastCol}`,
     majorDimension: 'ROWS',
   });
 
   const rows = existing.data.values ?? [];
   for (let index = 1; index < rows.length; index++) {
     const row = rows[index] ?? [];
-    const rowEmail = String(row[CANDIDATE_EMAIL_COLUMN_INDEX] ?? '').trim().toLowerCase();
+    const rowEmail = cellValue(row, emailIndex === -1 ? CANDIDATE_EMAIL_COLUMN_INDEX : emailIndex).toLowerCase();
     if (rowEmail && rowEmail === normalizedEmail) {
       return {
         rowIndex: index + 1, // 1-based for Google Sheets
-        id: String(row[0] ?? '').trim(),
-        legacyCandidateId: String(row[LEGACY_CANDIDATE_ID_COLUMN_INDEX] ?? '').trim(),
+        id: cellValue(row, idIndex === -1 ? 0 : idIndex),
+        legacyCandidateId: cellValue(row, legacyIndex === -1 ? LEGACY_CANDIDATE_ID_COLUMN_INDEX : legacyIndex),
       };
     }
   }
@@ -1008,27 +1070,80 @@ export async function findCandidateByIdentifier(identifier: string): Promise<Can
   if (!searchValue) return null;
 
   await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
+  await ensureColumns(CANDIDATE_SHEET_NAME, CANDIDATE_SECURITY_COLUMNS);
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
-  const searchByIrain = isIrain(searchValue);
-  const normalized = searchValue.toLowerCase();
 
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${CANDIDATE_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  if (!headers.length) return null;
+
+  const headerMap = buildHeaderMap(headers);
+  const lastCol = toColumnLetter(headers.length - 1);
   const existing = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!A:${CANDIDATE_LAST_COLUMN_LETTER}`,
+    range: `${CANDIDATE_SHEET_NAME}!A:${lastCol}`,
     majorDimension: 'ROWS',
   });
+
+  const searchByIrain = isIrain(searchValue);
+  const normalized = searchValue.toLowerCase();
+  const irainIndex = headerIndex(headers, 'iRAIN');
+  const legacyIndex = headerIndex(headers, LEGACY_CANDIDATE_ID_HEADER);
 
   const rows = existing.data.values ?? [];
   for (let index = 1; index < rows.length; index++) {
     const row = rows[index] ?? [];
-    const irain = cellValue(row, 0).toLowerCase();
-    const legacy = cellValue(row, LEGACY_CANDIDATE_ID_COLUMN_INDEX).toLowerCase();
+    const irain = cellValue(row, irainIndex === -1 ? 0 : irainIndex).toLowerCase();
+    const legacy = cellValue(row, legacyIndex === -1 ? LEGACY_CANDIDATE_ID_COLUMN_INDEX : legacyIndex).toLowerCase();
     const matches = searchByIrain ? irain === normalized : legacy === normalized;
     if (matches) {
       return {
         rowIndex: index + 1,
-        record: buildCandidateRecordFromRow(row),
+        record: buildCandidateRecordFromHeaderMap(headerMap, row),
+      };
+    }
+  }
+
+  return null;
+}
+
+export async function getCandidateByEmail(email: string): Promise<CandidateLookupResult | null> {
+  const normalizedEmail = email.trim().toLowerCase();
+  if (!normalizedEmail) return null;
+
+  await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
+  await ensureColumns(CANDIDATE_SHEET_NAME, CANDIDATE_SECURITY_COLUMNS);
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${CANDIDATE_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  if (!headers.length) return null;
+
+  const headerMap = buildHeaderMap(headers);
+  const lastCol = toColumnLetter(headers.length - 1);
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${CANDIDATE_SHEET_NAME}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const emailIndex = headerIndex(headers, 'Email');
+  const rows = existing.data.values ?? [];
+  for (let index = 1; index < rows.length; index++) {
+    const row = rows[index] ?? [];
+    const rowEmail = cellValue(row, emailIndex === -1 ? CANDIDATE_EMAIL_COLUMN_INDEX : emailIndex).toLowerCase();
+    if (rowEmail && rowEmail === normalizedEmail) {
+      return {
+        rowIndex: index + 1,
+        record: buildCandidateRecordFromHeaderMap(headerMap, row),
       };
     }
   }
@@ -1044,7 +1159,6 @@ export async function upsertCandidateRow(row: CandidateRow) {
     throw new Error('Missing Google Sheets spreadsheet ID. Please set GOOGLE_SHEETS_SPREADSHEET_ID.');
   }
 
-  const sheets = getSheetsClient();
   const timestamp = new Date().toISOString();
   const existing = await findCandidateRowByEmail(row.email);
   const providedLegacyId = row.legacyCandidateId ?? '';
@@ -1055,15 +1169,25 @@ export async function upsertCandidateRow(row: CandidateRow) {
     const legacyCandidateId =
       (isExistingIrain ? existing.legacyCandidateId : existing.legacyCandidateId || existing.id) ??
       providedLegacyId;
-    const range = `${CANDIDATE_SHEET_NAME}!A${existing.rowIndex}:${CANDIDATE_LAST_COLUMN_LETTER}${existing.rowIndex}`;
-
-    await sheets.spreadsheets.values.update({
-      spreadsheetId,
-      range,
-      valueInputOption: 'RAW',
-      requestBody: {
-        values: [buildCandidateRowValues(row, idToUse, timestamp, legacyCandidateId)],
-      },
+    await updateRowById(CANDIDATE_SHEET_NAME, 'iRAIN', existing.id, {
+      iRAIN: idToUse,
+      Timestamp: timestamp,
+      'First Name': row.firstName,
+      'Middle Name': row.middleName,
+      'Family Name': row.familyName,
+      Email: row.email,
+      Phone: row.phone,
+      'Located in Canada': row.locatedCanada,
+      Province: row.province,
+      'Work Authorization': row.authorizedCanada,
+      'Eligible to Move (6 Months)': row.eligibleMoveCanada,
+      'Country of Origin': row.countryOfOrigin,
+      Languages: row.languages,
+      'Languages Other': row.languagesOther,
+      'Industry Type': row.industryType,
+      'Industry Other': row.industryOther,
+      'Employment Status': row.employmentStatus,
+      [LEGACY_CANDIDATE_ID_HEADER]: legacyCandidateId,
     });
 
     return { id: idToUse, wasUpdated: true, legacyCandidateId };
@@ -1143,8 +1267,12 @@ export async function formatSheet(sheetName: string, headers: string[]) {
 }
 
 async function ensureAdminColumnsForSheet(sheetName: string) {
-  if (sheetName === CANDIDATE_SHEET_NAME || sheetName === REFERRER_SHEET_NAME) {
-    return ensureColumns(sheetName, ADMIN_TRACKING_COLUMNS);
+  if (sheetName === CANDIDATE_SHEET_NAME) {
+    return ensureColumns(sheetName, [...ADMIN_TRACKING_COLUMNS, ...CANDIDATE_SECURITY_COLUMNS]);
+  }
+
+  if (sheetName === REFERRER_SHEET_NAME) {
+    return ensureColumns(sheetName, [...ADMIN_TRACKING_COLUMNS, ...REFERRER_SECURITY_COLUMNS]);
   }
 
   if (sheetName === APPLICATION_SHEET_NAME) {
@@ -1231,7 +1359,7 @@ type ApplicationListItem = {
   position: string;
   referenceNumber: string;
   resumeFileName: string;
-  resumeUrl: string;
+  resumeFileId: string;
   referrerIrref: string;
   referrerEmail: string;
   status: string;
@@ -1445,6 +1573,7 @@ export async function listReferrers(params: ReferrerListParams) {
         careersPortal: getHeaderValue(headerMap, row, 'Careers Portal'),
         workType: getHeaderValue(headerMap, row, 'Work Type'),
         linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
+        portalTokenVersion: getHeaderValue(headerMap, row, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
         status: getHeaderValue(headerMap, row, 'Status'),
         ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
         tags: getHeaderValue(headerMap, row, 'Tags'),
@@ -1751,6 +1880,7 @@ export async function listApplications(
   params: ApplicationListParams,
 ): Promise<{ total: number; items: ApplicationListItem[] }> {
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  await ensureColumns(APPLICATION_SHEET_NAME, ['Resume File ID']);
 
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
@@ -1790,7 +1920,7 @@ export async function listApplications(
         position: getHeaderValue(headerMap, row, 'Position'),
         referenceNumber: getHeaderValue(headerMap, row, 'Reference Number'),
         resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name'),
-        resumeUrl: getHeaderValue(headerMap, row, 'Resume URL'),
+        resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID'),
         referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
         referrerEmail: getHeaderValue(headerMap, row, 'Referrer Email'),
         status: getHeaderValue(headerMap, row, 'Status'),
@@ -1808,7 +1938,6 @@ export async function listApplications(
           record.referenceNumber,
           record.ownerNotes,
           record.referrerEmail,
-          record.resumeUrl,
         ]
           .filter(Boolean)
           .map((value) => value.toLowerCase());
@@ -1830,6 +1959,7 @@ export async function listApplications(
 
 export async function getApplicationById(id: string) {
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  await ensureColumns(APPLICATION_SHEET_NAME, ['Resume File ID']);
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
 
@@ -1861,7 +1991,7 @@ export async function getApplicationById(id: string) {
           position: getHeaderValue(headerMap, row, 'Position'),
           referenceNumber: getHeaderValue(headerMap, row, 'Reference Number'),
           resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name'),
-          resumeUrl: getHeaderValue(headerMap, row, 'Resume URL'),
+          resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID'),
           referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
           referrerEmail: getHeaderValue(headerMap, row, 'Referrer Email'),
           status: getHeaderValue(headerMap, row, 'Status'),
@@ -2252,6 +2382,7 @@ export async function getCandidateByIrain(irain: string) {
 
 export async function getReferrerByIrref(irref: string) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureColumns(REFERRER_SHEET_NAME, REFERRER_SECURITY_COLUMNS);
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
 
@@ -2289,6 +2420,7 @@ export async function getReferrerByIrref(irref: string) {
           careersPortal: getHeaderValue(headerMap, row, 'Careers Portal'),
           workType: getHeaderValue(headerMap, row, 'Work Type'),
           linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
+          portalTokenVersion: getHeaderValue(headerMap, row, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
           status: getHeaderValue(headerMap, row, 'Status'),
           ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
           tags: getHeaderValue(headerMap, row, 'Tags'),

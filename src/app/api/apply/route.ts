@@ -1,8 +1,11 @@
 import { NextResponse } from 'next/server';
+import { timingSafeEqual } from 'crypto';
 
 import { uploadFileToDrive } from '@/lib/drive';
 import { applicationSubmittedToReferrer } from '@/lib/emailTemplates';
 import { sendMail } from '@/lib/mailer';
+import { rateLimit, rateLimitHeaders, RATE_LIMITS } from '@/lib/rateLimit';
+import { hashCandidateSecret } from '@/lib/candidateUpdateToken';
 import {
   appendApplicationRow,
   findCandidateByIdentifier,
@@ -36,9 +39,24 @@ const isAllowedResume = (file: File) => {
 };
 
 export async function POST(request: Request) {
+  const rate = await rateLimit(request, { keyPrefix: 'apply', ...RATE_LIMITS.apply });
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { ok: false, error: 'Too many requests. Please try again shortly.' },
+      { status: 429, headers: rateLimitHeaders(rate) },
+    );
+  }
+
   try {
     const form = await request.formData();
+    const honeypotEntry = form.get('website');
+    const honeypot =
+      typeof honeypotEntry === 'string' ? honeypotEntry.trim() : honeypotEntry ? '1' : '';
+    if (honeypot) {
+      return NextResponse.json({ ok: true });
+    }
     const candidateId = normalize(form.get('candidateId'));
+    const candidateKey = normalize(form.get('candidateKey'));
     const iCrn = normalize(form.get('iCrn'));
     const position = normalize(form.get('position'));
     const referenceNumberInput = normalize(form.get('referenceNumber'));
@@ -49,12 +67,12 @@ export async function POST(request: Request) {
         : '';
     const resumeEntry = form.get('resume');
 
-    if (!candidateId || !iCrn || !position) {
+    if (!candidateId || !candidateKey || !iCrn || !position) {
       return NextResponse.json(
         {
           ok: false,
           error:
-            'Please provide your iRAIN (or legacy candidate ID), iRCRN, and the position you are applying for.',
+            'Please provide your iRAIN (or legacy candidate ID), candidate key, iRCRN, and the position you are applying for.',
         },
         { status: 400 },
       );
@@ -90,6 +108,16 @@ export async function POST(request: Request) {
         { ok: false, error: 'We could not find a candidate with that ID.' },
         { status: 404 },
       );
+    }
+    const storedKeyHash = candidateRecord.record.candidateSecretHash?.trim().toLowerCase();
+    const providedKeyHash = candidateKey ? hashCandidateSecret(candidateKey) : '';
+    const keyMatches =
+      storedKeyHash &&
+      providedKeyHash &&
+      storedKeyHash.length === providedKeyHash.length &&
+      timingSafeEqual(Buffer.from(storedKeyHash, 'hex'), Buffer.from(providedKeyHash, 'hex'));
+    if (!keyMatches) {
+      return NextResponse.json({ ok: false, error: 'Invalid candidate credentials.' }, { status: 401 });
     }
     if (strictMode && !isIrain(candidateRecord.record.id)) {
       return NextResponse.json(
@@ -155,10 +183,7 @@ export async function POST(request: Request) {
       folderId: process.env.GDRIVE_FOLDER_ID || '',
     });
 
-    const resumeUrl = upload.webViewLink || upload.webContentLink;
-    if (!resumeUrl) {
-      throw new Error('Unable to generate a shareable CV link.');
-    }
+    const resumeFileId = upload.fileId;
 
     const candidate = candidateRecord.record;
     const candidateName = [candidate.firstName, candidate.familyName]
@@ -186,7 +211,6 @@ export async function POST(request: Request) {
       candidateId: candidate.id || candidateId,
       iCrn,
       position,
-      resumeUrl,
       resumeFileName: resumeEntry.name,
       referenceNumber,
       feedbackApproveUrl,
@@ -207,7 +231,7 @@ export async function POST(request: Request) {
       position,
       referenceNumber,
       resumeFileName: resumeEntry.name,
-      resumeUrl,
+      resumeFileId,
       referrerIrref: referrer.irref,
       referrerEmail: referrer.email,
     });
@@ -215,7 +239,6 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       id,
-      resumeUrl,
       candidate: {
         id: candidateRecord.record.id,
         legacyCandidateId: candidateRecord.record.legacyCandidateId,

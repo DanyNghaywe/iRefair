@@ -63,7 +63,7 @@ export async function uploadFileToDrive({
   mimeType = 'application/octet-stream',
   folderId,
   driveId = process.env.GDRIVE_DRIVE_ID,
-  makePublic = true,
+  makePublic = false,
 }: UploadParams): Promise<UploadResult> {
   if (!folderId) {
     throw new Error('Missing GDRIVE_FOLDER_ID (target folder for CV uploads).');
@@ -103,4 +103,31 @@ export async function uploadFileToDrive({
   }
 
   return { fileId, webViewLink, webContentLink };
+}
+
+export async function downloadFileFromDrive(fileId: string): Promise<{
+  buffer: Buffer;
+  mimeType: string;
+  name: string;
+}> {
+  const drive = getDriveClient();
+  const metadata = await drive.files.get({
+    fileId,
+    fields: 'name, mimeType',
+    supportsAllDrives: true,
+  });
+  const media = await drive.files.get(
+    {
+      fileId,
+      alt: 'media',
+      supportsAllDrives: true,
+    },
+    { responseType: 'arraybuffer' },
+  );
+
+  const mimeType = metadata.data.mimeType || 'application/octet-stream';
+  const name = metadata.data.name || 'resume';
+  const buffer = Buffer.from(media.data as ArrayBuffer);
+
+  return { buffer, mimeType, name };
 }
