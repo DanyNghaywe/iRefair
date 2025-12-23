@@ -41,7 +41,8 @@ export async function GET(request: NextRequest) {
   try {
     const { buffer, mimeType, name } = await downloadFileFromDrive(resumeFileId);
     const filename = sanitizeFilename(application.record.resumeFileName || name || 'resume');
-    return new NextResponse(buffer, {
+    const body = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
+    return new NextResponse(body, {
       status: 200,
       headers: {
         'Content-Type': resolveContentType(mimeType),
