@@ -1165,7 +1165,7 @@ export default function CandidatePage() {
                     <div className="status-banner status-banner--ok" role="status" aria-live="polite">
                       <SuccessAnimation
                         show={showSuccessAnimation}
-                        variant="submit"
+                        variant="default"
                         size="sm"
                         onAnimationComplete={() => setShowSuccessAnimation(false)}
                       />

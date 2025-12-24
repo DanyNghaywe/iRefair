@@ -572,7 +572,7 @@ export default function ReferrerPage() {
               >
                 <SuccessAnimation
                   show={showSuccessAnimation}
-                  variant="submit"
+                  variant="default"
                   size="lg"
                   onAnimationComplete={() => setShowSuccessAnimation(false)}
                 />
