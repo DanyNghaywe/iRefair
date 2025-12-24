@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ChangeEvent, FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { ActionBtn } from '@/components/ActionBtn';
 import { AppShell } from '@/components/AppShell';
 import { PublicFooter } from '@/components/PublicFooter';
 import { usePersistedLanguage } from '@/lib/usePersistedLanguage';
@@ -514,14 +515,14 @@ export default function ApplyPage() {
                     aria-describedby="resume-helper resume-file-name resume-error"
                     onChange={handleResumeChange}
                   />
-                  <button
-                    type="button"
-                    className="btn btn--ghost file-upload-trigger"
+                  <ActionBtn
+                    variant="ghost"
+                    className="file-upload-trigger"
                     onClick={() => resumeInputRef.current?.click()}
                     aria-describedby="resume-helper resume-file-name resume-error"
                   >
                     Add file
-                  </button>
+                  </ActionBtn>
                   <span id="resume-file-name" className="file-upload-name" aria-live="polite">
                     {resumeName || 'No file chosen'}
                   </span>
@@ -541,12 +542,12 @@ export default function ApplyPage() {
                 {status === 'submitting' ? 'Submitting your application...' : '* Required fields'}
               </div>
               <div className="actions">
-                <button type="reset" className="btn btn--ghost">
+                <ActionBtn variant="ghost" type="reset">
                   Clear form
-                </button>
-                <button type="submit" className="btn btn--primary" disabled={submitting}>
+                </ActionBtn>
+                <ActionBtn variant="primary" type="submit" disabled={submitting}>
                   {submitting ? 'Submitting...' : 'Submit'}
-                </button>
+                </ActionBtn>
               </div>
             </div>
           </form>

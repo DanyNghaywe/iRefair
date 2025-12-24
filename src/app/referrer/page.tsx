@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { FormEvent, useRef, useState } from 'react';
+import { ActionBtn } from '@/components/ActionBtn';
 import { AppShell } from '@/components/AppShell';
 import { Confetti, useConfetti } from '@/components/Confetti';
 import { PublicFooter } from '@/components/PublicFooter';
@@ -587,9 +588,9 @@ export default function ReferrerPage() {
 
                 {showFounderMeetCta ? (
                   <div className="success-founder-actions">
-                    <Link href={founderMeetLink} className="btn btn--ghost" target="_blank" rel="noreferrer">
+                    <ActionBtn as="link" href={founderMeetLink} variant="ghost" target="_blank" rel="noreferrer">
                       {t.success.founderCtaLabel}
-                    </Link>
+                    </ActionBtn>
                   </div>
                 ) : null}
               </section>
@@ -866,10 +867,10 @@ export default function ReferrerPage() {
                   )}
                 </div>
                 <div className="actions">
-                  <button className="btn btn--ghost" type="reset">
+                  <ActionBtn variant="ghost" type="reset">
                     {t.buttons.reset}
-                  </button>
-                  <button className="btn btn--primary" type="submit" disabled={submitting} aria-busy={submitting}>
+                  </ActionBtn>
+                  <ActionBtn variant="primary" type="submit" disabled={submitting} aria-busy={submitting}>
                     {submitting ? (
                       <>
                         {t.buttons.submitting}
@@ -878,7 +879,7 @@ export default function ReferrerPage() {
                     ) : (
                       t.buttons.submit
                     )}
-                  </button>
+                  </ActionBtn>
                 </div>
               </div>
             </form>

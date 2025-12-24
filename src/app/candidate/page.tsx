@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
+import { ActionBtn } from '@/components/ActionBtn';
 import { AppShell } from '@/components/AppShell';
 import { Confetti, useConfetti } from '@/components/Confetti';
 import { PublicFooter } from '@/components/PublicFooter';
@@ -1111,14 +1112,14 @@ export default function CandidatePage() {
                       onChange={handleResumeChange}
                       aria-describedby="resume-helper resume-file-name resume-error"
                     />
-                    <button
-                      type="button"
-                      className="btn btn--ghost file-upload-trigger"
+                    <ActionBtn
+                      variant="ghost"
+                      className="file-upload-trigger"
                       onClick={() => resumeInputRef.current?.click()}
                       aria-describedby="resume-helper resume-file-name resume-error"
                     >
                       {t.upload}
-                    </button>
+                    </ActionBtn>
                     <span id="resume-file-name" className="file-upload-name" aria-live="polite">
                       {resumeName || t.noFile}
                     </span>
@@ -1179,10 +1180,10 @@ export default function CandidatePage() {
                   )}
                 </div>
                 <div className="actions">
-                  <button className="btn btn--ghost" type="reset">
+                  <ActionBtn variant="ghost" type="reset">
                     {t.buttons.reset}
-                  </button>
-                  <button className="btn btn--primary" type="submit" disabled={submitting} aria-busy={submitting}>
+                  </ActionBtn>
+                  <ActionBtn variant="primary" type="submit" disabled={submitting} aria-busy={submitting}>
                     {submitting ? (
                       <>
                         {t.buttons.submitting}
@@ -1191,7 +1192,7 @@ export default function CandidatePage() {
                     ) : (
                       t.buttons.submit
                     )}
-                  </button>
+                  </ActionBtn>
                 </div>
               </div>
             </form>
