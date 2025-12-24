@@ -7,6 +7,7 @@ import { ActionBtn } from "@/components/ActionBtn";
 import { AutosaveHint } from "@/components/founder/AutosaveHint";
 import { DetailPageShell } from "@/components/founder/DetailPageShell";
 import { DetailSection } from "@/components/founder/DetailSection";
+import { Skeleton, SkeletonDetailGrid, SkeletonStack } from "@/components/founder/Skeleton";
 import { Topbar } from "@/components/founder/Topbar";
 
 type ReferrerRecord = {
@@ -490,9 +491,39 @@ export default function ReferrerReviewPage() {
     return (
       <div className="founder-page">
         <Topbar title="Referrer Review" subtitle={cleanIrref.toUpperCase()} />
-        <div className="card">
-          <p className="field-hint">Loading referrer details...</p>
-        </div>
+        <DetailPageShell
+          main={
+            <>
+              <DetailSection title="Status + Approval">
+                <SkeletonDetailGrid fields={2} />
+              </DetailSection>
+              <DetailSection title="Profile">
+                <SkeletonDetailGrid fields={6} />
+              </DetailSection>
+              <DetailSection title="Company">
+                <SkeletonDetailGrid fields={4} />
+              </DetailSection>
+              <DetailSection title="Links">
+                <SkeletonDetailGrid fields={2} />
+                <SkeletonStack>
+                  <Skeleton variant="button" />
+                  <Skeleton variant="button" />
+                  <Skeleton variant="button" />
+                </SkeletonStack>
+              </DetailSection>
+            </>
+          }
+          sidebar={
+            <DetailSection title="Decision">
+              <SkeletonStack>
+                <Skeleton variant="input" />
+                <Skeleton variant="button" />
+                <Skeleton variant="button" />
+                <Skeleton variant="button" />
+              </SkeletonStack>
+            </DetailSection>
+          }
+        />
       </div>
     );
   }

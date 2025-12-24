@@ -1,0 +1,137 @@
+/* ActionBtn Component Styles */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  border: 1px solid transparent;
+  border-radius: 12px;
+  padding: 12px 16px;
+
+  min-height: 44px;
+  font-size: var(--font-size-base);
+  line-height: 1;
+  font-weight: 700;
+  font-family: inherit;
+
+  cursor: pointer;
+  text-decoration: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  appearance: none;
+
+  transition: transform 0.12s ease, box-shadow 0.15s ease, border-color 0.15s ease, background 0.2s ease, color 0.2s ease;
+}
+
+/* Size modifier */
+.sm {
+  padding: 10px 14px;
+  min-height: 40px;
+  font-size: var(--font-size-sm);
+}
+
+/* Primary variant */
+.primary {
+  background: var(--accent-primary);
+  color: #ffffff;
+  box-shadow: 0 12px 26px rgba(var(--accent-primary-rgb), 0.2);
+  border: 1px solid rgba(var(--accent-primary-rgb), 0.35);
+  background-image: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0));
+}
+
+.primary:hover {
+  transform: translateY(-1px) scale(1.005);
+  box-shadow: 0 14px 28px rgba(var(--accent-primary-rgb), 0.24);
+  background: linear-gradient(135deg, var(--accent-primary), rgba(var(--accent-primary-rgb), 0.9));
+  border-color: rgba(var(--accent-primary-rgb), 0.45);
+}
+
+.primary:active {
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 6px 14px rgba(var(--accent-primary-rgb), 0.18);
+  background: linear-gradient(135deg, rgba(var(--accent-primary-rgb), 0.92), var(--accent-primary));
+  border-color: rgba(var(--accent-primary-rgb), 0.5);
+}
+
+.primary:focus-visible {
+  outline: 2px solid rgba(var(--accent-primary-rgb), 0.65);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(var(--accent-primary-rgb), 0.2), 0 12px 26px rgba(var(--accent-primary-rgb), 0.18);
+}
+
+/* Ghost variant */
+.ghost {
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--ink);
+  border-color: rgba(var(--accent-primary-rgb), 0.35);
+  box-shadow: 0 10px 18px rgba(17, 24, 39, 0.06);
+}
+
+.ghost:hover {
+  background: #ffffff;
+  border-color: rgba(var(--accent-primary-rgb), 0.5);
+  transform: translateY(-0.5px);
+  color: var(--ink);
+}
+
+.ghost:active {
+  background: rgba(255, 255, 255, 0.92);
+  border-color: rgba(var(--accent-primary-rgb), 0.55);
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 4px 8px rgba(17, 24, 39, 0.06);
+}
+
+.ghost:focus-visible {
+  outline: 2px solid rgba(var(--accent-primary-rgb), 0.6);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(var(--accent-primary-rgb), 0.2), 0 8px 16px rgba(17, 24, 39, 0.06);
+}
+
+.disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+  transform: none;
+}
+
+/* Success state after form submission */
+.success {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+  border-color: rgba(34, 197, 94, 0.5);
+  box-shadow: 0 12px 26px rgba(34, 197, 94, 0.25);
+  pointer-events: none;
+}
+
+.success::after {
+  content: "";
+  width: 18px;
+  height: 18px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'%3E%3C/polyline%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  animation: checkmarkPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes checkmarkPop {
+  0% {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2) rotate(0deg);
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 720px) {
+  .btn {
+    width: 100%;
+    text-align: center;
+    min-height: 44px;
+  }
+}

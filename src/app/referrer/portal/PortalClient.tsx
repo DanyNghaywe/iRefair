@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { ActionBtn } from "@/components/ActionBtn";
+import { EmptyState } from "@/components/founder/EmptyState";
+import { Skeleton, SkeletonPortalRows, SkeletonStack } from "@/components/founder/Skeleton";
 
 type PortalItem = {
   id: string;
@@ -144,13 +146,15 @@ export default function PortalClient() {
     return (
       <div className="portal-stack">
         {header}
-        <section className="card page-card portal-card portal-state-card" aria-live="polite">
-          <div className="portal-state">
-            <div className="portal-state__icon portal-state__icon--loading" aria-hidden="true" />
-            <div>
-              <p className="portal-state__title">Loading portal</p>
-              <p className="portal-state__message">Fetching your referrals and status updates.</p>
-            </div>
+        <section className="card page-card portal-card portal-table-card" aria-live="polite">
+          <div className="portal-table-header">
+            <SkeletonStack>
+              <Skeleton variant="heading" size="sm" width="40%" />
+              <Skeleton variant="text" width="25%" />
+            </SkeletonStack>
+          </div>
+          <div className="portal-table-wrapper">
+            <SkeletonPortalRows rows={5} />
           </div>
         </section>
       </div>
@@ -222,42 +226,11 @@ export default function PortalClient() {
                   {sortedItems.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="portal-table-empty">
-                        <div className="portal-empty">
-                          <svg
-                            width="64"
-                            height="64"
-                            viewBox="0 0 64 64"
-                            fill="none"
-                            xmlns="http://www.w3.org/2000/svg"
-                            aria-hidden="true"
-                            className="portal-empty__icon portal-empty__icon--svg"
-                          >
-                            <circle cx="32" cy="32" r="30" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.15" />
-                            <circle cx="32" cy="32" r="22" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.1" />
-                            <rect
-                              x="20"
-                              y="18"
-                              width="24"
-                              height="28"
-                              rx="3"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeOpacity="0.4"
-                            />
-                            <path
-                              d="M26 26h12M26 32h12M26 38h8"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeOpacity="0.3"
-                              strokeLinecap="round"
-                            />
-                            <circle cx="40" cy="38" r="2" fill="currentColor" fillOpacity="0.2" />
-                          </svg>
-                          <p className="portal-empty__title">No applications assigned</p>
-                          <p className="portal-empty__message">
-                            Candidate applications will appear here once they're assigned to you. Check back soon for new referrals to review.
-                          </p>
-                        </div>
+                        <EmptyState
+                          variant="portal"
+                          title="No applications assigned"
+                          description="Candidate applications will appear here once they're assigned to you. Check back soon for new referrals to review."
+                        />
                       </td>
                     </tr>
                   ) : (

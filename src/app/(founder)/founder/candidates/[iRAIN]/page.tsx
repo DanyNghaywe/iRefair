@@ -8,7 +8,7 @@ import { AutosaveHint } from "@/components/founder/AutosaveHint";
 import { Badge } from "@/components/founder/Badge";
 import { DetailPageShell } from "@/components/founder/DetailPageShell";
 import { DetailSection } from "@/components/founder/DetailSection";
-import { Skeleton } from "@/components/founder/Skeleton";
+import { Skeleton, SkeletonDetailGrid, SkeletonStack } from "@/components/founder/Skeleton";
 import { Topbar } from "@/components/founder/Topbar";
 
 type CandidateRecord = {
@@ -338,9 +338,28 @@ export default function CandidateReviewPage() {
     return (
       <div className="founder-page">
         <Topbar title="Candidate Review" subtitle={cleanIrain.toUpperCase()} />
-        <div className="card">
-          <p className="field-hint">Loading candidate details...</p>
-        </div>
+        <DetailPageShell
+          main={
+            <>
+              <DetailSection title="Profile">
+                <SkeletonDetailGrid fields={8} />
+              </DetailSection>
+              <DetailSection title="Admin">
+                <SkeletonDetailGrid fields={4} />
+              </DetailSection>
+            </>
+          }
+          sidebar={
+            <DetailSection title="Decision">
+              <SkeletonStack>
+                <Skeleton variant="input" />
+                <Skeleton variant="button" />
+                <Skeleton variant="button" />
+                <Skeleton variant="button" />
+              </SkeletonStack>
+            </DetailSection>
+          }
+        />
       </div>
     );
   }
@@ -706,10 +725,10 @@ export default function CandidateReviewPage() {
 
             <DetailSection title="Applications">
               {appsLoading ? (
-                <div className="founder-stack">
-                  <Skeleton width="100%" height={12} />
-                  <Skeleton width="80%" height={12} />
-                </div>
+                <SkeletonStack>
+                  <Skeleton variant="text" width="100%" />
+                  <Skeleton variant="text" width="80%" />
+                </SkeletonStack>
               ) : applications.length === 0 ? (
                 <p className="founder-card__meta">No applications yet.</p>
               ) : (

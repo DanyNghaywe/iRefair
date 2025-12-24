@@ -57,7 +57,7 @@ export default function SettingsPage() {
     <div className="founder-page">
       <Topbar title="Settings" subtitle="Maintenance tools for founder" />
 
-      <div className="founder-card">
+      <div className="glass-card founder-card">
         <div className="founder-card__header">
           <div>
             <div className="founder-card__title">Sheets maintenance</div>
@@ -76,7 +76,7 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      <div className="founder-card">
+      <div className="glass-card founder-card">
         <div className="founder-card__header">
           <div>
             <div className="founder-card__title">Format sheets</div>

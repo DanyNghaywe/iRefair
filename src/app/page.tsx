@@ -171,7 +171,7 @@ export default function Home() {
       <main className="role-picker">
         <section className="role-shell" aria-labelledby="role-heading">
           <header className="role-shell__header">
-            <h1 id="role-heading" className="title-animate">
+            <h1 id="role-heading" className="title-animate title-gradient heading-display">
               Choose your path
             </h1>
           </header>

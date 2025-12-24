@@ -516,7 +516,7 @@ export default function ApplyPage() {
                   />
                   <button
                     type="button"
-                    className="btn ghost file-upload-trigger"
+                    className="btn btn--ghost file-upload-trigger"
                     onClick={() => resumeInputRef.current?.click()}
                     aria-describedby="resume-helper resume-file-name resume-error"
                   >
@@ -541,10 +541,10 @@ export default function ApplyPage() {
                 {status === 'submitting' ? 'Submitting your application...' : '* Required fields'}
               </div>
               <div className="actions">
-                <button type="reset" className="btn ghost">
+                <button type="reset" className="btn btn--ghost">
                   Clear form
                 </button>
-                <button type="submit" className="btn primary" disabled={submitting}>
+                <button type="submit" className="btn btn--primary" disabled={submitting}>
                   {submitting ? 'Submitting...' : 'Submit'}
                 </button>
               </div>

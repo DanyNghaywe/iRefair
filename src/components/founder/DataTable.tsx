@@ -2,6 +2,7 @@
 
 import React, { useMemo, useState } from "react";
 
+import styles from "./DataTable.module.css";
 import { Skeleton } from "./Skeleton";
 
 export type Column<T> = {
@@ -22,6 +23,8 @@ type Props<T> = {
   onRowClick?: (row: T) => void;
   rowAriaLabel?: (row: T) => string;
   tableClassName?: string;
+  /** Enable responsive card layout on mobile */
+  responsiveCards?: boolean;
 };
 
 type SortState = {
@@ -37,6 +40,7 @@ export function DataTable<T>({
   onRowClick,
   rowAriaLabel,
   tableClassName,
+  responsiveCards = true,
 }: Props<T>) {
   const [sort, setSort] = useState<SortState>({ key: null, direction: "asc" });
 
@@ -91,19 +95,21 @@ export function DataTable<T>({
 
   const renderSkeletonRows = () => {
     return Array.from({ length: 6 }).map((_, idx) => (
-      <tr key={`skeleton-${idx}`}>
+      <tr key={`skeleton-${idx}`} style={{ animationDelay: `${idx * 50}ms` }}>
         {columns.map((col, colIdx) => (
           <td key={`s-${idx}-${colIdx}`} style={col.align ? { textAlign: col.align } : undefined}>
-            <Skeleton width="80%" />
+            <Skeleton variant="tableCell" width={colIdx === 0 ? "70%" : "60%"} />
           </td>
         ))}
       </tr>
     ));
   };
 
+  const wrapperClass = [styles.table, responsiveCards ? styles.responsiveCards : ""].filter(Boolean).join(" ");
+
   return (
-    <div className="founder-table">
-      <div className="founder-table__container">
+    <div className={wrapperClass}>
+      <div className={styles.container}>
         <table className={tableClassName}>
           <colgroup>
             {columns.map((column) => (
@@ -120,13 +126,13 @@ export function DataTable<T>({
                       ? { ...(column.width ? { width: column.width } : {}), ...(column.align ? { textAlign: column.align } : {}) }
                       : undefined
                   }
-                  className={[column.sortable ? "is-sortable" : "", column.className || ""].filter(Boolean).join(" ") || undefined}
+                  className={[column.sortable ? styles.sortable : "", column.className || ""].filter(Boolean).join(" ") || undefined}
                   onClick={() => handleSort(column)}
                 >
-                  <div className="founder-table__header-cell">
+                  <div className={styles.headerCell}>
                     <span>{column.header}</span>
                     {sort.key === String(column.key) ? (
-                      <span aria-hidden="true" className="founder-table__sort-indicator">
+                      <span aria-hidden="true" className={styles.sortIndicator}>
                         {sort.direction === "asc" ? "↑" : "↓"}
                       </span>
                     ) : null}
@@ -140,7 +146,7 @@ export function DataTable<T>({
               renderSkeletonRows()
             ) : sorted.length === 0 ? (
               <tr>
-                <td colSpan={columns.length} className="founder-table__empty">
+                <td colSpan={columns.length} className={styles.empty}>
                   {emptyState || "No records found."}
                 </td>
               </tr>
@@ -148,7 +154,7 @@ export function DataTable<T>({
               sorted.map((row, rowIndex) => (
                 <tr
                   key={rowIndex}
-                  className={onRowClick ? "is-clickable" : undefined}
+                  className={onRowClick ? styles.clickable : undefined}
                   onClick={onRowClick ? (event) => handleRowClick(event, row) : undefined}
                   onKeyDown={onRowClick ? (event) => handleRowKeyDown(event, row) : undefined}
                   tabIndex={onRowClick ? 0 : undefined}
@@ -160,6 +166,7 @@ export function DataTable<T>({
                       key={String(column.key)}
                       className={column.className}
                       style={column.align ? { textAlign: column.align } : undefined}
+                      data-label={responsiveCards ? column.header : undefined}
                     >
                       {column.render ? column.render(row) : String((row as Record<string, unknown>)[column.key as string] ?? "")}
                     </td>

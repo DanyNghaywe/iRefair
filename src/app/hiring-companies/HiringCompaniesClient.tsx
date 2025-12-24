@@ -40,7 +40,7 @@ export function HiringCompaniesClient({ mergedCompanies }: Props) {
             </li>
           </ol>
 
-          <div className="hiring-table-wrapper" aria-labelledby="company-table-title">
+          <div className="hiring-table-wrapper table-responsive-cards" aria-labelledby="company-table-title">
             <div className="hiring-table-title" id="company-table-title">
               iRCRN company list
             </div>
@@ -59,10 +59,10 @@ export function HiringCompaniesClient({ mergedCompanies }: Props) {
                     const careersUrl = normalizeHttpUrl(company.careersUrl || '');
                     return (
                       <tr key={company.code}>
-                        <td>{company.code}</td>
-                        <td>{company.name}</td>
-                        <td>{company.industry}</td>
-                        <td>
+                        <td data-label="iRCRN">{company.code}</td>
+                        <td data-label="Company">{company.name}</td>
+                        <td data-label="Industry">{company.industry}</td>
+                        <td data-label="Careers" className="td--full">
                           {careersUrl ? (
                             <Link
                               href={careersUrl}

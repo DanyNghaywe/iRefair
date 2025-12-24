@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { ChangeEvent, FormEvent, useRef, useState } from 'react';
+import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
 import { AppShell } from '@/components/AppShell';
+import { Confetti, useConfetti } from '@/components/Confetti';
 import { PublicFooter } from '@/components/PublicFooter';
 import { Select } from '@/components/Select';
+import { SuccessAnimation } from '@/components/SuccessAnimation';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 import { countryOptions } from '@/lib/countries';
 import { usePersistedLanguage } from '@/lib/usePersistedLanguage';
@@ -399,6 +401,8 @@ export default function CandidatePage() {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
   const formRef = useRef<HTMLFormElement | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const confetti = useConfetti();
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [languageSelection, setLanguageSelection] = useState<string[]>([]);
   const [countrySelection, setCountrySelection] = useState('');
   const [locatedInCanada, setLocatedInCanada] = useState('');
@@ -663,6 +667,8 @@ export default function CandidatePage() {
       }
 
       setStatus('ok');
+      confetti.trigger();
+      setShowSuccessAnimation(true);
     } catch {
       setStatus('error');
     } finally {
@@ -757,6 +763,7 @@ export default function CandidatePage() {
                       name="first-name"
                       type="text"
                       required
+                      autoComplete="given-name"
                       aria-invalid={Boolean(errors['first-name'])}
                       aria-describedby="first-name-error"
                       onChange={handleFieldChange('first-name')}
@@ -773,6 +780,7 @@ export default function CandidatePage() {
                       id="middle-name"
                       name="middle-name"
                       type="text"
+                      autoComplete="additional-name"
                       aria-invalid={Boolean(errors['middle-name'])}
                       aria-describedby="middle-name-error"
                       onChange={handleFieldChange('middle-name')}
@@ -788,6 +796,7 @@ export default function CandidatePage() {
                       name="family-name"
                       type="text"
                       required
+                      autoComplete="family-name"
                       aria-invalid={Boolean(errors['family-name'])}
                       aria-describedby="family-name-error"
                       onChange={handleFieldChange('family-name')}
@@ -822,6 +831,8 @@ export default function CandidatePage() {
                       id="email"
                       name="email"
                       type="email"
+                      inputMode="email"
+                      autoComplete="email"
                       required
                       aria-invalid={Boolean(errors.email)}
                       aria-describedby="email-error"
@@ -877,6 +888,8 @@ export default function CandidatePage() {
                       id="phone"
                       name="phone"
                       type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
                       required
                       placeholder={t.placeholders.phone}
                       aria-invalid={Boolean(errors.phone)}
@@ -1049,6 +1062,8 @@ export default function CandidatePage() {
                       id="linkedin"
                       name="linkedin"
                       type="url"
+                      inputMode="url"
+                      autoComplete="url"
                       ref={linkedinInputRef}
                       aria-invalid={Boolean(errors.linkedin)}
                       aria-describedby="linkedin-error"
@@ -1098,7 +1113,7 @@ export default function CandidatePage() {
                     />
                     <button
                       type="button"
-                      className="btn ghost file-upload-trigger"
+                      className="btn btn--ghost file-upload-trigger"
                       onClick={() => resumeInputRef.current?.click()}
                       aria-describedby="resume-helper resume-file-name resume-error"
                     >
@@ -1147,7 +1162,12 @@ export default function CandidatePage() {
                 <div className="footer-status">
                   {status === 'ok' && (
                     <div className="status-banner status-banner--ok" role="status" aria-live="polite">
-                      <span className="status-icon" aria-hidden="true">✓</span>
+                      <SuccessAnimation
+                        show={showSuccessAnimation}
+                        variant="submit"
+                        size="sm"
+                        onAnimationComplete={() => setShowSuccessAnimation(false)}
+                      />
                       <span>{t.statusMessages.ok}</span>
                     </div>
                   )}
@@ -1159,10 +1179,10 @@ export default function CandidatePage() {
                   )}
                 </div>
                 <div className="actions">
-                  <button className="btn ghost" type="reset">
+                  <button className="btn btn--ghost" type="reset">
                     {t.buttons.reset}
                   </button>
-                  <button className="btn primary" type="submit" disabled={submitting} aria-busy={submitting}>
+                  <button className="btn btn--primary" type="submit" disabled={submitting} aria-busy={submitting}>
                     {submitting ? (
                       <>
                         {t.buttons.submitting}
@@ -1178,6 +1198,7 @@ export default function CandidatePage() {
           </section>
       </main>
       <PublicFooter />
+      <Confetti active={confetti.active} onComplete={confetti.reset} />
     </AppShell>
   );
 }

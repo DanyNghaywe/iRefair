@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 
+import { SkeletonCard } from "@/components/founder/Skeleton";
 import { Topbar } from "@/components/founder/Topbar";
 import { LogoutButton } from "./LogoutButton";
 
@@ -57,10 +58,16 @@ export default function FounderDashboard() {
 
       <div className="founder-grid">
         {cards.map((card) => (
-          <div key={card.title} className="founder-card">
-            <div className="founder-card__title">{card.title}</div>
-            <div className="founder-card__value">{card.value ?? "-"}</div>
-            <div className="founder-card__meta">{card.hint}</div>
+          <div key={card.title} className="glass-card founder-card">
+            {card.value === null ? (
+              <SkeletonCard />
+            ) : (
+              <>
+                <div className="founder-card__title">{card.title}</div>
+                <div className="founder-card__value">{card.value}</div>
+                <div className="founder-card__meta">{card.hint}</div>
+              </>
+            )}
           </div>
         ))}
       </div>

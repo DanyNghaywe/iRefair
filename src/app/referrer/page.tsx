@@ -3,8 +3,10 @@
 import Link from 'next/link';
 import { FormEvent, useRef, useState } from 'react';
 import { AppShell } from '@/components/AppShell';
+import { Confetti, useConfetti } from '@/components/Confetti';
 import { PublicFooter } from '@/components/PublicFooter';
 import { Select } from '@/components/Select';
+import { SuccessAnimation } from '@/components/SuccessAnimation';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 import { countryOptions } from '@/lib/countries';
 import { usePersistedLanguage } from '@/lib/usePersistedLanguage';
@@ -305,6 +307,8 @@ export default function ReferrerPage() {
   const [countrySelection, setCountrySelection] = useState('');
   const [workTypeSelection, setWorkTypeSelection] = useState('');
   const [iRref, setIRref] = useState<string | null>(null);
+  const confetti = useConfetti();
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const t = translations[language];
   const founderMeetLink = (process.env.FOUNDER_MEET_LINK || '').trim();
   const showFounderMeetCta = Boolean(founderMeetLink);
@@ -505,6 +509,8 @@ export default function ReferrerPage() {
 
       setIRref(typeof data.iRref === 'string' ? data.iRref : null);
       setStatus('ok');
+      confetti.trigger();
+      setShowSuccessAnimation(true);
     } catch {
       setIRref(null);
       setStatus('error');
@@ -563,6 +569,12 @@ export default function ReferrerPage() {
                 aria-label={t.success.title}
                 style={{ marginBottom: '1.5rem' }}
               >
+                <SuccessAnimation
+                  show={showSuccessAnimation}
+                  variant="submit"
+                  size="lg"
+                  onAnimationComplete={() => setShowSuccessAnimation(false)}
+                />
                 <h3 className="success-title">{t.success.title}</h3>
                 <p className="success-text">{t.success.thankYou}</p>
 
@@ -575,7 +587,7 @@ export default function ReferrerPage() {
 
                 {showFounderMeetCta ? (
                   <div className="success-founder-actions">
-                    <Link href={founderMeetLink} className="btn ghost" target="_blank" rel="noreferrer">
+                    <Link href={founderMeetLink} className="btn btn--ghost" target="_blank" rel="noreferrer">
                       {t.success.founderCtaLabel}
                     </Link>
                   </div>
@@ -622,6 +634,7 @@ export default function ReferrerPage() {
                       id="referrer-name"
                       name="referrer-name"
                       type="text"
+                      autoComplete="name"
                       required
                       aria-invalid={Boolean(errors['referrer-name'])}
                       aria-describedby="referrer-name-error"
@@ -637,6 +650,8 @@ export default function ReferrerPage() {
                       id="referrer-email"
                       name="referrer-email"
                       type="email"
+                      inputMode="email"
+                      autoComplete="email"
                       required
                       aria-invalid={Boolean(errors['referrer-email'])}
                       aria-describedby="referrer-email-error"
@@ -651,7 +666,9 @@ export default function ReferrerPage() {
                     <input
                       id="referrer-phone"
                       name="referrer-phone"
-                      type="text"
+                      type="tel"
+                      inputMode="tel"
+                      autoComplete="tel"
                       required
                       aria-invalid={Boolean(errors['referrer-phone'])}
                       aria-describedby="referrer-phone-helper referrer-phone-error"
@@ -690,6 +707,8 @@ export default function ReferrerPage() {
                       id="referrer-linkedin"
                       name="referrer-linkedin"
                       type="url"
+                      inputMode="url"
+                      autoComplete="url"
                       ref={linkedinInputRef}
                       aria-invalid={Boolean(errors['referrer-linkedin'])}
                       aria-describedby="referrer-linkedin-error"
@@ -790,6 +809,7 @@ export default function ReferrerPage() {
                       id="referrer-careers-portal"
                       name="referrer-careers-portal"
                       type="url"
+                      inputMode="url"
                       required
                       placeholder={t.placeholders.careersPortal || 'https://company.com/careers'}
                       aria-invalid={Boolean(errors['referrer-careers-portal'])}
@@ -846,10 +866,10 @@ export default function ReferrerPage() {
                   )}
                 </div>
                 <div className="actions">
-                  <button className="btn ghost" type="reset">
+                  <button className="btn btn--ghost" type="reset">
                     {t.buttons.reset}
                   </button>
-                  <button className="btn primary" type="submit" disabled={submitting} aria-busy={submitting}>
+                  <button className="btn btn--primary" type="submit" disabled={submitting} aria-busy={submitting}>
                     {submitting ? (
                       <>
                         {t.buttons.submitting}
@@ -865,6 +885,7 @@ export default function ReferrerPage() {
           </section>
       </main>
       <PublicFooter />
+      <Confetti active={confetti.active} onComplete={confetti.reset} />
     </AppShell>
   );
 }

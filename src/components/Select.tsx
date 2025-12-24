@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ChangeEvent } from 'react';
 
+import styles from './Select.module.css';
+
 type Option = { value: string; label: string };
 
 type SelectProps = {
@@ -270,7 +272,7 @@ export function Select({
 
   if (shouldUseNative) {
     return (
-      <div className="select-field is-native" ref={wrapperRef}>
+      <div className={`${styles.field} ${styles.isNative}`} ref={wrapperRef}>
         <select
           id={id}
           name={name}
@@ -279,7 +281,7 @@ export function Select({
           required={required}
           aria-describedby={ariaDescribedBy}
           aria-invalid={ariaInvalid}
-          className="select-native is-visible"
+          className={`${styles.native} ${styles.nativeVisible}`}
         >
           <option value="" disabled>
             {placeholder}
@@ -295,7 +297,7 @@ export function Select({
   }
 
   return (
-    <div className={`select-field ${isOpen ? 'is-open' : ''}`} ref={wrapperRef}>
+    <div className={`${styles.field} ${isOpen ? styles.isOpen : ''}`} ref={wrapperRef}>
       <select
         id={id}
         name={name}
@@ -305,7 +307,7 @@ export function Select({
         required={required}
         aria-hidden="true"
         tabIndex={-1}
-        className="select-native"
+        className={styles.native}
         aria-describedby={ariaDescribedBy}
         aria-invalid={ariaInvalid}
       >
@@ -324,7 +326,7 @@ export function Select({
       <button
         type="button"
         ref={triggerRef}
-        className="select-trigger"
+        className={styles.trigger}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-controls={listboxId}
@@ -341,11 +343,11 @@ export function Select({
         onKeyDown={handleKeyDown}
       >
         {multi ? (
-          <span className={`select-value ${resolvedSelectedValues.length ? '' : 'is-placeholder'}`}>
+          <span className={`${styles.value} ${resolvedSelectedValues.length ? '' : styles.isPlaceholder}`}>
             {resolvedSelectedValues.length ? (
-              <span className="select-chips">
+              <span className={styles.chips}>
                 {selectedLabelMulti.map((label) => (
-                  <span key={label} className="select-chip">
+                  <span key={label} className={styles.chip}>
                     {label}
                   </span>
                 ))}
@@ -355,9 +357,9 @@ export function Select({
             )}
           </span>
         ) : (
-          <span className={`select-value ${selectedLabel ? '' : 'is-placeholder'}`}>{selectedLabel || placeholder}</span>
+          <span className={`${styles.value} ${selectedLabel ? '' : styles.isPlaceholder}`}>{selectedLabel || placeholder}</span>
         )}
-        <span className="select-chevron" aria-hidden="true">
+        <span className={styles.chevron} aria-hidden="true">
           <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
             <path d="M2 3l5 4 5-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
@@ -366,7 +368,7 @@ export function Select({
 
       {isOpen && (
         <ul
-          className="select-dropdown"
+          className={styles.dropdown}
           role="listbox"
           id={listboxId}
           aria-activedescendant={activeOptionId}
@@ -386,7 +388,7 @@ export function Select({
                 id={`${id}-option-${index}`}
                 role="option"
                 aria-selected={isSelected}
-                className={`select-option ${isHighlighted ? 'is-highlighted' : ''} ${isSelected ? 'is-selected' : ''}`}
+                className={`${styles.option} ${isHighlighted ? styles.optionHighlighted : ''} ${isSelected ? styles.optionSelected : ''}`}
                 data-option-index={index}
                 onMouseEnter={() => setHighlightedIndex(index)}
                 onMouseDown={(event) => {

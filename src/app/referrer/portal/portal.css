@@ -4,7 +4,7 @@
 
 .portal-stack {
   display: grid;
-  gap: 18px;
+  gap: 16px;
 }
 
 .portal-card {
@@ -15,7 +15,7 @@
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 18px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
@@ -274,7 +274,7 @@
 }
 
 .portal-table-empty {
-  padding: 26px 12px;
+  padding: 24px 12px;
   text-align: center;
 }
 

@@ -102,6 +102,7 @@ export default function LoginForm() {
           id="email"
           name="email"
           type="email"
+          inputMode="email"
           autoComplete="username"
           placeholder=""
           value={email}

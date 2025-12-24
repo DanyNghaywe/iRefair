@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { AppShell } from "@/components/AppShell";
+import { Skeleton, SkeletonStack } from "@/components/founder/Skeleton";
 import LoginForm from "./LoginForm";
 
 export const metadata: Metadata = {
@@ -14,7 +15,7 @@ export default function FounderLoginPage() {
     <AppShell>
       <div className="founder-login-screen" aria-labelledby="founder-login-title">
         <main className="founder-login-main">
-          <section className="founder-login-card founder-auth">
+          <section className="glass-card founder-login-card founder-auth">
             <div className="founder-login-header">
               <div className="founder-login-brand">
                 <span className="founder-login-brand__text">IREFair</span>
@@ -22,7 +23,15 @@ export default function FounderLoginPage() {
               <h1 id="founder-login-title">Login</h1>
             </div>
 
-            <Suspense fallback={<div className="founder-login-loading">Loading...</div>}>
+            <Suspense
+              fallback={
+                <SkeletonStack>
+                  <Skeleton variant="input" />
+                  <Skeleton variant="input" />
+                  <Skeleton variant="button" />
+                </SkeletonStack>
+              }
+            >
               <LoginForm />
             </Suspense>
           </section>

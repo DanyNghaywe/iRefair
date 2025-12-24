@@ -1,0 +1,138 @@
+/* DataTable Component Styles */
+
+.table {
+  width: 100%;
+}
+
+.container {
+  overflow: auto;
+  width: 100%;
+}
+
+.container::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+.container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+}
+
+.table table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.table th,
+.table td {
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
+}
+
+.table thead th {
+  position: sticky;
+  top: 0;
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.4));
+  backdrop-filter: blur(12px);
+  z-index: 1;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.table tbody tr:nth-child(odd) td {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.table tbody tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.table tbody tr td {
+  transition: background 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              transform 0.15s cubic-bezier(0.4, 0, 0.2, 1),
+              box-shadow 0.2s ease;
+}
+
+.table tr:hover td {
+  background: rgba(255, 255, 255, 0.24);
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.clickable:hover td {
+  background: rgba(var(--accent-primary-rgb), 0.08);
+  transform: translateX(2px);
+}
+
+.clickable:active td {
+  background: rgba(var(--accent-primary-rgb), 0.12);
+  transform: translateX(0);
+}
+
+.clickable:focus-visible td {
+  background: rgba(255, 255, 255, 0.32);
+  box-shadow: inset 0 0 0 2px rgba(var(--accent-primary-rgb), 0.35);
+}
+
+/* Row highlight animation for navigation return */
+.highlighted td {
+  animation: rowPulse 1.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes rowPulse {
+  0% {
+    background: rgba(var(--accent-primary-rgb), 0.25);
+    box-shadow: inset 0 0 0 2px rgba(var(--accent-primary-rgb), 0.4);
+  }
+  100% {
+    background: transparent;
+    box-shadow: none;
+  }
+}
+
+.empty {
+  text-align: center;
+  color: var(--muted);
+  padding: 24px;
+}
+
+.headerCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sortIndicator {
+  color: var(--muted);
+}
+
+.sortable {
+  cursor: pointer;
+}
+
+.table td a {
+  color: var(--accent-primary, #00e0ff);
+}
+
+/* Responsive card layout for mobile */
+@media (max-width: 720px) {
+  .responsiveCards table {
+    display: block;
+  }
+
+  .responsiveCards tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .responsiveCards tr {
+    background: var(--glass-bg, linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08)));
+    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.22));
+  }
+}

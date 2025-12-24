@@ -1,0 +1,26 @@
+{
+  "name": "iRefair",
+  "short_name": "iRefair",
+  "description": "Request job referrals and connect with hiring teams in Canada",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0f343c",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

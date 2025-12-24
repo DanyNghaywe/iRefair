@@ -63,7 +63,7 @@ export function OpsDataTable<T>({
 
   return (
     <div className="ops-data-table" style={{ width: "100%", minWidth: 0 }}>
-      <div className="founder-card">
+      <div className="glass-card founder-card">
         <DataTable<T>
           columns={computedColumns}
           data={data}
