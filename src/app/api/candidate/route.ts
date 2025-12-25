@@ -12,6 +12,7 @@ import {
   ensureColumns,
   generateIRAIN,
   getCandidateByEmail,
+  findExistingCandidate,
   isIrain,
   updateRowById,
   upsertCandidateRow,
@@ -152,48 +153,66 @@ const htmlTemplate = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta nam
   <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-height:100vh;">
     <tr><td align="center" style="padding:40px 20px;">
       <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
-        <!-- Header -->
-        <tr><td style="padding:0 0 32px 0;">
-          <table role="presentation" cellspacing="0" cellpadding="0"><tr>
-            <td style="width:10px;height:10px;background:#3d8bfd;border-radius:50%;"></td>
-            <td style="padding-left:10px;font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;">iRefair</td>
-          </tr></table>
+        <!-- Header with yellow highlight -->
+        <tr><td style="padding:0 0 24px 0;border-bottom:4px solid #fbbf24;">
+          <span style="font-size:24px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;background:linear-gradient(to bottom, transparent 50%, #fef08a 50%);padding:0 4px;">iRefair</span>
         </td></tr>
-        <!-- Card -->
+        <!-- Eyebrow and iRAIN -->
+        <tr><td style="padding:24px 0 0 0;">
+          <p style="margin:0 0 4px 0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;font-weight:600;">REFERRAL REQUEST RECEIVED</p>
+          <p style="margin:0 0 24px 0;font-size:14px;color:#0f172a;">iRAIN: <strong style="color:#0f172a;">{{iRain}}</strong></p>
+        </td></tr>
+        <!-- Main content card -->
         <tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
-          <p style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;font-weight:600;">Referral request received</p>
-          <p style="margin:0 0 20px 0;font-size:13px;color:#0f172a;">iRAIN: <strong>{{iRain}}</strong></p>
-          <h1 style="margin:0 0 16px 0;font-size:20px;font-weight:700;color:#0f172a;">Hi {{firstName}}, we have your details.</h1>
-          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">Thanks for submitting your referral request to iRefair. We will review your profile and look for referrers whose roles match your experience and preferences.</p>
+          <h1 style="margin:0 0 16px 0;font-size:22px;font-weight:700;color:#0f172a;">Hi {{firstName}}, thank you for registering.</h1>
+          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">We've received your referral request. We'll review your profile and reach out when we have a referrer who matches the teams and roles you're targeting.</p>
+          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">Thank you for contributing to the community and helping others find work in Canada. You can reply to this email anytime to adjust your availability or update how you want to help.</p>
           {{statusNote}}
           {{candidateKeySection}}
-          <!-- Snapshot -->
-          <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin:20px 0;background:#ffffff;">
-            <div style="margin:0 0 12px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;font-weight:600;">Snapshot</div>
-            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;color:#0f172a;">
-              <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;"><strong>Location</strong></td><td align="right" style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">{{location}}</td></tr>
-              <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;"><strong>Work authorization</strong></td><td align="right" style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">{{authorization}}</td></tr>
-              <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;"><strong>Industry focus</strong></td><td align="right" style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">{{industry}}</td></tr>
-              <tr><td style="padding:8px 0;"><strong>Languages</strong></td><td align="right" style="padding:8px 0;color:#64748b;">{{languages}}</td></tr>
+          <!-- What happens next -->
+          <div style="margin:24px 0 0 0;">
+            <p style="margin:0 0 12px 0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;font-weight:600;">WHAT HAPPENS NEXT</p>
+            <ol style="margin:0 0 24px 0;padding-left:20px;font-size:14px;line-height:1.8;color:#0f172a;">
+              <li style="padding:4px 0;">We review your details and iRAIN to understand where you can help.</li>
+              <li style="padding:4px 0;">We keep you on our radar for teams, industries, and regions that match your snapshot.</li>
+              <li style="padding:4px 0;">When there is a fit, we'll reach out before sharing any candidate details.</li>
+            </ol>
+          </div>
+          <!-- Snapshot section -->
+          <div style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin:20px 0;background:#ffffff;">
+            <div style="padding:12px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+              <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;font-weight:600;">SNAPSHOT YOU SHARED</p>
+            </div>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;">
+              <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:12px 16px;color:#0f172a;font-weight:600;">Location</td>
+                <td style="padding:12px 16px;color:#64748b;text-align:right;">{{location}}</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:12px 16px;color:#0f172a;font-weight:600;">Work Authorization</td>
+                <td style="padding:12px 16px;color:#64748b;text-align:right;">{{authorization}}</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:12px 16px;color:#0f172a;font-weight:600;">Industry</td>
+                <td style="padding:12px 16px;color:#64748b;text-align:right;">{{industry}}</td>
+              </tr>
+              <tr>
+                <td style="padding:12px 16px;color:#0f172a;font-weight:600;">Languages</td>
+                <td style="padding:12px 16px;color:#64748b;text-align:right;">{{languages}}</td>
+              </tr>
             </table>
           </div>
-          <!-- What happens next -->
-          <div style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;font-weight:600;">What happens next</div>
-          <ol style="margin:0 0 24px 0;padding-left:18px;font-size:14px;line-height:1.7;color:#64748b;">
-            <li>We review your profile for clarity and completeness.</li>
-            <li>We look for referrers whose teams and roles match what you are targeting.</li>
-            <li>When there is a potential match, we will contact you before any intro is made.</li>
-          </ol>
           <!-- CTA -->
-          <div style="text-align:center;padding:16px 0 0 0;border-top:1px solid #e2e8f0;">
-            <p style="margin:0 0 12px 0;font-size:14px;color:#64748b;">See which companies are hiring in Canada right now:</p>
-            <p style="margin:0 0 12px 0;"><a href="${safeJobOpeningsUrl}" style="display:inline-block;padding:14px 24px;border-radius:10px;background:#3d8bfd;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">View live openings</a></p>
-            <p style="margin:0;font-size:13px;color:#94a3b8;">Quick notes on companies, what they need, and links to apply.</p>
+          <div style="text-align:center;padding:24px 0 0 0;border-top:1px solid #e2e8f0;">
+            <p style="margin:0 0 16px 0;font-size:14px;color:#64748b;">Want to see companies hiring in Canada right now?</p>
+            <p style="margin:0 0 16px 0;"><a href="${safeJobOpeningsUrl}" style="display:inline-block;padding:14px 28px;border-radius:10px;background:#3d8bfd;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">View live openings</a></p>
+            <p style="margin:0;"><a href="mailto:info@andbeyondca.com" style="font-size:13px;color:#3d8bfd;text-decoration:none;">Reply to update your availability/details</a></p>
           </div>
         </td></tr>
         <!-- Footer -->
-        <tr><td style="padding:32px 0 0 0;text-align:center;">
-          <p style="margin:0;font-size:12px;color:#94a3b8;">Sent by iRefair · Connecting talent with opportunity</p>
+        <tr><td style="padding:24px 0 0 0;text-align:center;">
+          <p style="margin:0 0 8px 0;font-size:12px;color:#64748b;">You're receiving this because you registered as a candidate on <a href="https://irefair.andbeyondca.com" style="color:#3d8bfd;text-decoration:none;">iRefair</a>.</p>
+          <p style="margin:0;font-size:12px;color:#94a3b8;">If this wasn't you, you can safely ignore this message.</p>
         </td></tr>
       </table>
     </td></tr>
@@ -202,26 +221,24 @@ const htmlTemplate = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta nam
 
 const textTemplate = `Hi {{firstName}},
 
-Thanks for submitting your referral request to iRefair.
+Thank you for registering with iRefair!
 
-{{statusNote}}
+Your iRAIN is: {{iRain}}
 
 {{candidateKeySection}}
 
-iRAIN: {{iRain}}
-
-Snapshot
+SNAPSHOT YOU SHARED
 - Location: {{location}}
-- Work authorization: {{authorization}}
-- Industry focus: {{industry}}
+- Work Authorization: {{authorization}}
+- Industry: {{industry}}
 - Languages: {{languages}}
 
-What happens next
-1) We review your profile for clarity and completeness.
-2) We look for referrers whose teams and roles match what you are targeting.
-3) When there is a potential match, we will contact you before any intro is made.
+WHAT HAPPENS NEXT
+1. We review your details and iRAIN to understand where you can help.
+2. We keep you on our radar for teams, industries, and regions that match your snapshot.
+3. When there is a fit, we'll reach out before sharing any candidate details.
 
-See companies hiring in Canada right now: ${safeJobOpeningsUrl}
+Ready to apply? View live openings: ${safeJobOpeningsUrl}
 
 - The iRefair team`;
 
@@ -417,6 +434,206 @@ Vous pouvez aussi consulter les roles ouverts : ${safeJobOpeningsUrl}
 
 - L'equipe iRefair`;
 
+// Templates for existing candidates (already have an iRAIN)
+const existingCandidateSubject = "You already have an iRAIN (profile updated) - iRefair";
+const existingCandidateSubjectFr = "Vous avez deja un iRAIN (profil mis a jour) - iRefair";
+
+const existingCandidateHtmlTemplate = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Profile updated</title></head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-height:100vh;">
+    <tr><td align="center" style="padding:40px 20px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
+        <!-- Header with yellow highlight -->
+        <tr><td style="padding:0 0 24px 0;border-bottom:4px solid #fbbf24;">
+          <span style="font-size:24px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;background:linear-gradient(to bottom, transparent 50%, #fef08a 50%);padding:0 4px;">iRefair</span>
+        </td></tr>
+        <!-- Eyebrow and iRAIN -->
+        <tr><td style="padding:24px 0 0 0;">
+          <p style="margin:0 0 4px 0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;font-weight:600;">PROFILE UPDATED</p>
+          <p style="margin:0 0 24px 0;font-size:14px;color:#0f172a;">iRAIN: <strong style="color:#0f172a;">{{iRain}}</strong></p>
+        </td></tr>
+        <!-- Main content card -->
+        <tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
+          <h1 style="margin:0 0 16px 0;font-size:22px;font-weight:700;color:#0f172a;">Hi {{firstName}}, you already have an iRAIN.</h1>
+          <p style="margin:0 0 12px 0;font-size:15px;line-height:1.6;color:#64748b;">Good news — you're already registered with iRefair! Your iRAIN is:</p>
+          <div style="background:#eef4fb;border:1px solid #dfe7f2;border-radius:10px;padding:16px;margin:0 0 20px 0;text-align:center;">
+            <p style="margin:0;font-size:20px;font-weight:700;color:#0f172a;letter-spacing:0.02em;">{{iRain}}</p>
+          </div>
+          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">We've updated your profile with the latest information you shared. You can use this iRAIN along with your Candidate Key to apply to companies on iRefair.</p>
+          {{candidateKeySection}}
+          <!-- What happens next -->
+          <div style="margin:24px 0 0 0;">
+            <p style="margin:0 0 12px 0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;font-weight:600;">WHAT HAPPENS NEXT</p>
+            <ol style="margin:0 0 24px 0;padding-left:20px;font-size:14px;line-height:1.8;color:#0f172a;">
+              <li style="padding:4px 0;">We review your updated details to understand where you can help.</li>
+              <li style="padding:4px 0;">We keep you on our radar for teams, industries, and regions that match your snapshot.</li>
+              <li style="padding:4px 0;">When there is a fit, we'll reach out before sharing any candidate details.</li>
+            </ol>
+          </div>
+          <!-- Snapshot section -->
+          <div style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin:20px 0;background:#ffffff;">
+            <div style="padding:12px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+              <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;font-weight:600;">YOUR UPDATED SNAPSHOT</p>
+            </div>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;">
+              <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:12px 16px;color:#0f172a;font-weight:600;">Location</td>
+                <td style="padding:12px 16px;color:#64748b;text-align:right;">{{location}}</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:12px 16px;color:#0f172a;font-weight:600;">Work Authorization</td>
+                <td style="padding:12px 16px;color:#64748b;text-align:right;">{{authorization}}</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:12px 16px;color:#0f172a;font-weight:600;">Industry</td>
+                <td style="padding:12px 16px;color:#64748b;text-align:right;">{{industry}}</td>
+              </tr>
+              <tr>
+                <td style="padding:12px 16px;color:#0f172a;font-weight:600;">Languages</td>
+                <td style="padding:12px 16px;color:#64748b;text-align:right;">{{languages}}</td>
+              </tr>
+            </table>
+          </div>
+          <!-- CTA -->
+          <div style="text-align:center;padding:24px 0 0 0;border-top:1px solid #e2e8f0;">
+            <p style="margin:0 0 16px 0;font-size:14px;color:#64748b;">Ready to apply to companies?</p>
+            <p style="margin:0 0 16px 0;"><a href="${safeJobOpeningsUrl}" style="display:inline-block;padding:14px 28px;border-radius:10px;background:#3d8bfd;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">View live openings</a></p>
+            <p style="margin:0;"><a href="mailto:info@andbeyondca.com" style="font-size:13px;color:#3d8bfd;text-decoration:none;">Reply to update your availability/details</a></p>
+          </div>
+        </td></tr>
+        <!-- Footer -->
+        <tr><td style="padding:24px 0 0 0;text-align:center;">
+          <p style="margin:0 0 8px 0;font-size:12px;color:#64748b;">You're receiving this because you updated your profile on <a href="https://irefair.andbeyondca.com" style="color:#3d8bfd;text-decoration:none;">iRefair</a>.</p>
+          <p style="margin:0;font-size:12px;color:#94a3b8;">If this wasn't you, please contact us immediately.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+const existingCandidateTextTemplate = `Hi {{firstName}},
+
+Good news — you're already registered with iRefair!
+
+Your iRAIN is: {{iRain}}
+
+We've updated your profile with the latest information you shared. You can use this iRAIN along with your Candidate Key to apply to companies on iRefair.
+
+{{candidateKeySection}}
+
+YOUR UPDATED SNAPSHOT
+- Location: {{location}}
+- Work Authorization: {{authorization}}
+- Industry: {{industry}}
+- Languages: {{languages}}
+
+WHAT HAPPENS NEXT
+1. We review your updated details to understand where you can help.
+2. We keep you on our radar for teams, industries, and regions that match your snapshot.
+3. When there is a fit, we'll reach out before sharing any candidate details.
+
+Ready to apply? View live openings: ${safeJobOpeningsUrl}
+
+- The iRefair team`;
+
+const existingCandidateHtmlTemplateFr = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Profil mis a jour</title></head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-height:100vh;">
+    <tr><td align="center" style="padding:40px 20px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
+        <!-- Header with yellow highlight -->
+        <tr><td style="padding:0 0 24px 0;border-bottom:4px solid #fbbf24;">
+          <span style="font-size:24px;font-weight:800;color:#0f172a;letter-spacing:-0.02em;background:linear-gradient(to bottom, transparent 50%, #fef08a 50%);padding:0 4px;">iRefair</span>
+        </td></tr>
+        <!-- Eyebrow and iRAIN -->
+        <tr><td style="padding:24px 0 0 0;">
+          <p style="margin:0 0 4px 0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;font-weight:600;">PROFIL MIS A JOUR</p>
+          <p style="margin:0 0 24px 0;font-size:14px;color:#0f172a;">iRAIN : <strong style="color:#0f172a;">{{iRain}}</strong></p>
+        </td></tr>
+        <!-- Main content card -->
+        <tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
+          <h1 style="margin:0 0 16px 0;font-size:22px;font-weight:700;color:#0f172a;">Bonjour {{firstName}}, vous avez deja un iRAIN.</h1>
+          <p style="margin:0 0 12px 0;font-size:15px;line-height:1.6;color:#64748b;">Bonne nouvelle — vous etes deja inscrit sur iRefair ! Votre iRAIN est :</p>
+          <div style="background:#eef4fb;border:1px solid #dfe7f2;border-radius:10px;padding:16px;margin:0 0 20px 0;text-align:center;">
+            <p style="margin:0;font-size:20px;font-weight:700;color:#0f172a;letter-spacing:0.02em;">{{iRain}}</p>
+          </div>
+          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">Nous avons mis a jour votre profil avec les dernieres informations partagees. Vous pouvez utiliser cet iRAIN avec votre Cle Candidat pour postuler aux entreprises sur iRefair.</p>
+          {{candidateKeySection}}
+          <!-- What happens next -->
+          <div style="margin:24px 0 0 0;">
+            <p style="margin:0 0 12px 0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;font-weight:600;">PROCHAINES ETAPES</p>
+            <ol style="margin:0 0 24px 0;padding-left:20px;font-size:14px;line-height:1.8;color:#0f172a;">
+              <li style="padding:4px 0;">Nous examinons vos informations mises a jour pour mieux vous accompagner.</li>
+              <li style="padding:4px 0;">Nous vous gardons dans notre radar pour les equipes et regions correspondantes.</li>
+              <li style="padding:4px 0;">Lorsqu'il y a une correspondance, nous vous contactons avant tout partage.</li>
+            </ol>
+          </div>
+          <!-- Snapshot section -->
+          <div style="border:1px solid #e2e8f0;border-radius:12px;overflow:hidden;margin:20px 0;background:#ffffff;">
+            <div style="padding:12px 16px;background:#f8fafc;border-bottom:1px solid #e2e8f0;">
+              <p style="margin:0;font-size:11px;letter-spacing:0.1em;text-transform:uppercase;color:#64748b;font-weight:600;">VOTRE PROFIL MIS A JOUR</p>
+            </div>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;">
+              <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:12px 16px;color:#0f172a;font-weight:600;">Localisation</td>
+                <td style="padding:12px 16px;color:#64748b;text-align:right;">{{location}}</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:12px 16px;color:#0f172a;font-weight:600;">Autorisation de travail</td>
+                <td style="padding:12px 16px;color:#64748b;text-align:right;">{{authorization}}</td>
+              </tr>
+              <tr style="border-bottom:1px solid #e2e8f0;">
+                <td style="padding:12px 16px;color:#0f172a;font-weight:600;">Secteur</td>
+                <td style="padding:12px 16px;color:#64748b;text-align:right;">{{industry}}</td>
+              </tr>
+              <tr>
+                <td style="padding:12px 16px;color:#0f172a;font-weight:600;">Langues</td>
+                <td style="padding:12px 16px;color:#64748b;text-align:right;">{{languages}}</td>
+              </tr>
+            </table>
+          </div>
+          <!-- CTA -->
+          <div style="text-align:center;padding:24px 0 0 0;border-top:1px solid #e2e8f0;">
+            <p style="margin:0 0 16px 0;font-size:14px;color:#64748b;">Pret a postuler ?</p>
+            <p style="margin:0 0 16px 0;"><a href="${safeJobOpeningsUrl}" style="display:inline-block;padding:14px 28px;border-radius:10px;background:#3d8bfd;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">Voir les offres en direct</a></p>
+            <p style="margin:0;"><a href="mailto:info@andbeyondca.com" style="font-size:13px;color:#3d8bfd;text-decoration:none;">Repondez pour mettre a jour vos disponibilites</a></p>
+          </div>
+        </td></tr>
+        <!-- Footer -->
+        <tr><td style="padding:24px 0 0 0;text-align:center;">
+          <p style="margin:0 0 8px 0;font-size:12px;color:#64748b;">Vous recevez ceci car vous avez mis a jour votre profil sur <a href="https://irefair.andbeyondca.com" style="color:#3d8bfd;text-decoration:none;">iRefair</a>.</p>
+          <p style="margin:0;font-size:12px;color:#94a3b8;">Si ce n'etait pas vous, veuillez nous contacter immediatement.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+const existingCandidateTextTemplateFr = `Bonjour {{firstName}},
+
+Bonne nouvelle — vous etes deja inscrit sur iRefair !
+
+Votre iRAIN est : {{iRain}}
+
+Nous avons mis a jour votre profil avec les dernieres informations partagees. Vous pouvez utiliser cet iRAIN avec votre Cle Candidat pour postuler aux entreprises sur iRefair.
+
+{{candidateKeySection}}
+
+VOTRE PROFIL MIS A JOUR
+- Localisation : {{location}}
+- Autorisation de travail : {{authorization}}
+- Secteur : {{industry}}
+- Langues : {{languages}}
+
+PROCHAINES ETAPES
+1. Nous examinons vos informations mises a jour pour mieux vous accompagner.
+2. Nous vous gardons dans notre radar pour les equipes et regions correspondantes.
+3. Lorsqu'il y a une correspondance, nous vous contactons avant tout partage.
+
+Pret a postuler ? Voir les offres en direct : ${safeJobOpeningsUrl}
+
+- L'equipe iRefair`;
+
 function fillTemplate(template: string, values: Record<string, string>) {
   return template.replace(/{{(.*?)}}/g, (_, key) => values[key.trim()] ?? "");
 }
@@ -491,10 +708,25 @@ export async function POST(request: Request) {
       return trimmed;
     };
 
-    const existingCandidate = await getCandidateByEmail(email);
+    // Check for existing candidate using 2-of-3 matching (name, email, phone)
+    const existingCandidate = await findExistingCandidate(firstName, familyName, email, phone);
+    const isExistingCandidate = existingCandidate !== null;
     const existingId = existingCandidate?.record.id || "";
     const shouldAssignNewIrain = Boolean(existingCandidate) && !isIrain(existingId);
-    const iRain = shouldAssignNewIrain || !existingCandidate ? await generateIRAIN() : existingId;
+
+    // Use existing iRAIN if found, otherwise generate new
+    let iRain: string;
+    if (isExistingCandidate && existingCandidate.record.id && isIrain(existingCandidate.record.id)) {
+      iRain = existingCandidate.record.id;
+    } else if (isExistingCandidate && existingCandidate.record.legacyCandidateId) {
+      // Has legacy ID but no iRAIN - generate new iRAIN but keep legacy reference
+      iRain = await generateIRAIN();
+    } else if (!isExistingCandidate) {
+      iRain = await generateIRAIN();
+    } else {
+      iRain = await generateIRAIN();
+    }
+
     const legacyCandidateId = shouldAssignNewIrain
       ? existingCandidate?.record.legacyCandidateId || existingId || undefined
       : undefined;
@@ -572,7 +804,14 @@ export async function POST(request: Request) {
       return combined || notProvided;
     })();
 
-    if (existingCandidate) {
+    // Check if email matches the existing candidate's email (if found by 2-of-3 matching)
+    // If email matches, we can skip confirmation as they prove ownership via email
+    // If email is different (name+phone match only), require confirmation for security
+    const emailMatchesExisting = existingCandidate &&
+      existingCandidate.record.email.trim().toLowerCase() === email.trim().toLowerCase();
+
+    if (existingCandidate && !emailMatchesExisting) {
+      // Email is different, require confirmation before updating
       const exp = Math.floor(Date.now() / 1000) + UPDATE_TOKEN_TTL_SECONDS;
       const token = createCandidateUpdateToken({
         email,
@@ -614,7 +853,7 @@ export async function POST(request: Request) {
         CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER,
       ]);
 
-      const updateResult = await updateRowById(CANDIDATE_SHEET_NAME, "Email", email, {
+      const updateResult = await updateRowById(CANDIDATE_SHEET_NAME, "Email", existingCandidate.record.email, {
         [CANDIDATE_UPDATE_TOKEN_HASH_HEADER]: tokenHash,
         [CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER]: new Date(exp * 1000).toISOString(),
         [CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER]: JSON.stringify(pendingPayload),
@@ -646,6 +885,9 @@ export async function POST(request: Request) {
 
       return NextResponse.json({ ok: true, needsEmailConfirm: true });
     }
+
+    // For new candidates OR existing candidates with matching email,
+    // proceed with direct update/insert
 
     const upsertResult = await upsertCandidateRow({
       id: iRain,
@@ -721,38 +963,33 @@ export async function POST(request: Request) {
     };
     const textValues = { ...values, statusNote: statusNoteText, candidateKeySection: candidateKeySectionText };
 
-    const html = fillTemplate(
-      isIneligible
-        ? locale === "fr"
-          ? ineligibleHtmlTemplateFr
-          : ineligibleHtmlTemplate
-        : locale === "fr"
-          ? htmlTemplateFr
-          : htmlTemplate,
-      htmlValues,
-    );
-    const text = fillTemplate(
-      isIneligible
-        ? locale === "fr"
-          ? ineligibleTextTemplateFr
-          : ineligibleTextTemplate
-        : locale === "fr"
-          ? textTemplateFr
-          : textTemplate,
-      textValues,
-    );
-    const emailSubject =
-      locale === "fr"
-        ? isIneligible
-          ? ineligibleSubjectFr
-          : upsertResult.wasUpdated
-            ? updatedSubjectFr
-            : subjectFr
-        : isIneligible
-          ? ineligibleSubject
-          : upsertResult.wasUpdated
-            ? updatedSubject
-            : subject;
+    // Override wasUpdated based on our 2-of-3 detection
+    // This is true if we found an existing candidate with matching email (not requiring confirmation)
+    const wasUpdated = isExistingCandidate && emailMatchesExisting;
+
+    // Determine which template to use
+    let htmlTemplateToUse: string;
+    let textTemplateToUse: string;
+    let emailSubject: string;
+
+    if (isIneligible) {
+      htmlTemplateToUse = locale === "fr" ? ineligibleHtmlTemplateFr : ineligibleHtmlTemplate;
+      textTemplateToUse = locale === "fr" ? ineligibleTextTemplateFr : ineligibleTextTemplate;
+      emailSubject = locale === "fr" ? ineligibleSubjectFr : ineligibleSubject;
+    } else if (wasUpdated) {
+      // Existing candidate - use the "you already have an iRAIN" template
+      htmlTemplateToUse = locale === "fr" ? existingCandidateHtmlTemplateFr : existingCandidateHtmlTemplate;
+      textTemplateToUse = locale === "fr" ? existingCandidateTextTemplateFr : existingCandidateTextTemplate;
+      emailSubject = locale === "fr" ? existingCandidateSubjectFr : existingCandidateSubject;
+    } else {
+      // New candidate
+      htmlTemplateToUse = locale === "fr" ? htmlTemplateFr : htmlTemplate;
+      textTemplateToUse = locale === "fr" ? textTemplateFr : textTemplate;
+      emailSubject = locale === "fr" ? subjectFr : subject;
+    }
+
+    const html = fillTemplate(htmlTemplateToUse, htmlValues);
+    const text = fillTemplate(textTemplateToUse, textValues);
 
     await sendMail({
       to: email,
@@ -761,7 +998,7 @@ export async function POST(request: Request) {
       text,
     });
 
-    return NextResponse.json({ ok: true, updated: upsertResult.wasUpdated, iRain: finalIRain });
+    return NextResponse.json({ ok: true, updated: wasUpdated, iRain: finalIRain });
   } catch (error) {
     console.error("Candidate email API error", error);
     return NextResponse.json({ ok: false, error: "Failed to send email" }, { status: 500 });

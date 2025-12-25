@@ -1151,6 +1151,95 @@ export async function getCandidateByEmail(email: string): Promise<CandidateLooku
   return null;
 }
 
+/**
+ * Find an existing candidate if at least 2 of 3 fields match:
+ * - name (firstName + familyName)
+ * - email
+ * - phone
+ */
+export async function findExistingCandidate(
+  firstName: string,
+  familyName: string,
+  email: string,
+  phone: string,
+): Promise<CandidateLookupResult | null> {
+  const normalizedEmail = email.trim().toLowerCase();
+  const normalizedPhone = phone.replace(/\D/g, ''); // Remove non-digits for comparison
+  const normalizedFirstName = firstName.trim().toLowerCase();
+  const normalizedFamilyName = familyName.trim().toLowerCase();
+
+  // Must have at least 2 fields to match
+  const providedFieldCount =
+    (normalizedEmail ? 1 : 0) +
+    (normalizedPhone.length >= 7 ? 1 : 0) +
+    (normalizedFirstName && normalizedFamilyName ? 1 : 0);
+
+  if (providedFieldCount < 2) {
+    return null;
+  }
+
+  await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
+  await ensureColumns(CANDIDATE_SHEET_NAME, CANDIDATE_SECURITY_COLUMNS);
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${CANDIDATE_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  if (!headers.length) return null;
+
+  const headerMap = buildHeaderMap(headers);
+  const lastCol = toColumnLetter(headers.length - 1);
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${CANDIDATE_SHEET_NAME}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const firstNameIdx = headerIndex(headers, 'First Name');
+  const familyNameIdx = headerIndex(headers, 'Family Name');
+  const emailIdx = headerIndex(headers, 'Email');
+  const phoneIdx = headerIndex(headers, 'Phone');
+
+  const rows = existing.data.values ?? [];
+  for (let index = 1; index < rows.length; index++) {
+    const row = rows[index] ?? [];
+    if (!row.length) continue;
+
+    const rowEmail = cellValue(row, emailIdx === -1 ? CANDIDATE_EMAIL_COLUMN_INDEX : emailIdx).toLowerCase();
+    const rowPhone = cellValue(row, phoneIdx === -1 ? 6 : phoneIdx).replace(/\D/g, '');
+    const rowFirstName = cellValue(row, firstNameIdx === -1 ? 2 : firstNameIdx).toLowerCase();
+    const rowFamilyName = cellValue(row, familyNameIdx === -1 ? 4 : familyNameIdx).toLowerCase();
+
+    // Check how many fields match
+    let matchCount = 0;
+
+    // Name match (both first and family must match)
+    const nameMatches = rowFirstName === normalizedFirstName && rowFamilyName === normalizedFamilyName;
+    if (nameMatches && normalizedFirstName && normalizedFamilyName) matchCount++;
+
+    // Email match
+    const emailMatches = rowEmail === normalizedEmail && normalizedEmail !== '';
+    if (emailMatches) matchCount++;
+
+    // Phone match (only if both have phone numbers with at least 7 digits)
+    const phoneMatches = rowPhone === normalizedPhone && normalizedPhone.length >= 7;
+    if (phoneMatches) matchCount++;
+
+    // If at least 2 of 3 match, this is an existing candidate
+    if (matchCount >= 2) {
+      return {
+        rowIndex: index + 1, // 1-indexed for Sheets API
+        record: buildCandidateRecordFromHeaderMap(headerMap, row),
+      };
+    }
+  }
+
+  return null;
+}
+
 export async function upsertCandidateRow(row: CandidateRow) {
   await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
 
