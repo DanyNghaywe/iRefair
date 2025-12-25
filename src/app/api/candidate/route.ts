@@ -60,16 +60,30 @@ const ineligibleSubjectFr = "A propos de votre demande de recommandation - iRefa
 const confirmUpdateSubject = "Confirm your iRefair profile update";
 const confirmUpdateSubjectFr = "Confirmez la mise a jour de votre profil iRefair";
 
-const confirmUpdateHtmlTemplate = `<html><body style="font-family:Arial, sans-serif; color:#1f2a37; background:#f6f7fb; padding:20px;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e6e8ee;border-radius:14px;padding:20px;">
-    <tr><td style="padding:6px 0 12px 0;">
-      <div style="font-size:20px;font-weight:700;color:#2f5fb3;">iRefair</div>
-    </td></tr>
-    <tr><td>
-      <p style="margin:0 0 10px 0;font-size:15px;color:#1f2a37;">Hi {{firstName}},</p>
-      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#3b4251;">We received a request to update your iRefair profile. Please confirm the update below:</p>
-      <p style="margin:0 0 14px 0;"><a href="{{confirmUrl}}" style="display:inline-block;padding:10px 16px;border-radius:8px;background:#2f5fb3;color:#fff;text-decoration:none;font-weight:700;">Confirm update</a></p>
-      <p style="margin:0;font-size:13px;line-height:1.6;color:#5c6675;">This link expires in 24 hours. If you did not request this, you can ignore this email.</p>
+const confirmUpdateHtmlTemplate = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirm your update</title></head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-height:100vh;">
+    <tr><td align="center" style="padding:40px 20px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
+        <!-- Header -->
+        <tr><td style="padding:0 0 32px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0"><tr>
+            <td style="width:10px;height:10px;background:#3d8bfd;border-radius:50%;"></td>
+            <td style="padding-left:10px;font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;">iRefair</td>
+          </tr></table>
+        </td></tr>
+        <!-- Card -->
+        <tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
+          <h1 style="margin:0 0 16px 0;font-size:20px;font-weight:700;color:#0f172a;">Hi {{firstName}},</h1>
+          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">We received a request to update your iRefair profile. Please confirm the update below:</p>
+          <p style="margin:0 0 20px 0;"><a href="{{confirmUrl}}" style="display:inline-block;padding:14px 24px;border-radius:10px;background:#3d8bfd;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">Confirm update</a></p>
+          <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b;">This link expires in 24 hours. If you did not request this, you can ignore this email.</p>
+        </td></tr>
+        <!-- Footer -->
+        <tr><td style="padding:32px 0 0 0;text-align:center;">
+          <p style="margin:0;font-size:12px;color:#94a3b8;">Sent by iRefair · Connecting talent with opportunity</p>
+        </td></tr>
+      </table>
     </td></tr>
   </table>
 </body></html>`;
@@ -83,16 +97,30 @@ This link expires in 24 hours. If you did not request this, you can ignore this 
 
 - The iRefair team`;
 
-const confirmUpdateHtmlTemplateFr = `<html><body style="font-family:Arial, sans-serif; color:#1f2a37; background:#f6f7fb; padding:20px;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e6e8ee;border-radius:14px;padding:20px;">
-    <tr><td style="padding:6px 0 12px 0;">
-      <div style="font-size:20px;font-weight:700;color:#2f5fb3;">iRefair</div>
-    </td></tr>
-    <tr><td>
-      <p style="margin:0 0 10px 0;font-size:15px;color:#1f2a37;">Bonjour {{firstName}},</p>
-      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#3b4251;">Nous avons recu une demande de mise a jour de votre profil iRefair. Merci de la confirmer ici :</p>
-      <p style="margin:0 0 14px 0;"><a href="{{confirmUrl}}" style="display:inline-block;padding:10px 16px;border-radius:8px;background:#2f5fb3;color:#fff;text-decoration:none;font-weight:700;">Confirmer la mise a jour</a></p>
-      <p style="margin:0;font-size:13px;line-height:1.6;color:#5c6675;">Ce lien expire dans 24 heures. Si ce n'etait pas vous, ignorez ce message.</p>
+const confirmUpdateHtmlTemplateFr = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Confirmez votre mise a jour</title></head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-height:100vh;">
+    <tr><td align="center" style="padding:40px 20px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
+        <!-- Header -->
+        <tr><td style="padding:0 0 32px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0"><tr>
+            <td style="width:10px;height:10px;background:#3d8bfd;border-radius:50%;"></td>
+            <td style="padding-left:10px;font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;">iRefair</td>
+          </tr></table>
+        </td></tr>
+        <!-- Card -->
+        <tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
+          <h1 style="margin:0 0 16px 0;font-size:20px;font-weight:700;color:#0f172a;">Bonjour {{firstName}},</h1>
+          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">Nous avons recu une demande de mise a jour de votre profil iRefair. Merci de la confirmer ici :</p>
+          <p style="margin:0 0 20px 0;"><a href="{{confirmUrl}}" style="display:inline-block;padding:14px 24px;border-radius:10px;background:#3d8bfd;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">Confirmer la mise a jour</a></p>
+          <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b;">Ce lien expire dans 24 heures. Si ce n'etait pas vous, ignorez ce message.</p>
+        </td></tr>
+        <!-- Footer -->
+        <tr><td style="padding:32px 0 0 0;text-align:center;">
+          <p style="margin:0;font-size:12px;color:#94a3b8;">Envoye par iRefair · Connecter les talents aux opportunites</p>
+        </td></tr>
+      </table>
     </td></tr>
   </table>
 </body></html>`;
@@ -119,42 +147,55 @@ const baseFromEnv =
 const appBaseUrl =
   baseFromEnv && baseFromEnv.startsWith("http") ? baseFromEnv : baseFromEnv ? `https://${baseFromEnv}` : "https://irefair.com";
 
-const htmlTemplate = `<html><body style="font-family:Arial, sans-serif; color:#1f2a37; background:#f6f7fb; padding:20px;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e6e8ee;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.06);">
-    <tr><td style="padding:22px 24px; border-top:4px solid #2f5fb3;">
-      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:#5c6675;margin-top:6px;">Referral request received</div>
-      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRAIN: <strong>{{iRain}}</strong></div>
-    </td></tr>
-    <tr><td style="padding:22px 24px 10px 24px;">
-      <h1 style="margin:0 0 10px 0;font-size:22px;color:#1f2a37;">Hi {{firstName}}, we have your details.</h1>
-      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;">Thanks for submitting your referral request to iRefair. We will review your profile and look for referrers whose roles match your experience and preferences.</p>
-      {{statusNote}}
-      {{candidateKeySection}}
-    </td></tr>
-    <tr><td style="padding:10px 24px 4px 24px;">
-      <div style="border:1px solid #e6e8ee;border-radius:12px;padding:14px 16px;background:#fafbfe;">
-        <div style="margin:0 0 10px 0;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5c6675;font-weight:700;">Snapshot</div>
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;color:#1f2a37;">
-          <tr><td style="padding:6px 0;width:48%;"><strong>Location</strong></td><td align="right" style="padding:6px 0;color:#3b4251;">{{location}}</td></tr>
-          <tr><td style="padding:6px 0;"><strong>Work authorization</strong></td><td align="right" style="padding:6px 0;color:#3b4251;">{{authorization}}</td></tr>
-          <tr><td style="padding:6px 0;"><strong>Industry focus</strong></td><td align="right" style="padding:6px 0;color:#3b4251;">{{industry}}</td></tr>
-          <tr><td style="padding:6px 0;"><strong>Languages</strong></td><td align="right" style="padding:6px 0;color:#3b4251;">{{languages}}</td></tr>
-        </table>
-      </div>
-    </td></tr>
-    <tr><td style="padding:14px 24px 10px 24px;">
-      <div style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5c6675;font-weight:700;">What happens next</div>
-      <ol style="margin:0;padding-left:18px;font-size:14px;line-height:1.6;color:#3b4251;">
-        <li>We review your profile for clarity and completeness.</li>
-        <li>We look for referrers whose teams and roles match what you are targeting.</li>
-        <li>When there is a potential match, we will contact you before any intro is made.</li>
-      </ol>
-    </td></tr>
-    <tr><td style="padding:14px 24px 20px 24px;text-align:center;">
-      <div style="margin:0 0 8px 0;font-size:14px;color:#3b4251;">See which companies are hiring in Canada right now:</div>
-      <div style="margin:0 0 8px 0;"><a href="${safeJobOpeningsUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2f5fb3;color:#fff;font-weight:700;text-decoration:none;border:1px solid #2f5fb3;">View live openings</a></div>
-      <div style="font-size:13px;color:#68707f;">Quick notes on companies, what they need, and links to apply.</div>
+const htmlTemplate = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Referral request received</title></head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-height:100vh;">
+    <tr><td align="center" style="padding:40px 20px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
+        <!-- Header -->
+        <tr><td style="padding:0 0 32px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0"><tr>
+            <td style="width:10px;height:10px;background:#3d8bfd;border-radius:50%;"></td>
+            <td style="padding-left:10px;font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;">iRefair</td>
+          </tr></table>
+        </td></tr>
+        <!-- Card -->
+        <tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
+          <p style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;font-weight:600;">Referral request received</p>
+          <p style="margin:0 0 20px 0;font-size:13px;color:#0f172a;">iRAIN: <strong>{{iRain}}</strong></p>
+          <h1 style="margin:0 0 16px 0;font-size:20px;font-weight:700;color:#0f172a;">Hi {{firstName}}, we have your details.</h1>
+          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">Thanks for submitting your referral request to iRefair. We will review your profile and look for referrers whose roles match your experience and preferences.</p>
+          {{statusNote}}
+          {{candidateKeySection}}
+          <!-- Snapshot -->
+          <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin:20px 0;background:#ffffff;">
+            <div style="margin:0 0 12px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;font-weight:600;">Snapshot</div>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;color:#0f172a;">
+              <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;"><strong>Location</strong></td><td align="right" style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">{{location}}</td></tr>
+              <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;"><strong>Work authorization</strong></td><td align="right" style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">{{authorization}}</td></tr>
+              <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;"><strong>Industry focus</strong></td><td align="right" style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">{{industry}}</td></tr>
+              <tr><td style="padding:8px 0;"><strong>Languages</strong></td><td align="right" style="padding:8px 0;color:#64748b;">{{languages}}</td></tr>
+            </table>
+          </div>
+          <!-- What happens next -->
+          <div style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;font-weight:600;">What happens next</div>
+          <ol style="margin:0 0 24px 0;padding-left:18px;font-size:14px;line-height:1.7;color:#64748b;">
+            <li>We review your profile for clarity and completeness.</li>
+            <li>We look for referrers whose teams and roles match what you are targeting.</li>
+            <li>When there is a potential match, we will contact you before any intro is made.</li>
+          </ol>
+          <!-- CTA -->
+          <div style="text-align:center;padding:16px 0 0 0;border-top:1px solid #e2e8f0;">
+            <p style="margin:0 0 12px 0;font-size:14px;color:#64748b;">See which companies are hiring in Canada right now:</p>
+            <p style="margin:0 0 12px 0;"><a href="${safeJobOpeningsUrl}" style="display:inline-block;padding:14px 24px;border-radius:10px;background:#3d8bfd;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">View live openings</a></p>
+            <p style="margin:0;font-size:13px;color:#94a3b8;">Quick notes on companies, what they need, and links to apply.</p>
+          </div>
+        </td></tr>
+        <!-- Footer -->
+        <tr><td style="padding:32px 0 0 0;text-align:center;">
+          <p style="margin:0;font-size:12px;color:#94a3b8;">Sent by iRefair · Connecting talent with opportunity</p>
+        </td></tr>
+      </table>
     </td></tr>
   </table>
 </body></html>`;
@@ -184,24 +225,41 @@ See companies hiring in Canada right now: ${safeJobOpeningsUrl}
 
 - The iRefair team`;
 
-const ineligibleHtmlTemplate = `<html><body style="font-family:Arial, sans-serif; color:#1f2a37; background:#f6f7fb; padding:20px;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e6e8ee;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.06);">
-    <tr><td style="padding:22px 24px; border-top:4px solid #2f5fb3;">
-      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:#5c6675;margin-top:6px;">Referral request update</div>
-      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRAIN: <strong>{{iRain}}</strong></div>
-    </td></tr>
-    <tr><td style="padding:22px 24px 14px 24px;">
-      <h1 style="margin:0 0 12px 0;font-size:22px;color:#1f2a37;">Hi {{firstName}}, thank you for your interest in iRefair.</h1>
-      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;">We reviewed the details you shared. Because you are not located in Canada and are not able to move and work in Canada within the next 6 months, we cannot move forward with a referral at this time. This means you are not eligible for our referral program right now.</p>
-      {{statusNote}}
-      {{candidateKeySection}}
-      <div style="border:1px solid #e6e8ee;border-radius:10px;padding:14px 16px;margin:10px 0 14px 0;color:#2f3b4b;background:#fafbfe;font-size:14px;line-height:1.6;">
-        Our program currently supports candidates who are in Canada and have work authorization. If your situation changes, reply to this email or submit a new request and we will gladly revisit it. We appreciate you taking the time to reach out.
-      </div>
-      <p style="margin:0 0 10px 0;font-size:14px;line-height:1.6;">If you become eligible later, we would be happy to hear from you again.</p>
-      <div style="text-align:center;margin:6px 0 6px 0;"><a href="${safeJobOpeningsUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2f5fb3;color:#fff;font-weight:700;text-decoration:none;border:1px solid #2f5fb3;">Explore current openings</a></div>
-      <div style="font-size:13px;color:#68707f;text-align:center;">Browse live roles and requirements any time.</div>
+const ineligibleHtmlTemplate = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Referral request update</title></head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-height:100vh;">
+    <tr><td align="center" style="padding:40px 20px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
+        <!-- Header -->
+        <tr><td style="padding:0 0 32px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0"><tr>
+            <td style="width:10px;height:10px;background:#3d8bfd;border-radius:50%;"></td>
+            <td style="padding-left:10px;font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;">iRefair</td>
+          </tr></table>
+        </td></tr>
+        <!-- Card -->
+        <tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
+          <p style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;font-weight:600;">Referral request update</p>
+          <p style="margin:0 0 20px 0;font-size:13px;color:#0f172a;">iRAIN: <strong>{{iRain}}</strong></p>
+          <h1 style="margin:0 0 16px 0;font-size:20px;font-weight:700;color:#0f172a;">Hi {{firstName}}, thank you for your interest in iRefair.</h1>
+          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">We reviewed the details you shared. Because you are not located in Canada and are not able to move and work in Canada within the next 6 months, we cannot move forward with a referral at this time. This means you are not eligible for our referral program right now.</p>
+          {{statusNote}}
+          {{candidateKeySection}}
+          <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin:20px 0;background:#ffffff;font-size:14px;line-height:1.6;color:#64748b;">
+            Our program currently supports candidates who are in Canada and have work authorization. If your situation changes, reply to this email or submit a new request and we will gladly revisit it. We appreciate you taking the time to reach out.
+          </div>
+          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">If you become eligible later, we would be happy to hear from you again.</p>
+          <!-- CTA -->
+          <div style="text-align:center;padding:16px 0 0 0;border-top:1px solid #e2e8f0;">
+            <p style="margin:0 0 12px 0;"><a href="${safeJobOpeningsUrl}" style="display:inline-block;padding:14px 24px;border-radius:10px;background:#3d8bfd;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">Explore current openings</a></p>
+            <p style="margin:0;font-size:13px;color:#94a3b8;">Browse live roles and requirements any time.</p>
+          </div>
+        </td></tr>
+        <!-- Footer -->
+        <tr><td style="padding:32px 0 0 0;text-align:center;">
+          <p style="margin:0;font-size:12px;color:#94a3b8;">Sent by iRefair · Connecting talent with opportunity</p>
+        </td></tr>
+      </table>
     </td></tr>
   </table>
 </body></html>`;
@@ -224,42 +282,55 @@ You can also browse current openings and requirements: ${safeJobOpeningsUrl}
 
 - The iRefair team`;
 
-const htmlTemplateFr = `<html><body style="font-family:Arial, sans-serif; color:#1f2a37; background:#f6f7fb; padding:20px;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e6e8ee;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.06);">
-    <tr><td style="padding:22px 24px; border-top:4px solid #2f5fb3;">
-      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:#5c6675;margin-top:6px;">Demande de recommandation recue</div>
-      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRAIN : <strong>{{iRain}}</strong></div>
-    </td></tr>
-    <tr><td style="padding:22px 24px 10px 24px;">
-      <h1 style="margin:0 0 10px 0;font-size:22px;color:#1f2a37;">Bonjour {{firstName}}, nous avons bien recu vos informations.</h1>
-      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;">Merci d'avoir soumis votre demande de recommandation a iRefair. Nous examinerons votre profil et rechercherons des referents dont les roles correspondent a votre experience et a vos preferences.</p>
-      {{statusNote}}
-      {{candidateKeySection}}
-    </td></tr>
-    <tr><td style="padding:10px 24px 4px 24px;">
-      <div style="border:1px solid #e6e8ee;border-radius:12px;padding:14px 16px;background:#fafbfe;">
-        <div style="margin:0 0 10px 0;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5c6675;font-weight:700;">Resume express</div>
-        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;color:#1f2a37;">
-          <tr><td style="padding:6px 0;width:48%;"><strong>Localisation</strong></td><td align="right" style="padding:6px 0;color:#3b4251;">{{location}}</td></tr>
-          <tr><td style="padding:6px 0;"><strong>Autorisation de travail</strong></td><td align="right" style="padding:6px 0;color:#3b4251;">{{authorization}}</td></tr>
-          <tr><td style="padding:6px 0;"><strong>Secteur</strong></td><td align="right" style="padding:6px 0;color:#3b4251;">{{industry}}</td></tr>
-          <tr><td style="padding:6px 0;"><strong>Langues</strong></td><td align="right" style="padding:6px 0;color:#3b4251;">{{languages}}</td></tr>
-        </table>
-      </div>
-    </td></tr>
-    <tr><td style="padding:14px 24px 10px 24px;">
-      <div style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5c6675;font-weight:700;">Prochaines etapes</div>
-      <ol style="margin:0;padding-left:18px;font-size:14px;line-height:1.6;color:#3b4251;">
-        <li>Nous examinons votre profil pour verifier la clarte et l'exhaustivite.</li>
-        <li>Nous cherchons des referents dont les equipes et les roles correspondent a vos objectifs.</li>
-        <li>En cas de correspondance potentielle, nous vous contactons avant toute introduction.</li>
-      </ol>
-    </td></tr>
-    <tr><td style="padding:14px 24px 20px 24px;text-align:center;">
-      <div style="margin:0 0 8px 0;font-size:14px;color:#3b4251;">Decouvrez les entreprises qui recrutent actuellement au Canada :</div>
-      <div style="margin:0 0 8px 0;"><a href="${safeJobOpeningsUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2f5fb3;color:#fff;font-weight:700;text-decoration:none;border:1px solid #2f5fb3;">Voir les offres en direct</a></div>
-      <div style="font-size:13px;color:#68707f;">Notes rapides sur les entreprises, leurs besoins et des liens pour postuler.</div>
+const htmlTemplateFr = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Demande de recommandation recue</title></head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-height:100vh;">
+    <tr><td align="center" style="padding:40px 20px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
+        <!-- Header -->
+        <tr><td style="padding:0 0 32px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0"><tr>
+            <td style="width:10px;height:10px;background:#3d8bfd;border-radius:50%;"></td>
+            <td style="padding-left:10px;font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;">iRefair</td>
+          </tr></table>
+        </td></tr>
+        <!-- Card -->
+        <tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
+          <p style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;font-weight:600;">Demande de recommandation recue</p>
+          <p style="margin:0 0 20px 0;font-size:13px;color:#0f172a;">iRAIN : <strong>{{iRain}}</strong></p>
+          <h1 style="margin:0 0 16px 0;font-size:20px;font-weight:700;color:#0f172a;">Bonjour {{firstName}}, nous avons bien recu vos informations.</h1>
+          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">Merci d'avoir soumis votre demande de recommandation a iRefair. Nous examinerons votre profil et rechercherons des referents dont les roles correspondent a votre experience et a vos preferences.</p>
+          {{statusNote}}
+          {{candidateKeySection}}
+          <!-- Snapshot -->
+          <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin:20px 0;background:#ffffff;">
+            <div style="margin:0 0 12px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;font-weight:600;">Resume express</div>
+            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:14px;color:#0f172a;">
+              <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;"><strong>Localisation</strong></td><td align="right" style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">{{location}}</td></tr>
+              <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;"><strong>Autorisation de travail</strong></td><td align="right" style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">{{authorization}}</td></tr>
+              <tr><td style="padding:8px 0;border-bottom:1px solid #e2e8f0;"><strong>Secteur</strong></td><td align="right" style="padding:8px 0;border-bottom:1px solid #e2e8f0;color:#64748b;">{{industry}}</td></tr>
+              <tr><td style="padding:8px 0;"><strong>Langues</strong></td><td align="right" style="padding:8px 0;color:#64748b;">{{languages}}</td></tr>
+            </table>
+          </div>
+          <!-- What happens next -->
+          <div style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;font-weight:600;">Prochaines etapes</div>
+          <ol style="margin:0 0 24px 0;padding-left:18px;font-size:14px;line-height:1.7;color:#64748b;">
+            <li>Nous examinons votre profil pour verifier la clarte et l'exhaustivite.</li>
+            <li>Nous cherchons des referents dont les equipes et les roles correspondent a vos objectifs.</li>
+            <li>En cas de correspondance potentielle, nous vous contactons avant toute introduction.</li>
+          </ol>
+          <!-- CTA -->
+          <div style="text-align:center;padding:16px 0 0 0;border-top:1px solid #e2e8f0;">
+            <p style="margin:0 0 12px 0;font-size:14px;color:#64748b;">Decouvrez les entreprises qui recrutent actuellement au Canada :</p>
+            <p style="margin:0 0 12px 0;"><a href="${safeJobOpeningsUrl}" style="display:inline-block;padding:14px 24px;border-radius:10px;background:#3d8bfd;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">Voir les offres en direct</a></p>
+            <p style="margin:0;font-size:13px;color:#94a3b8;">Notes rapides sur les entreprises, leurs besoins et des liens pour postuler.</p>
+          </div>
+        </td></tr>
+        <!-- Footer -->
+        <tr><td style="padding:32px 0 0 0;text-align:center;">
+          <p style="margin:0;font-size:12px;color:#94a3b8;">Envoye par iRefair · Connecter les talents aux opportunites</p>
+        </td></tr>
+      </table>
     </td></tr>
   </table>
 </body></html>`;
@@ -289,24 +360,41 @@ Decouvrez les entreprises qui recrutent actuellement au Canada : ${safeJobOpenin
 
 - L'equipe iRefair`;
 
-const ineligibleHtmlTemplateFr = `<html><body style="font-family:Arial, sans-serif; color:#1f2a37; background:#f6f7fb; padding:20px;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e6e8ee;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,0.06);">
-    <tr><td style="padding:22px 24px; border-top:4px solid #2f5fb3;">
-      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:12px;letter-spacing:0.1em;text-transform:uppercase;color:#5c6675;margin-top:6px;">Mise a jour de la demande</div>
-      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRAIN : <strong>{{iRain}}</strong></div>
-    </td></tr>
-    <tr><td style="padding:22px 24px 14px 24px;">
-      <h1 style="margin:0 0 12px 0;font-size:22px;color:#1f2a37;">Bonjour {{firstName}}, merci pour votre interet pour iRefair.</h1>
-      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;">Nous avons examine les informations fournies. Comme vous n'etes pas au Canada et ne pouvez pas vous y installer et y travailler dans les 6 prochains mois, nous ne pouvons pas poursuivre une recommandation pour le moment. Vous n'etes donc pas eligible a notre programme pour l'instant.</p>
-      {{statusNote}}
-      {{candidateKeySection}}
-      <div style="border:1px solid #e6e8ee;border-radius:10px;padding:14px 16px;margin:10px 0 14px 0;color:#2f3b4b;background:#fafbfe;font-size:14px;line-height:1.6;">
-        Notre programme soutient actuellement les candidats situes au Canada et disposant d'une autorisation de travail. Si votre situation change, repondez a cet e-mail ou soumettez une nouvelle demande et nous reevaluerons avec plaisir. Merci d'avoir pris le temps de nous ecrire.
-      </div>
-      <p style="margin:0 0 10px 0;font-size:14px;line-height:1.6;">Si votre situation evolue, nous serons heureux de revoir votre demande.</p>
-      <div style="text-align:center;margin:6px 0 6px 0;"><a href="${safeJobOpeningsUrl}" style="display:inline-block;padding:12px 18px;border-radius:10px;background:#2f5fb3;color:#fff;font-weight:700;text-decoration:none;border:1px solid #2f5fb3;">Consulter les offres en cours</a></div>
-      <div style="font-size:13px;color:#68707f;text-align:center;">Parcourez les roles disponibles et leurs besoins a tout moment.</div>
+const ineligibleHtmlTemplateFr = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mise a jour de la demande</title></head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-height:100vh;">
+    <tr><td align="center" style="padding:40px 20px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
+        <!-- Header -->
+        <tr><td style="padding:0 0 32px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0"><tr>
+            <td style="width:10px;height:10px;background:#3d8bfd;border-radius:50%;"></td>
+            <td style="padding-left:10px;font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;">iRefair</td>
+          </tr></table>
+        </td></tr>
+        <!-- Card -->
+        <tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
+          <p style="margin:0 0 8px 0;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#64748b;font-weight:600;">Mise a jour de la demande</p>
+          <p style="margin:0 0 20px 0;font-size:13px;color:#0f172a;">iRAIN : <strong>{{iRain}}</strong></p>
+          <h1 style="margin:0 0 16px 0;font-size:20px;font-weight:700;color:#0f172a;">Bonjour {{firstName}}, merci pour votre interet pour iRefair.</h1>
+          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">Nous avons examine les informations fournies. Comme vous n'etes pas au Canada et ne pouvez pas vous y installer et y travailler dans les 6 prochains mois, nous ne pouvons pas poursuivre une recommandation pour le moment. Vous n'etes donc pas eligible a notre programme pour l'instant.</p>
+          {{statusNote}}
+          {{candidateKeySection}}
+          <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin:20px 0;background:#ffffff;font-size:14px;line-height:1.6;color:#64748b;">
+            Notre programme soutient actuellement les candidats situes au Canada et disposant d'une autorisation de travail. Si votre situation change, repondez a cet e-mail ou soumettez une nouvelle demande et nous reevaluerons avec plaisir. Merci d'avoir pris le temps de nous ecrire.
+          </div>
+          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">Si votre situation evolue, nous serons heureux de revoir votre demande.</p>
+          <!-- CTA -->
+          <div style="text-align:center;padding:16px 0 0 0;border-top:1px solid #e2e8f0;">
+            <p style="margin:0 0 12px 0;"><a href="${safeJobOpeningsUrl}" style="display:inline-block;padding:14px 24px;border-radius:10px;background:#3d8bfd;color:#ffffff;font-size:15px;font-weight:600;text-decoration:none;">Consulter les offres en cours</a></p>
+            <p style="margin:0;font-size:13px;color:#94a3b8;">Parcourez les roles disponibles et leurs besoins a tout moment.</p>
+          </div>
+        </td></tr>
+        <!-- Footer -->
+        <tr><td style="padding:32px 0 0 0;text-align:center;">
+          <p style="margin:0;font-size:12px;color:#94a3b8;">Envoye par iRefair · Connecter les talents aux opportunites</p>
+        </td></tr>
+      </table>
     </td></tr>
   </table>
 </body></html>`;
@@ -341,9 +429,9 @@ function sanitize(value: unknown) {
 function buildCandidateKeySectionHtml(candidateKey?: string) {
   if (!candidateKey) return "";
   const safeKey = escapeHtml(candidateKey);
-  return `<div style="margin:12px 0 0 0;padding:12px 14px;border-radius:10px;border:1px solid #e0e7ef;background:#f7f9fc;">
-  <p style="margin:0 0 6px 0;font-size:14px;line-height:1.6;"><strong>Your Candidate Key:</strong> ${safeKey}</p>
-  <p style="margin:0;font-size:13px;line-height:1.6;color:#4b5563;">Keep this private. You will need it to apply with your iRAIN.</p>
+  return `<div style="margin:20px 0;padding:16px;border-radius:12px;border:1px solid #e2e8f0;background:#ffffff;">
+  <p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#0f172a;"><strong>Your Candidate Key:</strong> ${safeKey}</p>
+  <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b;">Keep this private. You will need it to apply with your iRAIN.</p>
 </div>`;
 }
 

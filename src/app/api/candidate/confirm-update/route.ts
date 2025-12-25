@@ -49,16 +49,30 @@ type PendingCandidateUpdatePayload = {
 const updateConfirmedSubject = "Your iRefair profile update is confirmed";
 const updateConfirmedSubjectFr = "Votre mise a jour iRefair est confirmee";
 
-const updateConfirmedHtmlTemplate = `<html><body style="font-family:Arial, sans-serif; color:#1f2a37; background:#f6f7fb; padding:20px;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e6e8ee;border-radius:14px;padding:20px;">
-    <tr><td style="padding:6px 0 12px 0;">
-      <div style="font-size:20px;font-weight:700;color:#2f5fb3;">iRefair</div>
-    </td></tr>
-    <tr><td>
-      <p style="margin:0 0 10px 0;font-size:15px;color:#1f2a37;">Hi {{firstName}},</p>
-      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#3b4251;">Your iRefair profile update is confirmed.</p>
-      {{candidateKeySection}}
-      <p style="margin:12px 0 0 0;font-size:13px;color:#5c6675;">Your iRAIN: <strong>{{iRain}}</strong></p>
+const updateConfirmedHtmlTemplate = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Profile update confirmed</title></head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-height:100vh;">
+    <tr><td align="center" style="padding:40px 20px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
+        <!-- Header -->
+        <tr><td style="padding:0 0 32px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0"><tr>
+            <td style="width:10px;height:10px;background:#3d8bfd;border-radius:50%;"></td>
+            <td style="padding-left:10px;font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;">iRefair</td>
+          </tr></table>
+        </td></tr>
+        <!-- Card -->
+        <tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
+          <h1 style="margin:0 0 16px 0;font-size:20px;font-weight:700;color:#0f172a;">Hi {{firstName}},</h1>
+          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">Your iRefair profile update is confirmed.</p>
+          {{candidateKeySection}}
+          <p style="margin:20px 0 0 0;font-size:14px;color:#64748b;">Your iRAIN: <strong style="color:#0f172a;">{{iRain}}</strong></p>
+        </td></tr>
+        <!-- Footer -->
+        <tr><td style="padding:32px 0 0 0;text-align:center;">
+          <p style="margin:0;font-size:12px;color:#94a3b8;">Sent by iRefair · Connecting talent with opportunity</p>
+        </td></tr>
+      </table>
     </td></tr>
   </table>
 </body></html>`;
@@ -73,16 +87,30 @@ iRAIN: {{iRain}}
 
 - The iRefair team`;
 
-const updateConfirmedHtmlTemplateFr = `<html><body style="font-family:Arial, sans-serif; color:#1f2a37; background:#f6f7fb; padding:20px;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:640px;margin:0 auto;background:#fff;border:1px solid #e6e8ee;border-radius:14px;padding:20px;">
-    <tr><td style="padding:6px 0 12px 0;">
-      <div style="font-size:20px;font-weight:700;color:#2f5fb3;">iRefair</div>
-    </td></tr>
-    <tr><td>
-      <p style="margin:0 0 10px 0;font-size:15px;color:#1f2a37;">Bonjour {{firstName}},</p>
-      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.6;color:#3b4251;">La mise a jour de votre profil iRefair est confirmee.</p>
-      {{candidateKeySection}}
-      <p style="margin:12px 0 0 0;font-size:13px;color:#5c6675;">Votre iRAIN : <strong>{{iRain}}</strong></p>
+const updateConfirmedHtmlTemplateFr = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mise a jour confirmee</title></head>
+<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-height:100vh;">
+    <tr><td align="center" style="padding:40px 20px;">
+      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
+        <!-- Header -->
+        <tr><td style="padding:0 0 32px 0;">
+          <table role="presentation" cellspacing="0" cellpadding="0"><tr>
+            <td style="width:10px;height:10px;background:#3d8bfd;border-radius:50%;"></td>
+            <td style="padding-left:10px;font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;">iRefair</td>
+          </tr></table>
+        </td></tr>
+        <!-- Card -->
+        <tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
+          <h1 style="margin:0 0 16px 0;font-size:20px;font-weight:700;color:#0f172a;">Bonjour {{firstName}},</h1>
+          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">La mise a jour de votre profil iRefair est confirmee.</p>
+          {{candidateKeySection}}
+          <p style="margin:20px 0 0 0;font-size:14px;color:#64748b;">Votre iRAIN : <strong style="color:#0f172a;">{{iRain}}</strong></p>
+        </td></tr>
+        <!-- Footer -->
+        <tr><td style="padding:32px 0 0 0;text-align:center;">
+          <p style="margin:0;font-size:12px;color:#94a3b8;">Envoye par iRefair · Connecter les talents aux opportunites</p>
+        </td></tr>
+      </table>
     </td></tr>
   </table>
 </body></html>`;
@@ -106,9 +134,9 @@ function fillTemplate(template: string, values: Record<string, string>) {
 function buildCandidateKeySectionHtml(candidateKey?: string) {
   if (!candidateKey) return "";
   const safeKey = escapeHtml(candidateKey);
-  return `<div style="margin:12px 0 0 0;padding:12px 14px;border-radius:10px;border:1px solid #e0e7ef;background:#f7f9fc;">
-  <p style="margin:0 0 6px 0;font-size:14px;line-height:1.6;"><strong>Your Candidate Key:</strong> ${safeKey}</p>
-  <p style="margin:0;font-size:13px;line-height:1.6;color:#4b5563;">Keep this private. You will need it to apply with your iRAIN.</p>
+  return `<div style="margin:20px 0;padding:16px;border-radius:12px;border:1px solid #e2e8f0;background:#ffffff;">
+  <p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#0f172a;"><strong>Your Candidate Key:</strong> ${safeKey}</p>
+  <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b;">Keep this private. You will need it to apply with your iRAIN.</p>
 </div>`;
 }
 
