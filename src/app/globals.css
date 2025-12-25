@@ -2963,6 +2963,7 @@ section.founder-auth input:focus-visible {
 .founder-topbar__titles {
   position: relative;
   z-index: 2;
+  isolation: isolate;
 }
 
 .founder-topbar__titles h1 {
@@ -2974,10 +2975,18 @@ section.founder-auth input:focus-visible {
 .founder-topbar__titles p {
   margin: 2px 0 0;
   color: var(--muted);
-  position: relative;
-  z-index: 2;
   -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.ops-scope .founder-topbar__titles {
+  isolation: isolate;
+  background: transparent;
+}
+
+.ops-scope .founder-topbar__titles p {
+  color: #5d6174;
+  mix-blend-mode: normal;
 }
 
 .founder-topbar__controls {
@@ -4704,8 +4713,10 @@ section.founder-auth input:focus-visible {
   }
 
   .ops-main {
+    position: relative;
+    z-index: 1;
     padding: 16px;
-    padding-top: 80px;
+    padding-top: 60px;
   }
 
   .ops-menu-button {
@@ -4729,12 +4740,18 @@ section.founder-auth input:focus-visible {
     -webkit-tap-highlight-color: transparent;
   }
 
+  .ops-menu-button.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+  }
+
   .ops-sidebar {
     position: fixed;
     left: 16px;
     top: 16px;
     bottom: 16px;
     width: min(320px, calc(100vw - 32px));
+    z-index: 70;
     transform: translateX(calc(-100% - 24px));
     opacity: 0;
     pointer-events: none;
@@ -4749,7 +4766,7 @@ section.founder-auth input:focus-visible {
   }
 
   .ops-scope .founder-page {
-    padding-top: 72px;
+    padding-top: 0;
   }
 
   .ops-scope .founder-topbar {
@@ -4758,6 +4775,12 @@ section.founder-auth input:focus-visible {
 
   .ops-scope .founder-topbar__titles {
     max-width: calc(100% - 100px);
+  }
+
+  .ops-scope .glass-card {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.85);
   }
 }
 

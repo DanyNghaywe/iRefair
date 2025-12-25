@@ -70,11 +70,11 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
           <ActionBtn
             as="button"
             variant="ghost"
-            className="ops-menu-button"
-            aria-label="Open navigation"
+            className={`ops-menu-button ${sidebarOpen && isMobile ? "is-hidden" : ""}`}
+            aria-label={sidebarOpen ? "Close navigation" : "Open navigation"}
             onClick={() => setSidebarOpen((prev) => !prev)}
           >
-            Menu
+            {sidebarOpen && isMobile ? "Close" : "Menu"}
           </ActionBtn>
 
           <div
