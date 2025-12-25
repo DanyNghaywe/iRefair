@@ -86,6 +86,7 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
           <Sidebar
             items={navItems}
             collapsed={!sidebarOpen}
+            isOpen={sidebarOpen && isMobile}
             ref={sidebarRef}
           />
           <section className="ops-main">{children}</section>

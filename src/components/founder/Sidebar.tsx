@@ -14,14 +14,15 @@ type NavItem = {
 type Props = {
   items: NavItem[];
   collapsed: boolean;
+  isOpen?: boolean;
 };
 
-export const Sidebar = React.forwardRef<HTMLDivElement, Props>(function Sidebar({ items, collapsed }, ref) {
+export const Sidebar = React.forwardRef<HTMLDivElement, Props>(function Sidebar({ items, collapsed, isOpen }, ref) {
   const pathname = usePathname();
   const currentPath = pathname ?? "";
 
   return (
-    <aside ref={ref} className={`glass-card ops-sidebar ${styles.sidebar} ${collapsed ? styles.collapsed : ""}`}>
+    <aside ref={ref} className={`glass-card ops-sidebar ${styles.sidebar} ${collapsed ? styles.collapsed : ""} ${isOpen ? "is-open" : ""}`}>
       <div className={styles.header}>
         <div className={styles.brand}>
           <span className={styles.dot} />
