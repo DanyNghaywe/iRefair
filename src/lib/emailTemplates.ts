@@ -431,3 +431,105 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
 
   return { subject, text: textLines, html };
 }
+
+type CandidateConfirmationParams = {
+  candidateName?: string;
+  candidateEmail: string;
+  candidateId: string;
+  iCrn: string;
+  position: string;
+  referenceNumber?: string;
+  resumeFileName?: string;
+  submissionId: string;
+};
+
+export function applicationConfirmationToCandidate(params: CandidateConfirmationParams): TemplateResult {
+  const {
+    candidateName,
+    candidateId,
+    iCrn,
+    position,
+    referenceNumber,
+    resumeFileName,
+    submissionId,
+  } = params;
+
+  const subject = `Application received: ${position}`;
+  const greeting = candidateName ? `Hi ${candidateName},` : 'Hi,';
+  const safeGreetingHtml = candidateName ? `Hi ${escapeHtml(candidateName)},` : 'Hi,';
+  const safeCandidateId = escapeHtml(candidateId);
+  const safeIrcrn = escapeHtml(iCrn);
+  const safePosition = escapeHtml(position);
+  const safeReferenceNumber = referenceNumber ? escapeHtml(referenceNumber) : '';
+  const safeResumeName = resumeFileName ? escapeHtml(resumeFileName) : '';
+  const safeSubmissionId = escapeHtml(submissionId);
+
+  const text = `${greeting}
+
+Thank you for submitting your application through iRefair!
+
+Here's a summary of what you submitted:
+
+- Submission ID: ${submissionId}
+- Your iRAIN: ${candidateId}
+- Company (iRCRN): ${iCrn}
+- Position: ${position}${referenceNumber ? `\n- Reference Number: ${referenceNumber}` : ''}${resumeFileName ? `\n- Resume: ${resumeFileName}` : ''}
+
+What happens next?
+1. Your application has been forwarded to a referrer at the company
+2. They will review your profile and resume
+3. If there's a match, you'll be connected via email
+
+Keep this email for your records. You can use the same iRAIN and Candidate Key to apply to other companies.
+
+Good luck!
+— The iRefair Team`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Application received! 🎉</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">We've forwarded your application to a referrer</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${safeGreetingHtml}</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      Thank you for submitting your application through iRefair! Here's a summary of what you submitted:
+    </p>
+
+    ${divider}
+
+    <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
+      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Application Summary</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${infoRow('Submission ID', safeSubmissionId)}
+        ${infoRow('Your iRAIN', safeCandidateId)}
+        ${infoRow('Company (iRCRN)', safeIrcrn)}
+        ${infoRow('Position', safePosition)}
+        ${safeReferenceNumber ? infoRow('Reference #', safeReferenceNumber) : ''}
+        ${safeResumeName ? infoRow('Resume', safeResumeName) : ''}
+      </table>
+    </div>
+
+    ${divider}
+
+    <div style="background: linear-gradient(135deg, rgba(61, 139, 253, 0.08), rgba(122, 215, 227, 0.08)); padding: 20px; border-radius: 12px; margin: 16px 0; border-left: 4px solid ${colors.primary};">
+      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 15px; font-weight: 700;">What happens next?</p>
+      <ol style="margin: 0; padding-left: 20px; color: ${colors.ink}; font-size: 14px; line-height: 1.8;">
+        <li>Your application has been forwarded to a referrer at the company</li>
+        <li>They will review your profile and resume</li>
+        <li>If there's a match, you'll be connected via email</li>
+      </ol>
+    </div>
+
+    <p style="margin: 16px 0; color: ${colors.muted}; font-size: 14px; line-height: 1.6;">
+      <strong>Tip:</strong> Keep this email for your records. You can use the same iRAIN and Candidate Key to apply to other companies on iRefair.
+    </p>
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      Good luck! 🤞<br>
+      <strong>The iRefair Team</strong>
+    </p>
+  `;
+
+  const html = emailWrapper(content, `Your application for ${position} has been received`);
+
+  return { subject, text, html };
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import React from "react";
 
@@ -25,8 +26,14 @@ export const Sidebar = React.forwardRef<HTMLDivElement, Props>(function Sidebar(
     <aside ref={ref} className={`glass-card ops-sidebar ${styles.sidebar} ${collapsed ? styles.collapsed : ""} ${isOpen ? "is-open" : ""}`}>
       <div className={styles.header}>
         <div className={styles.brand}>
-          <span className={styles.dot} />
-          <span>Moe's Console</span>
+          <Image
+            src="/logo-small.png"
+            alt="iRefair"
+            width={36}
+            height={36}
+            className={styles.brandLogo}
+          />
+          <span className={styles.brandText}>iRefair</span>
         </div>
       </div>
       <nav className={styles.nav}>

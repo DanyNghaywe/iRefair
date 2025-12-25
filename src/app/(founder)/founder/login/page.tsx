@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { Suspense } from "react";
 
 import { AppShell } from "@/components/AppShell";
@@ -18,7 +19,14 @@ export default function FounderLoginPage() {
           <section className="glass-card founder-login-card founder-auth">
             <div className="founder-login-header">
               <div className="founder-login-brand">
-                <span className="founder-login-brand__text">IREFair</span>
+                <Image
+                  src="/logo-medium.png"
+                  alt="iRefair"
+                  width={80}
+                  height={80}
+                  priority
+                  className="founder-login-brand__logo"
+                />
               </div>
               <h1 id="founder-login-title">Login</h1>
             </div>

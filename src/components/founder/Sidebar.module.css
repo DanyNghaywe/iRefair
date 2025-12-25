@@ -28,12 +28,13 @@
   color: var(--ink);
 }
 
-.dot {
-  width: 10px;
-  height: 10px;
-  background: var(--accent-primary, #00e0ff);
-  border-radius: 50%;
-  box-shadow: 0 0 0 6px rgba(0, 224, 255, 0.12);
+.brandLogo {
+  border-radius: 8px;
+}
+
+.brandText {
+  font-size: 15px;
+  letter-spacing: -0.01em;
 }
 
 .nav {

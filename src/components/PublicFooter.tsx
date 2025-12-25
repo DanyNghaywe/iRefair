@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePersistedLanguage } from '@/lib/usePersistedLanguage';
 
@@ -10,7 +11,16 @@ export function PublicFooter() {
     <footer className="card public-footer" role="contentinfo">
       <div className="public-footer__grid">
         <div className="public-footer__brand">
-          <p className="public-footer__title">iRefair</p>
+          <div className="public-footer__brand-row">
+            <Image
+              src="/logo-small.png"
+              alt=""
+              width={32}
+              height={32}
+              className="public-footer__logo"
+            />
+            <p className="public-footer__title">iRefair</p>
+          </div>
           <p className="public-footer__text">
             A community-first referral initiative helping newcomers connect with hiring teams in Canada.
           </p>

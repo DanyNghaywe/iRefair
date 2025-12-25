@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/AppShell';
@@ -171,6 +172,14 @@ export default function Home() {
       <main className="role-picker">
         <section className="role-shell" aria-labelledby="role-heading">
           <header className="role-shell__header">
+            <Image
+              src="/irefair-logo.png"
+              alt="iRefair"
+              width={120}
+              height={120}
+              priority
+              className="role-shell__logo"
+            />
             <h1 id="role-heading" className="title-animate title-gradient heading-display">
               Choose your path
             </h1>

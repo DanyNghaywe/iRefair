@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
 
 import { uploadFileToDrive } from '@/lib/drive';
-import { applicationSubmittedToReferrer } from '@/lib/emailTemplates';
+import { applicationSubmittedToReferrer, applicationConfirmationToCandidate } from '@/lib/emailTemplates';
 import { sendMail } from '@/lib/mailer';
 import { rateLimit, rateLimitHeaders, RATE_LIMITS } from '@/lib/rateLimit';
 import { hashCandidateSecret } from '@/lib/candidateUpdateToken';
@@ -223,6 +223,27 @@ export async function POST(request: Request) {
       html: template.html,
       text: template.text,
     });
+
+    // Send confirmation email to candidate
+    if (candidate.email) {
+      const candidateTemplate = applicationConfirmationToCandidate({
+        candidateName: candidateName || undefined,
+        candidateEmail: candidate.email,
+        candidateId: candidate.id || candidateId,
+        iCrn,
+        position,
+        referenceNumber: referenceNumber || undefined,
+        resumeFileName: resumeEntry.name,
+        submissionId: id,
+      });
+
+      await sendMail({
+        to: candidate.email,
+        subject: candidateTemplate.subject,
+        html: candidateTemplate.html,
+        text: candidateTemplate.text,
+      });
+    }
 
     await appendApplicationRow({
       id,

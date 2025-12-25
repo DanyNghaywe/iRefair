@@ -1513,6 +1513,17 @@ button.disclaimer,
   color: #ffffff;
 }
 
+.public-footer__brand-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.public-footer__logo {
+  border-radius: 6px;
+}
+
 .public-footer__text {
   margin: 6px 0 0;
   font-size: var(--font-size-base);
@@ -2842,6 +2853,12 @@ section.founder-auth input:focus-visible {
   margin-bottom: 28px;
 }
 
+.role-shell__logo {
+  margin-bottom: 16px;
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
 .role-shell h1 {
   color: #fff;
 }
@@ -3591,27 +3608,13 @@ section.founder-auth input:focus-visible {
 }
 
 .founder-login-brand {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  font-weight: 800;
-  font-size: var(--font-size-xs);
-  color: rgba(255, 255, 255, 0.82);
 }
 
-.founder-login-brand__dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 999px;
-  background: linear-gradient(135deg, var(--accent-2), var(--accent));
-  box-shadow: 0 0 0 6px rgba(255, 255, 255, 0.14);
-}
-
-.founder-login-brand__text {
-  letter-spacing: 0.24em;
+.founder-login-brand__logo {
+  border-radius: 12px;
 }
 
 .founder-login-header h1 {
@@ -4806,6 +4809,11 @@ section.founder-auth input:focus-visible {
 
   .founder-login-header h1 {
     font-size: var(--font-size-2xl);
+  }
+
+  .role-shell__logo {
+    width: 90px;
+    height: 90px;
   }
 }
 
