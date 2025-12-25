@@ -624,7 +624,7 @@ h3 {
   box-shadow: 0 22px 52px rgba(18, 48, 70, 0.42), 0 0 0 1px rgba(255, 255, 255, 0.08) inset;
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
-  z-index: 10;
+  z-index: 100;
 }
 
 .role-select__dropdown.is-open {
@@ -1494,6 +1494,8 @@ button.disclaimer,
 }
 
 .public-footer {
+  position: relative;
+  z-index: 1;
   margin-top: 22px;
   display: grid;
   gap: 14px;
@@ -2377,6 +2379,7 @@ section.founder-auth input:focus-visible {
   justify-content: center;
   align-items: center;
   margin-top: 12px;
+  margin-bottom: 120px;
 }
 
 .field-label-row {
