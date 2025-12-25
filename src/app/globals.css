@@ -4385,6 +4385,12 @@ section.founder-auth input:focus-visible {
   .role-select__option-action {
     display: none;
   }
+
+  /* Fix: Make dropdown push content down on mobile instead of overlapping */
+  .role-select__dropdown.is-open {
+    position: static;
+    margin-top: 14px;
+  }
 }
 
 @media (max-width: 640px) {
