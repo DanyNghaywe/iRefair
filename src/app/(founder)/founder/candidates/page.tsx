@@ -119,7 +119,7 @@ export default function CandidatesPage() {
       {
         key: "eligibility",
         label: "Eligibility",
-        width: "140px",
+        width: "180px",
         nowrap: true,
         render: (row: CandidateRecord) => (
           <Badge tone={row.eligibility.eligible ? "success" : "danger"}>{row.eligibility.reason}</Badge>

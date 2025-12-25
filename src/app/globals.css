@@ -1584,9 +1584,7 @@ button.disclaimer,
 }
 
 .legal-contact {
-  display: inline-flex;
-  gap: 8px;
-  align-items: center;
+  display: block;
 }
 
 .legal-contact a {
@@ -3343,11 +3341,12 @@ section.founder-auth input:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
+  padding: 4px 10px;
   border-radius: 999px;
-  font-size: var(--font-size-xs);
+  font-size: 11px;
   font-weight: 700;
   border: 1px solid rgba(255, 255, 255, 0.12);
+  white-space: nowrap;
 }
 
 .founder-badge--neutral {

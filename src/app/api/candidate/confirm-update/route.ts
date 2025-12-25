@@ -125,10 +125,188 @@ Votre iRAIN : {{iRain}}
 
 - L'equipe iRefair`;
 
+const successPageHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile Updated - iRefair</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container { max-width: 480px; text-align: center; }
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 32px;
+    }
+    .dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      background: #3d8bfd;
+      border-radius: 50%;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 40px 32px;
+    }
+    .icon {
+      width: 64px;
+      height: 64px;
+      background: #ecfdf5;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+    }
+    .icon svg { width: 32px; height: 32px; color: #10b981; }
+    h1 { font-size: 24px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
+    p { font-size: 15px; color: #64748b; line-height: 1.6; margin-bottom: 24px; }
+    .irain {
+      display: inline-block;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      color: #0f172a;
+      font-weight: 600;
+    }
+    .footer { margin-top: 24px; font-size: 13px; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo"><span class="dot"></span>iRefair</div>
+    <div class="card">
+      <div class="icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
+        </svg>
+      </div>
+      <h1>Profile Updated!</h1>
+      <p>Your iRefair profile has been successfully updated. You can close this page.</p>
+      <div class="irain">iRAIN: {{iRain}}</div>
+    </div>
+    <p class="footer">You'll receive a confirmation email shortly.</p>
+  </div>
+</body>
+</html>`;
+
+const errorPageHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Update Failed - iRefair</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container { max-width: 480px; text-align: center; }
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      color: #0f172a;
+      margin-bottom: 32px;
+    }
+    .dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      background: #3d8bfd;
+      border-radius: 50%;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    .card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      border-radius: 16px;
+      padding: 40px 32px;
+    }
+    .icon {
+      width: 64px;
+      height: 64px;
+      background: #fef2f2;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+    }
+    .icon svg { width: 32px; height: 32px; color: #ef4444; }
+    h1 { font-size: 24px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
+    p { font-size: 15px; color: #64748b; line-height: 1.6; margin-bottom: 24px; }
+    .error-msg {
+      display: inline-block;
+      background: #fef2f2;
+      border: 1px solid #fecaca;
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-size: 14px;
+      color: #dc2626;
+    }
+    .footer { margin-top: 24px; font-size: 13px; color: #94a3b8; }
+    a { color: #3d8bfd; text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo"><span class="dot"></span>iRefair</div>
+    <div class="card">
+      <div class="icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
+        </svg>
+      </div>
+      <h1>Update Failed</h1>
+      <p>We couldn't complete your profile update.</p>
+      <div class="error-msg">{{errorMessage}}</div>
+    </div>
+    <p class="footer">Need help? <a href="mailto:support@irefair.com">Contact support</a></p>
+  </div>
+</body>
+</html>`;
+
 export const runtime = "nodejs";
 
 function fillTemplate(template: string, values: Record<string, string>) {
   return template.replace(/{{(.*?)}}/g, (_, key) => values[key.trim()] ?? "");
+}
+
+function errorResponse(message: string, status: number, isGetRequest: boolean) {
+  if (isGetRequest) {
+    const html = errorPageHtml.replace("{{errorMessage}}", escapeHtml(message));
+    return new NextResponse(html, {
+      status,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  }
+  return NextResponse.json({ ok: false, error: message }, { status });
 }
 
 function buildCandidateKeySectionHtml(candidateKey?: string) {
@@ -190,49 +368,49 @@ async function readToken(request: NextRequest) {
   return "";
 }
 
-async function handleConfirm(request: NextRequest) {
+async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
   const token = await readToken(request);
   if (!token) {
-    return NextResponse.json({ ok: false, error: "Missing token" }, { status: 400 });
+    return errorResponse("Missing confirmation token. Please use the link from your email.", 400, isGetRequest);
   }
 
   let payload;
   try {
     payload = verifyCandidateUpdateToken(token);
   } catch {
-    return NextResponse.json({ ok: false, error: "Invalid or expired token" }, { status: 401 });
+    return errorResponse("This confirmation link is invalid or has expired. Please submit a new update request.", 401, isGetRequest);
   }
 
   const candidate = await getCandidateByEmail(payload.email);
   if (!candidate) {
-    return NextResponse.json({ ok: false, error: "Candidate not found" }, { status: 404 });
+    return errorResponse("We couldn't find your profile. Please contact support if this persists.", 404, isGetRequest);
   }
 
   if (candidate.rowIndex !== payload.rowIndex) {
-    return NextResponse.json({ ok: false, error: "Invalid token" }, { status: 403 });
+    return errorResponse("This confirmation link is no longer valid. Please submit a new update request.", 403, isGetRequest);
   }
 
   const storedTokenHash = candidate.record.updateTokenHash?.trim() || "";
   const tokenHash = hashToken(token);
   if (!safeCompareHash(storedTokenHash, tokenHash)) {
-    return NextResponse.json({ ok: false, error: "Invalid token" }, { status: 403 });
+    return errorResponse("This confirmation link is no longer valid. Please submit a new update request.", 403, isGetRequest);
   }
 
   const storedExpiry = parseExpiry(candidate.record.updateTokenExpiresAt);
   if (!storedExpiry || storedExpiry < Date.now()) {
-    return NextResponse.json({ ok: false, error: "Token expired" }, { status: 403 });
+    return errorResponse("This confirmation link has expired. Please submit a new update request.", 403, isGetRequest);
   }
 
   const pendingRaw = candidate.record.updatePendingPayload?.trim();
   if (!pendingRaw) {
-    return NextResponse.json({ ok: false, error: "Missing pending update" }, { status: 400 });
+    return errorResponse("No pending update found. Your profile may have already been updated.", 400, isGetRequest);
   }
 
   let pending: PendingCandidateUpdatePayload;
   try {
     pending = JSON.parse(pendingRaw) as PendingCandidateUpdatePayload;
   } catch {
-    return NextResponse.json({ ok: false, error: "Invalid pending payload" }, { status: 400 });
+    return errorResponse("There was a problem processing your update. Please try again.", 400, isGetRequest);
   }
 
   const timestamp = new Date().toISOString();
@@ -292,7 +470,7 @@ async function handleConfirm(request: NextRequest) {
 
   const updateResult = await updateRowById(CANDIDATE_SHEET_NAME, "Email", payload.email, updates);
   if (!updateResult.updated) {
-    return NextResponse.json({ ok: false, error: "Failed to apply update" }, { status: 500 });
+    return errorResponse("We couldn't save your update. Please try again or contact support.", 500, isGetRequest);
   }
 
   const locale: EmailLanguage = pending.locale === "fr" ? "fr" : "en";
@@ -322,13 +500,21 @@ async function handleConfirm(request: NextRequest) {
     text,
   });
 
+  if (isGetRequest) {
+    const successHtml = successPageHtml.replace("{{iRain}}", escapeHtml(iRainValue));
+    return new NextResponse(successHtml, {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  }
+
   return NextResponse.json({ ok: true });
 }
 
 export async function GET(request: NextRequest) {
-  return handleConfirm(request);
+  return handleConfirm(request, true);
 }
 
 export async function POST(request: NextRequest) {
-  return handleConfirm(request);
+  return handleConfirm(request, false);
 }
