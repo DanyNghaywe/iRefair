@@ -1,5 +1,7 @@
-import pdfParse from 'pdf-parse';
-import mammoth from 'mammoth';
+/* eslint-disable @typescript-eslint/no-require-imports */
+const pdfParse = require('pdf-parse');
+const mammoth = require('mammoth');
+/* eslint-enable @typescript-eslint/no-require-imports */
 
 type ScanResult =
   | { ok: true; skipped?: boolean; message?: string }
