@@ -468,6 +468,10 @@ h3 {
   max-height: 100vh;
   min-height: 0;
   padding: 0;
+}
+
+/* Prevent body scroll on landing page while allowing dropdown overflow */
+body:has(.board--transparent) {
   overflow: hidden;
 }
 
@@ -2816,7 +2820,6 @@ section.founder-auth input:focus-visible {
   min-height: 0;
   flex: 1;
   padding-bottom: 0;
-  overflow: hidden;
 }
 
 .role-picker--fullscreen .role-shell {
