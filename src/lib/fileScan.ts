@@ -134,9 +134,13 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, errorMsg: string)
 async function extractPdfText(buffer: Buffer): Promise<ExtractResult> {
   try {
     // Dynamic import to avoid build-time canvas dependency issues
-    const pdfParse = (await import('pdf-parse')).default;
+    const pdfParseModule = await import('pdf-parse');
+    // Handle both ESM and CJS module formats
+    const pdfParse = typeof pdfParseModule === 'function'
+      ? pdfParseModule
+      : (pdfParseModule as { default?: unknown }).default || pdfParseModule;
     const parsed = await withTimeout<{ text?: string }>(
-      pdfParse(buffer),
+      (pdfParse as (buffer: Buffer) => Promise<{ text?: string }>)(buffer),
       PARSE_TIMEOUT_MS,
       'PDF parsing timed out.'
     );
