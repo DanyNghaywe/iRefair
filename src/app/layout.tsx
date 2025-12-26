@@ -3,6 +3,7 @@ import { Manrope } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import { NavigationLoaderProvider } from "@/components/NavigationLoader";
+import { ToastProvider } from "@/components/Toast";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -73,7 +74,9 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
-        <NavigationLoaderProvider>{children}</NavigationLoaderProvider>
+        <ToastProvider>
+          <NavigationLoaderProvider>{children}</NavigationLoaderProvider>
+        </ToastProvider>
         <SpeedInsights />
       </body>
     </html>

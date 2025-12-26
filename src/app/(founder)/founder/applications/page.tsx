@@ -7,6 +7,8 @@ import { Drawer } from "@/components/founder/Drawer";
 import { EmptyState } from "@/components/founder/EmptyState";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
+import { parseActionHistory, type ActionLogEntry } from "@/lib/actionHistory";
+import { formatMeetingDateTime } from "@/lib/timezone";
 
 type ApplicationRecord = {
   id: string;
@@ -16,11 +18,48 @@ type ApplicationRecord = {
   position: string;
   referenceNumber: string;
   resumeFileName: string;
+  resumeFileId: string;
+  referrerIrref: string;
+  referrerEmail: string;
   status: string;
   ownerNotes: string;
+  meetingDate: string;
+  meetingTime: string;
+  meetingTimezone: string;
+  meetingUrl: string;
+  actionHistory: string;
 };
 
-const statusOptions = ["", "New", "In Review", "Submitted", "On Hold", "Closed"];
+const statusOptions = [
+  "",
+  "New",
+  "Meeting Scheduled",
+  "Meeting Requested",
+  "Needs Reschedule",
+  "Interviewed",
+  "CV Mismatch",
+  "CV Update Requested",
+  "Info Requested",
+  "Not a Good Fit",
+  "Hired",
+  "In Review",
+  "Submitted",
+  "On Hold",
+  "Closed",
+];
+
+const ACTION_LABELS: Record<string, string> = {
+  SCHEDULE_MEETING: "Scheduled Meeting",
+  CANCEL_MEETING: "Cancelled Meeting",
+  REJECT: "Marked Not a Good Fit",
+  CV_MISMATCH: "Flagged CV Mismatch",
+  REQUEST_CV_UPDATE: "Requested CV Update",
+  REQUEST_INFO: "Requested Info",
+  MARK_INTERVIEWED: "Marked Interviewed",
+  OFFER_JOB: "Offered Job",
+  CANDIDATE_UPDATED: "Candidate Updated Profile",
+  CANDIDATE_RESCHEDULED: "Candidate Requested Reschedule",
+};
 
 export default function ApplicationsPage() {
   const [items, setItems] = useState<ApplicationRecord[]>([]);
@@ -188,6 +227,10 @@ export default function ApplicationsPage() {
                 )}
               </div>
               <div className="founder-field">
+                <span>Referrer</span>
+                <strong>{selected.referrerIrref || "-"}</strong>
+              </div>
+              <div className="founder-field">
                 <span>Reference</span>
                 <strong>{selected.referenceNumber || "-"}</strong>
               </div>
@@ -196,6 +239,32 @@ export default function ApplicationsPage() {
                 <strong>{selected.resumeFileName || "-"}</strong>
               </div>
             </section>
+
+            {selected.meetingDate && (
+              <section className="founder-meeting-section">
+                <h3>Meeting Details</h3>
+                <div className="founder-meeting-info">
+                  <div className="founder-field">
+                    <span>Date/Time</span>
+                    <strong>
+                      {formatMeetingDateTime(
+                        selected.meetingDate,
+                        selected.meetingTime,
+                        selected.meetingTimezone
+                      ) || `${selected.meetingDate} ${selected.meetingTime}`}
+                    </strong>
+                  </div>
+                  {selected.meetingUrl && (
+                    <div className="founder-field">
+                      <span>Meeting Link</span>
+                      <a href={selected.meetingUrl} target="_blank" rel="noopener noreferrer">
+                        {selected.meetingUrl}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
 
             <section className="founder-fieldset">
               <label>Status</label>
@@ -220,6 +289,58 @@ export default function ApplicationsPage() {
                 placeholder="Add context, follow-ups, next steps..."
               />
             </section>
+
+            {(() => {
+              const history = parseActionHistory(selected.actionHistory);
+              if (history.length === 0) return null;
+              return (
+                <section className="founder-timeline-section">
+                  <h3>Action History</h3>
+                  <div className="founder-timeline">
+                    {history.slice().reverse().map((entry, idx) => (
+                      <div key={idx} className="founder-timeline__item">
+                        <div className="founder-timeline__dot" />
+                        <div className="founder-timeline__content">
+                          <div className="founder-timeline__header">
+                            <strong>{ACTION_LABELS[entry.action] || entry.action}</strong>
+                            <span className="founder-timeline__time">
+                              {new Date(entry.timestamp).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                                hour: "numeric",
+                                minute: "2-digit",
+                              })}
+                            </span>
+                          </div>
+                          <div className="founder-timeline__meta">
+                            by {entry.performedBy}
+                            {entry.performedByEmail && ` (${entry.performedByEmail})`}
+                          </div>
+                          {entry.notes && (
+                            <div className="founder-timeline__notes">{entry.notes}</div>
+                          )}
+                          {entry.meetingDetails && (
+                            <div className="founder-timeline__meeting">
+                              {formatMeetingDateTime(
+                                entry.meetingDetails.date,
+                                entry.meetingDetails.time,
+                                entry.meetingDetails.timezone
+                              )}
+                              {entry.meetingDetails.url && (
+                                <a href={entry.meetingDetails.url} target="_blank" rel="noopener noreferrer">
+                                  {" "}View meeting
+                                </a>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              );
+            })()}
           </div>
         ) : (
           <p className="founder-card__meta">Select an application to view details.</p>

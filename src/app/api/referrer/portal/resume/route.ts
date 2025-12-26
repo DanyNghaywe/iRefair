@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { downloadFileFromDrive } from '@/lib/drive';
 import { normalizePortalTokenVersion, verifyReferrerToken } from '@/lib/referrerPortalToken';
 import { getReferrerPortalToken } from '@/lib/referrerPortalAuth';
-import { getApplicationById, getReferrerByIrref } from '@/lib/sheets';
+import { getApplicationById, getReferrerByIrref, findCandidateByIdentifier } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -55,14 +55,30 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   }
 
-  const resumeFileId = application.record.resumeFileId?.trim();
+  // Prefer candidate's latest CV over application-snapshot CV
+  let resumeFileId: string | undefined;
+  let resumeFileName: string | undefined;
+
+  // Try to get candidate's latest resume first
+  const candidate = await findCandidateByIdentifier(application.record.candidateId).catch(() => null);
+  if (candidate?.record?.resumeFileId?.trim()) {
+    resumeFileId = candidate.record.resumeFileId.trim();
+    resumeFileName = candidate.record.resumeFileName;
+  }
+
+  // Fall back to application-snapshot resume
+  if (!resumeFileId && application.record.resumeFileId?.trim()) {
+    resumeFileId = application.record.resumeFileId.trim();
+    resumeFileName = application.record.resumeFileName;
+  }
+
   if (!resumeFileId) {
     return NextResponse.json({ ok: false, error: 'Resume not available.' }, { status: 404 });
   }
 
   try {
     const { buffer, mimeType, name } = await downloadFileFromDrive(resumeFileId);
-    const filename = sanitizeFilename(application.record.resumeFileName || name || 'resume');
+    const filename = sanitizeFilename(resumeFileName || name || 'resume');
     const body = new Uint8Array(buffer);
     return new NextResponse(body, {
       status: 200,

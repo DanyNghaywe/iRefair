@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { findCandidateByIdentifier, getReferrerByIrref, listApplications } from '@/lib/sheets';
+import { findCandidateByIdentifier, getReferrerByIrref, listApplications, normalizeStatus } from '@/lib/sheets';
 import { normalizePortalTokenVersion, verifyReferrerToken } from '@/lib/referrerPortalToken';
 import { getReferrerPortalToken } from '@/lib/referrerPortalAuth';
 
@@ -29,8 +29,12 @@ async function buildItems(referrerIrref: string) {
         iCrn: app.iCrn,
         resumeFileName: app.resumeFileName,
         resumeDownloadUrl,
-        status: app.status || '',
+        status: normalizeStatus(app.status),
         ownerNotes: app.ownerNotes || '',
+        meetingDate: app.meetingDate || '',
+        meetingTime: app.meetingTime || '',
+        meetingTimezone: app.meetingTimezone || '',
+        meetingUrl: app.meetingUrl || '',
       };
     }),
   );

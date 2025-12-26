@@ -13,7 +13,9 @@ import {
   generateIRAIN,
   getCandidateByEmail,
   findExistingCandidate,
+  getApplicationById,
   isIrain,
+  updateApplicationAdmin,
   updateRowById,
   upsertCandidateRow,
 } from "@/lib/sheets";
@@ -25,6 +27,7 @@ import {
   hashCandidateSecret,
   hashToken,
 } from "@/lib/candidateUpdateToken";
+import { hashOpaqueToken, isExpired } from "@/lib/tokens";
 
 type EmailLanguage = "en" | "fr";
 
@@ -689,6 +692,8 @@ export async function POST(request: Request) {
     const resumeEntry = form.get("resume");
     const locale: EmailLanguage = language === "fr" ? "fr" : "en";
     const honeypot = valueOf("website");
+    const updateRequestToken = valueOf("updateRequestToken");
+    const updateRequestApplicationId = valueOf("updateRequestApplicationId");
 
     if (honeypot) {
       return NextResponse.json({ ok: true });
@@ -923,6 +928,33 @@ export async function POST(request: Request) {
     const updateResult = await updateRowById(CANDIDATE_SHEET_NAME, "iRAIN", upsertResult.id, candidateRowUpdates);
     if (!updateResult.updated) {
       return NextResponse.json({ ok: false, error: "Failed to save candidate profile." }, { status: 500 });
+    }
+
+    // Handle update-request token validation and clearing (from referrer portal flow)
+    let updateRequestCleared = false;
+    if (updateRequestToken && updateRequestApplicationId) {
+      try {
+        const application = await getApplicationById(updateRequestApplicationId);
+        if (application?.record) {
+          const storedHash = application.record.updateRequestTokenHash || "";
+          const storedExpiry = application.record.updateRequestExpiresAt || "";
+          const providedHash = hashOpaqueToken(updateRequestToken);
+
+          // Validate: hash matches and not expired
+          if (storedHash && storedHash === providedHash && !isExpired(storedExpiry)) {
+            // Clear the update request fields
+            await updateApplicationAdmin(updateRequestApplicationId, {
+              updateRequestTokenHash: "",
+              updateRequestExpiresAt: "",
+              updateRequestPurpose: "",
+            });
+            updateRequestCleared = true;
+          }
+        }
+      } catch (err) {
+        // Log but don't fail the submission - token clearing is best-effort
+        console.error("Error clearing update request token:", err);
+      }
     }
 
     const finalIRain = upsertResult.id;

@@ -216,7 +216,7 @@ export default function ReferrerReviewPage() {
   const skipDetailsAutosaveRef = useRef(true);
 
   const approvalValue = useMemo(() => {
-    const value = (referrer?.companyApproval || "approved").toLowerCase();
+    const value = (referrer?.companyApproval || "pending").toLowerCase();
     if (value === "approved" || value === "denied" || value === "pending") return value;
     return "pending";
   }, [referrer?.companyApproval]);
@@ -247,7 +247,7 @@ export default function ReferrerReviewPage() {
     if (data?.ok && data.item) {
       const next = {
         ...data.item,
-        companyApproval: data.item.companyApproval || "approved",
+        companyApproval: data.item.companyApproval || "pending",
       } as ReferrerRecord;
       setReferrer(next);
     } else {

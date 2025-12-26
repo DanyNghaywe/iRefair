@@ -72,7 +72,20 @@ export const MATCH_HEADERS = [
 ];
 export const ADMIN_TRACKING_COLUMNS = ['Status', 'Owner Notes', 'Tags', 'Last Contacted At', 'Next Action At'];
 const REFERRER_SECURITY_COLUMNS = [REFERRER_PORTAL_TOKEN_VERSION_HEADER];
-export const APPLICATION_ADMIN_COLUMNS = ['Status', 'Owner Notes'];
+export const APPLICATION_ADMIN_COLUMNS = [
+  'Status',
+  'Owner Notes',
+  'Meeting Date',
+  'Meeting Time',
+  'Meeting Timezone',
+  'Meeting URL',
+  'Action History',
+  'Reschedule Token Hash',
+  'Reschedule Token Expires At',
+  'Update Request Token Hash',
+  'Update Request Expires At',
+  'Update Request Purpose',
+];
 
 const IRCRN_REGEX = /^iRCRN(\d{10})$/i;
 const IRAIN_REGEX = /^iRAIN(\d{10})$/i;
@@ -93,6 +106,49 @@ export function isIrcrn(value: string) {
 
 export function isIrref(value: string) {
   return IRREF_REGEX.test(value.trim());
+}
+
+/**
+ * Normalize legacy status phrases to consistent lowercase values.
+ * Legacy stored phrases:
+ * - "Wants to meet" -> "meeting requested"
+ * - "Not a good fit" -> "not a good fit"
+ * - "CV not matching requirements" -> "cv mismatch"
+ * - "CV needs adjustments" -> "cv update requested"
+ * - "CV missing information" -> "info requested"
+ * - "He interviewed" -> "interviewed"
+ * - "He got the job" -> "hired"
+ *
+ * New statuses will be stored as readable lowercase values like:
+ * 'new', 'meeting scheduled', 'needs reschedule', 'interviewed', 'hired', etc.
+ */
+export function normalizeStatus(raw?: string): string {
+  if (!raw || typeof raw !== 'string') {
+    return '';
+  }
+
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return '';
+  }
+
+  // Map legacy phrases to normalized values
+  const legacyMap: Record<string, string> = {
+    'wants to meet': 'meeting requested',
+    'not a good fit': 'not a good fit',
+    'cv not matching requirements': 'cv mismatch',
+    'cv needs adjustments': 'cv update requested',
+    'cv missing information': 'info requested',
+    'he interviewed': 'interviewed',
+    'he got the job': 'hired',
+  };
+
+  const lowerTrimmed = trimmed.toLowerCase();
+  if (legacyMap[lowerTrimmed]) {
+    return legacyMap[lowerTrimmed];
+  }
+
+  return lowerTrimmed;
 }
 
 function toColumnLetter(index: number) {
@@ -417,6 +473,9 @@ type CandidateRow = {
   updateTokenHash?: string;
   updateTokenExpiresAt?: string;
   updatePendingPayload?: string;
+  resumeFileName?: string;
+  resumeFileId?: string;
+  resumeUrl?: string;
 };
 
 type ReferrerRow = {
@@ -519,6 +578,9 @@ function buildCandidateRecordFromHeaderMap(
     updateTokenHash: getHeaderValue(headerMap, row, CANDIDATE_UPDATE_TOKEN_HASH_HEADER),
     updateTokenExpiresAt: getHeaderValue(headerMap, row, CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER),
     updatePendingPayload: getHeaderValue(headerMap, row, CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER),
+    resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name') || undefined,
+    resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID') || undefined,
+    resumeUrl: getHeaderValue(headerMap, row, 'Resume URL') || undefined,
   };
 }
 
@@ -1463,6 +1525,16 @@ type ApplicationListItem = {
   referrerEmail: string;
   status: string;
   ownerNotes: string;
+  meetingDate: string;
+  meetingTime: string;
+  meetingTimezone: string;
+  meetingUrl: string;
+  actionHistory: string;
+  rescheduleTokenHash: string;
+  rescheduleTokenExpiresAt: string;
+  updateRequestTokenHash: string;
+  updateRequestExpiresAt: string;
+  updateRequestPurpose: string;
   missingFields: string[];
 };
 
@@ -1779,7 +1851,7 @@ export async function listApprovedReferrerCompanies(): Promise<CompanyRow[]> {
 
   for (const row of rows) {
     const approval = getHeaderValue(headerMap, row, 'Company Approval').toLowerCase();
-    if (approval && approval !== 'approved') continue;
+    if (approval !== 'approved') continue;
 
     const code = getHeaderValue(headerMap, row, 'Company iRCRN');
     const name = getHeaderValue(headerMap, row, 'Company');
@@ -2048,6 +2120,16 @@ export async function listApplications(
         referrerEmail: getHeaderValue(headerMap, row, 'Referrer Email'),
         status: getHeaderValue(headerMap, row, 'Status'),
         ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
+        meetingDate: getHeaderValue(headerMap, row, 'Meeting Date'),
+        meetingTime: getHeaderValue(headerMap, row, 'Meeting Time'),
+        meetingTimezone: getHeaderValue(headerMap, row, 'Meeting Timezone'),
+        meetingUrl: getHeaderValue(headerMap, row, 'Meeting URL'),
+        actionHistory: getHeaderValue(headerMap, row, 'Action History'),
+        rescheduleTokenHash: getHeaderValue(headerMap, row, 'Reschedule Token Hash'),
+        rescheduleTokenExpiresAt: getHeaderValue(headerMap, row, 'Reschedule Token Expires At'),
+        updateRequestTokenHash: getHeaderValue(headerMap, row, 'Update Request Token Hash'),
+        updateRequestExpiresAt: getHeaderValue(headerMap, row, 'Update Request Expires At'),
+        updateRequestPurpose: getHeaderValue(headerMap, row, 'Update Request Purpose'),
         missingFields,
       };
     })
@@ -2119,6 +2201,72 @@ export async function getApplicationById(id: string) {
           referrerEmail: getHeaderValue(headerMap, row, 'Referrer Email'),
           status: getHeaderValue(headerMap, row, 'Status'),
           ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
+          meetingDate: getHeaderValue(headerMap, row, 'Meeting Date'),
+          meetingTime: getHeaderValue(headerMap, row, 'Meeting Time'),
+          meetingTimezone: getHeaderValue(headerMap, row, 'Meeting Timezone'),
+          meetingUrl: getHeaderValue(headerMap, row, 'Meeting URL'),
+          actionHistory: getHeaderValue(headerMap, row, 'Action History'),
+          rescheduleTokenHash: getHeaderValue(headerMap, row, 'Reschedule Token Hash'),
+          rescheduleTokenExpiresAt: getHeaderValue(headerMap, row, 'Reschedule Token Expires At'),
+          updateRequestTokenHash: getHeaderValue(headerMap, row, 'Update Request Token Hash'),
+          updateRequestExpiresAt: getHeaderValue(headerMap, row, 'Update Request Expires At'),
+          updateRequestPurpose: getHeaderValue(headerMap, row, 'Update Request Purpose'),
+        },
+      };
+    }
+  }
+  return null;
+}
+
+export async function findApplicationByRescheduleTokenHash(tokenHash: string) {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${APPLICATION_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  const headerMap = buildHeaderMap(headers);
+  const lastCol = toColumnLetter(headers.length - 1);
+  const rows = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${APPLICATION_SHEET_NAME}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const normalizedHash = tokenHash.trim().toLowerCase();
+  const values = rows.data.values ?? [];
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i] ?? [];
+    const rowHash = getHeaderValue(headerMap, row, 'Reschedule Token Hash').toLowerCase();
+    if (rowHash && rowHash === normalizedHash) {
+      return {
+        rowIndex: i + 1,
+        record: {
+          id: getHeaderValue(headerMap, row, 'ID'),
+          timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
+          candidateId: getHeaderValue(headerMap, row, 'Candidate ID'),
+          iCrn: getHeaderValue(headerMap, row, 'iRCRN'),
+          position: getHeaderValue(headerMap, row, 'Position'),
+          referenceNumber: getHeaderValue(headerMap, row, 'Reference Number'),
+          resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name'),
+          resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID'),
+          referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
+          referrerEmail: getHeaderValue(headerMap, row, 'Referrer Email'),
+          status: getHeaderValue(headerMap, row, 'Status'),
+          ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
+          meetingDate: getHeaderValue(headerMap, row, 'Meeting Date'),
+          meetingTime: getHeaderValue(headerMap, row, 'Meeting Time'),
+          meetingTimezone: getHeaderValue(headerMap, row, 'Meeting Timezone'),
+          meetingUrl: getHeaderValue(headerMap, row, 'Meeting URL'),
+          actionHistory: getHeaderValue(headerMap, row, 'Action History'),
+          rescheduleTokenHash: getHeaderValue(headerMap, row, 'Reschedule Token Hash'),
+          rescheduleTokenExpiresAt: getHeaderValue(headerMap, row, 'Reschedule Token Expires At'),
+          updateRequestTokenHash: getHeaderValue(headerMap, row, 'Update Request Token Hash'),
+          updateRequestExpiresAt: getHeaderValue(headerMap, row, 'Update Request Expires At'),
+          updateRequestPurpose: getHeaderValue(headerMap, row, 'Update Request Purpose'),
         },
       };
     }
@@ -2238,6 +2386,16 @@ type ReferrerPatch = AdminPatch & {
 type ApplicationAdminPatch = {
   status?: string;
   ownerNotes?: string;
+  meetingDate?: string;
+  meetingTime?: string;
+  meetingTimezone?: string;
+  meetingUrl?: string;
+  actionHistory?: string;
+  rescheduleTokenHash?: string;
+  rescheduleTokenExpiresAt?: string;
+  updateRequestTokenHash?: string;
+  updateRequestExpiresAt?: string;
+  updateRequestPurpose?: string;
 };
 
 export async function updateRowById(
@@ -2398,6 +2556,16 @@ export async function updateApplicationAdmin(id: string, patch: ApplicationAdmin
   return updateRowById(APPLICATION_SHEET_NAME, 'ID', id, {
     Status: patch.status,
     'Owner Notes': patch.ownerNotes,
+    'Meeting Date': patch.meetingDate,
+    'Meeting Time': patch.meetingTime,
+    'Meeting Timezone': patch.meetingTimezone,
+    'Meeting URL': patch.meetingUrl,
+    'Action History': patch.actionHistory,
+    'Reschedule Token Hash': patch.rescheduleTokenHash,
+    'Reschedule Token Expires At': patch.rescheduleTokenExpiresAt,
+    'Update Request Token Hash': patch.updateRequestTokenHash,
+    'Update Request Expires At': patch.updateRequestExpiresAt,
+    'Update Request Purpose': patch.updateRequestPurpose,
   });
 }
 

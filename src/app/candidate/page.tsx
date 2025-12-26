@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { ChangeEvent, FormEvent, useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { ChangeEvent, FormEvent, Suspense, useEffect, useRef, useState } from 'react';
 import { ActionBtn } from '@/components/ActionBtn';
 import { AppShell } from '@/components/AppShell';
 import { Confetti, useConfetti } from '@/components/Confetti';
@@ -392,7 +393,8 @@ const translations: Record<
   },
 };
 
-export default function CandidatePage() {
+function CandidatePageContent() {
+  const searchParams = useSearchParams();
   const { startNavigation } = useNavigationLoader();
   const { language, setLanguage, withLanguage } = usePersistedLanguage();
   const [resumeName, setResumeName] = useState('');
@@ -412,6 +414,12 @@ export default function CandidatePage() {
   const [eligibleMoveCanada, setEligibleMoveCanada] = useState('');
   const [industrySelection, setIndustrySelection] = useState('');
   const [employmentStatus, setEmploymentStatus] = useState('');
+
+  // Update request flow (from referrer portal)
+  const updateToken = searchParams.get('updateToken') || '';
+  const updateAppId = searchParams.get('appId') || '';
+  const hasUpdateRequest = Boolean(updateToken && updateAppId);
+  const [showUpdateBanner, setShowUpdateBanner] = useState(hasUpdateRequest);
 
   const t = translations[language];
 
@@ -655,6 +663,11 @@ export default function CandidatePage() {
     if (resumeFile) {
       formBody.append('resume', resumeFile);
     }
+    // Append update request fields if present (from referrer portal link)
+    if (updateToken && updateAppId) {
+      formBody.append('updateRequestToken', updateToken);
+      formBody.append('updateRequestApplicationId', updateAppId);
+    }
 
     try {
       const response = await fetch('/api/candidate', {
@@ -719,6 +732,34 @@ export default function CandidatePage() {
               <p className="lead">{t.lead}</p>
             </div>
           </div>
+
+          {showUpdateBanner && (
+            <div className="update-request-banner" role="alert">
+              <div className="update-request-banner__content">
+                <strong>
+                  {language === 'fr'
+                    ? 'Un référent a demandé une mise à jour de votre candidature.'
+                    : 'A referrer requested an update for your application.'}
+                </strong>
+                <p>
+                  {language === 'fr'
+                    ? 'Veuillez mettre à jour vos informations et soumettre à nouveau le formulaire.'
+                    : 'Please update your information and resubmit the form below.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                className="update-request-banner__close"
+                onClick={() => setShowUpdateBanner(false)}
+                aria-label={language === 'fr' ? 'Fermer la bannière' : 'Dismiss banner'}
+              >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
+          )}
 
             <form
               ref={formRef}
@@ -1201,5 +1242,13 @@ export default function CandidatePage() {
       <PublicFooter />
       <Confetti active={confetti.active} onComplete={confetti.reset} />
     </AppShell>
+  );
+}
+
+export default function CandidatePage() {
+  return (
+    <Suspense fallback={<div className="loading-screen">Loading...</div>}>
+      <CandidatePageContent />
+    </Suspense>
   );
 }

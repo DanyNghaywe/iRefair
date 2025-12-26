@@ -215,8 +215,8 @@
   min-width: 180px;
 }
 
-.portal-col-feedback {
-  min-width: 200px;
+.portal-col-actions {
+  min-width: 120px;
 }
 
 .portal-cell-title {
@@ -336,6 +336,257 @@
   }
 }
 
+/* Status Badge Styles */
+.portal-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.portal-badge--info {
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+}
+
+.portal-badge--success {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.portal-badge--warning {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+}
+
+.portal-badge--error {
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+}
+
+.portal-badge--neutral {
+  background: rgba(100, 116, 139, 0.12);
+  color: #475569;
+}
+
+/* Dropdown Menu */
+.portal-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+.portal-dropdown-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.portal-dropdown-menu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  z-index: 100;
+  min-width: 180px;
+  margin-top: 4px;
+  padding: 6px;
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 12px;
+  box-shadow:
+    0 10px 30px rgba(15, 23, 42, 0.12),
+    0 4px 8px rgba(15, 23, 42, 0.06);
+}
+
+.portal-dropdown-item {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 500;
+  color: #0f172a;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s;
+}
+
+.portal-dropdown-item:hover:not(:disabled) {
+  background: rgba(59, 130, 246, 0.08);
+  color: #2563eb;
+}
+
+.portal-dropdown-item:focus-visible {
+  outline: 2px solid #3d8bfd;
+  outline-offset: -2px;
+}
+
+.portal-dropdown-item--disabled,
+.portal-dropdown-item:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Meeting Info */
+.portal-meeting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: rgba(16, 185, 129, 0.06);
+  border: 1px solid rgba(16, 185, 129, 0.16);
+  border-radius: 8px;
+  font-size: 12px;
+}
+
+.portal-meeting-date {
+  color: #0f172a;
+  font-weight: 500;
+}
+
+.portal-meeting-date::before {
+  content: "\1F4C5 ";
+}
+
+.portal-meeting-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #2563eb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.portal-meeting-link::before {
+  content: "\1F517";
+}
+
+.portal-meeting-link:hover {
+  text-decoration: underline;
+}
+
+/* Reschedule Warning */
+.portal-reschedule-warning {
+  margin-top: 8px;
+  padding: 8px 10px;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #92400e;
+}
+
+.portal-reschedule-warning::before {
+  content: "\26A0\FE0F ";
+}
+
+/* Modal Content Styles */
+.portal-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.portal-modal-candidate {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.portal-modal-candidate strong {
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.portal-modal-candidate span {
+  font-size: 13px;
+  color: #64748b;
+}
+
+.portal-modal-fields {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.portal-modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.portal-modal-field--full {
+  grid-column: 1 / -1;
+}
+
+.portal-modal-field label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #374151;
+}
+
+.portal-modal-field input,
+.portal-modal-field select,
+.portal-modal-field textarea {
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #0f172a;
+  background: #ffffff;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.portal-modal-field input:focus,
+.portal-modal-field select:focus,
+.portal-modal-field textarea:focus {
+  outline: none;
+  border-color: #3d8bfd;
+  box-shadow: 0 0 0 3px rgba(61, 139, 253, 0.15);
+}
+
+.portal-modal-field textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.portal-modal-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+}
+
+.portal-modal-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #3d8bfd;
+}
+
+.portal-modal-checkbox label {
+  font-size: 14px;
+  color: #374151;
+  cursor: pointer;
+}
+
+/* Responsive */
 @media (max-width: 720px) {
   .portal-meta {
     grid-template-columns: 1fr;
@@ -354,5 +605,15 @@
 
   .portal-table table {
     min-width: 760px;
+  }
+
+  .portal-dropdown-menu {
+    right: auto;
+    left: 0;
+    min-width: 160px;
+  }
+
+  .portal-modal-fields {
+    grid-template-columns: 1fr;
   }
 }
