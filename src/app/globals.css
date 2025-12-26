@@ -458,6 +458,16 @@ h3 {
   width: min(1600px, 100%);
 }
 
+.board--transparent {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  min-height: 100vh;
+  padding: 0;
+}
+
 .flow-toggle {
   display: flex;
   justify-content: flex-end;
@@ -2797,6 +2807,38 @@ section.founder-auth input:focus-visible {
   flex-direction: column;
   justify-content: center;
   padding-bottom: 80px;
+}
+
+.role-picker--fullscreen {
+  min-height: auto;
+  flex: 1;
+  padding-bottom: 0;
+}
+
+.role-picker--fullscreen .role-shell {
+  padding: 20px 20px 0;
+  flex: 1;
+  justify-content: center;
+}
+
+.board--transparent .public-footer {
+  padding: 16px 24px;
+  flex-shrink: 0;
+}
+
+.board--transparent .public-footer__grid {
+  grid-template-columns: 1fr auto auto;
+  gap: 24px;
+  align-items: center;
+}
+
+.board--transparent .public-footer__text,
+.board--transparent .public-footer__meta {
+  display: none;
+}
+
+.board--transparent .public-footer__brand-row {
+  margin-bottom: 0;
 }
 
 .role-picker-card {

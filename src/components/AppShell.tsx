@@ -4,11 +4,16 @@ import { ParticlesBackground } from "@/components/ParticlesBackground";
 
 type AppShellProps = {
   children: React.ReactNode;
-  variant?: "default" | "wide";
+  variant?: "default" | "wide" | "transparent";
 };
 
 export function AppShell({ children, variant = "default" }: AppShellProps) {
-  const boardClass = variant === "wide" ? "board board--wide" : "board";
+  const boardClass =
+    variant === "wide"
+      ? "board board--wide"
+      : variant === "transparent"
+        ? "board board--transparent"
+        : "board";
 
   return (
     <div className="app">

@@ -168,8 +168,8 @@ export default function Home() {
   };
 
   return (
-    <AppShell>
-      <main className="role-picker">
+    <AppShell variant="transparent">
+      <main className="role-picker role-picker--fullscreen">
         <section className="role-shell" aria-labelledby="role-heading">
           <header className="role-shell__header">
             <Image
