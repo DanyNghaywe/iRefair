@@ -979,20 +979,30 @@ export async function appendReferrerRow(row: ReferrerRow) {
 export async function appendApplicationRow(row: ApplicationRow) {
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
   await ensureColumns(APPLICATION_SHEET_NAME, ['Resume File ID']);
+
+  // Read current headers from the sheet to handle column reordering
+  const headers = await getSheetHeaders(APPLICATION_SHEET_NAME);
+  const headerMap = buildHeaderMap(headers);
+
+  // Build row values array by header name (not positional index)
+  const rowValues: (string | number | null)[] = new Array(headers.length).fill('');
   const timestamp = new Date().toISOString();
-  await appendRow(APPLICATION_SHEET_NAME, [
-    row.id,
-    timestamp,
-    row.candidateId,
-    row.iCrn,
-    row.position,
-    row.referenceNumber,
-    row.resumeFileName,
-    row.resumeFileId ?? '',
-    '',
-    row.referrerIrref ?? '',
-    row.referrerEmail ?? '',
-  ]);
+
+  setByHeader(rowValues, headerMap, 'ID', row.id);
+  setByHeader(rowValues, headerMap, 'Timestamp', timestamp);
+  setByHeader(rowValues, headerMap, 'Candidate ID', row.candidateId);
+  setByHeader(rowValues, headerMap, 'iRCRN', row.iCrn);
+  setByHeader(rowValues, headerMap, 'Position', row.position);
+  setByHeader(rowValues, headerMap, 'Reference Number', row.referenceNumber);
+  setByHeader(rowValues, headerMap, 'Resume File Name', row.resumeFileName);
+  setByHeader(rowValues, headerMap, 'Resume URL', '');
+  setByHeader(rowValues, headerMap, 'Resume File ID', row.resumeFileId ?? '');
+  setByHeader(rowValues, headerMap, 'Referrer iRREF', row.referrerIrref ?? '');
+  setByHeader(rowValues, headerMap, 'Referrer Email', row.referrerEmail ?? '');
+  setByHeader(rowValues, headerMap, 'Status', '');
+  setByHeader(rowValues, headerMap, 'Owner Notes', '');
+
+  await appendRow(APPLICATION_SHEET_NAME, rowValues);
 }
 
 function buildCandidateRowValues(
@@ -1483,6 +1493,30 @@ function getHeaderValue(
   const index = headers.get(name);
   if (index === undefined || index < 0) return '';
   return cellValue(row, index);
+}
+
+function setByHeader(
+  rowValues: (string | number | null)[],
+  headerMap: Map<string, number>,
+  headerName: string,
+  value: string | number | null | undefined,
+) {
+  const index = headerMap.get(headerName.trim());
+  if (index !== undefined && index >= 0 && index < rowValues.length) {
+    rowValues[index] = value ?? '';
+  }
+}
+
+async function getSheetHeaders(sheetName: string): Promise<string[]> {
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!1:1`,
+    majorDimension: 'ROWS',
+  });
+  const headerRow = response.data.values?.[0] ?? [];
+  return headerRow.map((h) => String(h ?? '').trim());
 }
 
 function paginate<T>(items: T[], offset?: number, limit?: number) {
