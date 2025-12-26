@@ -1,8 +1,3 @@
-/* eslint-disable @typescript-eslint/no-require-imports */
-const pdfParse = require('pdf-parse');
-const mammoth = require('mammoth');
-/* eslint-enable @typescript-eslint/no-require-imports */
-
 type ScanResult =
   | { ok: true; skipped?: boolean; message?: string }
   | { ok: false; message?: string };
@@ -138,6 +133,8 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, errorMsg: string)
 
 async function extractPdfText(buffer: Buffer): Promise<ExtractResult> {
   try {
+    // Dynamic import to avoid build-time canvas dependency issues
+    const pdfParse = (await import('pdf-parse')).default;
     const parsed = await withTimeout<{ text?: string }>(
       pdfParse(buffer),
       PARSE_TIMEOUT_MS,
@@ -146,13 +143,20 @@ async function extractPdfText(buffer: Buffer): Promise<ExtractResult> {
     const text = (parsed?.text || '').slice(0, MAX_EXTRACTION_CHARS);
     return { ok: true, text };
   } catch (error) {
+    // If module fails to load (canvas issues), skip gracefully
     const message = error instanceof Error ? error.message : 'PDF parsing failed.';
+    if (message.includes('Cannot find module') || message.includes('DOMMatrix')) {
+      console.warn('PDF parsing unavailable in this environment; skipping');
+      return { ok: false, skipped: true };
+    }
     return { ok: false, error: message };
   }
 }
 
 async function extractDocxText(buffer: Buffer): Promise<ExtractResult> {
   try {
+    // Dynamic import to avoid build-time issues
+    const mammoth = await import('mammoth');
     const result = await withTimeout<{ value?: string }>(
       mammoth.extractRawText({ buffer }),
       PARSE_TIMEOUT_MS,
@@ -162,6 +166,10 @@ async function extractDocxText(buffer: Buffer): Promise<ExtractResult> {
     return { ok: true, text };
   } catch (error) {
     const message = error instanceof Error ? error.message : 'DOCX parsing failed.';
+    if (message.includes('Cannot find module')) {
+      console.warn('DOCX parsing unavailable in this environment; skipping');
+      return { ok: false, skipped: true };
+    }
     return { ok: false, error: message };
   }
 }
