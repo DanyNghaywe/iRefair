@@ -1,8 +1,5 @@
-import { Worker } from 'worker_threads';
-
-// Force bundler to include these packages (used dynamically in worker)
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-if (false) { require('pdf-parse'); require('mammoth'); }
+import pdfParse from 'pdf-parse';
+import mammoth from 'mammoth';
 
 type ScanResult =
   | { ok: true; skipped?: boolean; message?: string }
@@ -122,88 +119,49 @@ function hasDocxEntry(buffer: Buffer) {
   return buffer.includes(Buffer.from('word/document.xml'));
 }
 
-async function extractTextInWorker(
-  buffer: Buffer,
-  kind: 'pdf' | 'docx',
-): Promise<ExtractResult> {
-  const arrayBuffer = buffer.buffer.slice(buffer.byteOffset, buffer.byteOffset + buffer.byteLength);
-
-  return new Promise((resolve) => {
-    let settled = false;
-
-    const worker = new Worker(
-      `
-        const { parentPort, workerData } = require('worker_threads');
-
-        const finish = (payload) => {
-          if (parentPort) parentPort.postMessage(payload);
-        };
-
-        (async () => {
-          const { kind, buffer, maxChars } = workerData;
-          const fileBuffer = Buffer.from(buffer);
-          if (kind === 'pdf') {
-            const pdfParseModule = require('pdf-parse');
-            const pdfParse = typeof pdfParseModule === 'function' ? pdfParseModule : pdfParseModule.default;
-            if (typeof pdfParse !== 'function') {
-              finish({ ok: false, error: 'PDF parsing unavailable.' });
-              return;
-            }
-            const parsed = await pdfParse(fileBuffer);
-            const text = (parsed && parsed.text ? parsed.text : '').slice(0, maxChars);
-            finish({ ok: true, text });
-            return;
-          }
-          if (kind === 'docx') {
-            const mammoth = require('mammoth');
-            const result = await mammoth.extractRawText({ buffer: fileBuffer });
-            const text = (result && result.value ? result.value : '').slice(0, maxChars);
-            finish({ ok: true, text });
-            return;
-          }
-          finish({ ok: false, error: 'Unsupported file type.' });
-        })().catch((error) => {
-          finish({ ok: false, error: error && error.message ? error.message : 'File parsing failed.' });
-        });
-      `,
-      {
-        eval: true,
-        workerData: { buffer: arrayBuffer, kind, maxChars: MAX_EXTRACTION_CHARS },
-      },
-    );
-
-    const finalize = (result: ExtractResult) => {
-      if (settled) return;
-      settled = true;
-      clearTimeout(timeout);
-      worker.terminate().catch(() => undefined);
-      resolve(result);
-    };
-
-    const timeout = setTimeout(() => {
-      worker
-        .terminate()
-        .catch(() => undefined)
-        .finally(() => {
-          finalize({ ok: false, error: 'File parsing timed out.' });
-        });
-    }, PARSE_TIMEOUT_MS);
-
-    worker.on('message', (message) => {
-      finalize(message as ExtractResult);
-    });
-
-    worker.on('error', (error) => {
-      finalize({ ok: false, error: error?.message || 'File parsing failed.' });
-    });
-
-    worker.on('exit', (code) => {
-      if (settled) return;
-      if (code !== 0) {
-        finalize({ ok: false, error: 'File parsing failed.' });
-      }
-    });
+async function withTimeout<T>(promise: Promise<T>, ms: number, errorMsg: string): Promise<T> {
+  let timeoutId: NodeJS.Timeout;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(errorMsg)), ms);
   });
+  try {
+    const result = await Promise.race([promise, timeoutPromise]);
+    clearTimeout(timeoutId!);
+    return result;
+  } catch (error) {
+    clearTimeout(timeoutId!);
+    throw error;
+  }
+}
+
+async function extractPdfText(buffer: Buffer): Promise<ExtractResult> {
+  try {
+    const parsed = await withTimeout(
+      pdfParse(buffer),
+      PARSE_TIMEOUT_MS,
+      'PDF parsing timed out.'
+    );
+    const text = (parsed?.text || '').slice(0, MAX_EXTRACTION_CHARS);
+    return { ok: true, text };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'PDF parsing failed.';
+    return { ok: false, error: message };
+  }
+}
+
+async function extractDocxText(buffer: Buffer): Promise<ExtractResult> {
+  try {
+    const result = await withTimeout(
+      mammoth.extractRawText({ buffer }),
+      PARSE_TIMEOUT_MS,
+      'DOCX parsing timed out.'
+    );
+    const text = (result?.value || '').slice(0, MAX_EXTRACTION_CHARS);
+    return { ok: true, text };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'DOCX parsing failed.';
+    return { ok: false, error: message };
+  }
 }
 
 async function extractText(buffer: Buffer, mimeType?: string, filename?: string): Promise<ExtractResult> {
@@ -220,14 +178,14 @@ async function extractText(buffer: Buffer, mimeType?: string, filename?: string)
     if (!hasPdfMagic(buffer)) {
       return { ok: false, error: 'Invalid PDF file.' };
     }
-    return extractTextInWorker(buffer, 'pdf');
+    return extractPdfText(buffer);
   }
 
   if (isDocx) {
     if (!hasZipMagic(buffer) || !hasDocxEntry(buffer)) {
       return { ok: false, error: 'Invalid DOCX file.' };
     }
-    return extractTextInWorker(buffer, 'docx');
+    return extractDocxText(buffer);
   }
 
   if (isDoc) {
