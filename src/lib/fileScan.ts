@@ -138,7 +138,7 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, errorMsg: string)
 
 async function extractPdfText(buffer: Buffer): Promise<ExtractResult> {
   try {
-    const parsed = await withTimeout(
+    const parsed = await withTimeout<{ text?: string }>(
       pdfParse(buffer),
       PARSE_TIMEOUT_MS,
       'PDF parsing timed out.'
@@ -153,7 +153,7 @@ async function extractPdfText(buffer: Buffer): Promise<ExtractResult> {
 
 async function extractDocxText(buffer: Buffer): Promise<ExtractResult> {
   try {
-    const result = await withTimeout(
+    const result = await withTimeout<{ value?: string }>(
       mammoth.extractRawText({ buffer }),
       PARSE_TIMEOUT_MS,
       'DOCX parsing timed out.'
