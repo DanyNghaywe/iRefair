@@ -1,5 +1,9 @@
 import { Worker } from 'worker_threads';
 
+// Force bundler to include these packages (used dynamically in worker)
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+if (false) { require('pdf-parse'); require('mammoth'); }
+
 type ScanResult =
   | { ok: true; skipped?: boolean; message?: string }
   | { ok: false; message?: string };
