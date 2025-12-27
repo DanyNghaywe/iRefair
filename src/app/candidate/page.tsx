@@ -403,6 +403,7 @@ function CandidatePageContent() {
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
   const formRef = useRef<HTMLFormElement | null>(null);
+  const errorBannerRef = useRef<HTMLDivElement | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const confetti = useConfetti();
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
@@ -448,6 +449,21 @@ function CandidatePageContent() {
       }
     });
   };
+
+  const scrollToStatusError = () => {
+    requestAnimationFrame(() => {
+      const banner = errorBannerRef.current;
+      if (!banner) return;
+      banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      banner.focus({ preventScroll: true });
+    });
+  };
+
+  useEffect(() => {
+    if (status === 'error') {
+      scrollToStatusError();
+    }
+  }, [status]);
 
   const handleFieldChange = (field: string) => () => clearError(field);
   const handleLinkedInChange = () => {
@@ -674,10 +690,19 @@ function CandidatePageContent() {
         method: 'POST',
         body: formBody,
       });
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
 
       if (!response.ok || !data?.ok) {
-        throw new Error(data?.error || 'Something went wrong. Please try again.');
+        const errorMessage =
+          typeof data?.error === 'string' ? data.error : 'Something went wrong. Please try again.';
+        if (data?.field === 'resume') {
+          setErrors((prev) => ({ ...prev, resume: errorMessage }));
+          setStatus('idle');
+          scrollToFirstError();
+        } else {
+          setStatus('error');
+        }
+        return;
       }
 
       setStatus('ok');
@@ -1138,7 +1163,7 @@ function CandidatePageContent() {
 
               <fieldset>
                 <legend>{t.legends.attachments}</legend>
-                <div className="field">
+                <div className={fieldClass('field', 'resume')}>
                   <label htmlFor="resume">
                     {t.labels.resume} <span className="optional">{t.optional}</span>
                   </label>
@@ -1151,6 +1176,7 @@ function CandidatePageContent() {
                       accept=".pdf,.doc,.docx"
                       className="file-input"
                       onChange={handleResumeChange}
+                      aria-invalid={Boolean(errors.resume)}
                       aria-describedby="resume-helper resume-file-name resume-error"
                     />
                     <ActionBtn
@@ -1214,7 +1240,13 @@ function CandidatePageContent() {
                     </div>
                   )}
                   {status === 'error' && (
-                    <div className="status-banner status-banner--error" role="alert" aria-live="assertive">
+                    <div
+                      ref={errorBannerRef}
+                      className="status-banner status-banner--error"
+                      role="alert"
+                      aria-live="assertive"
+                      tabIndex={-1}
+                    >
                       <span className="status-icon" aria-hidden="true">!</span>
                       <span>{t.statusMessages.error}</span>
                     </div>

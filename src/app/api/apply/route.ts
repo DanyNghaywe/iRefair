@@ -90,14 +90,14 @@ export async function POST(request: Request) {
 
     if (!(resumeEntry instanceof File) || resumeEntry.size === 0) {
       return NextResponse.json(
-        { ok: false, error: 'Please upload your resume (PDF or DOC/DOCX, max 10MB).' },
+        { ok: false, field: 'resume', error: 'Please upload your resume (PDF or DOC/DOCX, max 10MB).' },
         { status: 400 },
       );
     }
 
     if (!isAllowedResume(resumeEntry) || resumeEntry.size > MAX_RESUME_SIZE) {
       return NextResponse.json(
-        { ok: false, error: 'Please upload a PDF or DOC/DOCX file under 10MB.' },
+        { ok: false, field: 'resume', error: 'Please upload a PDF or DOC/DOCX file under 10MB.' },
         { status: 400 },
       );
     }
@@ -161,7 +161,7 @@ export async function POST(request: Request) {
     const scan = await scanBufferForViruses(fileBuffer, resumeEntry.name);
     if (!scan.ok) {
       const message = scan.message || 'Your file failed virus scanning.';
-      return NextResponse.json({ ok: false, error: message }, { status: 400 });
+      return NextResponse.json({ ok: false, field: 'resume', error: message }, { status: 400 });
     }
 
     const resumeCheck = await ensureResumeLooksLikeCv(
@@ -171,7 +171,7 @@ export async function POST(request: Request) {
     );
     if (!resumeCheck.ok) {
       return NextResponse.json(
-        { ok: false, error: resumeCheck.message || 'Please upload a complete resume (PDF/DOCX).' },
+        { ok: false, field: 'resume', error: resumeCheck.message || 'Please upload a complete resume (PDF/DOCX).' },
         { status: 400 },
       );
     }

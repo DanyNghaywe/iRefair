@@ -201,6 +201,7 @@ export default function ApplyPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const formRef = useRef<HTMLFormElement | null>(null);
+  const errorBannerRef = useRef<HTMLDivElement | null>(null);
   const resumeInputRef = useRef<HTMLInputElement | null>(null);
 
   const fieldClass = (name: string) => `field ${errors[name] ? 'has-error' : ''}`.trim();
@@ -270,6 +271,21 @@ export default function ApplyPage() {
     });
   };
 
+  const scrollToStatusError = () => {
+    requestAnimationFrame(() => {
+      const banner = errorBannerRef.current;
+      if (!banner) return;
+      banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      banner.focus({ preventScroll: true });
+    });
+  };
+
+  useEffect(() => {
+    if (status === 'error') {
+      scrollToStatusError();
+    }
+  }, [status]);
+
   const validate = () => {
     const nextErrors: Record<string, string> = {};
     if (!candidateId.trim()) nextErrors.candidateId = 'Please enter your iRAIN or legacy CAND ID.';
@@ -323,9 +339,17 @@ export default function ApplyPage() {
         body: formData,
       });
 
-      const data = await response.json();
+      const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok) {
-        throw new Error(data?.error || 'Something went wrong.');
+        const errorMessage = typeof data?.error === 'string' ? data.error : 'Something went wrong.';
+        if (data?.field === 'resume') {
+          setErrors((prev) => ({ ...prev, resume: errorMessage }));
+          setStatus('idle');
+          scrollToFirstError();
+        } else {
+          setStatus('error');
+        }
+        return;
       }
 
       setStatus('ok');
@@ -369,7 +393,13 @@ export default function ApplyPage() {
             </div>
           )}
           {status === 'error' && (
-            <div className="status-banner status-banner--error" role="status" aria-live="polite">
+            <div
+              ref={errorBannerRef}
+              className="status-banner status-banner--error"
+              role="status"
+              aria-live="polite"
+              tabIndex={-1}
+            >
               We couldn&apos;t submit your application right now. Please try again in a moment.
             </div>
           )}

@@ -54,6 +54,21 @@ type PendingCandidateUpdatePayload = {
   locale: EmailLanguage;
 };
 
+const ALLOWED_RESUME_TYPES = [
+  "application/pdf",
+  "application/msword",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+];
+const ALLOWED_RESUME_EXTENSIONS = ["pdf", "doc", "docx"];
+const MAX_RESUME_SIZE = 10 * 1024 * 1024; // 10MB
+
+const isAllowedResume = (file: File) => {
+  const extension = file.name.split(".").pop()?.toLowerCase();
+  const typeAllowed = file.type ? ALLOWED_RESUME_TYPES.includes(file.type) : false;
+  const extensionAllowed = extension ? ALLOWED_RESUME_EXTENSIONS.includes(extension) : false;
+  return typeAllowed || extensionAllowed;
+};
+
 const subject = "We have received your referral request - iRefair";
 const updatedSubject = "We updated your referral request - iRefair";
 const ineligibleSubject = "About your referral request - iRefair";
@@ -740,9 +755,9 @@ export async function POST(request: Request) {
     let resumeFileName: string | undefined;
 
     if (resumeEntry instanceof File && resumeEntry.size > 0) {
-      if (resumeEntry.size > 10 * 1024 * 1024) {
+      if (!isAllowedResume(resumeEntry) || resumeEntry.size > MAX_RESUME_SIZE) {
         return NextResponse.json(
-          { ok: false, error: "Please upload a PDF or DOC/DOCX file under 10MB." },
+          { ok: false, field: "resume", error: "Please upload a PDF or DOC/DOCX file under 10MB." },
           { status: 400 },
         );
       }
@@ -750,7 +765,7 @@ export async function POST(request: Request) {
       const virusScan = await scanBufferForViruses(fileBuffer, resumeEntry.name);
       if (!virusScan.ok) {
         return NextResponse.json(
-          { ok: false, error: virusScan.message || "Your file failed virus scanning." },
+          { ok: false, field: "resume", error: virusScan.message || "Your file failed virus scanning." },
           { status: 400 },
         );
       }
@@ -758,7 +773,11 @@ export async function POST(request: Request) {
       const resumeCheck = await ensureResumeLooksLikeCv(fileBuffer, resumeEntry.type, resumeEntry.name);
       if (!resumeCheck.ok) {
         return NextResponse.json(
-          { ok: false, error: resumeCheck.message || "Please upload a complete resume (PDF/DOCX)." },
+          {
+            ok: false,
+            field: "resume",
+            error: resumeCheck.message || "Please upload a complete resume (PDF/DOCX).",
+          },
           { status: 400 },
         );
       }

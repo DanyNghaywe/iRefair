@@ -1,3 +1,5 @@
+import { callChatGPT, getOpenAIConfig, type ChatMessage } from '@/lib/chatgpt';
+
 type ScanResult =
   | { ok: true; skipped?: boolean; message?: string }
   | { ok: false; message?: string };
@@ -8,6 +10,16 @@ const MAX_POLLS = 4;
 const MIN_TEXT_LENGTH = 400;
 const MAX_EXTRACTION_CHARS = 200_000;
 const PARSE_TIMEOUT_MS = 3000;
+const AI_RESUME_CHECK_ENABLED = ['true', '1', 'yes'].includes(
+  (process.env.RESUME_AI_CHECK || '').toLowerCase(),
+);
+const AI_RESUME_TIMEOUT_MS = 8000;
+const AI_RESUME_MAX_CHARS = 6000;
+const AI_RESUME_PROMPT =
+  'You are a strict classifier. Decide if the text is a resume or CV. ' +
+  'A resume typically includes contact details and sections like Experience, Education, Skills, or Projects. ' +
+  'Reply with exactly YES or NO.';
+const AI_RESUME_UNREADABLE_MESSAGE = 'We could not read this resume. Please upload a PDF or DOCX file.';
 const KEYWORDS = [
   'experience',
   'education',
@@ -131,30 +143,372 @@ async function withTimeout<T>(promise: Promise<T>, ms: number, errorMsg: string)
   }
 }
 
+type DomMatrixInit =
+  | number[]
+  | {
+      a?: number;
+      b?: number;
+      c?: number;
+      d?: number;
+      e?: number;
+      f?: number;
+      m11?: number;
+      m12?: number;
+      m21?: number;
+      m22?: number;
+      m41?: number;
+      m42?: number;
+    };
+
+class BasicDOMMatrix {
+  a: number;
+  b: number;
+  c: number;
+  d: number;
+  e: number;
+  f: number;
+
+  constructor(init?: DomMatrixInit) {
+    if (Array.isArray(init)) {
+      const [a, b, c, d, e, f] = init;
+      this.a = a ?? 1;
+      this.b = b ?? 0;
+      this.c = c ?? 0;
+      this.d = d ?? 1;
+      this.e = e ?? 0;
+      this.f = f ?? 0;
+      return;
+    }
+
+    if (init && typeof init === 'object') {
+      this.a = init.a ?? init.m11 ?? 1;
+      this.b = init.b ?? init.m12 ?? 0;
+      this.c = init.c ?? init.m21 ?? 0;
+      this.d = init.d ?? init.m22 ?? 1;
+      this.e = init.e ?? init.m41 ?? 0;
+      this.f = init.f ?? init.m42 ?? 0;
+      return;
+    }
+
+    this.a = 1;
+    this.b = 0;
+    this.c = 0;
+    this.d = 1;
+    this.e = 0;
+    this.f = 0;
+  }
+
+  static from(value?: DomMatrixInit | BasicDOMMatrix) {
+    if (value instanceof BasicDOMMatrix) return new BasicDOMMatrix(value);
+    return new BasicDOMMatrix(value);
+  }
+
+  multiply(other?: DomMatrixInit | BasicDOMMatrix) {
+    const m = BasicDOMMatrix.from(other);
+    const a = this.a * m.a + this.c * m.b;
+    const b = this.b * m.a + this.d * m.b;
+    const c = this.a * m.c + this.c * m.d;
+    const d = this.b * m.c + this.d * m.d;
+    const e = this.a * m.e + this.c * m.f + this.e;
+    const f = this.b * m.e + this.d * m.f + this.f;
+    return new BasicDOMMatrix([a, b, c, d, e, f]);
+  }
+
+  multiplySelf(other?: DomMatrixInit | BasicDOMMatrix) {
+    const next = this.multiply(other);
+    this.a = next.a;
+    this.b = next.b;
+    this.c = next.c;
+    this.d = next.d;
+    this.e = next.e;
+    this.f = next.f;
+    return this;
+  }
+
+  preMultiplySelf(other?: DomMatrixInit | BasicDOMMatrix) {
+    const next = BasicDOMMatrix.from(other).multiply(this);
+    this.a = next.a;
+    this.b = next.b;
+    this.c = next.c;
+    this.d = next.d;
+    this.e = next.e;
+    this.f = next.f;
+    return this;
+  }
+
+  translate(tx = 0, ty = 0) {
+    return this.multiply([1, 0, 0, 1, tx, ty]);
+  }
+
+  scale(scaleX = 1, scaleY = scaleX) {
+    return this.multiply([scaleX, 0, 0, scaleY, 0, 0]);
+  }
+
+  rotate(angle = 0) {
+    const radians = (angle * Math.PI) / 180;
+    const cos = Math.cos(radians);
+    const sin = Math.sin(radians);
+    return this.multiply([cos, sin, -sin, cos, 0, 0]);
+  }
+
+  invertSelf() {
+    const det = this.a * this.d - this.b * this.c;
+    if (!det) {
+      this.a = 0;
+      this.b = 0;
+      this.c = 0;
+      this.d = 0;
+      this.e = 0;
+      this.f = 0;
+      return this;
+    }
+
+    const a = this.d / det;
+    const b = -this.b / det;
+    const c = -this.c / det;
+    const d = this.a / det;
+    const e = (this.c * this.f - this.d * this.e) / det;
+    const f = (this.b * this.e - this.a * this.f) / det;
+
+    this.a = a;
+    this.b = b;
+    this.c = c;
+    this.d = d;
+    this.e = e;
+    this.f = f;
+    return this;
+  }
+
+  toFloat32Array() {
+    return new Float32Array([
+      this.a,
+      this.b,
+      0,
+      0,
+      this.c,
+      this.d,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      this.e,
+      this.f,
+      0,
+      1,
+    ]);
+  }
+
+  toFloat64Array() {
+    return new Float64Array([
+      this.a,
+      this.b,
+      0,
+      0,
+      this.c,
+      this.d,
+      0,
+      0,
+      0,
+      0,
+      1,
+      0,
+      this.e,
+      this.f,
+      0,
+      1,
+    ]);
+  }
+}
+
+class BasicImageData {
+  data: Uint8ClampedArray;
+  width: number;
+  height: number;
+
+  constructor(dataOrWidth: Uint8ClampedArray | number, width?: number, height?: number) {
+    if (typeof dataOrWidth === 'number') {
+      this.width = dataOrWidth;
+      this.height = typeof width === 'number' ? width : 0;
+      this.data = new Uint8ClampedArray(this.width * this.height * 4);
+      return;
+    }
+
+    this.data = dataOrWidth;
+    this.width = typeof width === 'number' ? width : 0;
+    this.height = typeof height === 'number' ? height : 0;
+  }
+}
+
+class BasicPath2D {
+  // Minimal stub for environments without a native Path2D implementation.
+  addPath() {}
+}
+
+let pdfjsWorkerPromise: Promise<void> | null = null;
+
+async function ensurePdfjsWorker() {
+  const existing = (globalThis as { pdfjsWorker?: { WorkerMessageHandler?: unknown } }).pdfjsWorker;
+  if (existing?.WorkerMessageHandler) return;
+
+  if (!pdfjsWorkerPromise) {
+    pdfjsWorkerPromise = (async () => {
+      const workerModule = await import('pdfjs-dist/legacy/build/pdf.worker.mjs');
+      (globalThis as { pdfjsWorker?: unknown }).pdfjsWorker = workerModule;
+    })();
+  }
+
+  await pdfjsWorkerPromise;
+}
+
+async function ensurePdfPolyfills() {
+  if (!globalThis.DOMMatrix) {
+    globalThis.DOMMatrix = BasicDOMMatrix as unknown as typeof DOMMatrix;
+  }
+  if (!globalThis.ImageData) {
+    globalThis.ImageData = BasicImageData as unknown as typeof ImageData;
+  }
+  if (!globalThis.Path2D) {
+    globalThis.Path2D = BasicPath2D as unknown as typeof Path2D;
+  }
+}
+
+async function extractPdfTextWithPdfjs(buffer: Buffer): Promise<string> {
+  await ensurePdfjsWorker();
+  const pdfjs = (await import('pdfjs-dist/legacy/build/pdf.mjs')) as {
+    getDocument: (source: { data: Buffer }) => {
+      promise: Promise<{
+        numPages: number;
+        getPage: (pageNumber: number) => Promise<{
+          getTextContent: () => Promise<{ items: Array<{ str?: string }> }>;
+          cleanup: () => void;
+        }>;
+        destroy: () => Promise<void>;
+      }>;
+    };
+  };
+
+  const loadingTask = pdfjs.getDocument({ data: buffer });
+  const doc = await withTimeout(loadingTask.promise, PARSE_TIMEOUT_MS, 'PDF parsing timed out.');
+  let text = '';
+
+  try {
+    for (let pageNumber = 1; pageNumber <= doc.numPages; pageNumber++) {
+      const page = await doc.getPage(pageNumber);
+      const content = await page.getTextContent();
+      const pageText = content.items
+        .map((item) => item.str || '')
+        .filter(Boolean)
+        .join(' ');
+      text += `${pageText}\n\n`;
+      page.cleanup();
+    }
+  } finally {
+    await doc.destroy();
+  }
+
+  return text;
+}
+
 async function extractPdfText(buffer: Buffer): Promise<ExtractResult> {
+  let parsedText = '';
+  let lastError: unknown;
+
   try {
     // Dynamic import to avoid build-time canvas dependency issues
-    const pdfParseModule = await import('pdf-parse');
-    // Handle both ESM and CJS module formats
-    const pdfParse = typeof pdfParseModule === 'function'
-      ? pdfParseModule
-      : (pdfParseModule as { default?: unknown }).default || pdfParseModule;
-    const parsed = await withTimeout<{ text?: string }>(
-      (pdfParse as (buffer: Buffer) => Promise<{ text?: string }>)(buffer),
-      PARSE_TIMEOUT_MS,
-      'PDF parsing timed out.'
-    );
-    const text = (parsed?.text || '').slice(0, MAX_EXTRACTION_CHARS);
-    return { ok: true, text };
-  } catch (error) {
-    // If module fails to load (canvas issues), skip gracefully
-    const message = error instanceof Error ? error.message : 'PDF parsing failed.';
-    if (message.includes('Cannot find module') || message.includes('DOMMatrix')) {
-      console.warn('PDF parsing unavailable in this environment; skipping');
-      return { ok: false, skipped: true };
+    await ensurePdfPolyfills();
+    await ensurePdfjsWorker();
+    const requireFn = typeof require === 'function' ? require : null;
+    let pdfParseModule: unknown;
+
+    if (requireFn) {
+      try {
+        pdfParseModule = requireFn('pdf-parse');
+      } catch {
+        pdfParseModule = await import('pdf-parse');
+      }
+    } else {
+      pdfParseModule = await import('pdf-parse');
     }
-    return { ok: false, error: message };
+    // Handle both legacy function export and new PDFParse class API.
+    const pdfParseDefault = (pdfParseModule as { default?: unknown }).default;
+    const pdfParseFn =
+      typeof pdfParseModule === 'function'
+        ? pdfParseModule
+        : typeof pdfParseDefault === 'function'
+          ? pdfParseDefault
+          : null;
+
+    if (pdfParseFn) {
+      const parsed = await withTimeout<{ text?: string }>(
+        (pdfParseFn as (buffer: Buffer) => Promise<{ text?: string }>)(buffer),
+        PARSE_TIMEOUT_MS,
+        'PDF parsing timed out.'
+      );
+      parsedText = parsed?.text || '';
+    } else {
+      const PDFParseCtor =
+        (pdfParseModule as { PDFParse?: unknown }).PDFParse ??
+        (pdfParseDefault && typeof pdfParseDefault === 'object'
+          ? (pdfParseDefault as { PDFParse?: unknown }).PDFParse
+          : undefined);
+
+      if (typeof PDFParseCtor !== 'function') {
+        throw new Error('PDF parser is not available.');
+      }
+
+      const parser = new (PDFParseCtor as new (options: { data: Buffer }) => {
+        getText: () => Promise<{ text?: string }>;
+        destroy?: () => Promise<void> | void;
+      })({ data: buffer });
+
+      try {
+        const parsed = await withTimeout<{ text?: string }>(
+          parser.getText(),
+          PARSE_TIMEOUT_MS,
+          'PDF parsing timed out.'
+        );
+        parsedText = parsed?.text || '';
+      } finally {
+        try {
+          await parser.destroy?.();
+        } catch (destroyError) {
+          console.warn('PDF parser cleanup failed', destroyError);
+        }
+      }
+    }
+
+  } catch (error) {
+    lastError = error;
   }
+
+  if (!parsedText.trim()) {
+    try {
+      await ensurePdfPolyfills();
+      parsedText = await withTimeout(
+        extractPdfTextWithPdfjs(buffer),
+        PARSE_TIMEOUT_MS,
+        'PDF parsing timed out.'
+      );
+    } catch (error) {
+      lastError = lastError ?? error;
+    }
+  }
+
+  if (parsedText.trim()) {
+    const text = parsedText.slice(0, MAX_EXTRACTION_CHARS);
+    return { ok: true, text };
+  }
+
+  // If module fails to load (canvas issues), skip gracefully
+  const message = lastError instanceof Error ? lastError.message : 'PDF parsing failed.';
+  if (message.includes('Cannot find module') || message.includes('ERR_MODULE_NOT_FOUND')) {
+    console.warn('PDF parsing unavailable in this environment; skipping', lastError);
+    return { ok: false, skipped: true };
+  }
+
+  return { ok: false, error: message };
 }
 
 async function extractDocxText(buffer: Buffer): Promise<ExtractResult> {
@@ -210,14 +564,61 @@ async function extractText(buffer: Buffer, mimeType?: string, filename?: string)
   return { ok: false, skipped: true };
 }
 
+async function runResumeAiCheck(text: string): Promise<ScanResult> {
+  if (!AI_RESUME_CHECK_ENABLED) {
+    return { ok: true, skipped: true };
+  }
+
+  const { configured } = getOpenAIConfig();
+  if (!configured) {
+    console.warn('Resume AI check enabled but OpenAI not configured; skipping');
+    return { ok: true, skipped: true };
+  }
+
+  const snippet = text.slice(0, AI_RESUME_MAX_CHARS);
+  const messages: ChatMessage[] = [
+    { role: 'system', content: AI_RESUME_PROMPT },
+    { role: 'user', content: `Text:\n${snippet}` },
+  ];
+
+  try {
+    const result = await callChatGPT(messages, undefined, {
+      signal: AbortSignal.timeout(AI_RESUME_TIMEOUT_MS),
+    });
+    const answer = result.text.trim().toLowerCase();
+    const match = answer.match(/^(yes|no)\b/);
+    if (!match) {
+      console.warn('Resume AI check returned an unexpected response; skipping');
+      return { ok: true, skipped: true };
+    }
+
+    if (match[1] === 'no') {
+      return {
+        ok: false,
+        message:
+          'We could not verify this looks like a resume. Please include contact details and common sections (Experience, Education, Skills).',
+      };
+    }
+
+    return { ok: true };
+  } catch (error) {
+    console.warn('Resume AI check failed; skipping', error);
+    return { ok: true, skipped: true };
+  }
+}
+
 export async function ensureResumeLooksLikeCv(
   buffer: Buffer,
   mimeType?: string,
   filename?: string,
 ): Promise<ScanResult> {
   const extraction = await extractText(buffer, mimeType, filename);
+  const aiCheckActive = AI_RESUME_CHECK_ENABLED && getOpenAIConfig().configured;
   if (!extraction.ok) {
     if (extraction.skipped) {
+      if (aiCheckActive) {
+        return { ok: false, message: AI_RESUME_UNREADABLE_MESSAGE };
+      }
       console.warn('Resume text extraction unavailable; skipping CV heuristic');
       return {
         ok: true,
@@ -230,6 +631,9 @@ export async function ensureResumeLooksLikeCv(
 
   const text = extraction.text;
   if (!text) {
+    if (aiCheckActive) {
+      return { ok: false, message: AI_RESUME_UNREADABLE_MESSAGE };
+    }
     console.warn('Resume text extraction unavailable; skipping CV heuristic');
     return {
       ok: true,
@@ -255,6 +659,11 @@ export async function ensureResumeLooksLikeCv(
       message:
         'We could not verify this looks like a resume. Please include contact details and common sections (Experience, Education, Skills).',
     };
+  }
+
+  const aiCheck = await runResumeAiCheck(normalized);
+  if (!aiCheck.ok) {
+    return aiCheck;
   }
 
   return { ok: true };

@@ -31,7 +31,11 @@ export function getOpenAIConfig() {
   };
 }
 
-export async function callChatGPT(messages: ChatMessage[], modelOverride?: string): Promise<ChatGPTCallResult> {
+export async function callChatGPT(
+  messages: ChatMessage[],
+  modelOverride?: string,
+  options?: { signal?: AbortSignal },
+): Promise<ChatGPTCallResult> {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY is not configured.');
@@ -72,6 +76,7 @@ export async function callChatGPT(messages: ChatMessage[], modelOverride?: strin
         content: [{ type: 'input_text', text: message.content }],
       })),
     }),
+    signal: options?.signal,
   });
 
   if (!response.ok) {
