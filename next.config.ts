@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  env: {
+    FOUNDER_MEET_LINK: process.env.FOUNDER_MEET_LINK || "",
+  },
 };
 
 export default nextConfig;

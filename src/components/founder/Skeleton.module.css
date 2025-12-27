@@ -1,0 +1,258 @@
+/* Skeleton Component Styles */
+
+/* Base skeleton with shimmer animation */
+.skeleton {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.12) 40%,
+    rgba(255, 255, 255, 0.12) 60%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.4s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Text variant - thin line for text placeholders */
+.text {
+  height: 12px;
+  border-radius: 999px;
+}
+
+/* Avatar variant - circular placeholder */
+.avatar {
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Small avatar */
+.avatarSm {
+  width: 32px;
+  height: 32px;
+}
+
+/* Medium avatar (default) */
+.avatarMd {
+  width: 40px;
+  height: 40px;
+}
+
+/* Large avatar */
+.avatarLg {
+  width: 56px;
+  height: 56px;
+}
+
+/* Button variant - mimics button shape */
+.button {
+  height: 44px;
+  border-radius: 12px;
+  min-width: 100px;
+}
+
+/* Small button */
+.buttonSm {
+  height: 36px;
+  min-width: 80px;
+}
+
+/* Card variant - larger placeholder for card content */
+.card {
+  border-radius: 16px;
+  min-height: 120px;
+}
+
+/* Card header - for card title areas */
+.cardHeader {
+  height: 24px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+/* Card value - for large numeric values */
+.cardValue {
+  height: 48px;
+  width: 80px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+/* Card meta - for small hint text */
+.cardMeta {
+  height: 14px;
+  width: 60%;
+  border-radius: 999px;
+}
+
+/* Input variant - mimics input field */
+.input {
+  height: 44px;
+  border-radius: 10px;
+}
+
+/* Table cell - for table row data */
+.tableCell {
+  height: 16px;
+  border-radius: 4px;
+}
+
+/* Heading variants */
+.heading {
+  height: 32px;
+  border-radius: 8px;
+}
+
+.headingSm {
+  height: 24px;
+}
+
+.headingLg {
+  height: 40px;
+}
+
+/* Paragraph skeleton - multiple lines */
+.paragraph {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.paragraph .skeleton {
+  height: 14px;
+  border-radius: 999px;
+}
+
+.paragraph .skeleton:last-child {
+  width: 70%;
+}
+
+/* Stack layout helper */
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Row layout helper */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Grid layout helper */
+.grid {
+  display: grid;
+  gap: 16px;
+}
+
+.gridTwo {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.gridThree {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.gridFour {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+/* Portal loading state enhancement */
+.portalLoader {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 24px;
+}
+
+.portalHeader {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.portalRows {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.portalRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.portalRow:last-child {
+  border-bottom: none;
+}
+
+/* Detail page skeleton layout */
+.detailSection {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.detailGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+.detailField {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Pulse animation variant for special loaders */
+.pulse {
+  animation: pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton,
+  .pulse {
+    animation: none;
+    background-position: 0 0;
+  }
+}
+
+/* Mobile responsive */
+@media (max-width: 720px) {
+  .gridTwo,
+  .gridThree,
+  .gridFour {
+    grid-template-columns: 1fr;
+  }
+
+  .detailGrid {
+    grid-template-columns: 1fr;
+  }
+}

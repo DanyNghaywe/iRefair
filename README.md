@@ -1,5 +1,37 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+## SMTP / email setup (Hostinger)
+
+Set these environment variables (values from your Hostinger panel):
+
+- `SMTP_HOST`
+- `SMTP_PORT`
+- `SMTP_USER`
+- `SMTP_PASS`
+- `SMTP_FROM_NAME` (optional, defaults to `iRefair`)
+- `SMTP_FROM_EMAIL` (optional, defaults to `info@andbeyondca.com` or `SMTP_USER`)
+
+Emails are sent via `src/lib/mailer.ts` and the candidate confirmation API is at `src/app/api/candidate/route.ts`.
+
+## Google Sheets storage
+
+Set these environment variables to store submissions in Google Sheets:
+
+- `GOOGLE_SHEETS_SPREADSHEET_ID`
+- `GOOGLE_SHEETS_CLIENT_EMAIL`
+- `GOOGLE_SHEETS_PRIVATE_KEY` (keep `\n` line breaks)
+
+Give the service account Editor access to the spreadsheet, with tabs named `Candidates` and `Referrers`. Submission IDs are generated and included in emails.
+
+## ChatGPT integration
+
+Set these environment variables (same keys as `andbeyond-ai`) to enable ChatGPT calls via the OpenAI Responses API:
+
+- `OPENAI_API_KEY`
+- `OPENAI_MODEL` (optional, defaults to `gpt-4.1-mini`)
+
+A generic ChatGPT proxy lives at `src/app/api/chatgpt/route.ts`. It accepts a `POST` body with either a `prompt` string or a `messages` array and returns the model reply. You can check configuration without making a model call using `POST /api/chatgpt?statusOnly=true`.
+
 ## Getting Started
 
 First, run the development server:
