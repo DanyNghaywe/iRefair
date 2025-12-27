@@ -124,7 +124,6 @@ export default function PortalClient() {
 
   // Dropdown state
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [dropdownUp, setDropdownUp] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchData = useCallback(async () => {
@@ -158,23 +157,6 @@ export default function PortalClient() {
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
-
-  // Toggle dropdown with smart positioning
-  const toggleDropdown = (itemId: string, buttonElement: HTMLButtonElement) => {
-    if (openDropdown === itemId) {
-      setOpenDropdown(null);
-      return;
-    }
-
-    // Calculate if dropdown should open upward
-    const rect = buttonElement.getBoundingClientRect();
-    const dropdownHeight = 320; // Approximate max height of dropdown menu
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const shouldOpenUp = spaceBelow < dropdownHeight && rect.top > dropdownHeight;
-
-    setDropdownUp(shouldOpenUp);
-    setOpenDropdown(itemId);
-  };
 
   const openModal = (item: PortalItem, action: FeedbackAction) => {
     setModalItem(item);
@@ -533,8 +515,8 @@ export default function PortalClient() {
                               <ActionBtn
                                 size="sm"
                                 variant="ghost"
-                                className="portal-action-btn portal-dropdown-trigger"
-                                onClick={(e) => toggleDropdown(item.id, e.currentTarget)}
+                                className="portal-dropdown-trigger"
+                                onClick={() => setOpenDropdown(openDropdown === item.id ? null : item.id)}
                                 aria-expanded={openDropdown === item.id}
                                 aria-haspopup="menu"
                               >
@@ -554,7 +536,7 @@ export default function PortalClient() {
                                 </svg>
                               </ActionBtn>
                               {openDropdown === item.id && (
-                                <div className={`portal-dropdown-menu${dropdownUp ? " portal-dropdown-menu--up" : ""}`} role="menu">
+                                <div className="portal-dropdown-menu" role="menu">
                                   {ACTIONS.map((action) => {
                                     const enabled = isActionEnabled(action, item.status);
                                     return (
