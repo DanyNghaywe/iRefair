@@ -441,6 +441,15 @@
     0 4px 8px rgba(15, 23, 42, 0.06);
 }
 
+/* Fixed positioned dropdown - escapes all overflow containers */
+.portal-dropdown-menu--fixed {
+  position: fixed;
+  top: auto;
+  right: auto;
+  z-index: 9999;
+  margin-top: 0;
+}
+
 .portal-dropdown-item {
   display: block;
   width: 100%;

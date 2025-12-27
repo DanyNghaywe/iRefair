@@ -124,6 +124,7 @@ export default function PortalClient() {
 
   // Dropdown state
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const fetchData = useCallback(async () => {
@@ -152,11 +153,42 @@ export default function PortalClient() {
     const handleClick = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setOpenDropdown(null);
+        setDropdownPosition(null);
       }
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  // Handle dropdown toggle with position calculation
+  const handleDropdownToggle = (itemId: string, event: React.MouseEvent<HTMLButtonElement>) => {
+    if (openDropdown === itemId) {
+      setOpenDropdown(null);
+      setDropdownPosition(null);
+    } else {
+      const button = event.currentTarget;
+      const rect = button.getBoundingClientRect();
+      const menuWidth = 180;
+      const menuHeight = 320; // Approximate max height for 8 items
+
+      // Calculate position - prefer below and aligned to right edge of button
+      let top = rect.bottom + 4;
+      let left = rect.right - menuWidth;
+
+      // If menu would go off the bottom of the viewport, position above
+      if (top + menuHeight > window.innerHeight) {
+        top = rect.top - menuHeight - 4;
+      }
+
+      // Ensure menu doesn't go off the left edge
+      if (left < 8) {
+        left = 8;
+      }
+
+      setDropdownPosition({ top, left });
+      setOpenDropdown(itemId);
+    }
+  };
 
   const openModal = (item: PortalItem, action: FeedbackAction) => {
     setModalItem(item);
@@ -516,7 +548,7 @@ export default function PortalClient() {
                                 size="sm"
                                 variant="ghost"
                                 className="portal-dropdown-trigger"
-                                onClick={() => setOpenDropdown(openDropdown === item.id ? null : item.id)}
+                                onClick={(e) => handleDropdownToggle(item.id, e)}
                                 aria-expanded={openDropdown === item.id}
                                 aria-haspopup="menu"
                               >
@@ -535,8 +567,15 @@ export default function PortalClient() {
                                   <polyline points="6 9 12 15 18 9" />
                                 </svg>
                               </ActionBtn>
-                              {openDropdown === item.id && (
-                                <div className="portal-dropdown-menu" role="menu">
+                              {openDropdown === item.id && dropdownPosition && (
+                                <div
+                                  className="portal-dropdown-menu portal-dropdown-menu--fixed"
+                                  role="menu"
+                                  style={{
+                                    top: dropdownPosition.top,
+                                    left: dropdownPosition.left,
+                                  }}
+                                >
                                   {ACTIONS.map((action) => {
                                     const enabled = isActionEnabled(action, item.status);
                                     return (
