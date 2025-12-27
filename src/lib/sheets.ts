@@ -1250,6 +1250,39 @@ export async function getCandidateByEmail(email: string): Promise<CandidateLooku
   return null;
 }
 
+export async function getCandidateByRowIndex(rowIndex: number): Promise<CandidateLookupResult | null> {
+  if (!Number.isFinite(rowIndex) || rowIndex < 2) return null;
+
+  await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
+  await ensureColumns(CANDIDATE_SHEET_NAME, CANDIDATE_SECURITY_COLUMNS);
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${CANDIDATE_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  if (!headers.length) return null;
+
+  const headerMap = buildHeaderMap(headers);
+  const lastCol = toColumnLetter(headers.length - 1);
+  const rowRange = `${CANDIDATE_SHEET_NAME}!A${rowIndex}:${lastCol}${rowIndex}`;
+
+  const rowResponse = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: rowRange,
+    majorDimension: 'ROWS',
+  });
+  const row = rowResponse.data.values?.[0] ?? [];
+  if (!row.length) return null;
+
+  return {
+    rowIndex,
+    record: buildCandidateRecordFromHeaderMap(headerMap, row),
+  };
+}
+
 /**
  * Find an existing candidate if at least 2 of 3 fields match:
  * - name (firstName + familyName)

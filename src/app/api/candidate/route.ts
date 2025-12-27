@@ -838,7 +838,7 @@ export async function POST(request: Request) {
       // Email is different, require confirmation before updating
       const exp = Math.floor(Date.now() / 1000) + UPDATE_TOKEN_TTL_SECONDS;
       const token = createCandidateUpdateToken({
-        email,
+        email: existingCandidate.record.email || email,
         rowIndex: existingCandidate.rowIndex,
         exp,
       });

@@ -11,6 +11,7 @@ import {
   LEGACY_CANDIDATE_ID_HEADER,
   ensureColumns,
   getCandidateByEmail,
+  getCandidateByRowIndex,
   updateRowById,
 } from "@/lib/sheets";
 import { escapeHtml } from "@/lib/validation";
@@ -381,17 +382,19 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     return errorResponse("This confirmation link is invalid or has expired. Please submit a new update request.", 401, isGetRequest);
   }
 
-  const candidate = await getCandidateByEmail(payload.email);
+  const tokenHash = hashToken(token);
+  let candidate = await getCandidateByEmail(payload.email);
+  let storedTokenHash = candidate?.record.updateTokenHash?.trim() || "";
+
+  if (!candidate || !safeCompareHash(storedTokenHash, tokenHash)) {
+    candidate = await getCandidateByRowIndex(payload.rowIndex);
+    storedTokenHash = candidate?.record.updateTokenHash?.trim() || "";
+  }
+
   if (!candidate) {
     return errorResponse("We couldn't find your profile. Please contact support if this persists.", 404, isGetRequest);
   }
 
-  if (candidate.rowIndex !== payload.rowIndex) {
-    return errorResponse("This confirmation link is no longer valid. Please submit a new update request.", 403, isGetRequest);
-  }
-
-  const storedTokenHash = candidate.record.updateTokenHash?.trim() || "";
-  const tokenHash = hashToken(token);
   if (!safeCompareHash(storedTokenHash, tokenHash)) {
     return errorResponse("This confirmation link is no longer valid. Please submit a new update request.", 403, isGetRequest);
   }

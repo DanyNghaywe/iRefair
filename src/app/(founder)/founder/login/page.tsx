@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function FounderLoginPage() {
   return (
-    <AppShell>
+    <AppShell variant="transparent">
       <div className="founder-login-screen" aria-labelledby="founder-login-title">
         <main className="founder-login-main">
           <section className="glass-card founder-login-card founder-auth">
