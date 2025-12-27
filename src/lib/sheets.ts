@@ -793,6 +793,33 @@ export async function ensureHeaders(
   return { created: createdSheet };
 }
 
+/**
+ * Escape Google Sheets formula injection by prefixing dangerous characters with a single quote.
+ * Formulas in Sheets begin with: = + - @
+ * If a value (after trimming leading whitespace) starts with one of these, prefix with '.
+ */
+function escapeSheetsFormula(value: string): string {
+  if (!value) return value;
+  const trimmed = value.trimStart();
+  // Already escaped
+  if (trimmed.startsWith("'")) return value;
+  // Dangerous formula characters
+  if (/^[=+\-@]/.test(trimmed)) return "'" + value;
+  return value;
+}
+
+/**
+ * Sanitize a cell value before writing to Google Sheets.
+ * - null/undefined -> ""
+ * - number -> as-is
+ * - string -> escape formula injection
+ */
+function sanitizeSheetsCell(value: string | number | null | undefined): string | number {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'number') return value;
+  return escapeSheetsFormula(value);
+}
+
 async function appendRow(sheetName: string, values: (string | number | null)[]) {
   const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
   if (!spreadsheetId) {
@@ -806,7 +833,7 @@ async function appendRow(sheetName: string, values: (string | number | null)[]) 
     valueInputOption: 'RAW',
     insertDataOption: 'INSERT_ROWS',
     requestBody: {
-      values: [values.map((value) => (value === undefined || value === null ? '' : value))],
+      values: [values.map((value) => sanitizeSheetsCell(value))],
     },
   });
 }
@@ -2448,10 +2475,10 @@ export async function updateRowById(
       const col = toColumnLetter(index);
       return {
         range: `${sheetName}!${col}${rowIndex}`,
-        values: [[value ?? '']],
+        values: [[sanitizeSheetsCell(value)]],
       };
     })
-    .filter(Boolean) as { range: string; values: (string | number | null)[][] }[];
+    .filter(Boolean) as { range: string; values: (string | number)[][] }[];
 
   if (!updates.length) {
     return { updated: false, reason: 'no_changes' };
