@@ -180,6 +180,7 @@
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: rgba(15, 23, 42, 0.6);
+  text-align: left;
 }
 
 .portal-table td {
