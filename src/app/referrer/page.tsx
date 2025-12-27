@@ -5,12 +5,12 @@ import { FormEvent, useRef, useState } from 'react';
 import { ActionBtn } from '@/components/ActionBtn';
 import { AppShell } from '@/components/AppShell';
 import { Confetti, useConfetti } from '@/components/Confetti';
+import { useLanguage } from '@/components/LanguageProvider';
 import { PublicFooter } from '@/components/PublicFooter';
 import { Select } from '@/components/Select';
 import { SuccessAnimation } from '@/components/SuccessAnimation';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 import { countryOptions } from '@/lib/countries';
-import { usePersistedLanguage } from '@/lib/usePersistedLanguage';
 
 type Language = 'en' | 'fr';
 
@@ -300,7 +300,7 @@ export default function ReferrerPage() {
   const { startNavigation } = useNavigationLoader();
   const [submitting, setSubmitting] = useState(false);
   const [status, setStatus] = useState<'idle' | 'submitting' | 'ok' | 'error'>('idle');
-  const { language, setLanguage, withLanguage } = usePersistedLanguage();
+  const { language, setLanguage, withLanguage } = useLanguage();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const formRef = useRef<HTMLFormElement | null>(null);
   const linkedinInputRef = useRef<HTMLInputElement | null>(null);

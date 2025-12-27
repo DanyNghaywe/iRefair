@@ -6,12 +6,12 @@ import { ChangeEvent, FormEvent, Suspense, useEffect, useRef, useState } from 'r
 import { ActionBtn } from '@/components/ActionBtn';
 import { AppShell } from '@/components/AppShell';
 import { Confetti, useConfetti } from '@/components/Confetti';
+import { useLanguage } from '@/components/LanguageProvider';
 import { PublicFooter } from '@/components/PublicFooter';
 import { Select } from '@/components/Select';
 import { SuccessAnimation } from '@/components/SuccessAnimation';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 import { countryOptions } from '@/lib/countries';
-import { usePersistedLanguage } from '@/lib/usePersistedLanguage';
 
 type Language = 'en' | 'fr';
 
@@ -396,7 +396,7 @@ const translations: Record<
 function CandidatePageContent() {
   const searchParams = useSearchParams();
   const { startNavigation } = useNavigationLoader();
-  const { language, setLanguage, withLanguage } = usePersistedLanguage();
+  const { language, setLanguage, withLanguage } = useLanguage();
   const [resumeName, setResumeName] = useState('');
   const resumeInputRef = useRef<HTMLInputElement | null>(null);
   const linkedinInputRef = useRef<HTMLInputElement | null>(null);

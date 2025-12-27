@@ -2,10 +2,10 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { usePersistedLanguage } from '@/lib/usePersistedLanguage';
+import { useLanguage } from '@/components/LanguageProvider';
 
 export function PublicFooter() {
-  const { withLanguage } = usePersistedLanguage();
+  const { withLanguage } = useLanguage();
 
   return (
     <footer className="card public-footer" role="contentinfo">

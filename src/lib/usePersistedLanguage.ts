@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 
 export type PersistedLanguage = 'en' | 'fr';
@@ -8,6 +8,8 @@ export type PersistedLanguage = 'en' | 'fr';
 const STORAGE_KEY = 'irefair.language';
 
 const isLanguage = (value: string | null | undefined): value is PersistedLanguage => value === 'en' || value === 'fr';
+
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 const withLanguageParam = (href: string, language: PersistedLanguage) => {
   const [path, query = ''] = href.split('?');
@@ -23,7 +25,8 @@ export function usePersistedLanguage(defaultLanguage: PersistedLanguage = 'en') 
 
   const [language, setLanguageState] = useState<PersistedLanguage>(defaultLanguage);
 
-  useEffect(() => {
+  // Sync language before paint to avoid toggle flicker on navigation.
+  useIsomorphicLayoutEffect(() => {
     if (typeof window === 'undefined') return;
     const stored = window.localStorage.getItem(STORAGE_KEY);
     const queryLang = new URLSearchParams(window.location.search).get('lang');

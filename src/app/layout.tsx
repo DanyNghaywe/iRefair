@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Manrope } from "next/font/google";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
+import { LanguageProvider } from "@/components/LanguageProvider";
 import { NavigationLoaderProvider } from "@/components/NavigationLoader";
 import { ToastProvider } from "@/components/Toast";
 
@@ -75,7 +76,9 @@ export default function RootLayout({
           Skip to main content
         </a>
         <ToastProvider>
-          <NavigationLoaderProvider>{children}</NavigationLoaderProvider>
+          <LanguageProvider>
+            <NavigationLoaderProvider>{children}</NavigationLoaderProvider>
+          </LanguageProvider>
         </ToastProvider>
         <SpeedInsights />
       </body>

@@ -5,7 +5,6 @@ import { ChangeEvent, FormEvent, type KeyboardEvent, useEffect, useMemo, useRef,
 import { ActionBtn } from '@/components/ActionBtn';
 import { AppShell } from '@/components/AppShell';
 import { PublicFooter } from '@/components/PublicFooter';
-import { usePersistedLanguage } from '@/lib/usePersistedLanguage';
 
 const ALLOWED_RESUME_TYPES = [
   'application/pdf',
@@ -188,7 +187,6 @@ function ComboInput({
 }
 
 export default function ApplyPage() {
-  usePersistedLanguage();
   const candidateIdOptions = CANDIDATE_ID_OPTIONS;
   const iCrnOptions = IRCRN_OPTIONS;
 

@@ -3,9 +3,9 @@
 import Link from 'next/link';
 
 import { AppShell } from '@/components/AppShell';
+import { useLanguage } from '@/components/LanguageProvider';
 import { PublicFooter } from '@/components/PublicFooter';
 import type { CompanyRow } from '@/lib/hiringCompanies';
-import { usePersistedLanguage } from '@/lib/usePersistedLanguage';
 import { normalizeHttpUrl } from '@/lib/validation';
 
 type Props = {
@@ -13,7 +13,7 @@ type Props = {
 };
 
 export function HiringCompaniesClient({ mergedCompanies }: Props) {
-  const { withLanguage } = usePersistedLanguage();
+  const { withLanguage } = useLanguage();
 
   return (
     <AppShell>
