@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import styles from "./CenteredModal.module.css";
 
@@ -14,6 +14,15 @@ type CenteredModalProps = {
   size?: "sm" | "md" | "lg";
 };
 
+const FOCUSABLE_SELECTOR =
+  'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])';
+
+function getFocusableElements(container: HTMLElement): HTMLElement[] {
+  return Array.from(container.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR)).filter(
+    (el) => !el.hasAttribute("disabled") && el.offsetParent !== null
+  );
+}
+
 export function CenteredModal({
   open,
   onClose,
@@ -24,13 +33,14 @@ export function CenteredModal({
   size = "md",
 }: CenteredModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (open) {
       previousFocusRef.current = document.activeElement as HTMLElement;
       document.body.style.overflow = "hidden";
-      dialogRef.current?.focus();
+      closeBtnRef.current?.focus();
     } else {
       document.body.style.overflow = "";
       previousFocusRef.current?.focus();
@@ -41,15 +51,38 @@ export function CenteredModal({
     };
   }, [open]);
 
-  useEffect(() => {
-    const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && open) {
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent) => {
+      if (!open) return;
+
+      if (event.key === "Escape") {
         onClose();
+        return;
       }
-    };
-    document.addEventListener("keydown", handleEscape);
-    return () => document.removeEventListener("keydown", handleEscape);
-  }, [open, onClose]);
+
+      if (event.key === "Tab" && dialogRef.current) {
+        const focusableElements = getFocusableElements(dialogRef.current);
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (event.shiftKey && document.activeElement === firstElement) {
+          event.preventDefault();
+          lastElement.focus();
+        } else if (!event.shiftKey && document.activeElement === lastElement) {
+          event.preventDefault();
+          firstElement.focus();
+        }
+      }
+    },
+    [open, onClose]
+  );
+
+  useEffect(() => {
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
 
   if (!open) return null;
 
@@ -62,7 +95,7 @@ export function CenteredModal({
   const sizeClass = size === "sm" ? styles.sm : size === "lg" ? styles.lg : styles.md;
 
   const modal = (
-    <div className={styles.backdrop} onClick={handleBackdropClick} aria-hidden="true">
+    <div className={styles.backdrop} onClick={handleBackdropClick}>
       <div
         ref={dialogRef}
         className={`${styles.modal} ${sizeClass}`}
@@ -84,6 +117,7 @@ export function CenteredModal({
             )}
           </div>
           <button
+            ref={closeBtnRef}
             type="button"
             className={styles.closeBtn}
             onClick={onClose}

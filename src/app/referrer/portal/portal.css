@@ -42,7 +42,7 @@
   font-size: 11px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.82);
   font-weight: 700;
 }
 
@@ -269,7 +269,7 @@
 }
 
 .portal-action-btn.btn.ghost:hover {
-  background: #ffffff;
+  background: var(--panel);
   border-color: rgba(15, 23, 42, 0.2);
 }
 
@@ -349,7 +349,7 @@
 
 .portal-badge--info {
   background: rgba(59, 130, 246, 0.12);
-  color: #2563eb;
+  color: var(--accent-2);
 }
 
 .portal-badge--success {
@@ -388,11 +388,11 @@
   position: absolute;
   top: 100%;
   right: 0;
-  z-index: 100;
+  z-index: var(--z-dropdown);
   min-width: 180px;
   margin-top: 4px;
   padding: 6px;
-  background: #ffffff;
+  background: var(--panel);
   border: 1px solid rgba(15, 23, 42, 0.1);
   border-radius: 12px;
   box-shadow:
@@ -409,7 +409,7 @@
   background: transparent;
   font-size: 13px;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--ink);
   text-align: left;
   cursor: pointer;
   transition:
@@ -419,11 +419,11 @@
 
 .portal-dropdown-item:hover:not(:disabled) {
   background: rgba(59, 130, 246, 0.08);
-  color: #2563eb;
+  color: var(--accent-2);
 }
 
 .portal-dropdown-item:focus-visible {
-  outline: 2px solid #3d8bfd;
+  outline: 2px solid var(--accent-2);
   outline-offset: -2px;
 }
 
@@ -447,7 +447,7 @@
 }
 
 .portal-meeting-date {
-  color: #0f172a;
+  color: var(--ink);
   font-weight: 500;
 }
 
@@ -459,7 +459,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: #2563eb;
+  color: var(--accent-2);
   font-weight: 600;
   text-decoration: none;
 }
@@ -507,7 +507,7 @@
 
 .portal-modal-candidate strong {
   font-size: 15px;
-  color: #0f172a;
+  color: var(--ink);
 }
 
 .portal-modal-candidate span {
@@ -544,8 +544,8 @@
   border: 1px solid #d1d5db;
   border-radius: 8px;
   font-size: 14px;
-  color: #0f172a;
-  background: #ffffff;
+  color: var(--ink);
+  background: var(--panel);
   transition:
     border-color 0.15s,
     box-shadow 0.15s;
@@ -615,5 +615,12 @@
 
   .portal-modal-fields {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (pointer: coarse) {
+  .portal-dropdown-item {
+    min-height: 44px;
+    padding: 12px 12px;
   }
 }

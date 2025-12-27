@@ -4,7 +4,7 @@
   position: fixed;
   top: 20px;
   right: 20px;
-  z-index: 9999;
+  z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -25,13 +25,13 @@
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   pointer-events: auto;
-  animation: slideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: slideIn var(--duration-slower) cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   overflow: hidden;
   position: relative;
 }
 
 .toast.exiting {
-  animation: slideOut 0.3s cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: slideOut var(--duration-slow) cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 
 @keyframes slideIn {
@@ -64,7 +64,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  animation: iconPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
+  animation: iconPop var(--duration-slow) cubic-bezier(0.34, 1.56, 0.64, 1) 0.1s both;
 }
 
 @keyframes iconPop {
@@ -104,13 +104,13 @@
 .title {
   font-weight: 700;
   font-size: var(--font-size-base, 14px);
-  color: #0f172a;
+  color: var(--ink);
   margin: 0 0 2px;
 }
 
 .message {
   font-size: var(--font-size-sm, 13px);
-  color: #475569;
+  color: var(--muted);
   margin: 0;
   line-height: 1.4;
 }
@@ -121,19 +121,19 @@
   height: 24px;
   border: none;
   background: transparent;
-  color: #94a3b8;
+  color: var(--muted);
   cursor: pointer;
   border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background var(--duration-fast) ease, color var(--duration-fast) ease;
   margin: -4px -4px -4px 0;
 }
 
 .closeBtn:hover {
   background: rgba(15, 23, 42, 0.08);
-  color: #475569;
+  color: var(--ink);
 }
 
 .closeBtn:active {
@@ -188,5 +188,14 @@
     min-width: auto;
     max-width: none;
     width: 100%;
+  }
+}
+
+@media (pointer: coarse) {
+  .closeBtn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
   }
 }

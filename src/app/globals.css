@@ -93,6 +93,29 @@
   --line-height-heading: 1.2;
   --line-height-lead: 1.5;
 
+  /* Z-index Scale
+     base: 0 - Default stacking context
+     dropdown: 100 - Dropdown menus, popovers
+     sticky: 200 - Sticky headers, floating elements
+     overlay: 300 - Backdrop overlays
+     modal: 400 - Modal dialogs
+     toast: 500 - Toast notifications
+     max: 9999 - Emergency override (avoid using)
+  */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-max: 9999;
+
+  /* Duration Scale - consistent animation timing */
+  --duration-fast: 0.15s;
+  --duration-normal: 0.2s;
+  --duration-slow: 0.3s;
+  --duration-slower: 0.4s;
+
   /* Glass effect tokens - single source of truth for glassmorphic styling */
   --glass-bg: linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
   --glass-border: rgba(255, 255, 255, 0.22);
@@ -1196,6 +1219,23 @@ textarea:focus-visible {
   background: rgba(255, 255, 255, 0.64);
 }
 
+/* Baseline focus ring for all interactive elements (low specificity via :where) */
+:where(
+  button,
+  a,
+  input,
+  select,
+  textarea,
+  [role="button"],
+  [role="link"],
+  [role="menuitem"],
+  [role="option"],
+  [tabindex]:not([tabindex="-1"])
+):focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 2px;
+}
+
 a:focus:not(:focus-visible),
 button:focus:not(:focus-visible) {
   outline: none;
@@ -1203,7 +1243,7 @@ button:focus:not(:focus-visible) {
 
 a:focus-visible,
 button:focus-visible {
-  outline: 2px solid rgba(var(--accent-primary-rgb), 0.55);
+  outline: 2px solid var(--accent-2);
   outline-offset: 2px;
   border-radius: 8px;
 }
@@ -3266,6 +3306,7 @@ section.founder-auth input:focus-visible {
   border-bottom: 1px solid rgba(15, 23, 42, 0.12);
   color: var(--ink);
   backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .ops-scope .founder-badge--success {
@@ -3939,7 +3980,7 @@ section.founder-auth input:focus-visible {
 }
 
 .founder-login-screen input::placeholder {
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.78);
 }
 
 .founder-login-screen input::selection,
@@ -4855,6 +4896,16 @@ section.founder-auth input:focus-visible {
   .founder-quick-edit-btn svg {
     width: 18px;
     height: 18px;
+  }
+}
+
+@media (pointer: coarse) {
+  .founder-table .founder-quick-edit-btn,
+  .founder-quick-edit-btn.btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 10px; /* keeps icon centered */
   }
 }
 
@@ -6287,4 +6338,14 @@ input[type="radio"] {
   max-width: 360px;
   margin-left: auto;
   margin-right: auto;
+}
+
+/* ==========================================================================
+   Safari Backdrop-filter Fallback
+   ========================================================================== */
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .glass-card {
+    background: rgba(255, 255, 255, 0.92);
+  }
 }
