@@ -103,6 +103,8 @@
   flex-direction: column;
   gap: 12px;
   color: var(--ink);
+  overflow: visible;
+  padding-bottom: 24px;
 }
 
 .portal-table-header {
@@ -152,6 +154,7 @@
   background: rgba(255, 255, 255, 0.24);
   padding: 6px;
   position: relative;
+  overflow: visible;
 }
 
 .portal-table {
@@ -161,7 +164,7 @@
 .portal-table__scroll {
   width: 100%;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   border-radius: 12px;
   position: relative;
   -webkit-overflow-scrolling: touch;
@@ -218,6 +221,8 @@
 
 .portal-col-actions {
   min-width: 120px;
+  overflow: visible;
+  position: relative;
 }
 
 .portal-cell-title {
@@ -382,7 +387,42 @@
 .portal-dropdown-trigger {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  padding: 8px 14px;
+  min-height: 36px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(59, 130, 246, 0.04));
+  border: 1px solid rgba(59, 130, 246, 0.2);
+  color: var(--accent-2);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(59, 130, 246, 0.08);
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.portal-dropdown-trigger:hover {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.14), rgba(59, 130, 246, 0.08));
+  border-color: rgba(59, 130, 246, 0.35);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+  transform: translateY(-1px);
+}
+
+.portal-dropdown-trigger:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+}
+
+.portal-dropdown-trigger svg {
+  opacity: 0.7;
+  transition: transform 0.2s ease;
+}
+
+.portal-dropdown-trigger[aria-expanded="true"] svg {
+  transform: rotate(180deg);
 }
 
 .portal-dropdown-menu {
