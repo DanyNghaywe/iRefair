@@ -2562,8 +2562,11 @@ section.founder-auth input:focus-visible {
 .field.has-error .file-upload-trigger {
   border-color: rgba(var(--error-rgb), 0.9);
   box-shadow: 0 0 0 2px rgba(var(--error-rgb), 0.3);
-  color: var(--error);
   animation: fieldShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+.field.has-error .file-upload-trigger {
+  color: var(--error);
 }
 
 @keyframes fieldShake {

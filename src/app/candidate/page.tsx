@@ -615,26 +615,26 @@ function CandidatePageContent() {
 
     const linkedinInput = linkedinInputRef.current;
     const linkedinInvalid = Boolean(values.linkedin) && !isValidLinkedInProfileUrl(values.linkedin);
+    const linkedinErrorMessage = 'Please enter a valid LinkedIn profile URL.';
     linkedinInput?.setCustomValidity('');
-    if (linkedinInvalid && linkedinInput) {
-      linkedinInput.setCustomValidity('Please enter a valid LinkedIn profile URL.');
-    }
-
-    const hasErrors = Object.keys(validationErrors).length > 0;
-
     if (linkedinInvalid) {
-      setErrors(validationErrors);
-      setStatus('idle');
-      setSubmitting(false);
-      linkedinInput?.reportValidity();
-      return;
+      validationErrors.linkedin = linkedinErrorMessage;
+      if (linkedinInput) {
+        linkedinInput.setCustomValidity(linkedinErrorMessage);
+      }
     }
+
+    const errorKeys = Object.keys(validationErrors);
+    const hasErrors = errorKeys.length > 0;
 
     if (hasErrors) {
       setErrors(validationErrors);
       setStatus('idle');
       setSubmitting(false);
       scrollToFirstError();
+      if (linkedinInvalid && errorKeys.length === 1) {
+        linkedinInput?.reportValidity();
+      }
       return;
     }
 
