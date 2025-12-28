@@ -730,8 +730,10 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
     </ol>
   `;
 
+  const viewCareersPortalText = t('View Careers Portal', 'Voir le portail de carrières', locale);
+
   const careersPortalValue = careersPortal
-    ? `<a href="${escapeHtml(normalizeHttpUrl(careersPortal) || careersPortal)}" target="_blank" style="color:#2f5fb3;text-decoration:underline;">${escapeHtml(careersPortal)}</a>`
+    ? button(viewCareersPortalText, normalizeHttpUrl(careersPortal) || careersPortal, 'outline')
     : escapeHtml(t('Not provided', 'Non fourni', locale));
 
   const snapshot = snapshotCard(snapshotTitle, [
