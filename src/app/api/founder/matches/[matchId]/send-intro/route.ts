@@ -4,7 +4,7 @@ import { requireFounder } from '@/lib/founderAuth';
 import { matchIntro } from '@/lib/emailTemplates';
 import { sendMail } from '@/lib/mailer';
 import {
-  findCandidateByIdentifier,
+  findApplicantByIdentifier,
   getMatchById,
   getReferrerByIrref,
   updateMatch,
@@ -26,30 +26,30 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ m
     return NextResponse.json({ ok: false, error: 'Match not found' }, { status: 404 });
   }
 
-  const candidate = match.record.candidateIrain
-    ? await findCandidateByIdentifier(match.record.candidateIrain)
+  const applicant = match.record.applicantIrain
+    ? await findApplicantByIdentifier(match.record.applicantIrain)
     : null;
   const referrer = match.record.referrerIrref
     ? await getReferrerByIrref(match.record.referrerIrref)
     : null;
 
-  if (!candidate?.record.email || !referrer?.record.email) {
+  if (!applicant?.record.email || !referrer?.record.email) {
     return NextResponse.json(
-      { ok: false, error: 'Missing candidate or referrer email for intro.' },
+      { ok: false, error: 'Missing applicant or referrer email for intro.' },
       { status: 400 },
     );
   }
 
   const template = matchIntro(
-    [candidate.record.firstName, candidate.record.familyName].filter(Boolean).join(' '),
+    [applicant.record.firstName, applicant.record.familyName].filter(Boolean).join(' '),
     referrer.record.name,
-    match.record.candidateIrain,
+    match.record.applicantIrain,
     match.record.companyIrcrn,
     match.record.positionContext,
   );
 
   await sendMail({
-    to: candidate.record.email,
+    to: applicant.record.email,
     cc: referrer.record.email,
     subject: template.subject,
     text: template.text,
@@ -58,7 +58,7 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ m
 
   console.log('Match intro sent', {
     matchId: match.record.matchId,
-    candidate: candidate.record.email,
+    applicant: applicant.record.email,
     referrer: referrer.record.email,
   });
 

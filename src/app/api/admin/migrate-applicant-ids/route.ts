@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { migrateLegacyCandidateIds } from '@/lib/sheets';
+import { migrateLegacyApplicantIds } from '@/lib/sheets';
 
 const ADMIN_HEADER = 'x-admin-token';
 
@@ -12,12 +12,12 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await migrateLegacyCandidateIds();
+    const result = await migrateLegacyApplicantIds();
     return NextResponse.json({ ok: true, ...result });
   } catch (error) {
-    console.error('Candidate ID migration failed', error);
+    console.error('Applicant ID migration failed', error);
     return NextResponse.json(
-      { ok: false, error: 'Failed to migrate candidate IDs. Check server logs for details.' },
+      { ok: false, error: 'Failed to migrate applicant IDs. Check server logs for details.' },
       { status: 500 },
     );
   }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import {
-  findCandidateByIdentifier,
+  findApplicantByIdentifier,
   getApplicationById,
   getReferrerByIrref,
   updateApplicationAdmin,
@@ -14,14 +14,14 @@ import { COMMON_TIMEZONES, formatMeetingDateTime } from '@/lib/timezone';
 import { createOpaqueToken, hashOpaqueToken } from '@/lib/tokens';
 import { appendActionHistoryEntry, type ActionLogEntry } from '@/lib/actionHistory';
 import {
-  meetingInviteToCandidate,
-  meetingCancelledToCandidate,
-  rejectionToCandidate,
-  cvMismatchToCandidate,
-  cvUpdateRequestToCandidate,
-  infoRequestToCandidate,
-  interviewCompletedToCandidate,
-  jobOfferToCandidate,
+  meetingInviteToApplicant,
+  meetingCancelledToApplicant,
+  rejectionToApplicant,
+  cvMismatchToApplicant,
+  cvUpdateRequestToApplicant,
+  infoRequestToApplicant,
+  interviewCompletedToApplicant,
+  jobOfferToApplicant,
   buildReferrerEmailCc,
 } from '@/lib/emailTemplates';
 import { normalizeHttpUrl } from '@/lib/validation';
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
 
   // Load application
   const application = await getApplicationById(applicationId);
-  if (!application?.record?.candidateId) {
+  if (!application?.record?.applicantId) {
     return NextResponse.json({ ok: false, error: 'Application not found.' }, { status: 404 });
   }
 
@@ -164,12 +164,12 @@ export async function POST(request: NextRequest) {
   // Get normalized current status
   const currentStatus = normalizeStatus(applicationRecord.status);
 
-  // Load candidate
-  const candidate = await findCandidateByIdentifier(applicationRecord.candidateId).catch(() => null);
-  const candidateName = candidate
-    ? [candidate.record.firstName, candidate.record.familyName].filter(Boolean).join(' ').trim()
+  // Load applicant
+  const applicant = await findApplicantByIdentifier(applicationRecord.applicantId).catch(() => null);
+  const applicantName = applicant
+    ? [applicant.record.firstName, applicant.record.familyName].filter(Boolean).join(' ').trim()
     : '';
-  const candidateEmail = candidate?.record?.email || '';
+  const applicantEmail = applicant?.record?.email || '';
   const referrerName = referrer.record.name || '';
   const referrerEmail = referrer.record.email || '';
   const companyName = referrer.record.company || '';
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
 
   if (action === 'OFFER_JOB' && currentStatus !== 'interviewed') {
     return NextResponse.json(
-      { ok: false, error: 'Cannot offer job until the candidate has been interviewed.' },
+      { ok: false, error: 'Cannot offer job until the applicant has been interviewed.' },
       { status: 400 },
     );
   }
@@ -316,14 +316,14 @@ export async function POST(request: NextRequest) {
   // Send emails
   const cc = buildReferrerEmailCc(referrerEmail);
 
-  if (candidateEmail) {
+  if (applicantEmail) {
     try {
       let template;
 
       switch (action) {
         case 'SCHEDULE_MEETING':
-          template = meetingInviteToCandidate({
-            candidateName,
+          template = meetingInviteToApplicant({
+            applicantName,
             referrerName,
             companyName,
             position,
@@ -337,8 +337,8 @@ export async function POST(request: NextRequest) {
           break;
 
         case 'CANCEL_MEETING':
-          template = meetingCancelledToCandidate({
-            candidateName,
+          template = meetingCancelledToApplicant({
+            applicantName,
             referrerName,
             companyName,
             position,
@@ -347,8 +347,8 @@ export async function POST(request: NextRequest) {
           break;
 
         case 'REJECT':
-          template = rejectionToCandidate({
-            candidateName,
+          template = rejectionToApplicant({
+            applicantName,
             referrerName,
             companyName,
             position,
@@ -356,8 +356,8 @@ export async function POST(request: NextRequest) {
           break;
 
         case 'CV_MISMATCH':
-          template = cvMismatchToCandidate({
-            candidateName,
+          template = cvMismatchToApplicant({
+            applicantName,
             referrerName,
             companyName,
             position,
@@ -369,8 +369,8 @@ export async function POST(request: NextRequest) {
           break;
 
         case 'REQUEST_CV_UPDATE':
-          template = cvUpdateRequestToCandidate({
-            candidateName,
+          template = cvUpdateRequestToApplicant({
+            applicantName,
             referrerName,
             companyName,
             position,
@@ -381,8 +381,8 @@ export async function POST(request: NextRequest) {
           break;
 
         case 'REQUEST_INFO':
-          template = infoRequestToCandidate({
-            candidateName,
+          template = infoRequestToApplicant({
+            applicantName,
             referrerName,
             companyName,
             position,
@@ -393,8 +393,8 @@ export async function POST(request: NextRequest) {
           break;
 
         case 'MARK_INTERVIEWED':
-          template = interviewCompletedToCandidate({
-            candidateName,
+          template = interviewCompletedToApplicant({
+            applicantName,
             referrerName,
             companyName,
             position,
@@ -402,8 +402,8 @@ export async function POST(request: NextRequest) {
           break;
 
         case 'OFFER_JOB':
-          template = jobOfferToCandidate({
-            candidateName,
+          template = jobOfferToApplicant({
+            applicantName,
             referrerName,
             companyName,
             position,
@@ -414,7 +414,7 @@ export async function POST(request: NextRequest) {
 
       if (template) {
         await sendMail({
-          to: candidateEmail,
+          to: applicantEmail,
           cc,
           replyTo: referrerEmail || undefined,
           subject: template.subject,
@@ -423,7 +423,7 @@ export async function POST(request: NextRequest) {
         });
       }
     } catch (emailError) {
-      console.error('Error sending candidate email:', emailError);
+      console.error('Error sending applicant email:', emailError);
       // Continue - don't fail the action if email fails
     }
   }
@@ -434,15 +434,15 @@ export async function POST(request: NextRequest) {
       process.env.REFERRAL_REWARD_EMAIL || process.env.FOUNDER_EMAIL || process.env.SMTP_FROM_EMAIL;
     if (rewardRecipient) {
       try {
-        const safeCandidateId = escapeHtml(applicationRecord.candidateId);
+        const safeApplicantId = escapeHtml(applicationRecord.applicantId);
         const safeIrcrn = escapeHtml(applicationRecord.iCrn);
         const safePosition = escapeHtml(position);
         const safeIrref = escapeHtml(referrer.record.irref);
         await sendMail({
           to: rewardRecipient,
           subject: `Referral reward triggered: ${applicationId}`,
-          text: `Candidate ${applicationRecord.candidateId} marked as hired for ${applicationRecord.iCrn} (${position}). Referrer: ${referrer.record.irref}.`,
-          html: `Candidate <strong>${safeCandidateId}</strong> marked as hired for <strong>${safeIrcrn}</strong> (${safePosition}).<br/>Referrer: <strong>${safeIrref}</strong>.`,
+          text: `Applicant ${applicationRecord.applicantId} marked as hired for ${applicationRecord.iCrn} (${position}). Referrer: ${referrer.record.irref}.`,
+          html: `Applicant <strong>${safeApplicantId}</strong> marked as hired for <strong>${safeIrcrn}</strong> (${safePosition}).<br/>Referrer: <strong>${safeIrref}</strong>.`,
         });
       } catch (rewardError) {
         console.error('Error sending reward notification:', rewardError);

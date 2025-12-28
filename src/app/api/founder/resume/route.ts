@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
   }
 
   const application = await getApplicationById(applicationId);
-  if (!application?.record?.candidateId) {
+  if (!application?.record?.applicantId) {
     return NextResponse.json({ ok: false, error: 'Application not found.' }, { status: 404 });
   }
 

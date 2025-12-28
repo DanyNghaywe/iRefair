@@ -25,9 +25,9 @@ const DEFAULT_WINDOW_SECONDS = parsePositiveInt(process.env.RATE_LIMIT_WINDOW_SE
 const DEFAULT_LIMIT = parsePositiveInt(process.env.RATE_LIMIT_MAX, 10);
 
 export const RATE_LIMITS = {
-  candidate: {
-    limit: parsePositiveInt(process.env.RATE_LIMIT_CANDIDATE_MAX, DEFAULT_LIMIT),
-    windowSeconds: parsePositiveInt(process.env.RATE_LIMIT_CANDIDATE_WINDOW_SECONDS, DEFAULT_WINDOW_SECONDS),
+  applicant: {
+    limit: parsePositiveInt(process.env.RATE_LIMIT_APPLICANT_MAX, DEFAULT_LIMIT),
+    windowSeconds: parsePositiveInt(process.env.RATE_LIMIT_APPLICANT_WINDOW_SECONDS, DEFAULT_WINDOW_SECONDS),
   },
   referrer: {
     limit: parsePositiveInt(process.env.RATE_LIMIT_REFERRER_MAX, DEFAULT_LIMIT),

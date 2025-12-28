@@ -55,10 +55,10 @@ function companyIndustryOptions(lang: Language): Option[] {
 
 function workTypeOptions(lang: Language): Option[] {
   if (lang === 'fr') {
-    const map: Record<string, string> = { Physical: 'Sur site', Remote: 'Télétravail', Hybrid: 'Hybride' };
-    return ['Physical', 'Remote', 'Hybrid'].map((v) => ({ value: v, label: map[v] }));
+    const map: Record<string, string> = { 'On-site': 'Sur site', Remote: 'Télétravail', Hybrid: 'Hybride' };
+    return ['On-site', 'Remote', 'Hybrid'].map((v) => ({ value: v, label: map[v] }));
   }
-  return ['Physical', 'Remote', 'Hybrid'].map((v) => ({ value: v, label: v }));
+  return ['On-site', 'Remote', 'Hybrid'].map((v) => ({ value: v, label: v }));
 }
 
 const translations: Record<
@@ -125,25 +125,25 @@ const translations: Record<
   }
 > = {
   en: {
-    roleSwitch: { prompt: 'Not a referrer?', link: 'Switch to candidate' },
+    roleSwitch: { prompt: 'Not a referrer?', link: 'Switch to applicant' },
     languageLabel: 'Language',
     english: 'English',
     french: 'Français',
     eyebrow: 'For referrers',
     title: 'Referrer referral form',
-    lead: 'Share the teams, roles, and capacity you have. Log a candidate now or just your availability.',
+    lead: 'Share the teams, roles, and capacity you have. Log an applicant now or just your availability.',
     legends: {
       personal: 'Personal Information',
       company: 'Company Details',
       workType: 'Type of work',
     },
     labels: {
-      fullName: 'Full Name *',
-      workEmail: 'Email address *',
+      fullName: 'Full Name',
+      workEmail: 'Email address',
       phone: 'Phone Number',
       country: 'Country of Origin',
-      company: 'Company  Name',
-      careersPortal: 'Careers Portal URL *',
+      company: 'Company Name',
+      careersPortal: 'Careers Portal URL',
       companyIndustry: 'Industry of the company',
       workType: 'Type of work',
       companyIndustryOther: 'Other company industry',
@@ -167,7 +167,7 @@ const translations: Record<
     },
     optional: '(optional)',
     statusMessages: {
-      ok: "We've received your details. We'll reach out when there's a candidate match.",
+      ok: "We've received your details. We'll reach out when there's an applicant match.",
       error: "We couldn't send your details right now. Please try again in a moment.",
     },
     errors: {
@@ -188,7 +188,7 @@ const translations: Record<
     },
     consentTitle: 'Consent & Legal Disclaimer',
     consentIntro:
-      'By submitting this form, I agree to be contacted by iRefair when a potential candidate may align with open roles at my company. I understand and acknowledge the following:',
+      'By submitting this form, I agree to be contacted by iRefair when a potential applicant may align with open roles at my company. I understand and acknowledge the following:',
     consentPoints: [
       'iRefair is a voluntary, community-driven initiative, and I am under no obligation to make any referrals.',
       'Any referral I make is based on my own discretion, and I am solely responsible for complying with my company’s internal referral or hiring policies.',
@@ -201,7 +201,7 @@ const translations: Record<
     success: {
       title: 'Thank you for contributing to iRefair',
       thankYou:
-        'Thank you for sharing your referrer details and supporting iRefair. Your contribution helps candidates who are actively looking for work and rely on community referrals.',
+        'Thank you for sharing your referrer details and supporting iRefair. Your contribution helps applicants who are actively looking for work and rely on community referrals.',
       iRrefLabel: 'Your iRefair referral ID (iRREF):',
       founderIntro:
         'Our Founder & Managing Director would also like to meet you, get to know you better, and explore how we can collaborate together.',
@@ -228,7 +228,7 @@ const translations: Record<
       phone: 'Numéro de téléphone',
       country: "Pays d'origine",
       company: 'Entreprise',
-      careersPortal: 'Portail carrières *',
+      careersPortal: 'Portail carrières',
       companyIndustry: "Secteur de l'entreprise",
       workType: 'Type de travail',
       companyIndustryOther: 'Autre secteur',
@@ -528,9 +528,9 @@ export default function ReferrerPage() {
             <span className="role-switch__text">
               {t.roleSwitch.prompt}{' '}
               <Link
-                href={withLanguage('/candidate')}
+                href={withLanguage('/applicant')}
                 onClick={() => {
-                  startNavigation('/candidate');
+                  startNavigation('/applicant');
                 }}
               >
                 {t.roleSwitch.link}
@@ -703,7 +703,9 @@ export default function ReferrerPage() {
                     </p>
                   </div>
                   <div className={fieldClass('field', 'referrer-linkedin')}>
-                    <label htmlFor="referrer-linkedin">{t.labels.linkedin}</label>
+                    <label htmlFor="referrer-linkedin">
+                      {t.labels.linkedin} <span className="optional">{t.optional}</span>
+                    </label>
                     <input
                       id="referrer-linkedin"
                       name="referrer-linkedin"
@@ -727,7 +729,9 @@ export default function ReferrerPage() {
                 <legend>{t.legends.company}</legend>
                 <div className="field-grid field-grid--two">
                   <div className={fieldClass('field', 'referrer-company')}>
-                    <label htmlFor="referrer-company">{t.labels.company}</label>
+                    <label htmlFor="referrer-company">
+                      {t.labels.company} <span className="optional">{t.optional}</span>
+                    </label>
                     <input
                       id="referrer-company"
                       name="referrer-company"

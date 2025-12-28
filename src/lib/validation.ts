@@ -3,10 +3,10 @@ export function normalizeHttpUrl(input: string): string | null {
   if (!trimmed) return null;
 
   const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(trimmed);
-  const candidate = hasScheme ? trimmed : `https://${trimmed}`;
+  const applicant = hasScheme ? trimmed : `https://${trimmed}`;
 
   try {
-    const parsed = new URL(candidate);
+    const parsed = new URL(applicant);
     const protocol = parsed.protocol.toLowerCase();
     if (protocol !== 'http:' && protocol !== 'https:') {
       return null;

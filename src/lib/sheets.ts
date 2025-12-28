@@ -5,20 +5,20 @@ import { randomUUID } from 'crypto';
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
 type SubmissionPrefix = 'CAND' | 'REF' | 'APP';
-export const LEGACY_CANDIDATE_ID_HEADER = 'Legacy Candidate ID';
-export const CANDIDATE_SECRET_HASH_HEADER = 'Candidate Secret Hash';
-export const CANDIDATE_UPDATE_TOKEN_HASH_HEADER = 'Update Token Hash';
-export const CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER = 'Update Token Expires At';
-export const CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER = 'Update Pending Payload';
+export const LEGACY_APPLICANT_ID_HEADER = 'Legacy Applicant ID';
+export const APPLICANT_SECRET_HASH_HEADER = 'Applicant Secret Hash';
+export const APPLICANT_UPDATE_TOKEN_HASH_HEADER = 'Update Token Hash';
+export const APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER = 'Update Token Expires At';
+export const APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER = 'Update Pending Payload';
 
-const CANDIDATE_SECURITY_COLUMNS = [
-  CANDIDATE_SECRET_HASH_HEADER,
-  CANDIDATE_UPDATE_TOKEN_HASH_HEADER,
-  CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER,
-  CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER,
+const APPLICANT_SECURITY_COLUMNS = [
+  APPLICANT_SECRET_HASH_HEADER,
+  APPLICANT_UPDATE_TOKEN_HASH_HEADER,
+  APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
+  APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
 ];
 
-export const CANDIDATE_HEADERS = [
+export const APPLICANT_HEADERS = [
   'iRAIN',
   'Timestamp',
   'First Name',
@@ -36,11 +36,11 @@ export const CANDIDATE_HEADERS = [
   'Industry Type',
   'Industry Other',
   'Employment Status',
-  LEGACY_CANDIDATE_ID_HEADER,
+  LEGACY_APPLICANT_ID_HEADER,
 ];
-export const CANDIDATE_SHEET_NAME = 'Candidates';
-const CANDIDATE_EMAIL_COLUMN_INDEX = 5; // zero-based (Column F)
-const LEGACY_CANDIDATE_ID_COLUMN_INDEX = CANDIDATE_HEADERS.length - 1;
+export const APPLICANT_SHEET_NAME = 'Applicants';
+const APPLICANT_EMAIL_COLUMN_INDEX = 5; // zero-based (Column F)
+const LEGACY_APPLICANT_ID_COLUMN_INDEX = APPLICANT_HEADERS.length - 1;
 export const REFERRER_SHEET_NAME = 'Referrers';
 export const REFERRER_HEADERS = [
   'iRREF',
@@ -62,7 +62,7 @@ export const MATCH_SHEET_NAME = 'Matches';
 export const MATCH_HEADERS = [
   'Match ID',
   'Created At',
-  'Candidate iRAIN',
+  'Applicant iRAIN',
   'Referrer iRREF',
   'Company iRCRN',
   'Position / Context',
@@ -96,7 +96,7 @@ export function isIrain(value: string) {
   return IRAIN_REGEX.test(value.trim());
 }
 
-export function isLegacyCandidateId(value: string) {
+export function isLegacyApplicantId(value: string) {
   return /^CAND-/i.test(value.trim());
 }
 
@@ -161,8 +161,8 @@ function toColumnLetter(index: number) {
   return letters;
 }
 
-const CANDIDATE_LAST_COLUMN_LETTER = toColumnLetter(CANDIDATE_HEADERS.length - 1);
-const LEGACY_CANDIDATE_ID_COLUMN_LETTER = toColumnLetter(LEGACY_CANDIDATE_ID_COLUMN_INDEX);
+const CANDIDATE_LAST_COLUMN_LETTER = toColumnLetter(APPLICANT_HEADERS.length - 1);
+const LEGACY_CANDIDATE_ID_COLUMN_LETTER = toColumnLetter(LEGACY_APPLICANT_ID_COLUMN_INDEX);
 
 function formatIrainNumber(value: number) {
   return `iRAIN${String(value).padStart(10, '0')}`;
@@ -439,7 +439,7 @@ export async function applyProSheetFormatting(sheetName: string, headers: string
 export const APPLICATION_HEADERS = [
   'ID',
   'Timestamp',
-  'Candidate ID',
+  'Applicant ID',
   'iRCRN',
   'Position',
   'Reference Number',
@@ -451,7 +451,7 @@ export const APPLICATION_HEADERS = [
 ];
 export const APPLICATION_SHEET_NAME = 'Applications';
 
-type CandidateRow = {
+type ApplicantRow = {
   id: string;
   firstName: string;
   middleName: string;
@@ -468,8 +468,8 @@ type CandidateRow = {
   industryType: string;
   industryOther: string;
   employmentStatus: string;
-  legacyCandidateId?: string;
-  candidateSecretHash?: string;
+  legacyApplicantId?: string;
+  applicantSecretHash?: string;
   updateTokenHash?: string;
   updateTokenExpiresAt?: string;
   updatePendingPayload?: string;
@@ -496,7 +496,7 @@ type ReferrerRow = {
 
 type ApplicationRow = {
   id: string;
-  candidateId: string;
+  applicantId: string;
   iCrn: string;
   position: string;
   referenceNumber: string;
@@ -509,14 +509,14 @@ type ApplicationRow = {
 let sheetsClient: ReturnType<typeof google.sheets> | null = null;
 const headersInitialized = new Set<string>();
 const SHEET_BY_PREFIX: Record<SubmissionPrefix, string> = {
-  CAND: CANDIDATE_SHEET_NAME,
+  CAND: APPLICANT_SHEET_NAME,
   REF: REFERRER_SHEET_NAME,
   APP: APPLICATION_SHEET_NAME,
 };
 
-export type CandidateLookupResult = {
+export type ApplicantLookupResult = {
   rowIndex: number;
-  record: CandidateRow & { timestamp: string; legacyCandidateId: string };
+  record: ApplicantRow & { timestamp: string; legacyApplicantId: string };
 };
 
 function cellValue(row: (string | number | null | undefined)[], index: number) {
@@ -525,9 +525,9 @@ function cellValue(row: (string | number | null | undefined)[], index: number) {
   return String(value).trim();
 }
 
-function buildCandidateRecordFromRow(row: (string | number | null | undefined)[]): CandidateRow & {
+function buildApplicantRecordFromRow(row: (string | number | null | undefined)[]): ApplicantRow & {
   timestamp: string;
-  legacyCandidateId: string;
+  legacyApplicantId: string;
 } {
   return {
     id: cellValue(row, 0),
@@ -547,14 +547,14 @@ function buildCandidateRecordFromRow(row: (string | number | null | undefined)[]
     industryType: cellValue(row, 14),
     industryOther: cellValue(row, 15),
     employmentStatus: cellValue(row, 16),
-    legacyCandidateId: cellValue(row, LEGACY_CANDIDATE_ID_COLUMN_INDEX),
+    legacyApplicantId: cellValue(row, LEGACY_APPLICANT_ID_COLUMN_INDEX),
   };
 }
 
-function buildCandidateRecordFromHeaderMap(
+function buildApplicantRecordFromHeaderMap(
   headerMap: Map<string, number>,
   row: (string | number | null | undefined)[],
-): CandidateRow & { timestamp: string; legacyCandidateId: string } {
+): ApplicantRow & { timestamp: string; legacyApplicantId: string } {
   return {
     id: getHeaderValue(headerMap, row, 'iRAIN'),
     timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
@@ -573,11 +573,11 @@ function buildCandidateRecordFromHeaderMap(
     industryType: getHeaderValue(headerMap, row, 'Industry Type'),
     industryOther: getHeaderValue(headerMap, row, 'Industry Other'),
     employmentStatus: getHeaderValue(headerMap, row, 'Employment Status'),
-    legacyCandidateId: getHeaderValue(headerMap, row, LEGACY_CANDIDATE_ID_HEADER),
-    candidateSecretHash: getHeaderValue(headerMap, row, CANDIDATE_SECRET_HASH_HEADER),
-    updateTokenHash: getHeaderValue(headerMap, row, CANDIDATE_UPDATE_TOKEN_HASH_HEADER),
-    updateTokenExpiresAt: getHeaderValue(headerMap, row, CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER),
-    updatePendingPayload: getHeaderValue(headerMap, row, CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER),
+    legacyApplicantId: getHeaderValue(headerMap, row, LEGACY_APPLICANT_ID_HEADER),
+    applicantSecretHash: getHeaderValue(headerMap, row, APPLICANT_SECRET_HASH_HEADER),
+    updateTokenHash: getHeaderValue(headerMap, row, APPLICANT_UPDATE_TOKEN_HASH_HEADER),
+    updateTokenExpiresAt: getHeaderValue(headerMap, row, APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER),
+    updatePendingPayload: getHeaderValue(headerMap, row, APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER),
     resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name') || undefined,
     resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID') || undefined,
     resumeUrl: getHeaderValue(headerMap, row, 'Resume URL') || undefined,
@@ -603,17 +603,17 @@ function getSheetsClient() {
   return sheetsClient;
 }
 
-async function appendLegacyCandidateHeaderIfMissing(
+async function appendLegacyApplicantHeaderIfMissing(
   sheetName: string,
   firstRow: string[],
   spreadsheetId: string,
   sheets: ReturnType<typeof getSheetsClient>,
 ) {
-  if (sheetName !== CANDIDATE_SHEET_NAME) {
+  if (sheetName !== APPLICANT_SHEET_NAME) {
     return { headers: firstRow, appended: false };
   }
 
-  const hasLegacyHeader = firstRow.includes(LEGACY_CANDIDATE_ID_HEADER);
+  const hasLegacyHeader = firstRow.includes(LEGACY_APPLICANT_ID_HEADER);
   if (!firstRow.length || hasLegacyHeader) {
     return { headers: firstRow, appended: false };
   }
@@ -625,11 +625,11 @@ async function appendLegacyCandidateHeaderIfMissing(
     spreadsheetId,
     range: `${sheetName}!${nextColumnLetter}1`,
     valueInputOption: 'RAW',
-    requestBody: { majorDimension: 'ROWS', values: [[LEGACY_CANDIDATE_ID_HEADER]] },
+    requestBody: { majorDimension: 'ROWS', values: [[LEGACY_APPLICANT_ID_HEADER]] },
   });
 
   const updatedHeaders = [...firstRow];
-  updatedHeaders[nextColumnIndex] = LEGACY_CANDIDATE_ID_HEADER;
+  updatedHeaders[nextColumnIndex] = LEGACY_APPLICANT_ID_HEADER;
 
   return { headers: updatedHeaders, appended: true };
 }
@@ -750,7 +750,7 @@ export async function ensureHeaders(
     }
   }
 
-  const legacyHeaderResult = await appendLegacyCandidateHeaderIfMissing(
+  const legacyHeaderResult = await appendLegacyApplicantHeaderIfMissing(
     sheetName,
     firstRow,
     spreadsheetId,
@@ -987,12 +987,12 @@ async function fetchMaxIrrefFromSheet(spreadsheetId: string) {
 }
 
 async function findMaxIrainInSheets(spreadsheetId: string) {
-  const candidateMax = await fetchMaxIrainFromSheet(CANDIDATE_SHEET_NAME, spreadsheetId);
-  return Math.max(candidateMax, getMaxIrcrnFromCompanies());
+  const applicantMax = await fetchMaxIrainFromSheet(APPLICANT_SHEET_NAME, spreadsheetId);
+  return Math.max(applicantMax, getMaxIrcrnFromCompanies());
 }
 
 async function getMaxExistingIrainNumber(spreadsheetId: string) {
-  return fetchMaxIrainFromSheet(CANDIDATE_SHEET_NAME, spreadsheetId);
+  return fetchMaxIrainFromSheet(APPLICANT_SHEET_NAME, spreadsheetId);
 }
 
 async function getMaxExistingIrrefNumber(spreadsheetId: string) {
@@ -1040,8 +1040,8 @@ export async function generateIRCRN(): Promise<string> {
   return `iRCRN${String(next).padStart(10, '0')}`;
 }
 
-export async function appendCandidateRow(row: CandidateRow) {
-  await upsertCandidateRow(row);
+export async function appendApplicantRow(row: ApplicantRow) {
+  await upsertApplicantRow(row);
 }
 
 export async function appendReferrerRow(row: ReferrerRow) {
@@ -1079,7 +1079,7 @@ export async function appendApplicationRow(row: ApplicationRow) {
 
   setByHeader(rowValues, headerMap, 'ID', row.id);
   setByHeader(rowValues, headerMap, 'Timestamp', timestamp);
-  setByHeader(rowValues, headerMap, 'Candidate ID', row.candidateId);
+  setByHeader(rowValues, headerMap, 'Applicant ID', row.applicantId);
   setByHeader(rowValues, headerMap, 'iRCRN', row.iCrn);
   setByHeader(rowValues, headerMap, 'Position', row.position);
   setByHeader(rowValues, headerMap, 'Reference Number', row.referenceNumber);
@@ -1094,11 +1094,11 @@ export async function appendApplicationRow(row: ApplicationRow) {
   await appendRow(APPLICATION_SHEET_NAME, rowValues);
 }
 
-function buildCandidateRowValues(
-  row: CandidateRow,
+function buildApplicantRowValues(
+  row: ApplicantRow,
   id: string,
   timestamp: string,
-  legacyCandidateId?: string,
+  legacyApplicantId?: string,
 ) {
   return [
     id,
@@ -1118,11 +1118,11 @@ function buildCandidateRowValues(
     row.industryType,
     row.industryOther,
     row.employmentStatus,
-    legacyCandidateId ?? row.legacyCandidateId ?? '',
+    legacyApplicantId ?? row.legacyApplicantId ?? '',
   ];
 }
 
-async function findCandidateRowByEmail(email: string) {
+async function findApplicantRowByEmail(email: string) {
   const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
   if (!spreadsheetId) {
     throw new Error('Missing Google Sheets spreadsheet ID. Please set GOOGLE_SHEETS_SPREADSHEET_ID.');
@@ -1133,30 +1133,30 @@ async function findCandidateRowByEmail(email: string) {
 
   const headerRow = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!1:1`,
+    range: `${APPLICANT_SHEET_NAME}!1:1`,
   });
   const headers = headerRow.data.values?.[0] ?? [];
   if (!headers.length) return null;
 
   const emailIndex = headerIndex(headers, 'Email');
   const idIndex = headerIndex(headers, 'iRAIN');
-  const legacyIndex = headerIndex(headers, LEGACY_CANDIDATE_ID_HEADER);
+  const legacyIndex = headerIndex(headers, LEGACY_APPLICANT_ID_HEADER);
   const lastCol = toColumnLetter(headers.length - 1);
   const existing = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!A:${lastCol}`,
+    range: `${APPLICANT_SHEET_NAME}!A:${lastCol}`,
     majorDimension: 'ROWS',
   });
 
   const rows = existing.data.values ?? [];
   for (let index = 1; index < rows.length; index++) {
     const row = rows[index] ?? [];
-    const rowEmail = cellValue(row, emailIndex === -1 ? CANDIDATE_EMAIL_COLUMN_INDEX : emailIndex).toLowerCase();
+    const rowEmail = cellValue(row, emailIndex === -1 ? APPLICANT_EMAIL_COLUMN_INDEX : emailIndex).toLowerCase();
     if (rowEmail && rowEmail === normalizedEmail) {
       return {
         rowIndex: index + 1, // 1-based for Google Sheets
         id: cellValue(row, idIndex === -1 ? 0 : idIndex),
-        legacyCandidateId: cellValue(row, legacyIndex === -1 ? LEGACY_CANDIDATE_ID_COLUMN_INDEX : legacyIndex),
+        legacyApplicantId: cellValue(row, legacyIndex === -1 ? LEGACY_APPLICANT_ID_COLUMN_INDEX : legacyIndex),
       };
     }
   }
@@ -1164,18 +1164,18 @@ async function findCandidateRowByEmail(email: string) {
   return null;
 }
 
-export async function findCandidateByIdentifier(identifier: string): Promise<CandidateLookupResult | null> {
+export async function findApplicantByIdentifier(identifier: string): Promise<ApplicantLookupResult | null> {
   const searchValue = identifier.trim();
   if (!searchValue) return null;
 
-  await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
-  await ensureColumns(CANDIDATE_SHEET_NAME, CANDIDATE_SECURITY_COLUMNS);
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+  await ensureColumns(APPLICANT_SHEET_NAME, APPLICANT_SECURITY_COLUMNS);
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
 
   const headerRow = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!1:1`,
+    range: `${APPLICANT_SHEET_NAME}!1:1`,
   });
   const headers = headerRow.data.values?.[0] ?? [];
   if (!headers.length) return null;
@@ -1184,25 +1184,25 @@ export async function findCandidateByIdentifier(identifier: string): Promise<Can
   const lastCol = toColumnLetter(headers.length - 1);
   const existing = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!A:${lastCol}`,
+    range: `${APPLICANT_SHEET_NAME}!A:${lastCol}`,
     majorDimension: 'ROWS',
   });
 
   const searchByIrain = isIrain(searchValue);
   const normalized = searchValue.toLowerCase();
   const irainIndex = headerIndex(headers, 'iRAIN');
-  const legacyIndex = headerIndex(headers, LEGACY_CANDIDATE_ID_HEADER);
+  const legacyIndex = headerIndex(headers, LEGACY_APPLICANT_ID_HEADER);
 
   const rows = existing.data.values ?? [];
   for (let index = 1; index < rows.length; index++) {
     const row = rows[index] ?? [];
     const irain = cellValue(row, irainIndex === -1 ? 0 : irainIndex).toLowerCase();
-    const legacy = cellValue(row, legacyIndex === -1 ? LEGACY_CANDIDATE_ID_COLUMN_INDEX : legacyIndex).toLowerCase();
+    const legacy = cellValue(row, legacyIndex === -1 ? LEGACY_APPLICANT_ID_COLUMN_INDEX : legacyIndex).toLowerCase();
     const matches = searchByIrain ? irain === normalized : legacy === normalized;
     if (matches) {
       return {
         rowIndex: index + 1,
-        record: buildCandidateRecordFromHeaderMap(headerMap, row),
+        record: buildApplicantRecordFromHeaderMap(headerMap, row),
       };
     }
   }
@@ -1210,18 +1210,18 @@ export async function findCandidateByIdentifier(identifier: string): Promise<Can
   return null;
 }
 
-export async function getCandidateByEmail(email: string): Promise<CandidateLookupResult | null> {
+export async function getApplicantByEmail(email: string): Promise<ApplicantLookupResult | null> {
   const normalizedEmail = email.trim().toLowerCase();
   if (!normalizedEmail) return null;
 
-  await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
-  await ensureColumns(CANDIDATE_SHEET_NAME, CANDIDATE_SECURITY_COLUMNS);
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+  await ensureColumns(APPLICANT_SHEET_NAME, APPLICANT_SECURITY_COLUMNS);
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
 
   const headerRow = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!1:1`,
+    range: `${APPLICANT_SHEET_NAME}!1:1`,
   });
   const headers = headerRow.data.values?.[0] ?? [];
   if (!headers.length) return null;
@@ -1230,7 +1230,7 @@ export async function getCandidateByEmail(email: string): Promise<CandidateLooku
   const lastCol = toColumnLetter(headers.length - 1);
   const existing = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!A:${lastCol}`,
+    range: `${APPLICANT_SHEET_NAME}!A:${lastCol}`,
     majorDimension: 'ROWS',
   });
 
@@ -1238,11 +1238,11 @@ export async function getCandidateByEmail(email: string): Promise<CandidateLooku
   const rows = existing.data.values ?? [];
   for (let index = 1; index < rows.length; index++) {
     const row = rows[index] ?? [];
-    const rowEmail = cellValue(row, emailIndex === -1 ? CANDIDATE_EMAIL_COLUMN_INDEX : emailIndex).toLowerCase();
+    const rowEmail = cellValue(row, emailIndex === -1 ? APPLICANT_EMAIL_COLUMN_INDEX : emailIndex).toLowerCase();
     if (rowEmail && rowEmail === normalizedEmail) {
       return {
         rowIndex: index + 1,
-        record: buildCandidateRecordFromHeaderMap(headerMap, row),
+        record: buildApplicantRecordFromHeaderMap(headerMap, row),
       };
     }
   }
@@ -1250,24 +1250,24 @@ export async function getCandidateByEmail(email: string): Promise<CandidateLooku
   return null;
 }
 
-export async function getCandidateByRowIndex(rowIndex: number): Promise<CandidateLookupResult | null> {
+export async function getApplicantByRowIndex(rowIndex: number): Promise<ApplicantLookupResult | null> {
   if (!Number.isFinite(rowIndex) || rowIndex < 2) return null;
 
-  await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
-  await ensureColumns(CANDIDATE_SHEET_NAME, CANDIDATE_SECURITY_COLUMNS);
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+  await ensureColumns(APPLICANT_SHEET_NAME, APPLICANT_SECURITY_COLUMNS);
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
 
   const headerRow = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!1:1`,
+    range: `${APPLICANT_SHEET_NAME}!1:1`,
   });
   const headers = headerRow.data.values?.[0] ?? [];
   if (!headers.length) return null;
 
   const headerMap = buildHeaderMap(headers);
   const lastCol = toColumnLetter(headers.length - 1);
-  const rowRange = `${CANDIDATE_SHEET_NAME}!A${rowIndex}:${lastCol}${rowIndex}`;
+  const rowRange = `${APPLICANT_SHEET_NAME}!A${rowIndex}:${lastCol}${rowIndex}`;
 
   const rowResponse = await sheets.spreadsheets.values.get({
     spreadsheetId,
@@ -1279,22 +1279,22 @@ export async function getCandidateByRowIndex(rowIndex: number): Promise<Candidat
 
   return {
     rowIndex,
-    record: buildCandidateRecordFromHeaderMap(headerMap, row),
+    record: buildApplicantRecordFromHeaderMap(headerMap, row),
   };
 }
 
 /**
- * Find an existing candidate if at least 2 of 3 fields match:
+ * Find an existing applicant if at least 2 of 3 fields match:
  * - name (firstName + familyName)
  * - email
  * - phone
  */
-export async function findExistingCandidate(
+export async function findExistingApplicant(
   firstName: string,
   familyName: string,
   email: string,
   phone: string,
-): Promise<CandidateLookupResult | null> {
+): Promise<ApplicantLookupResult | null> {
   const normalizedEmail = email.trim().toLowerCase();
   const normalizedPhone = phone.replace(/\D/g, ''); // Remove non-digits for comparison
   const normalizedFirstName = firstName.trim().toLowerCase();
@@ -1310,14 +1310,14 @@ export async function findExistingCandidate(
     return null;
   }
 
-  await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
-  await ensureColumns(CANDIDATE_SHEET_NAME, CANDIDATE_SECURITY_COLUMNS);
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+  await ensureColumns(APPLICANT_SHEET_NAME, APPLICANT_SECURITY_COLUMNS);
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
 
   const headerRow = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!1:1`,
+    range: `${APPLICANT_SHEET_NAME}!1:1`,
   });
   const headers = headerRow.data.values?.[0] ?? [];
   if (!headers.length) return null;
@@ -1326,7 +1326,7 @@ export async function findExistingCandidate(
   const lastCol = toColumnLetter(headers.length - 1);
   const existing = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!A:${lastCol}`,
+    range: `${APPLICANT_SHEET_NAME}!A:${lastCol}`,
     majorDimension: 'ROWS',
   });
 
@@ -1340,7 +1340,7 @@ export async function findExistingCandidate(
     const row = rows[index] ?? [];
     if (!row.length) continue;
 
-    const rowEmail = cellValue(row, emailIdx === -1 ? CANDIDATE_EMAIL_COLUMN_INDEX : emailIdx).toLowerCase();
+    const rowEmail = cellValue(row, emailIdx === -1 ? APPLICANT_EMAIL_COLUMN_INDEX : emailIdx).toLowerCase();
     const rowPhone = cellValue(row, phoneIdx === -1 ? 6 : phoneIdx).replace(/\D/g, '');
     const rowFirstName = cellValue(row, firstNameIdx === -1 ? 2 : firstNameIdx).toLowerCase();
     const rowFamilyName = cellValue(row, familyNameIdx === -1 ? 4 : familyNameIdx).toLowerCase();
@@ -1364,7 +1364,7 @@ export async function findExistingCandidate(
     if (matchCount >= 2) {
       return {
         rowIndex: index + 1, // 1-indexed for Sheets API
-        record: buildCandidateRecordFromHeaderMap(headerMap, row),
+        record: buildApplicantRecordFromHeaderMap(headerMap, row),
       };
     }
   }
@@ -1372,8 +1372,8 @@ export async function findExistingCandidate(
   return null;
 }
 
-export async function upsertCandidateRow(row: CandidateRow) {
-  await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
+export async function upsertApplicantRow(row: ApplicantRow) {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
 
   const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
   if (!spreadsheetId) {
@@ -1381,16 +1381,16 @@ export async function upsertCandidateRow(row: CandidateRow) {
   }
 
   const timestamp = new Date().toISOString();
-  const existing = await findCandidateRowByEmail(row.email);
-  const providedLegacyId = row.legacyCandidateId ?? '';
+  const existing = await findApplicantRowByEmail(row.email);
+  const providedLegacyId = row.legacyApplicantId ?? '';
 
   if (existing) {
     const isExistingIrain = IRAIN_REGEX.test(existing.id);
     const idToUse = isExistingIrain ? existing.id : row.id;
-    const legacyCandidateId =
-      (isExistingIrain ? existing.legacyCandidateId : existing.legacyCandidateId || existing.id) ??
+    const legacyApplicantId =
+      (isExistingIrain ? existing.legacyApplicantId : existing.legacyApplicantId || existing.id) ??
       providedLegacyId;
-    await updateRowById(CANDIDATE_SHEET_NAME, 'iRAIN', existing.id, {
+    await updateRowById(APPLICANT_SHEET_NAME, 'iRAIN', existing.id, {
       iRAIN: idToUse,
       Timestamp: timestamp,
       'First Name': row.firstName,
@@ -1408,29 +1408,29 @@ export async function upsertCandidateRow(row: CandidateRow) {
       'Industry Type': row.industryType,
       'Industry Other': row.industryOther,
       'Employment Status': row.employmentStatus,
-      [LEGACY_CANDIDATE_ID_HEADER]: legacyCandidateId,
+      [LEGACY_APPLICANT_ID_HEADER]: legacyApplicantId,
     });
 
-    return { id: idToUse, wasUpdated: true, legacyCandidateId };
+    return { id: idToUse, wasUpdated: true, legacyApplicantId };
   }
 
-  const legacyCandidateId = providedLegacyId;
+  const legacyApplicantId = providedLegacyId;
   await appendRow(
-    CANDIDATE_SHEET_NAME,
-    buildCandidateRowValues(row, row.id, timestamp, legacyCandidateId),
+    APPLICANT_SHEET_NAME,
+    buildApplicantRowValues(row, row.id, timestamp, legacyApplicantId),
   );
-  return { id: row.id, wasUpdated: false, legacyCandidateId };
+  return { id: row.id, wasUpdated: false, legacyApplicantId };
 }
 
-export async function migrateLegacyCandidateIds() {
-  await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
+export async function migrateLegacyApplicantIds() {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
 
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
 
   const values = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!A:${CANDIDATE_LAST_COLUMN_LETTER}`,
+    range: `${APPLICANT_SHEET_NAME}!A:${CANDIDATE_LAST_COLUMN_LETTER}`,
     majorDimension: 'ROWS',
   });
 
@@ -1447,13 +1447,13 @@ export async function migrateLegacyCandidateIds() {
     if (!currentId || IRAIN_REGEX.test(currentId)) continue;
 
     const rowIndex = index + 1;
-    const legacyValue = cellValue(row, LEGACY_CANDIDATE_ID_COLUMN_INDEX) || currentId;
+    const legacyValue = cellValue(row, LEGACY_APPLICANT_ID_COLUMN_INDEX) || currentId;
     const newIrain = formatIrainNumber(nextNumber++);
 
     updates.push({ rowIndex, from: currentId, to: newIrain, legacy: legacyValue });
-    data.push({ range: `${CANDIDATE_SHEET_NAME}!A${rowIndex}`, values: [[newIrain]] });
+    data.push({ range: `${APPLICANT_SHEET_NAME}!A${rowIndex}`, values: [[newIrain]] });
     data.push({
-      range: `${CANDIDATE_SHEET_NAME}!${LEGACY_CANDIDATE_ID_COLUMN_LETTER}${rowIndex}`,
+      range: `${APPLICANT_SHEET_NAME}!${LEGACY_CANDIDATE_ID_COLUMN_LETTER}${rowIndex}`,
       values: [[legacyValue]],
     });
   }
@@ -1469,9 +1469,9 @@ export async function migrateLegacyCandidateIds() {
   }
 
   try {
-    await applyProSheetFormatting(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
+    await applyProSheetFormatting(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
   } catch (error) {
-    console.error('Candidate sheet formatting failed after migration (non-fatal):', error);
+    console.error('Applicant sheet formatting failed after migration (non-fatal):', error);
   }
 
   return {
@@ -1488,8 +1488,8 @@ export async function formatSheet(sheetName: string, headers: string[]) {
 }
 
 async function ensureAdminColumnsForSheet(sheetName: string) {
-  if (sheetName === CANDIDATE_SHEET_NAME) {
-    return ensureColumns(sheetName, [...ADMIN_TRACKING_COLUMNS, ...CANDIDATE_SECURITY_COLUMNS]);
+  if (sheetName === APPLICANT_SHEET_NAME) {
+    return ensureColumns(sheetName, [...ADMIN_TRACKING_COLUMNS, ...APPLICANT_SECURITY_COLUMNS]);
   }
 
   if (sheetName === REFERRER_SHEET_NAME) {
@@ -1545,7 +1545,7 @@ export async function ensureColumns(
   return { appended: missing, headers: updatedHeaders };
 }
 
-type CandidateListParams = {
+type ApplicantListParams = {
   search?: string;
   status?: string;
   eligible?: boolean;
@@ -1575,7 +1575,7 @@ type ApplicationListParams = {
 type ApplicationListItem = {
   id: string;
   timestamp: string;
-  candidateId: string;
+  applicantId: string;
   iCrn: string;
   position: string;
   referenceNumber: string;
@@ -1662,14 +1662,14 @@ function normalizeSearch(value?: string) {
   return value ? value.trim().toLowerCase() : '';
 }
 
-export async function listCandidates(params: CandidateListParams) {
-  await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
+export async function listApplicants(params: ApplicantListParams) {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
 
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
   const headerRow = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!1:1`,
+    range: `${APPLICANT_SHEET_NAME}!1:1`,
   });
   const headers = headerRow.data.values?.[0] ?? [];
   if (!headers.length) return { total: 0, items: [] as unknown[] };
@@ -1677,7 +1677,7 @@ export async function listCandidates(params: CandidateListParams) {
   const lastCol = toColumnLetter(headers.length - 1);
   const existing = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!A:${lastCol}`,
+    range: `${APPLICANT_SHEET_NAME}!A:${lastCol}`,
     majorDimension: 'ROWS',
   });
 
@@ -1728,7 +1728,7 @@ export async function listCandidates(params: CandidateListParams) {
         industryType: getHeaderValue(headerMap, row, 'Industry Type'),
         industryOther: getHeaderValue(headerMap, row, 'Industry Other'),
         employmentStatus: getHeaderValue(headerMap, row, 'Employment Status'),
-        legacyCandidateId: getHeaderValue(headerMap, row, LEGACY_CANDIDATE_ID_HEADER),
+        legacyApplicantId: getHeaderValue(headerMap, row, LEGACY_APPLICANT_ID_HEADER),
         status: getHeaderValue(headerMap, row, 'Status'),
         ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
         tags: getHeaderValue(headerMap, row, 'Tags'),
@@ -2163,14 +2163,14 @@ export async function listApplications(
   const items: ApplicationListItem[] = rows
     .map((row) => {
       const missingFields: string[] = [];
-      if (!getHeaderValue(headerMap, row, 'Candidate ID')) missingFields.push('Candidate ID');
+      if (!getHeaderValue(headerMap, row, 'Applicant ID')) missingFields.push('Applicant ID');
       if (!getHeaderValue(headerMap, row, 'iRCRN')) missingFields.push('iRCRN');
       if (!getHeaderValue(headerMap, row, 'Position')) missingFields.push('Position');
 
       return {
         id: getHeaderValue(headerMap, row, 'ID'),
         timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
-        candidateId: getHeaderValue(headerMap, row, 'Candidate ID'),
+        applicantId: getHeaderValue(headerMap, row, 'Applicant ID'),
         iCrn: getHeaderValue(headerMap, row, 'iRCRN'),
         position: getHeaderValue(headerMap, row, 'Position'),
         referenceNumber: getHeaderValue(headerMap, row, 'Reference Number'),
@@ -2197,7 +2197,7 @@ export async function listApplications(
       if (searchTerm) {
         const haystack = [
           record.id,
-          record.candidateId,
+          record.applicantId,
           record.iCrn,
           record.position,
           record.referenceNumber,
@@ -2251,7 +2251,7 @@ export async function getApplicationById(id: string) {
         record: {
           id: getHeaderValue(headerMap, row, 'ID'),
           timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
-          candidateId: getHeaderValue(headerMap, row, 'Candidate ID'),
+          applicantId: getHeaderValue(headerMap, row, 'Applicant ID'),
           iCrn: getHeaderValue(headerMap, row, 'iRCRN'),
           position: getHeaderValue(headerMap, row, 'Position'),
           referenceNumber: getHeaderValue(headerMap, row, 'Reference Number'),
@@ -2307,7 +2307,7 @@ export async function findApplicationByRescheduleTokenHash(tokenHash: string) {
         record: {
           id: getHeaderValue(headerMap, row, 'ID'),
           timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
-          candidateId: getHeaderValue(headerMap, row, 'Candidate ID'),
+          applicantId: getHeaderValue(headerMap, row, 'Applicant ID'),
           iCrn: getHeaderValue(headerMap, row, 'iRCRN'),
           position: getHeaderValue(headerMap, row, 'Position'),
           referenceNumber: getHeaderValue(headerMap, row, 'Reference Number'),
@@ -2361,14 +2361,14 @@ export async function listMatches(params: MatchListParams) {
   const items = rows
     .map((row) => {
       const missingFields: string[] = [];
-      if (!getHeaderValue(headerMap, row, 'Candidate iRAIN')) missingFields.push('Candidate iRAIN');
+      if (!getHeaderValue(headerMap, row, 'Applicant iRAIN')) missingFields.push('Applicant iRAIN');
       if (!getHeaderValue(headerMap, row, 'Referrer iRREF')) missingFields.push('Referrer iRREF');
       if (!getHeaderValue(headerMap, row, 'Company iRCRN')) missingFields.push('Company iRCRN');
 
       return {
         matchId: getHeaderValue(headerMap, row, 'Match ID'),
         createdAt: getHeaderValue(headerMap, row, 'Created At'),
-        candidateIrain: getHeaderValue(headerMap, row, 'Candidate iRAIN'),
+        applicantIrain: getHeaderValue(headerMap, row, 'Applicant iRAIN'),
         referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
         companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
         positionContext: getHeaderValue(headerMap, row, 'Position / Context'),
@@ -2382,7 +2382,7 @@ export async function listMatches(params: MatchListParams) {
       if (searchTerm) {
         const haystack = [
           record.matchId,
-          record.candidateIrain,
+          record.applicantIrain,
           record.referrerIrref,
           record.companyIrcrn,
           record.positionContext,
@@ -2413,7 +2413,7 @@ type AdminPatch = {
   nextActionAt?: string;
 };
 
-type CandidatePatch = AdminPatch & {
+type ApplicantPatch = AdminPatch & {
   firstName?: string;
   middleName?: string;
   familyName?: string;
@@ -2528,10 +2528,10 @@ export async function updateRowById(
   return { updated: true };
 }
 
-export async function updateCandidateFields(irain: string, patch: CandidatePatch) {
-  await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
+export async function updateApplicantFields(irain: string, patch: ApplicantPatch) {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
 
-  return updateRowById(CANDIDATE_SHEET_NAME, 'iRAIN', irain, {
+  return updateRowById(APPLICANT_SHEET_NAME, 'iRAIN', irain, {
     'First Name': patch.firstName,
     'Middle Name': patch.middleName,
     'Family Name': patch.familyName,
@@ -2576,8 +2576,8 @@ export async function updateReferrerFields(irref: string, patch: ReferrerPatch) 
   });
 }
 
-export async function updateCandidateAdmin(irain: string, patch: AdminPatch) {
-  return updateCandidateFields(irain, patch);
+export async function updateApplicantAdmin(irain: string, patch: AdminPatch) {
+  return updateApplicantFields(irain, patch);
 }
 
 export async function updateReferrerAdmin(irref: string, patch: AdminPatch) {
@@ -2645,15 +2645,15 @@ export async function updateMatch(matchId: string, patch: MatchPatch) {
   });
 }
 
-export async function getCandidateByIrain(irain: string) {
-  await ensureHeaders(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
+export async function getApplicantByIrain(irain: string) {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
 
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
 
   const headerRow = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!1:1`,
+    range: `${APPLICANT_SHEET_NAME}!1:1`,
   });
   const headers = headerRow.data.values?.[0] ?? [];
   if (!headers.length) return null;
@@ -2662,7 +2662,7 @@ export async function getCandidateByIrain(irain: string) {
   const lastCol = toColumnLetter(headers.length - 1);
   const rows = await sheets.spreadsheets.values.get({
     spreadsheetId,
-    range: `${CANDIDATE_SHEET_NAME}!A:${lastCol}`,
+    range: `${APPLICANT_SHEET_NAME}!A:${lastCol}`,
     majorDimension: 'ROWS',
   });
 
@@ -2713,7 +2713,7 @@ export async function getCandidateByIrain(irain: string) {
         industryType: getHeaderValue(headerMap, row, 'Industry Type'),
         industryOther: getHeaderValue(headerMap, row, 'Industry Other'),
         employmentStatus: getHeaderValue(headerMap, row, 'Employment Status'),
-        legacyCandidateId: getHeaderValue(headerMap, row, LEGACY_CANDIDATE_ID_HEADER),
+        legacyApplicantId: getHeaderValue(headerMap, row, LEGACY_APPLICANT_ID_HEADER),
         status: getHeaderValue(headerMap, row, 'Status'),
         ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
         tags: getHeaderValue(headerMap, row, 'Tags'),
@@ -2784,6 +2784,64 @@ export async function getReferrerByIrref(irref: string) {
   return null;
 }
 
+export async function getReferrerByEmail(email: string) {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureColumns(REFERRER_SHEET_NAME, REFERRER_SECURITY_COLUMNS);
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${REFERRER_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  const headerMap = buildHeaderMap(headers);
+  const lastCol = toColumnLetter(headers.length - 1);
+  const rows = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${REFERRER_SHEET_NAME}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const values = rows.data.values ?? [];
+  const normalizedEmail = email.trim().toLowerCase();
+  const emailColIndex = headerMap.get('Email');
+
+  if (emailColIndex === undefined) return null;
+
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i] ?? [];
+    const value = cellValue(row, emailColIndex).toLowerCase();
+    if (value === normalizedEmail) {
+      return {
+        rowIndex: i + 1,
+        record: {
+          irref: getHeaderValue(headerMap, row, 'iRREF'),
+          timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
+          name: getHeaderValue(headerMap, row, 'Name'),
+          email: getHeaderValue(headerMap, row, 'Email'),
+          phone: getHeaderValue(headerMap, row, 'Phone'),
+          country: getHeaderValue(headerMap, row, 'Country'),
+          company: getHeaderValue(headerMap, row, 'Company'),
+          companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
+          companyApproval: getHeaderValue(headerMap, row, 'Company Approval'),
+          companyIndustry: getHeaderValue(headerMap, row, 'Company Industry'),
+          careersPortal: getHeaderValue(headerMap, row, 'Careers Portal'),
+          workType: getHeaderValue(headerMap, row, 'Work Type'),
+          linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
+          portalTokenVersion: getHeaderValue(headerMap, row, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
+          status: getHeaderValue(headerMap, row, 'Status'),
+          ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
+          tags: getHeaderValue(headerMap, row, 'Tags'),
+          lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
+          nextActionAt: getHeaderValue(headerMap, row, 'Next Action At'),
+        },
+      };
+    }
+  }
+  return null;
+}
+
 export async function getMatchById(matchId: string) {
   await ensureHeaders(MATCH_SHEET_NAME, MATCH_HEADERS);
   const spreadsheetId = getSpreadsheetIdOrThrow();
@@ -2812,7 +2870,7 @@ export async function getMatchById(matchId: string) {
         record: {
           matchId: getHeaderValue(headerMap, row, 'Match ID'),
           createdAt: getHeaderValue(headerMap, row, 'Created At'),
-          candidateIrain: getHeaderValue(headerMap, row, 'Candidate iRAIN'),
+          applicantIrain: getHeaderValue(headerMap, row, 'Applicant iRAIN'),
           referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
           companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
           positionContext: getHeaderValue(headerMap, row, 'Position / Context'),

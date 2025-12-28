@@ -13,7 +13,7 @@ import { formatMeetingDateTime } from "@/lib/timezone";
 type ApplicationRecord = {
   id: string;
   timestamp: string;
-  candidateId: string;
+  applicantId: string;
   iCrn: string;
   position: string;
   referenceNumber: string;
@@ -57,8 +57,8 @@ const ACTION_LABELS: Record<string, string> = {
   REQUEST_INFO: "Requested Info",
   MARK_INTERVIEWED: "Marked Interviewed",
   OFFER_JOB: "Offered Job",
-  CANDIDATE_UPDATED: "Candidate Updated Profile",
-  CANDIDATE_RESCHEDULED: "Candidate Requested Reschedule",
+  APPLICANT_UPDATED: "Applicant Updated Profile",
+  APPLICANT_RESCHEDULED: "Applicant Requested Reschedule",
 };
 
 export default function ApplicationsPage() {
@@ -144,7 +144,7 @@ export default function ApplicationsPage() {
         width: "220px",
         render: (row: ApplicationRecord) => <span title={row.id}>{row.id}</span>,
       },
-      { key: "candidateId", label: "Candidate", sortable: true, ellipsis: true, width: "240px" },
+      { key: "applicantId", label: "Applicant", sortable: true, ellipsis: true, width: "240px" },
       { key: "iCrn", label: "iRCRN", sortable: true, nowrap: true, width: "200px" },
       { key: "position", label: "Position", sortable: true, ellipsis: true, width: "320px" },
       {
@@ -207,7 +207,7 @@ export default function ApplicationsPage() {
         open={Boolean(selected)}
         onClose={() => setSelected(null)}
         title={selected ? `${selected.position || "Application"} (${selected.id})` : ""}
-        description={selected?.candidateId}
+        description={selected?.applicantId}
         footer={<div className="founder-drawer__footer-meta">{saving ? "Saving..." : "Live autosave"}</div>}
       >
         {selected ? (
@@ -219,9 +219,9 @@ export default function ApplicationsPage() {
                 <strong>{selected.iCrn || "-"}</strong>
               </div>
               <div className="founder-field">
-                <span>Candidate</span>
-                {selected.candidateId ? (
-                  <a href={`/founder/candidates?search=${encodeURIComponent(selected.candidateId)}`}>Open profile</a>
+                <span>Applicant</span>
+                {selected.applicantId ? (
+                  <a href={`/founder/applicants?search=${encodeURIComponent(selected.applicantId)}`}>Open profile</a>
                 ) : (
                   <strong>-</strong>
                 )}

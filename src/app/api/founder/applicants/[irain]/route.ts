@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
-import { getCandidateByIrain, updateCandidateFields } from '@/lib/sheets';
+import { getApplicantByIrain, updateApplicantFields } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,15 +41,15 @@ export async function GET(
   }
 
   try {
-    const candidate = await getCandidateByIrain(params.irain);
-    if (!candidate) {
-      return NextResponse.json({ ok: false, error: 'Candidate not found' }, { status: 404 });
+    const applicant = await getApplicantByIrain(params.irain);
+    if (!applicant) {
+      return NextResponse.json({ ok: false, error: 'Applicant not found' }, { status: 404 });
     }
-    return NextResponse.json({ ok: true, item: candidate.record });
+    return NextResponse.json({ ok: true, item: applicant.record });
   } catch (error) {
-    console.error('Error fetching candidate', error);
+    console.error('Error fetching applicant', error);
     return NextResponse.json(
-      { ok: false, error: 'Unable to load candidate right now.' },
+      { ok: false, error: 'Unable to load applicant right now.' },
       { status: 500 },
     );
   }
@@ -100,15 +100,15 @@ export async function PATCH(
   }
 
   try {
-    const result = await updateCandidateFields(params.irain, patch);
+    const result = await updateApplicantFields(params.irain, patch);
     if (result.reason === 'not_found') {
-      return NextResponse.json({ ok: false, error: 'Candidate not found' }, { status: 404 });
+      return NextResponse.json({ ok: false, error: 'Applicant not found' }, { status: 404 });
     }
     return NextResponse.json({ ok: true, updated: result.updated });
   } catch (error) {
-    console.error('Error updating candidate admin fields', error);
+    console.error('Error updating applicant admin fields', error);
     return NextResponse.json(
-      { ok: false, error: 'Unable to update candidate.' },
+      { ok: false, error: 'Unable to update applicant.' },
       { status: 500 },
     );
   }

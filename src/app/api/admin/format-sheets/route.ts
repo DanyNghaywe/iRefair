@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import {
   formatSheet,
-  CANDIDATE_HEADERS,
+  APPLICANT_HEADERS,
   REFERRER_HEADERS,
-  CANDIDATE_SHEET_NAME,
+  APPLICANT_SHEET_NAME,
   REFERRER_SHEET_NAME,
 } from '@/lib/sheets';
 
@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    await formatSheet(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS);
+    await formatSheet(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
     await formatSheet(REFERRER_SHEET_NAME, REFERRER_HEADERS);
 
     return NextResponse.json({ ok: true });

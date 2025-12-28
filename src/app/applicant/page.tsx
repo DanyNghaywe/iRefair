@@ -163,8 +163,8 @@ const translations: Record<
   }
 > = {
   en: {
-    eyebrow: 'For candidates',
-    title: 'Candidate referral request',
+    eyebrow: 'For applicants',
+    title: 'Applicant referral request',
     lead: "Tell us your background and target roles. We'll pair you with referrers when they're available.",
     success: 'Request sent. We will notify you when a referrer is available.',
     statusMessages: {
@@ -252,7 +252,7 @@ const translations: Record<
     english: 'English',
     french: 'Français',
     switchText: {
-      prompt: 'Not a candidate?',
+      prompt: 'Not an applicant?',
       link: 'Switch to referrer',
     },
     disclaimer: {
@@ -265,7 +265,7 @@ const translations: Record<
     },
     consentTitle: 'Consent & Legal Disclaimer',
     consentIntro:
-      'By submitting this form, I agree to be contacted by iRefair when a potential candidate may align with open roles at my company. I understand and acknowledge the following:',
+      'By submitting this form, I agree to be contacted by iRefair when a potential applicant may align with open roles at my company. I understand and acknowledge the following:',
     consentPoints: [
       'iRefair is a voluntary, community-driven initiative, and I am under no obligation to make any referrals.',
       'Any referral I make is based on my own discretion, and I am solely responsible for complying with my company’s internal referral or hiring policies.',
@@ -278,7 +278,7 @@ const translations: Record<
   },
   fr: {
     eyebrow: 'Pour les candidats',
-    title: 'Demande de recommandation candidat',
+    title: 'Demande de recommandation de candidat',
     lead: 'Parlez-nous de votre parcours et des postes visés. Nous vous mettrons en relation avec des référents disponibles.',
     success: 'Demande envoyée. Nous vous informerons lorsqu’un référent sera disponible.',
     statusMessages: {
@@ -393,7 +393,7 @@ const translations: Record<
   },
 };
 
-function CandidatePageContent() {
+function ApplicantPageContent() {
   const searchParams = useSearchParams();
   const { startNavigation } = useNavigationLoader();
   const { language, setLanguage, withLanguage } = useLanguage();
@@ -686,7 +686,7 @@ function CandidatePageContent() {
     }
 
     try {
-      const response = await fetch('/api/candidate', {
+      const response = await fetch('/api/applicant', {
         method: 'POST',
         body: formBody,
       });
@@ -1277,10 +1277,10 @@ function CandidatePageContent() {
   );
 }
 
-export default function CandidatePage() {
+export default function ApplicantPage() {
   return (
     <Suspense fallback={<div className="loading-screen">Loading...</div>}>
-      <CandidatePageContent />
+      <ApplicantPageContent />
     </Suspense>
   );
 }

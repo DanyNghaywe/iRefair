@@ -3,9 +3,9 @@
  */
 
 export type ActionLogEntry = {
-  action: string; // e.g. 'SCHEDULE_MEETING', 'REQUEST_INFO', 'CANDIDATE_UPDATED'
+  action: string; // e.g. 'SCHEDULE_MEETING', 'REQUEST_INFO', 'APPLICANT_UPDATED'
   timestamp: string; // ISO
-  performedBy: string; // 'candidate' or iRREF
+  performedBy: string; // 'applicant' or iRREF
   performedByEmail?: string;
   notes?: string;
   meetingDetails?: {

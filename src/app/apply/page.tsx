@@ -22,7 +22,7 @@ const parseList = (value?: string) =>
         .filter(Boolean)
     : [];
 
-const CANDIDATE_ID_OPTIONS = parseList(process.env.NEXT_PUBLIC_IRAIN_OPTIONS);
+const APPLICANT_ID_OPTIONS = parseList(process.env.NEXT_PUBLIC_IRAIN_OPTIONS);
 const IRCRN_OPTIONS = parseList(process.env.NEXT_PUBLIC_IRCRN_OPTIONS);
 
 type Status = 'idle' | 'submitting' | 'ok' | 'error';
@@ -187,11 +187,11 @@ function ComboInput({
 }
 
 export default function ApplyPage() {
-  const candidateIdOptions = CANDIDATE_ID_OPTIONS;
+  const applicantIdOptions = APPLICANT_ID_OPTIONS;
   const iCrnOptions = IRCRN_OPTIONS;
 
-  const [candidateId, setCandidateId] = useState('');
-  const [candidateKey, setCandidateKey] = useState('');
+  const [applicantId, setApplicantId] = useState('');
+  const [applicantKey, setApplicantKey] = useState('');
   const [iCrn, setICrn] = useState('');
   const [position, setPosition] = useState('');
   const [referenceNumber, setReferenceNumber] = useState('');
@@ -220,8 +220,8 @@ export default function ApplyPage() {
     setErrors({});
     if (!preserveStatus) setStatus('idle');
     setSubmitting(false);
-    setCandidateId('');
-    setCandidateKey('');
+    setApplicantId('');
+    setApplicantKey('');
     setICrn('');
     setPosition('');
     setReferenceNumber('');
@@ -288,8 +288,8 @@ export default function ApplyPage() {
 
   const validate = () => {
     const nextErrors: Record<string, string> = {};
-    if (!candidateId.trim()) nextErrors.candidateId = 'Please enter your iRAIN or legacy CAND ID.';
-    if (!candidateKey.trim()) nextErrors.candidateKey = 'Please enter your Candidate Key.';
+    if (!applicantId.trim()) nextErrors.applicantId = 'Please enter your iRAIN or legacy CAND ID.';
+    if (!applicantKey.trim()) nextErrors.applicantKey = 'Please enter your Applicant Key.';
     if (!iCrn.trim()) nextErrors.iCrn = 'Please enter the iRCRN.';
     if (!position.trim()) nextErrors.position = 'Please enter the position you are applying for.';
 
@@ -324,8 +324,8 @@ export default function ApplyPage() {
     try {
       const resumeFile = resumeInputRef.current?.files?.[0];
       const formData = new FormData();
-      formData.append('candidateId', candidateId.trim());
-      formData.append('candidateKey', candidateKey.trim());
+      formData.append('applicantId', applicantId.trim());
+      formData.append('applicantKey', applicantKey.trim());
       formData.append('iCrn', iCrn.trim());
       formData.append('position', position.trim());
       formData.append('referenceNumber', referenceNumber.trim());
@@ -420,47 +420,47 @@ export default function ApplyPage() {
               <input id="website" name="website" type="text" tabIndex={-1} autoComplete="off" />
             </div>
             <div className="field-grid field-grid--two">
-              <div className={fieldClass('candidateId')}>
+              <div className={fieldClass('applicantId')}>
                 <div className="field-label-row">
-                  <label htmlFor="candidate-id">Your iRAIN *</label>
+                  <label htmlFor="applicant-id">Your iRAIN *</label>
                 </div>
                 <ComboInput
-                  id="candidate-id"
-                  name="candidate-id"
-                  options={candidateIdOptions}
+                  id="applicant-id"
+                  name="applicant-id"
+                  options={applicantIdOptions}
                   required
-                  value={candidateId}
+                  value={applicantId}
                   placeholder="Enter your iRAIN (legacy CAND-... also accepted)"
-                  ariaDescribedBy="candidate-id-error"
-                  ariaInvalid={Boolean(errors.candidateId)}
+                  ariaDescribedBy="applicant-id-error"
+                  ariaInvalid={Boolean(errors.applicantId)}
                   onChange={(nextValue) => {
-                    setCandidateId(nextValue);
-                    clearError('candidateId');
+                    setApplicantId(nextValue);
+                    clearError('applicantId');
                   }}
                 />
-                <p className="field-error" id="candidate-id-error" role="alert" aria-live="polite">
-                  {errors.candidateId}
+                <p className="field-error" id="applicant-id-error" role="alert" aria-live="polite">
+                  {errors.applicantId}
                 </p>
               </div>
 
-              <div className={fieldClass('candidateKey')}>
-                <label htmlFor="candidate-key">Candidate Key *</label>
+              <div className={fieldClass('applicantKey')}>
+                <label htmlFor="applicant-key">Applicant Key *</label>
                 <input
-                  id="candidate-key"
-                  name="candidate-key"
+                  id="applicant-key"
+                  name="applicant-key"
                   type="text"
                   required
-                  placeholder="Enter the Candidate Key from your email"
-                  value={candidateKey}
-                  aria-invalid={Boolean(errors.candidateKey)}
-                  aria-describedby="candidate-key-error"
+                  placeholder="Enter the Applicant Key from your email"
+                  value={applicantKey}
+                  aria-invalid={Boolean(errors.applicantKey)}
+                  aria-describedby="applicant-key-error"
                   onChange={(event) => {
-                    setCandidateKey(event.target.value);
-                    clearError('candidateKey');
+                    setApplicantKey(event.target.value);
+                    clearError('applicantKey');
                   }}
                 />
-                <p className="field-error" id="candidate-key-error" role="alert" aria-live="polite">
-                  {errors.candidateKey}
+                <p className="field-error" id="applicant-key-error" role="alert" aria-live="polite">
+                  {errors.applicantKey}
                 </p>
               </div>
 

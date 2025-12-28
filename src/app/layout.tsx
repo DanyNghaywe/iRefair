@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     template: "%s | iRefair",
   },
   description:
-    "Submit your profile and request job referrals with the iRefair candidate experience. Connect with hiring teams in Canada.",
+    "Submit your profile and request job referrals with the iRefair applicant experience. Connect with hiring teams in Canada.",
   keywords: ["job referral", "Canada jobs", "newcomers", "hiring", "career"],
   authors: [{ name: "iRefair" }],
   creator: "iRefair",
@@ -55,7 +55,6 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       { url: "/favicon.ico", sizes: "any" },
-      { url: "/icon.svg", type: "image/svg+xml" },
     ],
     apple: [
       { url: "/apple-touch-icon.png", sizes: "180x180" },

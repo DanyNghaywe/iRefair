@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
     await sendReferrerPortalLinkEmail({
       to: referrer.record.email,
       name: referrer.record.name,
+      irref,
       link: portalLink,
     });
   }

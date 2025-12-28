@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
-import { APPLICATION_SHEET_NAME, CANDIDATE_SHEET_NAME, MATCH_SHEET_NAME, REFERRER_SHEET_NAME, countApplicationsSince, countRowsInSheet } from '@/lib/sheets';
+import { APPLICATION_SHEET_NAME, APPLICANT_SHEET_NAME, MATCH_SHEET_NAME, REFERRER_SHEET_NAME, countApplicationsSince, countRowsInSheet } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const [candidates, referrers, matches, applications] = await Promise.all([
-      countRowsInSheet(CANDIDATE_SHEET_NAME),
+    const [applicants, referrers, matches, applications] = await Promise.all([
+      countRowsInSheet(APPLICANT_SHEET_NAME),
       countRowsInSheet(REFERRER_SHEET_NAME),
       countRowsInSheet(MATCH_SHEET_NAME),
       countApplicationsSince(since),
@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      candidates,
+      applicants,
       referrers,
       applications,
       matches,

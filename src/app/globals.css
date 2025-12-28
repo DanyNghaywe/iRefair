@@ -5543,7 +5543,7 @@ input[type="radio"] {
 .consent-checkbox,
 .founder-checkbox {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 12px;
   padding: 8px 0;
   cursor: pointer;
@@ -5553,7 +5553,6 @@ input[type="radio"] {
 .founder-checkbox input[type='checkbox'] {
   width: 18px;
   height: 18px;
-  margin-top: 3px;
   flex-shrink: 0;
   accent-color: rgba(61, 139, 253, 0.9);
   cursor: pointer;

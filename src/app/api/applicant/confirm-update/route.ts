@@ -3,30 +3,31 @@ import crypto from "crypto";
 
 import { sendMail } from "@/lib/mailer";
 import {
-  CANDIDATE_SECRET_HASH_HEADER,
-  CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER,
-  CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER,
-  CANDIDATE_UPDATE_TOKEN_HASH_HEADER,
-  CANDIDATE_SHEET_NAME,
-  LEGACY_CANDIDATE_ID_HEADER,
+  APPLICANT_SECRET_HASH_HEADER,
+  APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
+  APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
+  APPLICANT_UPDATE_TOKEN_HASH_HEADER,
+  APPLICANT_SHEET_NAME,
+  LEGACY_APPLICANT_ID_HEADER,
   ensureColumns,
-  getCandidateByEmail,
-  getCandidateByRowIndex,
+  getApplicantByEmail,
+  getApplicantByRowIndex,
   updateRowById,
 } from "@/lib/sheets";
 import { escapeHtml } from "@/lib/validation";
 import {
-  createCandidateSecret,
-  hashCandidateSecret,
+  createApplicantSecret,
+  hashApplicantSecret,
   hashToken,
-  verifyCandidateUpdateToken,
-} from "@/lib/candidateUpdateToken";
+  verifyApplicantUpdateToken,
+} from "@/lib/applicantUpdateToken";
+import { applicantProfileUpdateConfirmed } from "@/lib/emailTemplates";
 
 type EmailLanguage = "en" | "fr";
 
-type PendingCandidateUpdatePayload = {
+type PendingApplicantUpdatePayload = {
   id?: string;
-  legacyCandidateId?: string;
+  legacyApplicantId?: string;
   firstName: string;
   middleName: string;
   familyName: string;
@@ -46,85 +47,6 @@ type PendingCandidateUpdatePayload = {
   resumeFileName?: string;
   locale?: EmailLanguage;
 };
-
-const updateConfirmedSubject = "Your iRefair profile update is confirmed";
-const updateConfirmedSubjectFr = "Votre mise a jour iRefair est confirmee";
-
-const updateConfirmedHtmlTemplate = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Profile update confirmed</title></head>
-<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-height:100vh;">
-    <tr><td align="center" style="padding:40px 20px;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
-        <!-- Header -->
-        <tr><td style="padding:0 0 32px 0;">
-          <table role="presentation" cellspacing="0" cellpadding="0"><tr>
-            <td style="width:10px;height:10px;background:#3d8bfd;border-radius:50%;"></td>
-            <td style="padding-left:10px;font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;">iRefair</td>
-          </tr></table>
-        </td></tr>
-        <!-- Card -->
-        <tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
-          <h1 style="margin:0 0 16px 0;font-size:20px;font-weight:700;color:#0f172a;">Hi {{firstName}},</h1>
-          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">Your iRefair profile update is confirmed.</p>
-          {{candidateKeySection}}
-          <p style="margin:20px 0 0 0;font-size:14px;color:#64748b;">Your iRAIN: <strong style="color:#0f172a;">{{iRain}}</strong></p>
-        </td></tr>
-        <!-- Footer -->
-        <tr><td style="padding:32px 0 0 0;text-align:center;">
-          <p style="margin:0;font-size:12px;color:#94a3b8;">Sent by iRefair · Connecting talent with opportunity</p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body></html>`;
-
-const updateConfirmedTextTemplate = `Hi {{firstName}},
-
-Your iRefair profile update is confirmed.
-
-{{candidateKeySection}}
-
-iRAIN: {{iRain}}
-
-- The iRefair team`;
-
-const updateConfirmedHtmlTemplateFr = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mise a jour confirmee</title></head>
-<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-height:100vh;">
-    <tr><td align="center" style="padding:40px 20px;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
-        <!-- Header -->
-        <tr><td style="padding:0 0 32px 0;">
-          <table role="presentation" cellspacing="0" cellpadding="0"><tr>
-            <td style="width:10px;height:10px;background:#3d8bfd;border-radius:50%;"></td>
-            <td style="padding-left:10px;font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;">iRefair</td>
-          </tr></table>
-        </td></tr>
-        <!-- Card -->
-        <tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
-          <h1 style="margin:0 0 16px 0;font-size:20px;font-weight:700;color:#0f172a;">Bonjour {{firstName}},</h1>
-          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">La mise a jour de votre profil iRefair est confirmee.</p>
-          {{candidateKeySection}}
-          <p style="margin:20px 0 0 0;font-size:14px;color:#64748b;">Votre iRAIN : <strong style="color:#0f172a;">{{iRain}}</strong></p>
-        </td></tr>
-        <!-- Footer -->
-        <tr><td style="padding:32px 0 0 0;text-align:center;">
-          <p style="margin:0;font-size:12px;color:#94a3b8;">Envoye par iRefair · Connecter les talents aux opportunites</p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body></html>`;
-
-const updateConfirmedTextTemplateFr = `Bonjour {{firstName}},
-
-La mise a jour de votre profil iRefair est confirmee.
-
-{{candidateKeySection}}
-
-Votre iRAIN : {{iRain}}
-
-- L'equipe iRefair`;
 
 const successPageHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -295,10 +217,6 @@ const errorPageHtml = `<!DOCTYPE html>
 
 export const runtime = "nodejs";
 
-function fillTemplate(template: string, values: Record<string, string>) {
-  return template.replace(/{{(.*?)}}/g, (_, key) => values[key.trim()] ?? "");
-}
-
 function errorResponse(message: string, status: number, isGetRequest: boolean) {
   if (isGetRequest) {
     const html = errorPageHtml.replace("{{errorMessage}}", escapeHtml(message));
@@ -308,21 +226,6 @@ function errorResponse(message: string, status: number, isGetRequest: boolean) {
     });
   }
   return NextResponse.json({ ok: false, error: message }, { status });
-}
-
-function buildCandidateKeySectionHtml(candidateKey?: string) {
-  if (!candidateKey) return "";
-  const safeKey = escapeHtml(candidateKey);
-  return `<div style="margin:20px 0;padding:16px;border-radius:12px;border:1px solid #e2e8f0;background:#ffffff;">
-  <p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#0f172a;"><strong>Your Candidate Key:</strong> ${safeKey}</p>
-  <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b;">Keep this private. You will need it to apply with your iRAIN.</p>
-</div>`;
-}
-
-function buildCandidateKeySectionText(candidateKey?: string) {
-  if (!candidateKey) return "";
-  return `Your Candidate Key: ${candidateKey}
-Keep this private. You will need it to apply with your iRAIN.`;
 }
 
 function parseExpiry(value?: string) {
@@ -377,21 +280,21 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
 
   let payload;
   try {
-    payload = verifyCandidateUpdateToken(token);
+    payload = verifyApplicantUpdateToken(token);
   } catch {
     return errorResponse("This confirmation link is invalid or has expired. Please submit a new update request.", 401, isGetRequest);
   }
 
   const tokenHash = hashToken(token);
-  let candidate = await getCandidateByEmail(payload.email);
-  let storedTokenHash = candidate?.record.updateTokenHash?.trim() || "";
+  let applicant = await getApplicantByEmail(payload.email);
+  let storedTokenHash = applicant?.record.updateTokenHash?.trim() || "";
 
-  if (!candidate || !safeCompareHash(storedTokenHash, tokenHash)) {
-    candidate = await getCandidateByRowIndex(payload.rowIndex);
-    storedTokenHash = candidate?.record.updateTokenHash?.trim() || "";
+  if (!applicant || !safeCompareHash(storedTokenHash, tokenHash)) {
+    applicant = await getApplicantByRowIndex(payload.rowIndex);
+    storedTokenHash = applicant?.record.updateTokenHash?.trim() || "";
   }
 
-  if (!candidate) {
+  if (!applicant) {
     return errorResponse("We couldn't find your profile. Please contact support if this persists.", 404, isGetRequest);
   }
 
@@ -399,45 +302,45 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     return errorResponse("This confirmation link is no longer valid. Please submit a new update request.", 403, isGetRequest);
   }
 
-  const storedExpiry = parseExpiry(candidate.record.updateTokenExpiresAt);
+  const storedExpiry = parseExpiry(applicant.record.updateTokenExpiresAt);
   if (!storedExpiry || storedExpiry < Date.now()) {
     return errorResponse("This confirmation link has expired. Please submit a new update request.", 403, isGetRequest);
   }
 
-  const pendingRaw = candidate.record.updatePendingPayload?.trim();
+  const pendingRaw = applicant.record.updatePendingPayload?.trim();
   if (!pendingRaw) {
     return errorResponse("No pending update found. Your profile may have already been updated.", 400, isGetRequest);
   }
 
-  let pending: PendingCandidateUpdatePayload;
+  let pending: PendingApplicantUpdatePayload;
   try {
-    pending = JSON.parse(pendingRaw) as PendingCandidateUpdatePayload;
+    pending = JSON.parse(pendingRaw) as PendingApplicantUpdatePayload;
   } catch {
     return errorResponse("There was a problem processing your update. Please try again.", 400, isGetRequest);
   }
 
   const timestamp = new Date().toISOString();
   const requiredColumns = [
-    CANDIDATE_SECRET_HASH_HEADER,
-    CANDIDATE_UPDATE_TOKEN_HASH_HEADER,
-    CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER,
-    CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER,
+    APPLICANT_SECRET_HASH_HEADER,
+    APPLICANT_UPDATE_TOKEN_HASH_HEADER,
+    APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
+    APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
   ];
 
   if (pending.resumeFileId || pending.resumeFileName) {
     requiredColumns.push("Resume File Name", "Resume File ID", "Resume URL");
   }
-  if (pending.legacyCandidateId) {
-    requiredColumns.push(LEGACY_CANDIDATE_ID_HEADER);
+  if (pending.legacyApplicantId) {
+    requiredColumns.push(LEGACY_APPLICANT_ID_HEADER);
   }
 
-  await ensureColumns(CANDIDATE_SHEET_NAME, requiredColumns);
+  await ensureColumns(APPLICANT_SHEET_NAME, requiredColumns);
 
-  let candidateSecret: string | undefined;
-  let candidateSecretHash: string | undefined;
-  if (!candidate.record.candidateSecretHash) {
-    candidateSecret = createCandidateSecret();
-    candidateSecretHash = hashCandidateSecret(candidateSecret);
+  let applicantSecret: string | undefined;
+  let applicantSecretHash: string | undefined;
+  if (!applicant.record.applicantSecretHash) {
+    applicantSecret = createApplicantSecret();
+    applicantSecretHash = hashApplicantSecret(applicantSecret);
   }
 
   const updates: Record<string, string | undefined> = {
@@ -458,11 +361,11 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     "Industry Type": pending.industryType,
     "Industry Other": pending.industryOther,
     "Employment Status": pending.employmentStatus,
-    [LEGACY_CANDIDATE_ID_HEADER]: pending.legacyCandidateId,
-    [CANDIDATE_SECRET_HASH_HEADER]: candidateSecretHash,
-    [CANDIDATE_UPDATE_TOKEN_HASH_HEADER]: "",
-    [CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER]: "",
-    [CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER]: "",
+    [LEGACY_APPLICANT_ID_HEADER]: pending.legacyApplicantId,
+    [APPLICANT_SECRET_HASH_HEADER]: applicantSecretHash,
+    [APPLICANT_UPDATE_TOKEN_HASH_HEADER]: "",
+    [APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER]: "",
+    [APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER]: "",
   };
 
   if (pending.resumeFileId || pending.resumeFileName) {
@@ -471,36 +374,27 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     updates["Resume URL"] = "";
   }
 
-  const updateResult = await updateRowById(CANDIDATE_SHEET_NAME, "Email", payload.email, updates);
+  const updateResult = await updateRowById(APPLICANT_SHEET_NAME, "Email", payload.email, updates);
   if (!updateResult.updated) {
     return errorResponse("We couldn't save your update. Please try again or contact support.", 500, isGetRequest);
   }
 
   const locale: EmailLanguage = pending.locale === "fr" ? "fr" : "en";
-  const firstName = pending.firstName || candidate.record.firstName || "there";
-  const iRainValue = pending.id || candidate.record.id || "";
+  const firstName = pending.firstName || applicant.record.firstName || "there";
+  const iRainValue = pending.id || applicant.record.id || "";
 
-  const candidateKeySectionHtml = buildCandidateKeySectionHtml(candidateSecret);
-  const candidateKeySectionText = buildCandidateKeySectionText(candidateSecret);
-  const template = locale === "fr" ? updateConfirmedHtmlTemplateFr : updateConfirmedHtmlTemplate;
-  const textTemplate = locale === "fr" ? updateConfirmedTextTemplateFr : updateConfirmedTextTemplate;
-  const html = fillTemplate(template, {
-    firstName: escapeHtml(firstName),
-    iRain: escapeHtml(iRainValue),
-    candidateKeySection: candidateKeySectionHtml,
-  });
-  const text = fillTemplate(textTemplate, {
+  const emailTemplate = applicantProfileUpdateConfirmed({
     firstName,
     iRain: iRainValue,
-    candidateKeySection: candidateKeySectionText,
+    applicantKey: applicantSecret,
+    locale,
   });
-  const subject = locale === "fr" ? updateConfirmedSubjectFr : updateConfirmedSubject;
 
   await sendMail({
     to: pending.email || payload.email,
-    subject,
-    html,
-    text,
+    subject: emailTemplate.subject,
+    html: emailTemplate.html,
+    text: emailTemplate.text,
   });
 
   if (isGetRequest) {

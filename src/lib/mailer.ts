@@ -1,5 +1,6 @@
 'use server';
 
+import { randomUUID } from 'crypto';
 import nodemailer from 'nodemailer';
 
 type MailInput = {
@@ -45,6 +46,8 @@ export async function sendMail({ to, subject, html, text, cc, replyTo }: MailInp
 
   try {
     const transporter = getTransporter();
+    const messageIdDomain = fromEmail.split('@')[1] || 'localhost';
+    const messageId = `<${randomUUID()}@${messageIdDomain}>`;
     const info = await transporter.sendMail({
       from,
       to,
@@ -53,6 +56,7 @@ export async function sendMail({ to, subject, html, text, cc, replyTo }: MailInp
       subject,
       html,
       text,
+      messageId,
     });
     return info;
   } catch (error) {

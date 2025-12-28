@@ -8,7 +8,7 @@ import { PublicFooter } from '@/components/PublicFooter';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 
 type RoleOption = {
-  id: 'candidate' | 'referrer';
+  id: 'applicant' | 'referrer';
   label: string;
   description: string;
   path: string;
@@ -17,23 +17,23 @@ type RoleOption = {
 
 const roles: RoleOption[] = [
   {
-    id: 'candidate',
-    label: 'Candidate',
+    id: 'applicant',
+    label: 'Applicant',
     description: 'Find referrers for your applications and track progress in one place.',
-    path: '/candidate',
+    path: '/applicant',
     accent: '#4cc8e0',
   },
   {
     id: 'referrer',
     label: 'Referrer',
-    description: 'Refer strong candidates and help them land interviews at your company.',
+    description: 'Refer strong applicants and help them land interviews at your company.',
     path: '/referrer',
     accent: '#8ad1ff',
   },
 ];
 
 function RoleIcon({ id }: { id: RoleOption['id'] }) {
-  if (id === 'candidate') {
+  if (id === 'applicant') {
     return (
       <svg viewBox="0 0 24 24" fill="none" role="presentation" aria-hidden="true">
         <circle cx="12" cy="8" r="3.5" stroke="currentColor" strokeWidth="1.6" />
@@ -215,7 +215,7 @@ export default function Home() {
                       {selectedRole ? selectedRole.label : 'Choose your role'}
                     </span>
                     <span className="role-select__hint">
-                      {selectedRole ? selectedRole.description : 'Start as a Candidate or a Referrer'}
+                      {selectedRole ? selectedRole.description : 'Start as an Applicant or a Referrer'}
                     </span>
                   </div>
                 </div>

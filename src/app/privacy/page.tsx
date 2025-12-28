@@ -28,7 +28,7 @@ export default function PrivacyPage() {
               <h3>How CVs are stored and used</h3>
               <p>
                 CVs are stored securely and used only to validate applications and support referrals. Access is limited
-                to the iRefair operations team and is shared with a referrer or company only when needed for a candidate
+                to the iRefair operations team and is shared with a referrer or company only when needed for an applicant
                 application.
               </p>
             </section>

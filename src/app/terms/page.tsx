@@ -18,7 +18,7 @@ export default function TermsPage() {
             <section>
               <h3>Service overview</h3>
               <p>
-                iRefair is a community referral initiative. We help connect candidates and referrers, but we do not
+                iRefair is a community referral initiative. We help connect applicants and referrers, but we do not
                 guarantee interviews, referrals, or hiring outcomes.
               </p>
             </section>
