@@ -55,10 +55,10 @@ function companyIndustryOptions(lang: Language): Option[] {
 
 function workTypeOptions(lang: Language): Option[] {
   if (lang === 'fr') {
-    const map: Record<string, string> = { Physical: 'Sur site', Remote: 'Télétravail', Hybrid: 'Hybride' };
-    return ['Physical', 'Remote', 'Hybrid'].map((v) => ({ value: v, label: map[v] }));
+    const map: Record<string, string> = { 'On-site': 'Sur site', Remote: 'Télétravail', Hybrid: 'Hybride' };
+    return ['On-site', 'Remote', 'Hybrid'].map((v) => ({ value: v, label: map[v] }));
   }
-  return ['Physical', 'Remote', 'Hybrid'].map((v) => ({ value: v, label: v }));
+  return ['On-site', 'Remote', 'Hybrid'].map((v) => ({ value: v, label: v }));
 }
 
 const translations: Record<
@@ -138,12 +138,12 @@ const translations: Record<
       workType: 'Type of work',
     },
     labels: {
-      fullName: 'Full Name *',
-      workEmail: 'Email address *',
+      fullName: 'Full Name',
+      workEmail: 'Email address',
       phone: 'Phone Number',
       country: 'Country of Origin',
-      company: 'Company  Name',
-      careersPortal: 'Careers Portal URL *',
+      company: 'Company Name',
+      careersPortal: 'Careers Portal URL',
       companyIndustry: 'Industry of the company',
       workType: 'Type of work',
       companyIndustryOther: 'Other company industry',
@@ -228,7 +228,7 @@ const translations: Record<
       phone: 'Numéro de téléphone',
       country: "Pays d'origine",
       company: 'Entreprise',
-      careersPortal: 'Portail carrières *',
+      careersPortal: 'Portail carrières',
       companyIndustry: "Secteur de l'entreprise",
       workType: 'Type de travail',
       companyIndustryOther: 'Autre secteur',
@@ -703,7 +703,9 @@ export default function ReferrerPage() {
                     </p>
                   </div>
                   <div className={fieldClass('field', 'referrer-linkedin')}>
-                    <label htmlFor="referrer-linkedin">{t.labels.linkedin}</label>
+                    <label htmlFor="referrer-linkedin">
+                      {t.labels.linkedin} <span className="optional">{t.optional}</span>
+                    </label>
                     <input
                       id="referrer-linkedin"
                       name="referrer-linkedin"
@@ -727,7 +729,9 @@ export default function ReferrerPage() {
                 <legend>{t.legends.company}</legend>
                 <div className="field-grid field-grid--two">
                   <div className={fieldClass('field', 'referrer-company')}>
-                    <label htmlFor="referrer-company">{t.labels.company}</label>
+                    <label htmlFor="referrer-company">
+                      {t.labels.company} <span className="optional">{t.optional}</span>
+                    </label>
                     <input
                       id="referrer-company"
                       name="referrer-company"
