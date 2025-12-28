@@ -11,7 +11,16 @@
       "Bash(npm run build:*)",
       "Bash(npm run lint)",
       "Bash(git checkout:*)",
-      "Bash(npm run type-check:*)"
+      "Bash(npm run type-check:*)",
+      "Bash(npm run dev:*)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(taskkill:*)",
+      "Bash(powershell \"Get-Process node -ErrorAction SilentlyContinue | Select-Object Id, ProcessName\")",
+      "Bash(powershell \"Stop-Process -Name node -Force -ErrorAction SilentlyContinue; Write-Host ''Node processes killed''\")",
+      "Bash(powershell \"if \\(Test-Path ''.next''\\) { Remove-Item -Recurse -Force ''.next''; Write-Host ''.next folder deleted'' } else { Write-Host ''.next folder not found'' }\")",
+      "Bash(powershell \"Stop-Process -Id 23480 -Force -ErrorAction SilentlyContinue; Stop-Process -Name node -Force -ErrorAction SilentlyContinue; Write-Host ''Processes killed''\")",
+      "Bash(powershell \"if \\(Test-Path ''.next\\\\dev\\\\lock''\\) { Remove-Item -Force ''.next\\\\dev\\\\lock''; Write-Host ''Lock file removed'' } else { Write-Host ''No lock file found'' }\")"
     ]
   }
 }
