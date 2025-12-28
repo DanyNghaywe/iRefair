@@ -2784,6 +2784,64 @@ export async function getReferrerByIrref(irref: string) {
   return null;
 }
 
+export async function getReferrerByEmail(email: string) {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureColumns(REFERRER_SHEET_NAME, REFERRER_SECURITY_COLUMNS);
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${REFERRER_SHEET_NAME}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  const headerMap = buildHeaderMap(headers);
+  const lastCol = toColumnLetter(headers.length - 1);
+  const rows = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${REFERRER_SHEET_NAME}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const values = rows.data.values ?? [];
+  const normalizedEmail = email.trim().toLowerCase();
+  const emailColIndex = headerMap.get('Email');
+
+  if (emailColIndex === undefined) return null;
+
+  for (let i = 1; i < values.length; i++) {
+    const row = values[i] ?? [];
+    const value = cellValue(row, emailColIndex).toLowerCase();
+    if (value === normalizedEmail) {
+      return {
+        rowIndex: i + 1,
+        record: {
+          irref: getHeaderValue(headerMap, row, 'iRREF'),
+          timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
+          name: getHeaderValue(headerMap, row, 'Name'),
+          email: getHeaderValue(headerMap, row, 'Email'),
+          phone: getHeaderValue(headerMap, row, 'Phone'),
+          country: getHeaderValue(headerMap, row, 'Country'),
+          company: getHeaderValue(headerMap, row, 'Company'),
+          companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
+          companyApproval: getHeaderValue(headerMap, row, 'Company Approval'),
+          companyIndustry: getHeaderValue(headerMap, row, 'Company Industry'),
+          careersPortal: getHeaderValue(headerMap, row, 'Careers Portal'),
+          workType: getHeaderValue(headerMap, row, 'Work Type'),
+          linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
+          portalTokenVersion: getHeaderValue(headerMap, row, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
+          status: getHeaderValue(headerMap, row, 'Status'),
+          ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
+          tags: getHeaderValue(headerMap, row, 'Tags'),
+          lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
+          nextActionAt: getHeaderValue(headerMap, row, 'Next Action At'),
+        },
+      };
+    }
+  }
+  return null;
+}
+
 export async function getMatchById(matchId: string) {
   await ensureHeaders(MATCH_SHEET_NAME, MATCH_HEADERS);
   const spreadsheetId = getSpreadsheetIdOrThrow();

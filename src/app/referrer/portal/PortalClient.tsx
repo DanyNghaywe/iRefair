@@ -108,6 +108,11 @@ export default function PortalClient() {
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<PortalResponse | null>(null);
 
+  // Self-service link request state
+  const [showRequestLink, setShowRequestLink] = useState(false);
+  const [requestEmail, setRequestEmail] = useState("");
+  const [linkRequested, setLinkRequested] = useState(false);
+
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalAction, setModalAction] = useState<FeedbackAction | null>(null);
@@ -133,6 +138,14 @@ export default function PortalClient() {
     try {
       const res = await fetch("/api/referrer/portal/data", { cache: "no-store" });
       const json = await res.json();
+
+      // Detect expired/invalid token (401) or version mismatch (403)
+      if (res.status === 401 || res.status === 403) {
+        setShowRequestLink(true);
+        setLoading(false);
+        return;
+      }
+
       if (!res.ok || !json?.ok) {
         throw new Error(json?.error || "Unable to load portal");
       }
@@ -147,6 +160,35 @@ export default function PortalClient() {
   useEffect(() => {
     fetchData();
   }, [fetchData]);
+
+  // Handler for requesting new link
+  const handleRequestLink = async () => {
+    if (!requestEmail.trim()) {
+      toast.error("Email required", "Please enter your email address.");
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/referrer/portal/request-link", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: requestEmail }),
+      });
+      const json = await res.json();
+
+      if (!res.ok || !json?.ok) {
+        throw new Error(json?.error || "Unable to send link");
+      }
+
+      setLinkRequested(true);
+      toast.success("Link sent", "Check your email for a new portal link.");
+    } catch (err) {
+      toast.error("Request failed", err instanceof Error ? err.message : "Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -413,6 +455,110 @@ export default function PortalClient() {
           <div className="portal-table-wrapper">
             <SkeletonPortalRows rows={5} />
           </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (showRequestLink) {
+    return (
+      <div className="portal-stack">
+        {header}
+        <section className="card page-card portal-card" style={{ maxWidth: 600, margin: "0 auto" }}>
+          {linkRequested ? (
+            <div style={{ padding: "48px 32px", textAlign: "center" }}>
+              <div
+                style={{
+                  width: 64,
+                  height: 64,
+                  borderRadius: "50%",
+                  background: "linear-gradient(135deg, #10b981, #059669)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  margin: "0 auto 16px",
+                  fontSize: 32,
+                  color: "#ffffff",
+                  fontWeight: "bold",
+                  boxShadow: "0 4px 12px rgba(16, 185, 129, 0.3)",
+                }}
+              >
+                ✓
+              </div>
+              <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 8, color: "#111827" }}>
+                Check your email
+              </h2>
+              <p style={{ fontSize: 16, color: "#1f2937", lineHeight: 1.6, maxWidth: 400, margin: "0 auto" }}>
+                We&apos;ve sent a new portal access link to <strong style={{ color: "#111827" }}>{requestEmail}</strong>.
+                The link will arrive within a few minutes.
+              </p>
+            </div>
+          ) : (
+            <div style={{ padding: "48px 32px", textAlign: "center" }}>
+              <div style={{ marginBottom: 24 }}>
+                <div
+                  style={{
+                    width: 64,
+                    height: 64,
+                    borderRadius: "50%",
+                    background: "rgba(255, 193, 7, 0.1)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    margin: "0 auto 16px",
+                    fontSize: 32,
+                  }}
+                >
+                  🔒
+                </div>
+                <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 8, color: "#111827" }}>
+                  Access Link Expired
+                </h2>
+                <p style={{ fontSize: 16, color: "#1f2937", lineHeight: 1.5, marginBottom: 32 }}>
+                  Your portal access link has expired or been revoked.
+                  <br />
+                  Enter your email to receive a fresh link.
+                </p>
+              </div>
+              <div style={{ maxWidth: 380, margin: "0 auto" }}>
+                <input
+                  type="email"
+                  placeholder="your.email@example.com"
+                  value={requestEmail}
+                  onChange={(e) => setRequestEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleRequestLink()}
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    marginBottom: 16,
+                    fontSize: 15,
+                    border: "1px solid #d1d5db",
+                    borderRadius: 8,
+                    outline: "none",
+                    transition: "border-color 0.2s",
+                    fontFamily: "inherit",
+                    color: "#111827",
+                    backgroundColor: "#ffffff",
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = "#3b82f6";
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = "#d1d5db";
+                  }}
+                  disabled={submitting}
+                />
+                <ActionBtn
+                  variant="primary"
+                  onClick={handleRequestLink}
+                  disabled={submitting}
+                  size="lg"
+                >
+                  {submitting ? "Sending..." : "Send New Link"}
+                </ActionBtn>
+              </div>
+            </div>
+          )}
         </section>
       </div>
     );
