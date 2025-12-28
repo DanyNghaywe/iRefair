@@ -656,8 +656,8 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
   const iRrefLabel = t('iRREF', 'iRREF', locale);
 
   const mainText1 = t(
-    "We appreciate your willingness to refer candidates. We'll reach out when we have someone who matches the teams and roles you cover.",
-    "Nous apprécions votre volonté de recommander des candidats. Nous vous contacterons lorsque nous aurons quelqu'un qui correspond aux équipes et aux rôles que vous couvrez.",
+    "We appreciate your willingness to refer candidates. We'll reach out when we have someone who might be a good fit for your company.",
+    "Nous apprécions votre volonté de recommander des candidats. Nous vous contacterons lorsque nous aurons quelqu'un qui pourrait convenir à votre entreprise.",
     locale
   );
 
@@ -669,8 +669,8 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
 
   const whatHappensTitle = t('WHAT HAPPENS NEXT', 'PROCHAINES ÉTAPES', locale);
   const step1 = t(
-    "We review your company, roles, and regions to understand where you can help.",
-    "Nous examinons votre entreprise, vos rôles et vos régions pour comprendre où vous pouvez aider.",
+    "We review your company and industry to understand where you can help.",
+    "Nous examinons votre entreprise et votre secteur pour comprendre où vous pouvez aider.",
     locale
   );
   const step2 = t(
@@ -738,10 +738,7 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
     [companyLabel, escapeHtml(company)],
     [careersLabel, careersPortalValue],
     [industryLabel, escapeHtml(industry)],
-    [rolesLabel, escapeHtml(roles)],
-    [regionsLabel, escapeHtml(regions)],
     [typeLabel, escapeHtml(type)],
-    [slotsLabel, escapeHtml(slots)],
   ]);
 
   const cta = `
