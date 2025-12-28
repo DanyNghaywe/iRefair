@@ -21,6 +21,7 @@ import {
   hashToken,
   verifyCandidateUpdateToken,
 } from "@/lib/candidateUpdateToken";
+import { candidateProfileUpdateConfirmed } from "@/lib/emailTemplates";
 
 type EmailLanguage = "en" | "fr";
 
@@ -46,85 +47,6 @@ type PendingCandidateUpdatePayload = {
   resumeFileName?: string;
   locale?: EmailLanguage;
 };
-
-const updateConfirmedSubject = "Your iRefair profile update is confirmed";
-const updateConfirmedSubjectFr = "Votre mise a jour iRefair est confirmee";
-
-const updateConfirmedHtmlTemplate = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Profile update confirmed</title></head>
-<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-height:100vh;">
-    <tr><td align="center" style="padding:40px 20px;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
-        <!-- Header -->
-        <tr><td style="padding:0 0 32px 0;">
-          <table role="presentation" cellspacing="0" cellpadding="0"><tr>
-            <td style="width:10px;height:10px;background:#3d8bfd;border-radius:50%;"></td>
-            <td style="padding-left:10px;font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;">iRefair</td>
-          </tr></table>
-        </td></tr>
-        <!-- Card -->
-        <tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
-          <h1 style="margin:0 0 16px 0;font-size:20px;font-weight:700;color:#0f172a;">Hi {{firstName}},</h1>
-          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">Your iRefair profile update is confirmed.</p>
-          {{candidateKeySection}}
-          <p style="margin:20px 0 0 0;font-size:14px;color:#64748b;">Your iRAIN: <strong style="color:#0f172a;">{{iRain}}</strong></p>
-        </td></tr>
-        <!-- Footer -->
-        <tr><td style="padding:32px 0 0 0;text-align:center;">
-          <p style="margin:0;font-size:12px;color:#94a3b8;">Sent by iRefair · Connecting talent with opportunity</p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body></html>`;
-
-const updateConfirmedTextTemplate = `Hi {{firstName}},
-
-Your iRefair profile update is confirmed.
-
-{{candidateKeySection}}
-
-iRAIN: {{iRain}}
-
-- The iRefair team`;
-
-const updateConfirmedHtmlTemplateFr = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Mise a jour confirmee</title></head>
-<body style="margin:0;padding:0;background:#ffffff;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="min-height:100vh;">
-    <tr><td align="center" style="padding:40px 20px;">
-      <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;">
-        <!-- Header -->
-        <tr><td style="padding:0 0 32px 0;">
-          <table role="presentation" cellspacing="0" cellpadding="0"><tr>
-            <td style="width:10px;height:10px;background:#3d8bfd;border-radius:50%;"></td>
-            <td style="padding-left:10px;font-size:18px;font-weight:700;color:#0f172a;letter-spacing:-0.02em;">iRefair</td>
-          </tr></table>
-        </td></tr>
-        <!-- Card -->
-        <tr><td style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:32px;">
-          <h1 style="margin:0 0 16px 0;font-size:20px;font-weight:700;color:#0f172a;">Bonjour {{firstName}},</h1>
-          <p style="margin:0 0 20px 0;font-size:15px;line-height:1.6;color:#64748b;">La mise a jour de votre profil iRefair est confirmee.</p>
-          {{candidateKeySection}}
-          <p style="margin:20px 0 0 0;font-size:14px;color:#64748b;">Votre iRAIN : <strong style="color:#0f172a;">{{iRain}}</strong></p>
-        </td></tr>
-        <!-- Footer -->
-        <tr><td style="padding:32px 0 0 0;text-align:center;">
-          <p style="margin:0;font-size:12px;color:#94a3b8;">Envoye par iRefair · Connecter les talents aux opportunites</p>
-        </td></tr>
-      </table>
-    </td></tr>
-  </table>
-</body></html>`;
-
-const updateConfirmedTextTemplateFr = `Bonjour {{firstName}},
-
-La mise a jour de votre profil iRefair est confirmee.
-
-{{candidateKeySection}}
-
-Votre iRAIN : {{iRain}}
-
-- L'equipe iRefair`;
 
 const successPageHtml = `<!DOCTYPE html>
 <html lang="en">
@@ -295,10 +217,6 @@ const errorPageHtml = `<!DOCTYPE html>
 
 export const runtime = "nodejs";
 
-function fillTemplate(template: string, values: Record<string, string>) {
-  return template.replace(/{{(.*?)}}/g, (_, key) => values[key.trim()] ?? "");
-}
-
 function errorResponse(message: string, status: number, isGetRequest: boolean) {
   if (isGetRequest) {
     const html = errorPageHtml.replace("{{errorMessage}}", escapeHtml(message));
@@ -308,21 +226,6 @@ function errorResponse(message: string, status: number, isGetRequest: boolean) {
     });
   }
   return NextResponse.json({ ok: false, error: message }, { status });
-}
-
-function buildCandidateKeySectionHtml(candidateKey?: string) {
-  if (!candidateKey) return "";
-  const safeKey = escapeHtml(candidateKey);
-  return `<div style="margin:20px 0;padding:16px;border-radius:12px;border:1px solid #e2e8f0;background:#ffffff;">
-  <p style="margin:0 0 8px 0;font-size:14px;line-height:1.6;color:#0f172a;"><strong>Your Candidate Key:</strong> ${safeKey}</p>
-  <p style="margin:0;font-size:13px;line-height:1.6;color:#64748b;">Keep this private. You will need it to apply with your iRAIN.</p>
-</div>`;
-}
-
-function buildCandidateKeySectionText(candidateKey?: string) {
-  if (!candidateKey) return "";
-  return `Your Candidate Key: ${candidateKey}
-Keep this private. You will need it to apply with your iRAIN.`;
 }
 
 function parseExpiry(value?: string) {
@@ -480,27 +383,18 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
   const firstName = pending.firstName || candidate.record.firstName || "there";
   const iRainValue = pending.id || candidate.record.id || "";
 
-  const candidateKeySectionHtml = buildCandidateKeySectionHtml(candidateSecret);
-  const candidateKeySectionText = buildCandidateKeySectionText(candidateSecret);
-  const template = locale === "fr" ? updateConfirmedHtmlTemplateFr : updateConfirmedHtmlTemplate;
-  const textTemplate = locale === "fr" ? updateConfirmedTextTemplateFr : updateConfirmedTextTemplate;
-  const html = fillTemplate(template, {
-    firstName: escapeHtml(firstName),
-    iRain: escapeHtml(iRainValue),
-    candidateKeySection: candidateKeySectionHtml,
-  });
-  const text = fillTemplate(textTemplate, {
+  const emailTemplate = candidateProfileUpdateConfirmed({
     firstName,
     iRain: iRainValue,
-    candidateKeySection: candidateKeySectionText,
+    candidateKey: candidateSecret,
+    locale,
   });
-  const subject = locale === "fr" ? updateConfirmedSubjectFr : updateConfirmedSubject;
 
   await sendMail({
     to: pending.email || payload.email,
-    subject,
-    html,
-    text,
+    subject: emailTemplate.subject,
+    html: emailTemplate.html,
+    text: emailTemplate.text,
   });
 
   if (isGetRequest) {

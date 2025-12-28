@@ -82,13 +82,12 @@ export async function POST(
       try {
         const version = await ensureReferrerPortalTokenVersion(irref);
         const link = buildReferrerPortalLink(irref, version);
-        const openingsUrl = normalizeHttpUrl(jobOpeningsUrl) || undefined;
 
         await sendReferrerPortalLinkEmail({
           to: referrerEmail,
           name: referrerName,
+          irref,
           link,
-          openingsUrl,
         });
 
         return NextResponse.json({
