@@ -512,7 +512,16 @@ export function candidateProfileUpdateConfirmation(params: CandidateProfileUpdat
     locale
   );
 
-  const html = emailWrapper(content, preheader);
+  const eyebrowText = t('PROFILE UPDATE CONFIRMATION', 'CONFIRMATION DE MISE À JOUR DU PROFIL', locale);
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${escapeHtml(eyebrowText)}</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, preheader, customHeader);
 
   const text = `${greeting}
 
@@ -983,7 +992,15 @@ If the link is unavailable, reply with your availability and we will send you a 
     </p>
   `;
 
-  const html = emailWrapper(content, `You're invited to meet with the iRefair founder`);
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">FOUNDER MEETING INVITATION</div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRREF: <strong style="color:#1f2a37;">${safeIrref}</strong></div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `You're invited to meet with the iRefair founder`, customHeader);
 
   return { subject, text, html };
 }
@@ -1030,7 +1047,15 @@ Thanks for being part of iRefair (iRAIN ${irain}). Could you reply to this email
     </p>
   `;
 
-  const html = emailWrapper(content, `Please share your updated resume`);
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">RESUME UPDATE REQUEST</div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRAIN: <strong style="color:#1f2a37;">${safeIrain}</strong></div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `Please share your updated resume`, customHeader);
 
   return { subject, text, html };
 }
@@ -1097,7 +1122,15 @@ Please take the conversation forward and let us know if you need anything else.
     </p>
   `;
 
-  const html = emailWrapper(content, `You've been connected: ${introCandidate} meet ${introReferrer}`);
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">MATCH INTRODUCTION</div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRAIN: <strong style="color:#1f2a37;">${safeIrain}</strong> • iRCRN: <strong style="color:#1f2a37;">${safeIrcrn}</strong></div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `You've been connected: ${introCandidate} meet ${introReferrer}`, customHeader);
 
   return { subject, text, html };
 }
@@ -1221,7 +1254,15 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
     </p>
   `;
 
-  const html = emailWrapper(content, `New application for ${position || iCrn}`);
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">NEW APPLICATION RECEIVED</div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRCRN: <strong style="color:#1f2a37;">${safeIrcrn}</strong></div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `New application for ${position || iCrn}`, customHeader);
 
   return { subject, text: textLines, html };
 }
@@ -1323,7 +1364,15 @@ Good luck!
     </p>
   `;
 
-  const html = emailWrapper(content, `Your application for ${position} has been received`);
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">APPLICATION RECEIVED</div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRAIN: <strong style="color:#1f2a37;">${safeCandidateId}</strong></div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `Your application for ${position} has been received`, customHeader);
 
   return { subject, text, html };
 }
@@ -1425,7 +1474,14 @@ Good luck with your meeting!
     </p>
   `;
 
-  const html = emailWrapper(content, `Meeting scheduled for ${formattedDateTime}`);
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">MEETING SCHEDULED</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `Meeting scheduled for ${formattedDateTime}`, customHeader);
 
   return { subject, text, html };
 }
@@ -1485,7 +1541,14 @@ If appropriate, a new meeting may be scheduled. We'll keep you posted.
     </p>
   `;
 
-  const html = emailWrapper(content, `Your meeting has been cancelled`);
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">MEETING CANCELLED</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `Your meeting has been cancelled`, customHeader);
 
   return { subject, text, html };
 }
@@ -1539,7 +1602,14 @@ Best of luck in your job search.
     </p>
   `;
 
-  const html = emailWrapper(content, `Update on your application`);
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">APPLICATION UPDATE</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `Update on your application`, customHeader);
 
   return { subject, text, html };
 }
@@ -1631,7 +1701,14 @@ Don't be discouraged — there are many opportunities on iRefair that may be a b
     </p>
   `;
 
-  const html = emailWrapper(content, `Feedback on your CV`);
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">CV FEEDBACK</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `Feedback on your CV`, customHeader);
 
   return { subject, text, html };
 }
@@ -1708,7 +1785,14 @@ This link expires in 7 days.
     </p>
   `;
 
-  const html = emailWrapper(content, `Action needed: Update your CV`);
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">ACTION NEEDED</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `Action needed: Update your CV`, customHeader);
 
   return { subject, text, html };
 }
@@ -1785,7 +1869,14 @@ This link expires in 7 days.
     </p>
   `;
 
-  const html = emailWrapper(content, `Action needed: Additional information requested`);
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">INFORMATION REQUEST</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `Action needed: Additional information requested`, customHeader);
 
   return { subject, text, html };
 }
@@ -1833,7 +1924,14 @@ The referrer will be reviewing your interview and will follow up with next steps
     </p>
   `;
 
-  const html = emailWrapper(content, `Your interview has been completed`);
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">INTERVIEW COMPLETED</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `Your interview has been completed`, customHeader);
 
   return { subject, text, html };
 }
@@ -1895,7 +1993,14 @@ This is a huge milestone — well done!
     </p>
   `;
 
-  const html = emailWrapper(content, `Congratulations! You got the job!`);
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">JOB OFFER</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `Congratulations! You got the job!`, customHeader);
 
   return { subject, text, html };
 }
@@ -1978,7 +2083,14 @@ Please log in to your portal to reschedule the meeting.
     </p>
   `;
 
-  const html = emailWrapper(content, `Reschedule request from ${candidateName || 'a candidate'}`);
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">RESCHEDULE REQUEST</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `Reschedule request from ${candidateName || 'a candidate'}`, customHeader);
 
   return { subject, text, html };
 }
@@ -2062,7 +2174,14 @@ Please log in to your portal to review the updates.
     </p>
   `;
 
-  const html = emailWrapper(content, `${candidateName || 'A candidate'} has updated their application`);
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">APPLICATION UPDATED</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `${candidateName || 'A candidate'} has updated their application`, customHeader);
 
   return { subject, text, html };
 }
