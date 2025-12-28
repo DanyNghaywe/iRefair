@@ -20,7 +20,14 @@
       "Bash(powershell \"Stop-Process -Name node -Force -ErrorAction SilentlyContinue; Write-Host ''Node processes killed''\")",
       "Bash(powershell \"if \\(Test-Path ''.next''\\) { Remove-Item -Recurse -Force ''.next''; Write-Host ''.next folder deleted'' } else { Write-Host ''.next folder not found'' }\")",
       "Bash(powershell \"Stop-Process -Id 23480 -Force -ErrorAction SilentlyContinue; Stop-Process -Name node -Force -ErrorAction SilentlyContinue; Write-Host ''Processes killed''\")",
-      "Bash(powershell \"if \\(Test-Path ''.next\\\\dev\\\\lock''\\) { Remove-Item -Force ''.next\\\\dev\\\\lock''; Write-Host ''Lock file removed'' } else { Write-Host ''No lock file found'' }\")"
+      "Bash(powershell \"if \\(Test-Path ''.next\\\\dev\\\\lock''\\) { Remove-Item -Force ''.next\\\\dev\\\\lock''; Write-Host ''Lock file removed'' } else { Write-Host ''No lock file found'' }\")",
+      "Bash(npx tsx:*)",
+      "Bash(node --version:*)",
+      "Bash(node --env-file=.env.local --import tsx:*)",
+      "Bash(node:*)",
+      "Bash(git mv:*)",
+      "Bash(powershell \"if \\(Test-Path ''update-remaining-files.ps1''\\) { .\\\\update-remaining-files.ps1 } else { Write-Host ''Script not found, will update files manually'' }\")",
+      "Bash(powershell:*)"
     ]
   }
 }

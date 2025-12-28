@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { downloadFileFromDrive } from '@/lib/drive';
 import { normalizePortalTokenVersion, verifyReferrerToken } from '@/lib/referrerPortalToken';
 import { getReferrerPortalToken } from '@/lib/referrerPortalAuth';
-import { getApplicationById, getReferrerByIrref, findCandidateByIdentifier } from '@/lib/sheets';
+import { getApplicationById, getReferrerByIrref, findApplicantByIdentifier } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
   }
 
   const application = await getApplicationById(applicationId);
-  if (!application?.record?.candidateId) {
+  if (!application?.record?.applicantId) {
     return NextResponse.json({ ok: false, error: 'Application not found.' }, { status: 404 });
   }
 
@@ -55,15 +55,15 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   }
 
-  // Prefer candidate's latest CV over application-snapshot CV
+  // Prefer applicant's latest CV over application-snapshot CV
   let resumeFileId: string | undefined;
   let resumeFileName: string | undefined;
 
-  // Try to get candidate's latest resume first
-  const candidate = await findCandidateByIdentifier(application.record.candidateId).catch(() => null);
-  if (candidate?.record?.resumeFileId?.trim()) {
-    resumeFileId = candidate.record.resumeFileId.trim();
-    resumeFileName = candidate.record.resumeFileName;
+  // Try to get applicant's latest resume first
+  const applicant = await findApplicantByIdentifier(application.record.applicantId).catch(() => null);
+  if (applicant?.record?.resumeFileId?.trim()) {
+    resumeFileId = applicant.record.resumeFileId.trim();
+    resumeFileName = applicant.record.resumeFileName;
   }
 
   // Fall back to application-snapshot resume

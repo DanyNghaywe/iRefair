@@ -9,7 +9,7 @@ import { ActionBtn } from "@/components/ActionBtn";
 
 const navItems = [
   { href: "/founder", label: "Dashboard" },
-  { href: "/founder/candidates", label: "Candidates" },
+  { href: "/founder/applicants", label: "Applicants" },
   { href: "/founder/referrers", label: "Referrers" },
   { href: "/founder/applications", label: "Applications" },
   { href: "/founder/matches", label: "Matches" },

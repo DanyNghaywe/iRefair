@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
-import { listCandidates } from '@/lib/sheets';
+import { listApplicants } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -30,12 +30,12 @@ export async function GET(request: NextRequest) {
           : undefined;
 
   try {
-    const data = await listCandidates({ search, status, eligible, locatedCanada, limit, offset });
+    const data = await listApplicants({ search, status, eligible, locatedCanada, limit, offset });
     return NextResponse.json({ ok: true, ...data });
   } catch (error) {
-    console.error('Error listing candidates', error);
+    console.error('Error listing applicants', error);
     return NextResponse.json(
-      { ok: false, error: 'Unable to load candidates right now.' },
+      { ok: false, error: 'Unable to load applicants right now.' },
       { status: 500 },
     );
   }

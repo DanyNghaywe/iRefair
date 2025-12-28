@@ -125,13 +125,13 @@ const translations: Record<
   }
 > = {
   en: {
-    roleSwitch: { prompt: 'Not a referrer?', link: 'Switch to candidate' },
+    roleSwitch: { prompt: 'Not a referrer?', link: 'Switch to applicant' },
     languageLabel: 'Language',
     english: 'English',
     french: 'Français',
     eyebrow: 'For referrers',
     title: 'Referrer referral form',
-    lead: 'Share the teams, roles, and capacity you have. Log a candidate now or just your availability.',
+    lead: 'Share the teams, roles, and capacity you have. Log an applicant now or just your availability.',
     legends: {
       personal: 'Personal Information',
       company: 'Company Details',
@@ -167,7 +167,7 @@ const translations: Record<
     },
     optional: '(optional)',
     statusMessages: {
-      ok: "We've received your details. We'll reach out when there's a candidate match.",
+      ok: "We've received your details. We'll reach out when there's an applicant match.",
       error: "We couldn't send your details right now. Please try again in a moment.",
     },
     errors: {
@@ -188,7 +188,7 @@ const translations: Record<
     },
     consentTitle: 'Consent & Legal Disclaimer',
     consentIntro:
-      'By submitting this form, I agree to be contacted by iRefair when a potential candidate may align with open roles at my company. I understand and acknowledge the following:',
+      'By submitting this form, I agree to be contacted by iRefair when a potential applicant may align with open roles at my company. I understand and acknowledge the following:',
     consentPoints: [
       'iRefair is a voluntary, community-driven initiative, and I am under no obligation to make any referrals.',
       'Any referral I make is based on my own discretion, and I am solely responsible for complying with my company’s internal referral or hiring policies.',
@@ -201,7 +201,7 @@ const translations: Record<
     success: {
       title: 'Thank you for contributing to iRefair',
       thankYou:
-        'Thank you for sharing your referrer details and supporting iRefair. Your contribution helps candidates who are actively looking for work and rely on community referrals.',
+        'Thank you for sharing your referrer details and supporting iRefair. Your contribution helps applicants who are actively looking for work and rely on community referrals.',
       iRrefLabel: 'Your iRefair referral ID (iRREF):',
       founderIntro:
         'Our Founder & Managing Director would also like to meet you, get to know you better, and explore how we can collaborate together.',
@@ -528,9 +528,9 @@ export default function ReferrerPage() {
             <span className="role-switch__text">
               {t.roleSwitch.prompt}{' '}
               <Link
-                href={withLanguage('/candidate')}
+                href={withLanguage('/applicant')}
                 onClick={() => {
-                  startNavigation('/candidate');
+                  startNavigation('/applicant');
                 }}
               >
                 {t.roleSwitch.link}

@@ -4,7 +4,7 @@ import {
   findApplicationByRescheduleTokenHash,
   updateApplicationAdmin,
   getReferrerByIrref,
-  findCandidateByIdentifier,
+  findApplicantByIdentifier,
 } from '@/lib/sheets';
 import { hashOpaqueToken, isExpired } from '@/lib/tokens';
 import { appendActionHistoryEntry, type ActionLogEntry } from '@/lib/actionHistory';
@@ -245,8 +245,8 @@ export async function POST(request: NextRequest) {
   const actionEntry: ActionLogEntry = {
     action: 'RESCHEDULE_REQUESTED',
     timestamp: new Date().toISOString(),
-    performedBy: 'candidate',
-    notes: 'Candidate requested to reschedule via email link',
+    performedBy: 'applicant',
+    notes: 'Applicant requested to reschedule via email link',
     meetingDetails: applicationRecord.meetingDate
       ? {
           date: applicationRecord.meetingDate,
@@ -273,19 +273,19 @@ export async function POST(request: NextRequest) {
 
   await updateApplicationAdmin(application.record.id, patch);
 
-  // Load referrer and candidate for email
+  // Load referrer and applicant for email
   const referrer = applicationRecord.referrerIrref
     ? await getReferrerByIrref(applicationRecord.referrerIrref).catch(() => null)
     : null;
 
-  const candidate = applicationRecord.candidateId
-    ? await findCandidateByIdentifier(applicationRecord.candidateId).catch(() => null)
+  const applicant = applicationRecord.applicantId
+    ? await findApplicantByIdentifier(applicationRecord.applicantId).catch(() => null)
     : null;
 
-  const candidateName = candidate
-    ? [candidate.record.firstName, candidate.record.familyName].filter(Boolean).join(' ').trim()
-    : 'The candidate';
-  const candidateEmail = candidate?.record?.email || '';
+  const applicantName = applicant
+    ? [applicant.record.firstName, applicant.record.familyName].filter(Boolean).join(' ').trim()
+    : 'The applicant';
+  const applicantEmail = applicant?.record?.email || '';
 
   const referrerEmail = referrer?.record?.email;
   const referrerName = referrer?.record?.name || '';
@@ -304,8 +304,8 @@ export async function POST(request: NextRequest) {
     try {
       const template = rescheduleRequestToReferrer({
         referrerName,
-        candidateName,
-        candidateEmail,
+        applicantName,
+        applicantEmail,
         companyName,
         position,
         applicationId: application.record.id,

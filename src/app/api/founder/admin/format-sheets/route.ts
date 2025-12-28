@@ -4,8 +4,8 @@ import { requireFounder } from '@/lib/founderAuth';
 import {
   APPLICATION_HEADERS,
   APPLICATION_SHEET_NAME,
-  CANDIDATE_HEADERS,
-  CANDIDATE_SHEET_NAME,
+  APPLICANT_HEADERS,
+  APPLICANT_SHEET_NAME,
   MATCH_HEADERS,
   MATCH_SHEET_NAME,
   REFERRER_HEADERS,
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
 
   try {
     await Promise.all([
-      formatSheet(CANDIDATE_SHEET_NAME, CANDIDATE_HEADERS),
+      formatSheet(APPLICANT_SHEET_NAME, APPLICANT_HEADERS),
       formatSheet(REFERRER_SHEET_NAME, REFERRER_HEADERS),
       formatSheet(APPLICATION_SHEET_NAME, APPLICATION_HEADERS),
       formatSheet(MATCH_SHEET_NAME, MATCH_HEADERS),

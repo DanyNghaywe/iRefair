@@ -108,11 +108,11 @@ const snapshotCard = (title: string, rows: Array<[string, string]>) => `
   </div>
 `;
 
-// Candidate key section (secure credential display with warning)
-const candidateKeySection = (key?: string, locale: 'en' | 'fr' = 'en') => {
+// Applicant key section (secure credential display with warning)
+const applicantKeySection = (key?: string, locale: 'en' | 'fr' = 'en') => {
   if (!key) return '';
 
-  const title = locale === 'fr' ? 'Votre clé de candidat' : 'Your Candidate Key';
+  const title = locale === 'fr' ? 'Votre clé de candidat' : 'Your Applicant Key';
   const warning = locale === 'fr'
     ? 'Gardez ceci privé. Vous en aurez besoin pour postuler avec votre iRAIN.'
     : 'Keep this private. You\'ll need it to apply with your iRAIN.';
@@ -136,20 +136,20 @@ const t = (en: string, fr: string, locale: 'en' | 'fr' = 'en') => (locale === 'f
 // CANDIDATE EMAIL TEMPLATES
 // ============================================================================
 
-type CandidateRegistrationParams = {
+type ApplicantRegistrationParams = {
   firstName: string;
   iRain: string;
   location: string;
   authorization: string;
   industry: string;
   languages: string;
-  candidateKey?: string;
+  applicantKey?: string;
   isUpdate?: boolean;
   statusNote?: string;
   locale?: 'en' | 'fr';
 };
 
-export function candidateRegistrationConfirmation(params: CandidateRegistrationParams): TemplateResult {
+export function applicantRegistrationConfirmation(params: ApplicantRegistrationParams): TemplateResult {
   const {
     firstName,
     iRain,
@@ -157,7 +157,7 @@ export function candidateRegistrationConfirmation(params: CandidateRegistrationP
     authorization,
     industry,
     languages,
-    candidateKey,
+    applicantKey,
     isUpdate = false,
     statusNote,
     locale = 'en',
@@ -199,7 +199,7 @@ export function candidateRegistrationConfirmation(params: CandidateRegistrationP
     locale
   );
   const step3 = t(
-    "When there is a fit, we'll reach out before sharing any candidate details.",
+    "When there is a fit, we'll reach out before sharing any applicant details.",
     "Quand il y a une correspondance, nous vous contacterons avant de partager les détails du candidat.",
     locale
   );
@@ -236,7 +236,7 @@ export function candidateRegistrationConfirmation(params: CandidateRegistrationP
       ${escapeHtml(mainText2)}
     </p>
     ${statusNote ? `<p style="margin:14px 0;font-size:14px;color:#1f2a37;"><strong>${escapeHtml(statusNote)}</strong></p>` : ''}
-    ${candidateKeySection(candidateKey, locale)}
+    ${applicantKeySection(applicantKey, locale)}
   `;
 
   const whatHappensNext = `
@@ -309,7 +309,7 @@ ${iRainLabel}: ${iRain}
 
 ${statusNote || ''}
 
-${candidateKey ? `${t('Your Candidate Key', 'Votre clé de candidat', locale)}: ${candidateKey}\n${t('Keep this private. You\'ll need it to apply with your iRAIN.', 'Gardez ceci privé. Vous en aurez besoin pour postuler avec votre iRAIN.', locale)}\n` : ''}
+${applicantKey ? `${t('Your Applicant Key', 'Votre clé de candidat', locale)}: ${applicantKey}\n${t('Keep this private. You\'ll need it to apply with your iRAIN.', 'Gardez ceci privé. Vous en aurez besoin pour postuler avec votre iRAIN.', locale)}\n` : ''}
 
 ${whatHappensTitle}
 1) ${step1}
@@ -330,15 +330,15 @@ ${t('View openings', 'Voir les offres', locale)}: ${openingsUrl}
   return { subject, html, text };
 }
 
-type CandidateIneligibleParams = {
+type ApplicantIneligibleParams = {
   firstName: string;
   iRain: string;
-  candidateKey?: string;
+  applicantKey?: string;
   locale?: 'en' | 'fr';
 };
 
-export function candidateIneligibleNotification(params: CandidateIneligibleParams): TemplateResult {
-  const { firstName, iRain, candidateKey, locale = 'en' } = params;
+export function applicantIneligibleNotification(params: ApplicantIneligibleParams): TemplateResult {
+  const { firstName, iRain, applicantKey, locale = 'en' } = params;
 
   const subject = t(
     'Referral request update - iRefair',
@@ -358,7 +358,7 @@ export function candidateIneligibleNotification(params: CandidateIneligibleParam
   );
 
   const mainText2 = t(
-    "Most of the opportunities we work with require candidates to be in Canada or have plans to relocate. This means we won't be able to match you with referrers at this time.",
+    "Most of the opportunities we work with require applicants to be in Canada or have plans to relocate. This means we won't be able to match you with referrers at this time.",
     "La plupart des opportunités avec lesquelles nous travaillons nécessitent que les candidats soient au Canada ou prévoient de déménager. Cela signifie que nous ne pourrons pas vous mettre en relation avec des recommandateurs pour le moment.",
     locale
   );
@@ -389,7 +389,7 @@ export function candidateIneligibleNotification(params: CandidateIneligibleParam
     <p style="margin:0 0 16px 0;font-size:14px;line-height:1.7;color:#3b4251;">
       ${escapeHtml(mainText2)}
     </p>
-    ${candidateKeySection(candidateKey, locale)}
+    ${applicantKeySection(applicantKey, locale)}
     <div style="margin:20px 0;padding:16px;border-radius:12px;background:#f0f9ff;border-left:4px solid ${colors.primary};">
       <p style="margin:0 0 8px 0;font-size:14px;font-weight:700;color:#1f2a37;">${escapeHtml(futureTitle)}</p>
       <p style="margin:0;font-size:14px;line-height:1.6;color:#3b4251;">${escapeHtml(futureText)}</p>
@@ -426,7 +426,7 @@ ${mainText2}
 
 ${iRainLabel}: ${iRain}
 
-${candidateKey ? `${t('Your Candidate Key', 'Votre clé de candidat', locale)}: ${candidateKey}\n${t('Keep this private. You\'ll need it to apply with your iRAIN.', 'Gardez ceci privé. Vous en aurez besoin pour postuler avec votre iRAIN.', locale)}\n` : ''}
+${applicantKey ? `${t('Your Applicant Key', 'Votre clé de candidat', locale)}: ${applicantKey}\n${t('Keep this private. You\'ll need it to apply with your iRAIN.', 'Gardez ceci privé. Vous en aurez besoin pour postuler avec votre iRAIN.', locale)}\n` : ''}
 
 ${futureTitle}
 ${futureText}
@@ -439,13 +439,13 @@ ${t('View openings', 'Voir les offres', locale)}: ${openingsUrl}
   return { subject, html, text };
 }
 
-type CandidateProfileUpdateConfirmationParams = {
+type ApplicantProfileUpdateConfirmationParams = {
   firstName: string;
   confirmUrl: string;
   locale?: 'en' | 'fr';
 };
 
-export function candidateProfileUpdateConfirmation(params: CandidateProfileUpdateConfirmationParams): TemplateResult {
+export function applicantProfileUpdateConfirmation(params: ApplicantProfileUpdateConfirmationParams): TemplateResult {
   const { firstName, confirmUrl, locale = 'en' } = params;
 
   const subject = t(
@@ -457,7 +457,7 @@ export function candidateProfileUpdateConfirmation(params: CandidateProfileUpdat
   const greeting = `${t('Hi', 'Bonjour', locale)} ${escapeHtml(firstName)},`;
 
   const mainText1 = t(
-    "We received a request to update your candidate profile. To confirm this change, please click the button below.",
+    "We received a request to update your applicant profile. To confirm this change, please click the button below.",
     "Nous avons reçu une demande de mise à jour de votre profil de candidat. Pour confirmer ce changement, veuillez cliquer sur le bouton ci-dessous.",
     locale
   );
@@ -540,15 +540,15 @@ ${ignoreText}
   return { subject, html, text };
 }
 
-type CandidateProfileUpdateConfirmedParams = {
+type ApplicantProfileUpdateConfirmedParams = {
   firstName: string;
   iRain: string;
-  candidateKey?: string;
+  applicantKey?: string;
   locale?: 'en' | 'fr';
 };
 
-export function candidateProfileUpdateConfirmed(params: CandidateProfileUpdateConfirmedParams): TemplateResult {
-  const { firstName, iRain, candidateKey, locale = 'en' } = params;
+export function applicantProfileUpdateConfirmed(params: ApplicantProfileUpdateConfirmedParams): TemplateResult {
+  const { firstName, iRain, applicantKey, locale = 'en' } = params;
 
   const subject = t(
     'Profile updated successfully - iRefair',
@@ -583,7 +583,7 @@ export function candidateProfileUpdateConfirmed(params: CandidateProfileUpdateCo
     <p style="margin:0 0 16px 0;font-size:14px;line-height:1.7;color:#3b4251;">
       ${escapeHtml(thankYouText)}
     </p>
-    ${candidateKeySection(candidateKey, locale)}
+    ${applicantKeySection(applicantKey, locale)}
   `;
 
   const preheader = t(
@@ -610,7 +610,7 @@ ${thankYouText}
 
 ${iRainLabel}: ${iRain}
 
-${candidateKey ? `${t('Your Candidate Key', 'Votre clé de candidat', locale)}: ${candidateKey}\n${t('Keep this private. You\'ll need it to apply with your iRAIN.', 'Gardez ceci privé. Vous en aurez besoin pour postuler avec votre iRAIN.', locale)}\n` : ''}
+${applicantKey ? `${t('Your Applicant Key', 'Votre clé de candidat', locale)}: ${applicantKey}\n${t('Keep this private. You\'ll need it to apply with your iRAIN.', 'Gardez ceci privé. Vous en aurez besoin pour postuler avec votre iRAIN.', locale)}\n` : ''}
 
 - ${t('The iRefair team', 'L\'équipe iRefair', locale)}`;
 
@@ -656,7 +656,7 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
 
   const greeting = `${t('Hi', 'Bonjour', locale)} ${escapeHtml(name)},`;
   const thankYou = t(
-    'thank you for offering to refer candidates.',
+    'thank you for offering to refer applicants.',
     'merci d\'offrir de recommander des candidats.',
     locale
   );
@@ -665,7 +665,7 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
   const iRrefLabel = t('iRREF', 'iRREF', locale);
 
   const mainText1 = t(
-    "We appreciate your willingness to refer candidates. We'll reach out when we have someone who might be a good fit for your company.",
+    "We appreciate your willingness to refer applicants. We'll reach out when we have someone who might be a good fit for your company.",
     "Nous apprécions votre volonté de recommander des candidats. Nous vous contacterons lorsque nous aurons quelqu'un qui pourrait convenir à votre entreprise.",
     locale
   );
@@ -683,12 +683,12 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
     locale
   );
   const step2 = t(
-    "We keep you on our radar for candidates who match your snapshot.",
+    "We keep you on our radar for applicants who match your snapshot.",
     "Nous vous gardons sur notre radar pour les candidats qui correspondent à votre profil.",
     locale
   );
   const step3 = t(
-    "When there is a fit, we'll reach out before sharing any candidate details.",
+    "When there is a fit, we'll reach out before sharing any applicant details.",
     "Quand il y a une correspondance, nous vous contacterons avant de partager les détails du candidat.",
     locale
   );
@@ -770,7 +770,7 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
   `;
 
   const preheader = t(
-    'Thank you for offering to refer candidates. Your iRREF is saved; we will reach out when we have a match.',
+    'Thank you for offering to refer applicants. Your iRREF is saved; we will reach out when we have a match.',
     'Merci d\'offrir de recommander des candidats. Votre iRREF est enregistré; nous vous contacterons lorsque nous aurons une correspondance.',
     locale
   );
@@ -850,7 +850,7 @@ export function referrerPortalLink(params: ReferrerPortalLinkParams): TemplateRe
   const iRrefLabel = t('iRREF', 'iRREF', locale);
 
   const mainText = t(
-    "Here's your secure link to access your referrer portal. Use this link to manage your referrals, review candidates, and update your availability.",
+    "Here's your secure link to access your referrer portal. Use this link to manage your referrals, review applicants, and update your availability.",
     "Voici votre lien sécurisé pour accéder à votre portail de recommandateur. Utilisez ce lien pour gérer vos recommandations, examiner les candidats et mettre à jour votre disponibilité.",
     locale
   );
@@ -905,7 +905,7 @@ export function referrerPortalLink(params: ReferrerPortalLinkParams): TemplateRe
   `;
 
   const preheader = t(
-    'Access your referrer portal to manage referrals and review candidates.',
+    'Access your referrer portal to manage referrals and review applicants.',
     'Accédez à votre portail de recommandateur pour gérer les recommandations et examiner les candidats.',
     locale
   );
@@ -1005,10 +1005,10 @@ If the link is unavailable, reply with your availability and we will send you a 
   return { subject, text, html };
 }
 
-export function resumeRequest(candidateName: string, irain: string): TemplateResult {
+export function resumeRequest(applicantName: string, irain: string): TemplateResult {
   const subject = "Please share your updated resume (iRefair)";
-  const greeting = candidateName ? `Hi ${candidateName},` : "Hi there,";
-  const greetingHtml = candidateName ? `Hi ${escapeHtml(candidateName)},` : "Hi there,";
+  const greeting = applicantName ? `Hi ${applicantName},` : "Hi there,";
+  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : "Hi there,";
   const safeIrain = escapeHtml(irain);
 
   const text = `${greeting}
@@ -1061,26 +1061,26 @@ Thanks for being part of iRefair (iRAIN ${irain}). Could you reply to this email
 }
 
 export function matchIntro(
-  candidateName: string,
+  applicantName: string,
   referrerName: string,
   irain: string,
   ircrn: string,
   position: string,
 ): TemplateResult {
   const subject = "Introduction via iRefair";
-  const introCandidate = candidateName || "Candidate";
+  const introApplicant = applicantName || "Applicant";
   const introReferrer = referrerName || "Referrer";
-  const introCandidateHtml = escapeHtml(introCandidate);
+  const introApplicantHtml = escapeHtml(introApplicant);
   const introReferrerHtml = escapeHtml(introReferrer);
   const safeIrain = escapeHtml(irain);
   const safeIrcrn = escapeHtml(ircrn);
   const safePosition = position ? escapeHtml(position) : "Not specified";
 
-  const text = `Hello ${introCandidate} and ${introReferrer},
+  const text = `Hello ${introApplicant} and ${introReferrer},
 
 I'm connecting you via iRefair for the role/context noted below.
 
-- Candidate iRAIN: ${irain}
+- Applicant iRAIN: ${irain}
 - Company iRCRN: ${ircrn}
 - Position / Context: ${position || "Not specified"}
 
@@ -1093,7 +1093,7 @@ Please take the conversation forward and let us know if you need anything else.
     <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">A new introduction via iRefair</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Hello <strong>${introCandidateHtml}</strong> and <strong>${introReferrerHtml}</strong>,
+      Hello <strong>${introApplicantHtml}</strong> and <strong>${introReferrerHtml}</strong>,
     </p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
       I'm connecting you for the opportunity below. Please take the conversation forward — I'm confident this could be a great match!
@@ -1105,7 +1105,7 @@ Please take the conversation forward and let us know if you need anything else.
       <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Connection Details</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         ${infoRow('Position', safePosition)}
-        ${infoRow('Candidate iRAIN', safeIrain)}
+        ${infoRow('Applicant iRAIN', safeIrain)}
         ${infoRow('Company iRCRN', safeIrcrn)}
       </table>
     </div>
@@ -1130,17 +1130,17 @@ Please take the conversation forward and let us know if you need anything else.
     </div>
   `;
 
-  const html = emailWrapper(content, `You've been connected: ${introCandidate} meet ${introReferrer}`, customHeader);
+  const html = emailWrapper(content, `You've been connected: ${introApplicant} meet ${introReferrer}`, customHeader);
 
   return { subject, text, html };
 }
 
 type ReferrerApplicationParams = {
   referrerName?: string;
-  candidateName?: string;
-  candidateEmail?: string;
-  candidatePhone?: string;
-  candidateId: string;
+  applicantName?: string;
+  applicantEmail?: string;
+  applicantPhone?: string;
+  applicantId: string;
   iCrn: string;
   position: string;
   resumeUrl?: string;
@@ -1153,10 +1153,10 @@ type ReferrerApplicationParams = {
 export function applicationSubmittedToReferrer(params: ReferrerApplicationParams): TemplateResult {
   const {
     referrerName,
-    candidateName,
-    candidateEmail,
-    candidatePhone,
-    candidateId,
+    applicantName,
+    applicantEmail,
+    applicantPhone,
+    applicantId,
     iCrn,
     position,
     resumeUrl,
@@ -1171,13 +1171,13 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
   const displayResumeName = resumeFileName || 'Resume';
   const safeGreetingHtml = referrerName ? `Hi ${escapeHtml(referrerName)},` : 'Hi,';
   const normalizedResumeUrl = resumeUrl ? normalizeHttpUrl(resumeUrl) : null;
-  const safeCandidateId = escapeHtml(candidateId);
+  const safeApplicantId = escapeHtml(applicantId);
   const safeIrcrn = escapeHtml(iCrn);
   const safePosition = position ? escapeHtml(position) : '';
   const safeReferenceNumber = referenceNumber ? escapeHtml(referenceNumber) : '';
-  const safeCandidateName = candidateName ? escapeHtml(candidateName) : 'Not provided';
-  const safeCandidateEmail = candidateEmail ? escapeHtml(candidateEmail) : '';
-  const safeCandidatePhone = candidatePhone ? escapeHtml(candidatePhone) : '';
+  const safeApplicantName = applicantName ? escapeHtml(applicantName) : 'Not provided';
+  const safeApplicantEmail = applicantEmail ? escapeHtml(applicantEmail) : '';
+  const safeApplicantPhone = applicantPhone ? escapeHtml(applicantPhone) : '';
   const approveLink = feedbackApproveUrl ? normalizeHttpUrl(feedbackApproveUrl) : null;
   const declineLink = feedbackDeclineUrl ? normalizeHttpUrl(feedbackDeclineUrl) : null;
 
@@ -1191,13 +1191,13 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
   const textLines = [
     greeting,
     '',
-    `A candidate just applied for ${iCrn}.`,
-    `- Candidate ID: ${candidateId}`,
+    `A applicant just applied for ${iCrn}.`,
+    `- Applicant ID: ${applicantId}`,
     position ? `- Position: ${position}` : null,
     referenceNumber ? `- Reference Number: ${referenceNumber}` : null,
-    candidateName ? `- Name: ${candidateName}` : null,
-    candidateEmail ? `- Email: ${candidateEmail}` : null,
-    candidatePhone ? `- Phone: ${candidatePhone}` : null,
+    applicantName ? `- Name: ${applicantName}` : null,
+    applicantEmail ? `- Email: ${applicantEmail}` : null,
+    applicantPhone ? `- Phone: ${applicantPhone}` : null,
     `- CV: ${normalizedResumeUrl || 'Not provided'}`,
     textCtas ? '' : null,
     textCtas || null,
@@ -1209,22 +1209,22 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
 
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">New application received!</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">A candidate is interested in ${safePosition || safeIrcrn}</p>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">A applicant is interested in ${safePosition || safeIrcrn}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${safeGreetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Great news! A candidate just applied through iRefair. Here are the details:
+      Great news! A applicant just applied through iRefair. Here are the details:
     </p>
 
     ${divider}
 
     <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
-      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Candidate Information</p>
+      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Applicant Information</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        ${infoRow('Name', safeCandidateName)}
-        ${safeCandidateEmail ? infoRow('Email', `<a href="mailto:${safeCandidateEmail}" style="color: ${colors.primary};">${safeCandidateEmail}</a>`) : ''}
-        ${safeCandidatePhone ? infoRow('Phone', safeCandidatePhone) : ''}
-        ${infoRow('Candidate ID', safeCandidateId)}
+        ${infoRow('Name', safeApplicantName)}
+        ${safeApplicantEmail ? infoRow('Email', `<a href="mailto:${safeApplicantEmail}" style="color: ${colors.primary};">${safeApplicantEmail}</a>`) : ''}
+        ${safeApplicantPhone ? infoRow('Phone', safeApplicantPhone) : ''}
+        ${infoRow('Applicant ID', safeApplicantId)}
       </table>
     </div>
 
@@ -1267,10 +1267,10 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
   return { subject, text: textLines, html };
 }
 
-type CandidateConfirmationParams = {
-  candidateName?: string;
-  candidateEmail: string;
-  candidateId: string;
+type ApplicantConfirmationParams = {
+  applicantName?: string;
+  applicantEmail: string;
+  applicantId: string;
   iCrn: string;
   position: string;
   referenceNumber?: string;
@@ -1278,10 +1278,10 @@ type CandidateConfirmationParams = {
   submissionId: string;
 };
 
-export function applicationConfirmationToCandidate(params: CandidateConfirmationParams): TemplateResult {
+export function applicationConfirmationToApplicant(params: ApplicantConfirmationParams): TemplateResult {
   const {
-    candidateName,
-    candidateId,
+    applicantName,
+    applicantId,
     iCrn,
     position,
     referenceNumber,
@@ -1290,9 +1290,9 @@ export function applicationConfirmationToCandidate(params: CandidateConfirmation
   } = params;
 
   const subject = `Application received: ${position}`;
-  const greeting = candidateName ? `Hi ${candidateName},` : 'Hi,';
-  const safeGreetingHtml = candidateName ? `Hi ${escapeHtml(candidateName)},` : 'Hi,';
-  const safeCandidateId = escapeHtml(candidateId);
+  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
+  const safeGreetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
+  const safeApplicantId = escapeHtml(applicantId);
   const safeIrcrn = escapeHtml(iCrn);
   const safePosition = escapeHtml(position);
   const safeReferenceNumber = referenceNumber ? escapeHtml(referenceNumber) : '';
@@ -1306,7 +1306,7 @@ Thank you for submitting your application through iRefair!
 Here's a summary of what you submitted:
 
 - Submission ID: ${submissionId}
-- Your iRAIN: ${candidateId}
+- Your iRAIN: ${applicantId}
 - Company (iRCRN): ${iCrn}
 - Position: ${position}${referenceNumber ? `\n- Reference Number: ${referenceNumber}` : ''}${resumeFileName ? `\n- Resume: ${resumeFileName}` : ''}
 
@@ -1315,7 +1315,7 @@ What happens next?
 2. They will review your profile and resume
 3. If there's a match, you'll be connected via email
 
-Keep this email for your records. You can use the same iRAIN and Candidate Key to apply to other companies.
+Keep this email for your records. You can use the same iRAIN and Applicant Key to apply to other companies.
 
 Good luck!
 — The iRefair Team`;
@@ -1335,7 +1335,7 @@ Good luck!
       <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Application Summary</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         ${infoRow('Submission ID', safeSubmissionId)}
-        ${infoRow('Your iRAIN', safeCandidateId)}
+        ${infoRow('Your iRAIN', safeApplicantId)}
         ${infoRow('Company (iRCRN)', safeIrcrn)}
         ${infoRow('Position', safePosition)}
         ${safeReferenceNumber ? infoRow('Reference #', safeReferenceNumber) : ''}
@@ -1355,7 +1355,7 @@ Good luck!
     </div>
 
     <p style="margin: 16px 0; color: ${colors.muted}; font-size: 14px; line-height: 1.6;">
-      <strong>Tip:</strong> Keep this email for your records. You can use the same iRAIN and Candidate Key to apply to other companies on iRefair.
+      <strong>Tip:</strong> Keep this email for your records. You can use the same iRAIN and Applicant Key to apply to other companies on iRefair.
     </p>
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
@@ -1368,7 +1368,7 @@ Good luck!
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
       <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">APPLICATION RECEIVED</div>
-      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRAIN: <strong style="color:#1f2a37;">${safeCandidateId}</strong></div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRAIN: <strong style="color:#1f2a37;">${safeApplicantId}</strong></div>
     </div>
   `;
 
@@ -1384,7 +1384,7 @@ Good luck!
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://irefair.com';
 
 type MeetingInviteParams = {
-  candidateName?: string;
+  applicantName?: string;
   referrerName?: string;
   companyName?: string;
   position?: string;
@@ -1396,9 +1396,9 @@ type MeetingInviteParams = {
   applicationId: string;
 };
 
-export function meetingInviteToCandidate(params: MeetingInviteParams): TemplateResult {
+export function meetingInviteToApplicant(params: MeetingInviteParams): TemplateResult {
   const {
-    candidateName,
+    applicantName,
     referrerName,
     companyName,
     position,
@@ -1411,8 +1411,8 @@ export function meetingInviteToCandidate(params: MeetingInviteParams): TemplateR
   } = params;
 
   const formattedDateTime = formatMeetingDateTime(meetingDate, meetingTime, meetingTimezone);
-  const greeting = candidateName ? `Hi ${candidateName},` : 'Hi,';
-  const greetingHtml = candidateName ? `Hi ${escapeHtml(candidateName)},` : 'Hi,';
+  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
+  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
   const safeReferrerName = referrerName ? escapeHtml(referrerName) : 'a referrer';
   const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
   const safePosition = position ? escapeHtml(position) : 'the position';
@@ -1487,18 +1487,18 @@ Good luck with your meeting!
 }
 
 type MeetingCancelledParams = {
-  candidateName?: string;
+  applicantName?: string;
   referrerName?: string;
   companyName?: string;
   position?: string;
   reason?: string;
 };
 
-export function meetingCancelledToCandidate(params: MeetingCancelledParams): TemplateResult {
-  const { candidateName, referrerName, companyName, position, reason } = params;
+export function meetingCancelledToApplicant(params: MeetingCancelledParams): TemplateResult {
+  const { applicantName, referrerName, companyName, position, reason } = params;
 
-  const greeting = candidateName ? `Hi ${candidateName},` : 'Hi,';
-  const greetingHtml = candidateName ? `Hi ${escapeHtml(candidateName)},` : 'Hi,';
+  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
+  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
   const safeReferrerName = referrerName ? escapeHtml(referrerName) : 'The referrer';
   const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
   const safePosition = position ? escapeHtml(position) : 'your application';
@@ -1554,17 +1554,17 @@ If appropriate, a new meeting may be scheduled. We'll keep you posted.
 }
 
 type RejectionParams = {
-  candidateName?: string;
+  applicantName?: string;
   referrerName?: string;
   companyName?: string;
   position?: string;
 };
 
-export function rejectionToCandidate(params: RejectionParams): TemplateResult {
-  const { candidateName, referrerName, companyName, position } = params;
+export function rejectionToApplicant(params: RejectionParams): TemplateResult {
+  const { applicantName, referrerName, companyName, position } = params;
 
-  const greeting = candidateName ? `Hi ${candidateName},` : 'Hi,';
-  const greetingHtml = candidateName ? `Hi ${escapeHtml(candidateName)},` : 'Hi,';
+  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
+  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
   const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
   const safePosition = position ? escapeHtml(position) : 'the position';
 
@@ -1574,7 +1574,7 @@ export function rejectionToCandidate(params: RejectionParams): TemplateResult {
 
 Thank you for your interest in ${position || 'the position'} at ${companyName || 'the company'}.
 
-After careful review, we've decided not to move forward with your application at this time. This decision doesn't reflect on your qualifications — it simply means we're pursuing candidates whose experience more closely matches our current needs.
+After careful review, we've decided not to move forward with your application at this time. This decision doesn't reflect on your qualifications — it simply means we're pursuing applicants whose experience more closely matches our current needs.
 
 We encourage you to continue exploring opportunities on iRefair. The right match is out there!
 
@@ -1590,7 +1590,7 @@ Best of luck in your job search.
       Thank you for your interest in <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong>.
     </p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      After careful review, we've decided not to move forward with your application at this time. This decision doesn't reflect on your qualifications — it simply means we're pursuing candidates whose experience more closely matches our current needs.
+      After careful review, we've decided not to move forward with your application at this time. This decision doesn't reflect on your qualifications — it simply means we're pursuing applicants whose experience more closely matches our current needs.
     </p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
       We encourage you to continue exploring opportunities on iRefair. The right match is out there!
@@ -1615,7 +1615,7 @@ Best of luck in your job search.
 }
 
 type CvMismatchParams = {
-  candidateName?: string;
+  applicantName?: string;
   referrerName?: string;
   companyName?: string;
   position?: string;
@@ -1625,9 +1625,9 @@ type CvMismatchParams = {
   applicationId?: string;
 };
 
-export function cvMismatchToCandidate(params: CvMismatchParams): TemplateResult {
+export function cvMismatchToApplicant(params: CvMismatchParams): TemplateResult {
   const {
-    candidateName,
+    applicantName,
     companyName,
     position,
     feedback,
@@ -1636,14 +1636,14 @@ export function cvMismatchToCandidate(params: CvMismatchParams): TemplateResult 
     applicationId,
   } = params;
 
-  const greeting = candidateName ? `Hi ${candidateName},` : 'Hi,';
-  const greetingHtml = candidateName ? `Hi ${escapeHtml(candidateName)},` : 'Hi,';
+  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
+  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
   const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
   const safePosition = position ? escapeHtml(position) : 'the position';
   const safeFeedback = feedback ? escapeHtml(feedback) : '';
 
   const updateUrl = includeUpdateLink && updateToken && applicationId
-    ? `${BASE_URL}/candidate?updateToken=${encodeURIComponent(updateToken)}&appId=${encodeURIComponent(applicationId)}`
+    ? `${BASE_URL}/applicant?updateToken=${encodeURIComponent(updateToken)}&appId=${encodeURIComponent(applicationId)}`
     : null;
 
   const subject = `CV feedback: ${position || 'Your application'}`;
@@ -1714,7 +1714,7 @@ Don't be discouraged — there are many opportunities on iRefair that may be a b
 }
 
 type CvUpdateRequestParams = {
-  candidateName?: string;
+  applicantName?: string;
   referrerName?: string;
   companyName?: string;
   position?: string;
@@ -1723,9 +1723,9 @@ type CvUpdateRequestParams = {
   applicationId: string;
 };
 
-export function cvUpdateRequestToCandidate(params: CvUpdateRequestParams): TemplateResult {
+export function cvUpdateRequestToApplicant(params: CvUpdateRequestParams): TemplateResult {
   const {
-    candidateName,
+    applicantName,
     companyName,
     position,
     feedback,
@@ -1733,13 +1733,13 @@ export function cvUpdateRequestToCandidate(params: CvUpdateRequestParams): Templ
     applicationId,
   } = params;
 
-  const greeting = candidateName ? `Hi ${candidateName},` : 'Hi,';
-  const greetingHtml = candidateName ? `Hi ${escapeHtml(candidateName)},` : 'Hi,';
+  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
+  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
   const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
   const safePosition = position ? escapeHtml(position) : 'the position';
   const safeFeedback = feedback ? escapeHtml(feedback) : '';
 
-  const updateUrl = `${BASE_URL}/candidate?updateToken=${encodeURIComponent(updateToken)}&appId=${encodeURIComponent(applicationId)}`;
+  const updateUrl = `${BASE_URL}/applicant?updateToken=${encodeURIComponent(updateToken)}&appId=${encodeURIComponent(applicationId)}`;
 
   const subject = `Action needed: Update your CV`;
 
@@ -1798,7 +1798,7 @@ This link expires in 7 days.
 }
 
 type InfoRequestParams = {
-  candidateName?: string;
+  applicantName?: string;
   referrerName?: string;
   companyName?: string;
   position?: string;
@@ -1807,9 +1807,9 @@ type InfoRequestParams = {
   applicationId: string;
 };
 
-export function infoRequestToCandidate(params: InfoRequestParams): TemplateResult {
+export function infoRequestToApplicant(params: InfoRequestParams): TemplateResult {
   const {
-    candidateName,
+    applicantName,
     companyName,
     position,
     requestedInfo,
@@ -1817,13 +1817,13 @@ export function infoRequestToCandidate(params: InfoRequestParams): TemplateResul
     applicationId,
   } = params;
 
-  const greeting = candidateName ? `Hi ${candidateName},` : 'Hi,';
-  const greetingHtml = candidateName ? `Hi ${escapeHtml(candidateName)},` : 'Hi,';
+  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
+  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
   const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
   const safePosition = position ? escapeHtml(position) : 'the position';
   const safeRequestedInfo = requestedInfo ? escapeHtml(requestedInfo) : '';
 
-  const updateUrl = `${BASE_URL}/candidate?updateToken=${encodeURIComponent(updateToken)}&appId=${encodeURIComponent(applicationId)}`;
+  const updateUrl = `${BASE_URL}/applicant?updateToken=${encodeURIComponent(updateToken)}&appId=${encodeURIComponent(applicationId)}`;
 
   const subject = `Action needed: Additional information requested`;
 
@@ -1882,17 +1882,17 @@ This link expires in 7 days.
 }
 
 type InterviewCompletedParams = {
-  candidateName?: string;
+  applicantName?: string;
   referrerName?: string;
   companyName?: string;
   position?: string;
 };
 
-export function interviewCompletedToCandidate(params: InterviewCompletedParams): TemplateResult {
-  const { candidateName, companyName, position } = params;
+export function interviewCompletedToApplicant(params: InterviewCompletedParams): TemplateResult {
+  const { applicantName, companyName, position } = params;
 
-  const greeting = candidateName ? `Hi ${candidateName},` : 'Hi,';
-  const greetingHtml = candidateName ? `Hi ${escapeHtml(candidateName)},` : 'Hi,';
+  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
+  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
   const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
   const safePosition = position ? escapeHtml(position) : 'the position';
 
@@ -1937,18 +1937,18 @@ The referrer will be reviewing your interview and will follow up with next steps
 }
 
 type JobOfferParams = {
-  candidateName?: string;
+  applicantName?: string;
   referrerName?: string;
   companyName?: string;
   position?: string;
   message?: string;
 };
 
-export function jobOfferToCandidate(params: JobOfferParams): TemplateResult {
-  const { candidateName, companyName, position, message } = params;
+export function jobOfferToApplicant(params: JobOfferParams): TemplateResult {
+  const { applicantName, companyName, position, message } = params;
 
-  const greeting = candidateName ? `Hi ${candidateName},` : 'Hi,';
-  const greetingHtml = candidateName ? `Hi ${escapeHtml(candidateName)},` : 'Hi,';
+  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
+  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
   const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
   const safePosition = position ? escapeHtml(position) : 'the position';
   const safeMessage = message ? escapeHtml(message) : '';
@@ -2007,8 +2007,8 @@ This is a huge milestone — well done!
 
 type RescheduleRequestParams = {
   referrerName?: string;
-  candidateName?: string;
-  candidateEmail?: string;
+  applicantName?: string;
+  applicantEmail?: string;
   companyName?: string;
   position?: string;
   originalDateTime?: string;
@@ -2019,8 +2019,8 @@ type RescheduleRequestParams = {
 export function rescheduleRequestToReferrer(params: RescheduleRequestParams): TemplateResult {
   const {
     referrerName,
-    candidateName,
-    candidateEmail,
+    applicantName,
+    applicantEmail,
     companyName,
     position,
     originalDateTime,
@@ -2030,20 +2030,20 @@ export function rescheduleRequestToReferrer(params: RescheduleRequestParams): Te
 
   const greeting = referrerName ? `Hi ${referrerName},` : 'Hi,';
   const greetingHtml = referrerName ? `Hi ${escapeHtml(referrerName)},` : 'Hi,';
-  const safeCandidateName = candidateName ? escapeHtml(candidateName) : 'The candidate';
-  const safeCandidateEmail = candidateEmail ? escapeHtml(candidateEmail) : '';
+  const safeApplicantName = applicantName ? escapeHtml(applicantName) : 'The applicant';
+  const safeApplicantEmail = applicantEmail ? escapeHtml(applicantEmail) : '';
   const safePosition = position ? escapeHtml(position) : 'the position';
   const safeOriginalDateTime = originalDateTime ? escapeHtml(originalDateTime) : '';
   const safeReason = reason ? escapeHtml(reason) : '';
   const safeApplicationId = escapeHtml(applicationId);
 
-  const subject = `Reschedule request: ${candidateName || 'Candidate'} for ${position || 'meeting'}`;
+  const subject = `Reschedule request: ${applicantName || 'Applicant'} for ${position || 'meeting'}`;
 
   const text = `${greeting}
 
-${candidateName || 'The candidate'} has requested to reschedule their meeting for ${position || 'the position'}.${originalDateTime ? `\n\nOriginal time: ${originalDateTime}` : ''}${reason ? `\nReason: ${reason}` : ''}
+${applicantName || 'The applicant'} has requested to reschedule their meeting for ${position || 'the position'}.${originalDateTime ? `\n\nOriginal time: ${originalDateTime}` : ''}${reason ? `\nReason: ${reason}` : ''}
 
-Application ID: ${applicationId}${candidateEmail ? `\nCandidate email: ${candidateEmail}` : ''}
+Application ID: ${applicationId}${applicantEmail ? `\nApplicant email: ${applicantEmail}` : ''}
 
 Please log in to your portal to reschedule the meeting.
 
@@ -2051,17 +2051,17 @@ Please log in to your portal to reschedule the meeting.
 
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Reschedule request</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">A candidate needs to reschedule</p>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">A applicant needs to reschedule</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      <strong>${safeCandidateName}</strong> has requested to reschedule their meeting for <strong>${safePosition}</strong>.
+      <strong>${safeApplicantName}</strong> has requested to reschedule their meeting for <strong>${safePosition}</strong>.
     </p>
 
     <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         ${infoRow('Application ID', safeApplicationId)}
-        ${safeCandidateEmail ? infoRow('Candidate email', `<a href="mailto:${safeCandidateEmail}" style="color: ${colors.primary};">${safeCandidateEmail}</a>`) : ''}
+        ${safeApplicantEmail ? infoRow('Applicant email', `<a href="mailto:${safeApplicantEmail}" style="color: ${colors.primary};">${safeApplicantEmail}</a>`) : ''}
         ${safeOriginalDateTime ? infoRow('Original time', safeOriginalDateTime) : ''}
       </table>
     </div>
@@ -2090,15 +2090,15 @@ Please log in to your portal to reschedule the meeting.
     </div>
   `;
 
-  const html = emailWrapper(content, `Reschedule request from ${candidateName || 'a candidate'}`, customHeader);
+  const html = emailWrapper(content, `Reschedule request from ${applicantName || 'a applicant'}`, customHeader);
 
   return { subject, text, html };
 }
 
-type CandidateUpdatedParams = {
+type ApplicantUpdatedParams = {
   referrerName?: string;
-  candidateName?: string;
-  candidateEmail?: string;
+  applicantName?: string;
+  applicantEmail?: string;
   companyName?: string;
   position?: string;
   applicationId: string;
@@ -2106,11 +2106,11 @@ type CandidateUpdatedParams = {
   resumeUrl?: string;
 };
 
-export function candidateUpdatedToReferrer(params: CandidateUpdatedParams): TemplateResult {
+export function applicantUpdatedToReferrer(params: ApplicantUpdatedParams): TemplateResult {
   const {
     referrerName,
-    candidateName,
-    candidateEmail,
+    applicantName,
+    applicantEmail,
     position,
     applicationId,
     updatedFields,
@@ -2119,8 +2119,8 @@ export function candidateUpdatedToReferrer(params: CandidateUpdatedParams): Temp
 
   const greeting = referrerName ? `Hi ${referrerName},` : 'Hi,';
   const greetingHtml = referrerName ? `Hi ${escapeHtml(referrerName)},` : 'Hi,';
-  const safeCandidateName = candidateName ? escapeHtml(candidateName) : 'The candidate';
-  const safeCandidateEmail = candidateEmail ? escapeHtml(candidateEmail) : '';
+  const safeApplicantName = applicantName ? escapeHtml(applicantName) : 'The applicant';
+  const safeApplicantEmail = applicantEmail ? escapeHtml(applicantEmail) : '';
   const safePosition = position ? escapeHtml(position) : 'the position';
   const safeApplicationId = escapeHtml(applicationId);
   const normalizedResumeUrl = resumeUrl ? normalizeHttpUrl(resumeUrl) : null;
@@ -2129,31 +2129,31 @@ export function candidateUpdatedToReferrer(params: CandidateUpdatedParams): Temp
     ? updatedFields.map((f) => escapeHtml(f)).join(', ')
     : 'their profile';
 
-  const subject = `Candidate updated: ${candidateName || 'Application'} for ${position || 'your review'}`;
+  const subject = `Applicant updated: ${applicantName || 'Application'} for ${position || 'your review'}`;
 
   const text = `${greeting}
 
-${candidateName || 'The candidate'} has updated ${updatedFields && updatedFields.length > 0 ? updatedFields.join(', ') : 'their profile'} for their application to ${position || 'the position'}.
+${applicantName || 'The applicant'} has updated ${updatedFields && updatedFields.length > 0 ? updatedFields.join(', ') : 'their profile'} for their application to ${position || 'the position'}.
 
-Application ID: ${applicationId}${candidateEmail ? `\nCandidate email: ${candidateEmail}` : ''}${resumeUrl ? `\nUpdated resume: ${resumeUrl}` : ''}
+Application ID: ${applicationId}${applicantEmail ? `\nApplicant email: ${applicantEmail}` : ''}${resumeUrl ? `\nUpdated resume: ${resumeUrl}` : ''}
 
 Please log in to your portal to review the updates.
 
 — The iRefair Team`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Candidate updated</h1>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Applicant updated</h1>
     <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">New information available for review</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      <strong>${safeCandidateName}</strong> has updated <strong>${updatedFieldsList}</strong> for their application to <strong>${safePosition}</strong>.
+      <strong>${safeApplicantName}</strong> has updated <strong>${updatedFieldsList}</strong> for their application to <strong>${safePosition}</strong>.
     </p>
 
     <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         ${infoRow('Application ID', safeApplicationId)}
-        ${safeCandidateEmail ? infoRow('Candidate email', `<a href="mailto:${safeCandidateEmail}" style="color: ${colors.primary};">${safeCandidateEmail}</a>`) : ''}
+        ${safeApplicantEmail ? infoRow('Applicant email', `<a href="mailto:${safeApplicantEmail}" style="color: ${colors.primary};">${safeApplicantEmail}</a>`) : ''}
         ${updatedFields && updatedFields.length > 0 ? infoRow('Updated fields', updatedFieldsList) : ''}
       </table>
     </div>
@@ -2181,13 +2181,13 @@ Please log in to your portal to review the updates.
     </div>
   `;
 
-  const html = emailWrapper(content, `${candidateName || 'A candidate'} has updated their application`, customHeader);
+  const html = emailWrapper(content, `${applicantName || 'A applicant'} has updated their application`, customHeader);
 
   return { subject, text, html };
 }
 
 /**
- * Helper to build CC list for referrer-triggered emails to candidates.
+ * Helper to build CC list for referrer-triggered emails to applicants.
  * Includes referrer email and founder email, filtering out empty values.
  */
 export function buildReferrerEmailCc(referrerEmail?: string): string[] {

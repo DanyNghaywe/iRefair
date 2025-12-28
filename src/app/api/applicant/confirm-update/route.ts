@@ -3,31 +3,31 @@ import crypto from "crypto";
 
 import { sendMail } from "@/lib/mailer";
 import {
-  CANDIDATE_SECRET_HASH_HEADER,
-  CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER,
-  CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER,
-  CANDIDATE_UPDATE_TOKEN_HASH_HEADER,
-  CANDIDATE_SHEET_NAME,
-  LEGACY_CANDIDATE_ID_HEADER,
+  APPLICANT_SECRET_HASH_HEADER,
+  APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
+  APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
+  APPLICANT_UPDATE_TOKEN_HASH_HEADER,
+  APPLICANT_SHEET_NAME,
+  LEGACY_APPLICANT_ID_HEADER,
   ensureColumns,
-  getCandidateByEmail,
-  getCandidateByRowIndex,
+  getApplicantByEmail,
+  getApplicantByRowIndex,
   updateRowById,
 } from "@/lib/sheets";
 import { escapeHtml } from "@/lib/validation";
 import {
-  createCandidateSecret,
-  hashCandidateSecret,
+  createApplicantSecret,
+  hashApplicantSecret,
   hashToken,
-  verifyCandidateUpdateToken,
-} from "@/lib/candidateUpdateToken";
-import { candidateProfileUpdateConfirmed } from "@/lib/emailTemplates";
+  verifyApplicantUpdateToken,
+} from "@/lib/applicantUpdateToken";
+import { applicantProfileUpdateConfirmed } from "@/lib/emailTemplates";
 
 type EmailLanguage = "en" | "fr";
 
-type PendingCandidateUpdatePayload = {
+type PendingApplicantUpdatePayload = {
   id?: string;
-  legacyCandidateId?: string;
+  legacyApplicantId?: string;
   firstName: string;
   middleName: string;
   familyName: string;
@@ -280,21 +280,21 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
 
   let payload;
   try {
-    payload = verifyCandidateUpdateToken(token);
+    payload = verifyApplicantUpdateToken(token);
   } catch {
     return errorResponse("This confirmation link is invalid or has expired. Please submit a new update request.", 401, isGetRequest);
   }
 
   const tokenHash = hashToken(token);
-  let candidate = await getCandidateByEmail(payload.email);
-  let storedTokenHash = candidate?.record.updateTokenHash?.trim() || "";
+  let applicant = await getApplicantByEmail(payload.email);
+  let storedTokenHash = applicant?.record.updateTokenHash?.trim() || "";
 
-  if (!candidate || !safeCompareHash(storedTokenHash, tokenHash)) {
-    candidate = await getCandidateByRowIndex(payload.rowIndex);
-    storedTokenHash = candidate?.record.updateTokenHash?.trim() || "";
+  if (!applicant || !safeCompareHash(storedTokenHash, tokenHash)) {
+    applicant = await getApplicantByRowIndex(payload.rowIndex);
+    storedTokenHash = applicant?.record.updateTokenHash?.trim() || "";
   }
 
-  if (!candidate) {
+  if (!applicant) {
     return errorResponse("We couldn't find your profile. Please contact support if this persists.", 404, isGetRequest);
   }
 
@@ -302,45 +302,45 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     return errorResponse("This confirmation link is no longer valid. Please submit a new update request.", 403, isGetRequest);
   }
 
-  const storedExpiry = parseExpiry(candidate.record.updateTokenExpiresAt);
+  const storedExpiry = parseExpiry(applicant.record.updateTokenExpiresAt);
   if (!storedExpiry || storedExpiry < Date.now()) {
     return errorResponse("This confirmation link has expired. Please submit a new update request.", 403, isGetRequest);
   }
 
-  const pendingRaw = candidate.record.updatePendingPayload?.trim();
+  const pendingRaw = applicant.record.updatePendingPayload?.trim();
   if (!pendingRaw) {
     return errorResponse("No pending update found. Your profile may have already been updated.", 400, isGetRequest);
   }
 
-  let pending: PendingCandidateUpdatePayload;
+  let pending: PendingApplicantUpdatePayload;
   try {
-    pending = JSON.parse(pendingRaw) as PendingCandidateUpdatePayload;
+    pending = JSON.parse(pendingRaw) as PendingApplicantUpdatePayload;
   } catch {
     return errorResponse("There was a problem processing your update. Please try again.", 400, isGetRequest);
   }
 
   const timestamp = new Date().toISOString();
   const requiredColumns = [
-    CANDIDATE_SECRET_HASH_HEADER,
-    CANDIDATE_UPDATE_TOKEN_HASH_HEADER,
-    CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER,
-    CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER,
+    APPLICANT_SECRET_HASH_HEADER,
+    APPLICANT_UPDATE_TOKEN_HASH_HEADER,
+    APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
+    APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
   ];
 
   if (pending.resumeFileId || pending.resumeFileName) {
     requiredColumns.push("Resume File Name", "Resume File ID", "Resume URL");
   }
-  if (pending.legacyCandidateId) {
-    requiredColumns.push(LEGACY_CANDIDATE_ID_HEADER);
+  if (pending.legacyApplicantId) {
+    requiredColumns.push(LEGACY_APPLICANT_ID_HEADER);
   }
 
-  await ensureColumns(CANDIDATE_SHEET_NAME, requiredColumns);
+  await ensureColumns(APPLICANT_SHEET_NAME, requiredColumns);
 
-  let candidateSecret: string | undefined;
-  let candidateSecretHash: string | undefined;
-  if (!candidate.record.candidateSecretHash) {
-    candidateSecret = createCandidateSecret();
-    candidateSecretHash = hashCandidateSecret(candidateSecret);
+  let applicantSecret: string | undefined;
+  let applicantSecretHash: string | undefined;
+  if (!applicant.record.applicantSecretHash) {
+    applicantSecret = createApplicantSecret();
+    applicantSecretHash = hashApplicantSecret(applicantSecret);
   }
 
   const updates: Record<string, string | undefined> = {
@@ -361,11 +361,11 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     "Industry Type": pending.industryType,
     "Industry Other": pending.industryOther,
     "Employment Status": pending.employmentStatus,
-    [LEGACY_CANDIDATE_ID_HEADER]: pending.legacyCandidateId,
-    [CANDIDATE_SECRET_HASH_HEADER]: candidateSecretHash,
-    [CANDIDATE_UPDATE_TOKEN_HASH_HEADER]: "",
-    [CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER]: "",
-    [CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER]: "",
+    [LEGACY_APPLICANT_ID_HEADER]: pending.legacyApplicantId,
+    [APPLICANT_SECRET_HASH_HEADER]: applicantSecretHash,
+    [APPLICANT_UPDATE_TOKEN_HASH_HEADER]: "",
+    [APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER]: "",
+    [APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER]: "",
   };
 
   if (pending.resumeFileId || pending.resumeFileName) {
@@ -374,19 +374,19 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     updates["Resume URL"] = "";
   }
 
-  const updateResult = await updateRowById(CANDIDATE_SHEET_NAME, "Email", payload.email, updates);
+  const updateResult = await updateRowById(APPLICANT_SHEET_NAME, "Email", payload.email, updates);
   if (!updateResult.updated) {
     return errorResponse("We couldn't save your update. Please try again or contact support.", 500, isGetRequest);
   }
 
   const locale: EmailLanguage = pending.locale === "fr" ? "fr" : "en";
-  const firstName = pending.firstName || candidate.record.firstName || "there";
-  const iRainValue = pending.id || candidate.record.id || "";
+  const firstName = pending.firstName || applicant.record.firstName || "there";
+  const iRainValue = pending.id || applicant.record.id || "";
 
-  const emailTemplate = candidateProfileUpdateConfirmed({
+  const emailTemplate = applicantProfileUpdateConfirmed({
     firstName,
     iRain: iRainValue,
-    candidateKey: candidateSecret,
+    applicantKey: applicantSecret,
     locale,
   });
 

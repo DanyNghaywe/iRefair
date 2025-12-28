@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server';
 import { timingSafeEqual } from 'crypto';
 
 import { uploadFileToDrive } from '@/lib/drive';
-import { applicationSubmittedToReferrer, applicationConfirmationToCandidate } from '@/lib/emailTemplates';
+import { applicationSubmittedToReferrer, applicationConfirmationToApplicant } from '@/lib/emailTemplates';
 import { sendMail } from '@/lib/mailer';
 import { rateLimit, rateLimitHeaders, RATE_LIMITS } from '@/lib/rateLimit';
-import { hashCandidateSecret } from '@/lib/candidateUpdateToken';
+import { hashApplicantSecret } from '@/lib/applicantUpdateToken';
 import {
   appendApplicationRow,
-  findCandidateByIdentifier,
+  findApplicantByIdentifier,
   findReferrerByIrcrn,
   findReferrerByIrcrnStrict,
   generateSubmissionId,
@@ -55,8 +55,8 @@ export async function POST(request: Request) {
     if (honeypot) {
       return NextResponse.json({ ok: true });
     }
-    const candidateId = normalize(form.get('candidateId'));
-    const candidateKey = normalize(form.get('candidateKey'));
+    const applicantId = normalize(form.get('applicantId'));
+    const applicantKey = normalize(form.get('applicantKey'));
     const iCrn = normalize(form.get('iCrn'));
     const position = normalize(form.get('position'));
     const referenceNumberInput = normalize(form.get('referenceNumber'));
@@ -67,12 +67,12 @@ export async function POST(request: Request) {
         : '';
     const resumeEntry = form.get('resume');
 
-    if (!candidateId || !candidateKey || !iCrn || !position) {
+    if (!applicantId || !applicantKey || !iCrn || !position) {
       return NextResponse.json(
         {
           ok: false,
           error:
-            'Please provide your iRAIN (or legacy candidate ID), candidate key, iRCRN, and the position you are applying for.',
+            'Please provide your iRAIN (or legacy applicant ID), applicant key, iRCRN, and the position you are applying for.',
         },
         { status: 400 },
       );
@@ -102,26 +102,26 @@ export async function POST(request: Request) {
       );
     }
 
-    const candidateRecord = await findCandidateByIdentifier(candidateId);
-    if (!candidateRecord) {
+    const applicantRecord = await findApplicantByIdentifier(applicantId);
+    if (!applicantRecord) {
       return NextResponse.json(
-        { ok: false, error: 'We could not find a candidate with that ID.' },
+        { ok: false, error: 'We could not find an applicant with that ID.' },
         { status: 404 },
       );
     }
-    const storedKeyHash = candidateRecord.record.candidateSecretHash?.trim().toLowerCase();
-    const providedKeyHash = candidateKey ? hashCandidateSecret(candidateKey) : '';
+    const storedKeyHash = applicantRecord.record.applicantSecretHash?.trim().toLowerCase();
+    const providedKeyHash = applicantKey ? hashApplicantSecret(applicantKey) : '';
     const keyMatches =
       storedKeyHash &&
       providedKeyHash &&
       storedKeyHash.length === providedKeyHash.length &&
       timingSafeEqual(Buffer.from(storedKeyHash, 'hex'), Buffer.from(providedKeyHash, 'hex'));
     if (!keyMatches) {
-      return NextResponse.json({ ok: false, error: 'Invalid candidate credentials.' }, { status: 401 });
+      return NextResponse.json({ ok: false, error: 'Invalid applicant credentials.' }, { status: 401 });
     }
-    if (strictMode && !isIrain(candidateRecord.record.id)) {
+    if (strictMode && !isIrain(applicantRecord.record.id)) {
       return NextResponse.json(
-        { ok: false, error: 'Candidate record is missing a valid iRAIN. Please update the candidate record.' },
+        { ok: false, error: 'Applicant record is missing a valid iRAIN. Please update the applicant record.' },
         { status: 409 },
       );
     }
@@ -185,8 +185,8 @@ export async function POST(request: Request) {
 
     const resumeFileId = upload.fileId;
 
-    const candidate = candidateRecord.record;
-    const candidateName = [candidate.firstName, candidate.familyName]
+    const applicant = applicantRecord.record;
+    const applicantName = [applicant.firstName, applicant.familyName]
       .filter(Boolean)
       .join(' ')
       .trim();
@@ -196,7 +196,7 @@ export async function POST(request: Request) {
       process.env.SMTP_USER ||
       referrer.email;
     const feedbackSubject = encodeURIComponent(
-      `Feedback: ${candidate.id || candidateId} for ${iCrn}`,
+      `Feedback: ${applicant.id || applicantId} for ${iCrn}`,
     );
     const approveBody = encodeURIComponent('Approved / interested. Notes: ');
     const declineBody = encodeURIComponent('Decline / not a fit. Notes: ');
@@ -205,10 +205,10 @@ export async function POST(request: Request) {
 
     const template = applicationSubmittedToReferrer({
       referrerName: referrer.name,
-      candidateName: candidateName || undefined,
-      candidateEmail: candidate.email,
-      candidatePhone: candidate.phone,
-      candidateId: candidate.id || candidateId,
+      applicantName: applicantName || undefined,
+      applicantEmail: applicant.email,
+      applicantPhone: applicant.phone,
+      applicantId: applicant.id || applicantId,
       iCrn,
       position,
       resumeFileName: resumeEntry.name,
@@ -224,12 +224,12 @@ export async function POST(request: Request) {
       text: template.text,
     });
 
-    // Send confirmation email to candidate
-    if (candidate.email) {
-      const candidateTemplate = applicationConfirmationToCandidate({
-        candidateName: candidateName || undefined,
-        candidateEmail: candidate.email,
-        candidateId: candidate.id || candidateId,
+    // Send confirmation email to applicant
+    if (applicant.email) {
+      const applicantTemplate = applicationConfirmationToApplicant({
+        applicantName: applicantName || undefined,
+        applicantEmail: applicant.email,
+        applicantId: applicant.id || applicantId,
         iCrn,
         position,
         referenceNumber: referenceNumber || undefined,
@@ -238,16 +238,16 @@ export async function POST(request: Request) {
       });
 
       await sendMail({
-        to: candidate.email,
-        subject: candidateTemplate.subject,
-        html: candidateTemplate.html,
-        text: candidateTemplate.text,
+        to: applicant.email,
+        subject: applicantTemplate.subject,
+        html: applicantTemplate.html,
+        text: applicantTemplate.text,
       });
     }
 
     await appendApplicationRow({
       id,
-      candidateId: candidate.id || candidateId,
+      applicantId: applicant.id || applicantId,
       iCrn,
       position,
       referenceNumber,
@@ -261,9 +261,9 @@ export async function POST(request: Request) {
       ok: true,
       id,
       candidate: {
-        id: candidateRecord.record.id,
-        legacyCandidateId: candidateRecord.record.legacyCandidateId,
-        rowIndex: candidateRecord.rowIndex,
+        id: applicantRecord.record.id,
+        legacyApplicantId: applicantRecord.record.legacyApplicantId,
+        rowIndex: applicantRecord.rowIndex,
       },
     });
   } catch (error) {

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireFounder } from '@/lib/founderAuth';
 import { resumeRequest } from '@/lib/emailTemplates';
 import { sendMail } from '@/lib/mailer';
-import { findCandidateByIdentifier, updateCandidateAdmin } from '@/lib/sheets';
+import { findApplicantByIdentifier, updateApplicantAdmin } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,33 +16,33 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 
-  const candidate = await findCandidateByIdentifier(params.irain);
-  if (!candidate) {
-    return NextResponse.json({ ok: false, error: 'Candidate not found' }, { status: 404 });
+  const applicant = await findApplicantByIdentifier(params.irain);
+  if (!applicant) {
+    return NextResponse.json({ ok: false, error: 'Applicant not found' }, { status: 404 });
   }
 
-  if (!candidate.record.email) {
+  if (!applicant.record.email) {
     return NextResponse.json(
-      { ok: false, error: 'Candidate email is missing; cannot send request.' },
+      { ok: false, error: 'Applicant email is missing; cannot send request.' },
       { status: 400 },
     );
   }
 
   const template = resumeRequest(
-    [candidate.record.firstName, candidate.record.familyName].filter(Boolean).join(' '),
-    candidate.record.id,
+    [applicant.record.firstName, applicant.record.familyName].filter(Boolean).join(' '),
+    applicant.record.id,
   );
 
   await sendMail({
-    to: candidate.record.email,
+    to: applicant.record.email,
     subject: template.subject,
     text: template.text,
     html: template.html,
   });
 
-  console.log('Resume request sent', { irain: candidate.record.id, email: candidate.record.email });
+  console.log('Resume request sent', { irain: applicant.record.id, email: applicant.record.email });
 
-  await updateCandidateAdmin(candidate.record.id, {
+  await updateApplicantAdmin(applicant.record.id, {
     status: 'resume requested',
     lastContactedAt: new Date().toISOString(),
   });

@@ -26,7 +26,7 @@ export const metadata: Metadata = {
     template: "%s | iRefair",
   },
   description:
-    "Submit your profile and request job referrals with the iRefair candidate experience. Connect with hiring teams in Canada.",
+    "Submit your profile and request job referrals with the iRefair applicant experience. Connect with hiring teams in Canada.",
   keywords: ["job referral", "Canada jobs", "newcomers", "hiring", "career"],
   authors: [{ name: "iRefair" }],
   creator: "iRefair",

@@ -552,7 +552,6 @@ export default function PortalClient() {
                   variant="primary"
                   onClick={handleRequestLink}
                   disabled={submitting}
-                  size="lg"
                 >
                   {submitting ? "Sending..." : "Send New Link"}
                 </ActionBtn>

@@ -7,7 +7,7 @@ import { Topbar } from "@/components/founder/Topbar";
 import { LogoutButton } from "./LogoutButton";
 
 type Stats = {
-  candidates: number | null;
+  applicants: number | null;
   referrers: number | null;
   applications: number | null;
   matches: number | null;
@@ -15,7 +15,7 @@ type Stats = {
 
 export default function FounderDashboard() {
   const [stats, setStats] = useState<Stats>({
-    candidates: null,
+    applicants: null,
     referrers: null,
     applications: null,
     matches: null,
@@ -28,7 +28,7 @@ export default function FounderDashboard() {
         const data = await response.json();
         if (data?.ok) {
           setStats({
-            candidates: data.candidates ?? null,
+            applicants: data.applicants ?? null,
             referrers: data.referrers ?? null,
             applications: data.applications ?? null,
             matches: data.matches ?? null,
@@ -42,7 +42,7 @@ export default function FounderDashboard() {
   }, []);
 
   const cards = [
-    { title: "Active candidates", value: stats.candidates, hint: "Realtime from Sheets" },
+    { title: "Active applicants", value: stats.applicants, hint: "Realtime from Sheets" },
     { title: "Referrers", value: stats.referrers, hint: "Latest sync" },
     { title: "Applications", value: stats.applications, hint: "Past 7 days" },
     { title: "Matches", value: stats.matches, hint: "Ready to review" },

@@ -4,41 +4,41 @@ import { uploadFileToDrive } from "@/lib/drive";
 import { sendMail } from "@/lib/mailer";
 import { rateLimit, rateLimitHeaders, RATE_LIMITS } from "@/lib/rateLimit";
 import {
-  candidateRegistrationConfirmation,
-  candidateIneligibleNotification,
-  candidateProfileUpdateConfirmation,
+  applicantRegistrationConfirmation,
+  applicantIneligibleNotification,
+  applicantProfileUpdateConfirmation,
 } from "@/lib/emailTemplates";
 import {
-  CANDIDATE_SECRET_HASH_HEADER,
-  CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER,
-  CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER,
-  CANDIDATE_UPDATE_TOKEN_HASH_HEADER,
-  CANDIDATE_SHEET_NAME,
+  APPLICANT_SECRET_HASH_HEADER,
+  APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
+  APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
+  APPLICANT_UPDATE_TOKEN_HASH_HEADER,
+  APPLICANT_SHEET_NAME,
   ensureColumns,
   generateIRAIN,
-  getCandidateByEmail,
-  findExistingCandidate,
+  getApplicantByEmail,
+  findExistingApplicant,
   getApplicationById,
   isIrain,
   updateApplicationAdmin,
   updateRowById,
-  upsertCandidateRow,
+  upsertApplicantRow,
 } from "@/lib/sheets";
 import { jobOpeningsUrl } from "@/lib/urls";
 import { escapeHtml, normalizeHttpUrl } from "@/lib/validation";
 import {
-  createCandidateSecret,
-  createCandidateUpdateToken,
-  hashCandidateSecret,
+  createApplicantSecret,
+  createApplicantUpdateToken,
+  hashApplicantSecret,
   hashToken,
-} from "@/lib/candidateUpdateToken";
+} from "@/lib/applicantUpdateToken";
 import { hashOpaqueToken, isExpired } from "@/lib/tokens";
 
 type EmailLanguage = "en" | "fr";
 
-type PendingCandidateUpdatePayload = {
+type PendingApplicantUpdatePayload = {
   id?: string;
-  legacyCandidateId?: string;
+  legacyApplicantId?: string;
   firstName: string;
   middleName: string;
   familyName: string;
@@ -92,7 +92,7 @@ function sanitize(value: unknown) {
 }
 
 export async function POST(request: Request) {
-  const rate = await rateLimit(request, { keyPrefix: "candidate", ...RATE_LIMITS.candidate });
+  const rate = await rateLimit(request, { keyPrefix: "applicant", ...RATE_LIMITS.applicant });
   if (!rate.allowed) {
     return NextResponse.json(
       { ok: false, error: "Too many requests. Please try again shortly." },
@@ -143,27 +143,27 @@ export async function POST(request: Request) {
       return trimmed;
     };
 
-    // Check for existing candidate using 2-of-3 matching (name, email, phone)
-    const existingCandidate = await findExistingCandidate(firstName, familyName, email, phone);
-    const isExistingCandidate = existingCandidate !== null;
-    const existingId = existingCandidate?.record.id || "";
-    const shouldAssignNewIrain = Boolean(existingCandidate) && !isIrain(existingId);
+    // Check for existing applicant using 2-of-3 matching (name, email, phone)
+    const existingApplicant = await findExistingApplicant(firstName, familyName, email, phone);
+    const isExistingApplicant = existingApplicant !== null;
+    const existingId = existingApplicant?.record.id || "";
+    const shouldAssignNewIrain = Boolean(existingApplicant) && !isIrain(existingId);
 
     // Use existing iRAIN if found, otherwise generate new
     let iRain: string;
-    if (isExistingCandidate && existingCandidate.record.id && isIrain(existingCandidate.record.id)) {
-      iRain = existingCandidate.record.id;
-    } else if (isExistingCandidate && existingCandidate.record.legacyCandidateId) {
+    if (isExistingApplicant && existingApplicant.record.id && isIrain(existingApplicant.record.id)) {
+      iRain = existingApplicant.record.id;
+    } else if (isExistingApplicant && existingApplicant.record.legacyApplicantId) {
       // Has legacy ID but no iRAIN - generate new iRAIN but keep legacy reference
       iRain = await generateIRAIN();
-    } else if (!isExistingCandidate) {
+    } else if (!isExistingApplicant) {
       iRain = await generateIRAIN();
     } else {
       iRain = await generateIRAIN();
     }
 
-    const legacyCandidateId = shouldAssignNewIrain
-      ? existingCandidate?.record.legacyCandidateId || existingId || undefined
+    const legacyApplicantId = shouldAssignNewIrain
+      ? existingApplicant?.record.legacyApplicantId || existingId || undefined
       : undefined;
     const isIneligible = locatedCanada.toLowerCase() === "no" && eligibleMoveCanada.toLowerCase() === "no";
     let resumeFileId: string | undefined;
@@ -243,22 +243,22 @@ export async function POST(request: Request) {
       return combined || notProvided;
     })();
 
-    // Check if email matches the existing candidate's email (if found by 2-of-3 matching)
+    // Check if email matches the existing applicant's email (if found by 2-of-3 matching)
     // If email matches, we can skip confirmation as they prove ownership via email
     // If email is different (name+phone match only), require confirmation for security
-    const emailMatchesExisting = existingCandidate &&
-      existingCandidate.record.email.trim().toLowerCase() === email.trim().toLowerCase();
+    const emailMatchesExisting = existingApplicant &&
+      existingApplicant.record.email.trim().toLowerCase() === email.trim().toLowerCase();
 
-    if (existingCandidate && !emailMatchesExisting) {
+    if (existingApplicant && !emailMatchesExisting) {
       // Email is different, require confirmation before updating
       const exp = Math.floor(Date.now() / 1000) + UPDATE_TOKEN_TTL_SECONDS;
-      const token = createCandidateUpdateToken({
-        email: existingCandidate.record.email || email,
-        rowIndex: existingCandidate.rowIndex,
+      const token = createApplicantUpdateToken({
+        email: existingApplicant.record.email || email,
+        rowIndex: existingApplicant.rowIndex,
         exp,
       });
       const tokenHash = hashToken(token);
-      const pendingPayload: PendingCandidateUpdatePayload = {
+      const pendingPayload: PendingApplicantUpdatePayload = {
         firstName,
         middleName,
         familyName,
@@ -281,30 +281,30 @@ export async function POST(request: Request) {
 
       if (shouldAssignNewIrain) {
         pendingPayload.id = iRain;
-        if (legacyCandidateId) {
-          pendingPayload.legacyCandidateId = legacyCandidateId;
+        if (legacyApplicantId) {
+          pendingPayload.legacyApplicantId = legacyApplicantId;
         }
       }
 
-      await ensureColumns(CANDIDATE_SHEET_NAME, [
-        CANDIDATE_UPDATE_TOKEN_HASH_HEADER,
-        CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER,
-        CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER,
+      await ensureColumns(APPLICANT_SHEET_NAME, [
+        APPLICANT_UPDATE_TOKEN_HASH_HEADER,
+        APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
+        APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
       ]);
 
-      const updateResult = await updateRowById(CANDIDATE_SHEET_NAME, "Email", existingCandidate.record.email, {
-        [CANDIDATE_UPDATE_TOKEN_HASH_HEADER]: tokenHash,
-        [CANDIDATE_UPDATE_TOKEN_EXPIRES_HEADER]: new Date(exp * 1000).toISOString(),
-        [CANDIDATE_UPDATE_PENDING_PAYLOAD_HEADER]: JSON.stringify(pendingPayload),
+      const updateResult = await updateRowById(APPLICANT_SHEET_NAME, "Email", existingApplicant.record.email, {
+        [APPLICANT_UPDATE_TOKEN_HASH_HEADER]: tokenHash,
+        [APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER]: new Date(exp * 1000).toISOString(),
+        [APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER]: JSON.stringify(pendingPayload),
       });
       if (!updateResult.updated) {
         return NextResponse.json({ ok: false, error: "Failed to start update confirmation." }, { status: 500 });
       }
 
-      const confirmUrl = new URL("/api/candidate/confirm-update", appBaseUrl);
+      const confirmUrl = new URL("/api/applicant/confirm-update", appBaseUrl);
       confirmUrl.searchParams.set("token", token);
 
-      const emailTemplate = candidateProfileUpdateConfirmation({
+      const emailTemplate = applicantProfileUpdateConfirmation({
         firstName,
         confirmUrl: confirmUrl.toString(),
         locale,
@@ -320,10 +320,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, needsEmailConfirm: true });
     }
 
-    // For new candidates OR existing candidates with matching email,
+    // For new applicants OR existing applicants with matching email,
     // proceed with direct update/insert
 
-    const upsertResult = await upsertCandidateRow({
+    const upsertResult = await upsertApplicantRow({
       id: iRain,
       firstName,
       middleName,
@@ -341,22 +341,22 @@ export async function POST(request: Request) {
       industryOther,
       employmentStatus,
     });
-    const candidateSecret = createCandidateSecret();
-    const candidateSecretHash = hashCandidateSecret(candidateSecret);
-    const candidateRowUpdates: Record<string, string | undefined> = {
-      [CANDIDATE_SECRET_HASH_HEADER]: candidateSecretHash,
+    const applicantSecret = createApplicantSecret();
+    const applicantSecretHash = hashApplicantSecret(applicantSecret);
+    const applicantRowUpdates: Record<string, string | undefined> = {
+      [APPLICANT_SECRET_HASH_HEADER]: applicantSecretHash,
     };
-    const requiredColumns = [CANDIDATE_SECRET_HASH_HEADER];
+    const requiredColumns = [APPLICANT_SECRET_HASH_HEADER];
     if (resumeFileId || resumeFileName) {
-      candidateRowUpdates["Resume File Name"] = resumeFileName;
-      candidateRowUpdates["Resume File ID"] = resumeFileId;
-      candidateRowUpdates["Resume URL"] = "";
+      applicantRowUpdates["Resume File Name"] = resumeFileName;
+      applicantRowUpdates["Resume File ID"] = resumeFileId;
+      applicantRowUpdates["Resume URL"] = "";
       requiredColumns.push("Resume File Name", "Resume File ID", "Resume URL");
     }
-    await ensureColumns(CANDIDATE_SHEET_NAME, requiredColumns);
-    const updateResult = await updateRowById(CANDIDATE_SHEET_NAME, "iRAIN", upsertResult.id, candidateRowUpdates);
+    await ensureColumns(APPLICANT_SHEET_NAME, requiredColumns);
+    const updateResult = await updateRowById(APPLICANT_SHEET_NAME, "iRAIN", upsertResult.id, applicantRowUpdates);
     if (!updateResult.updated) {
-      return NextResponse.json({ ok: false, error: "Failed to save candidate profile." }, { status: 500 });
+      return NextResponse.json({ ok: false, error: "Failed to save applicant profile." }, { status: 500 });
     }
 
     // Handle update-request token validation and clearing (from referrer portal flow)
@@ -389,8 +389,8 @@ export async function POST(request: Request) {
     const finalIRain = upsertResult.id;
 
     // Override wasUpdated based on our 2-of-3 detection
-    // This is true if we found an existing candidate with matching email (not requiring confirmation)
-    const wasUpdated = isExistingCandidate && emailMatchesExisting;
+    // This is true if we found an existing applicant with matching email (not requiring confirmation)
+    const wasUpdated = isExistingApplicant && emailMatchesExisting;
 
     const shouldIncludeStatusNote = upsertResult.wasUpdated && !isIneligible;
     const statusNote = shouldIncludeStatusNote
@@ -403,21 +403,21 @@ export async function POST(request: Request) {
     let emailTemplate;
 
     if (isIneligible) {
-      emailTemplate = candidateIneligibleNotification({
+      emailTemplate = applicantIneligibleNotification({
         firstName,
         iRain: finalIRain,
-        candidateKey: candidateSecret,
+        applicantKey: applicantSecret,
         locale,
       });
     } else {
-      emailTemplate = candidateRegistrationConfirmation({
+      emailTemplate = applicantRegistrationConfirmation({
         firstName,
         iRain: finalIRain,
         location: locationSnapshot,
         authorization: authorizationSnapshot,
         industry: industrySnapshot,
         languages: languagesSnapshot,
-        candidateKey: candidateSecret,
+        applicantKey: applicantSecret,
         isUpdate: wasUpdated || undefined,
         statusNote,
         locale,

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { findCandidateByIdentifier, getReferrerByIrref, listApplications, normalizeStatus } from '@/lib/sheets';
+import { findApplicantByIdentifier, getReferrerByIrref, listApplications, normalizeStatus } from '@/lib/sheets';
 import { normalizePortalTokenVersion, verifyReferrerToken } from '@/lib/referrerPortalToken';
 import { getReferrerPortalToken } from '@/lib/referrerPortalAuth';
 
@@ -10,21 +10,21 @@ async function buildItems(referrerIrref: string) {
   const apps = await listApplications({ referrerIrref, limit: 0 });
   const items = await Promise.all(
     apps.items.map(async (app) => {
-      const candidate = app.candidateId
-        ? await findCandidateByIdentifier(app.candidateId).catch(() => null)
+      const applicant = app.applicantId
+        ? await findApplicantByIdentifier(app.applicantId).catch(() => null)
         : null;
-      const candidateName = candidate
-        ? [candidate.record.firstName, candidate.record.familyName].filter(Boolean).join(' ').trim()
+      const applicantName = applicant
+        ? [applicant.record.firstName, applicant.record.familyName].filter(Boolean).join(' ').trim()
         : '';
       const resumeDownloadUrl = app.resumeFileId
         ? `/api/referrer/portal/resume?applicationId=${encodeURIComponent(app.id)}`
         : '';
       return {
         id: app.id,
-        candidateId: app.candidateId,
-        candidateName,
-        candidateEmail: candidate?.record.email || '',
-        candidatePhone: candidate?.record.phone || '',
+        applicantId: app.applicantId,
+        applicantName,
+        applicantEmail: applicant?.record.email || '',
+        applicantPhone: applicant?.record.phone || '',
         position: app.position,
         iCrn: app.iCrn,
         resumeFileName: app.resumeFileName,
