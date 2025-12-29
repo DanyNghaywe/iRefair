@@ -4,7 +4,9 @@ import Link from 'next/link';
 import { ChangeEvent, FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { ActionBtn } from '@/components/ActionBtn';
 import { AppShell } from '@/components/AppShell';
+import { Confetti, useConfetti } from '@/components/Confetti';
 import { PublicFooter } from '@/components/PublicFooter';
+import { SuccessAnimation } from '@/components/SuccessAnimation';
 
 const ALLOWED_RESUME_TYPES = [
   'application/pdf',
@@ -199,6 +201,8 @@ export default function ApplyPage() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<Status>('idle');
   const [submitting, setSubmitting] = useState(false);
+  const confetti = useConfetti();
+  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const errorBannerRef = useRef<HTMLDivElement | null>(null);
@@ -353,6 +357,8 @@ export default function ApplyPage() {
       }
 
       setStatus('ok');
+      confetti.trigger();
+      setShowSuccessAnimation(true);
       resetForm(true);
     } catch (error) {
       console.error('Application submission failed', error);
@@ -387,24 +393,7 @@ export default function ApplyPage() {
             </div>
           </div>
 
-          {status === 'ok' && (
-            <div className="status-banner status-banner--ok" role="status" aria-live="polite">
-              Application submitted. We&apos;ll log it and follow up with next steps.
-            </div>
-          )}
-          {status === 'error' && (
-            <div
-              ref={errorBannerRef}
-              className="status-banner status-banner--error"
-              role="status"
-              aria-live="polite"
-              tabIndex={-1}
-            >
-              We couldn&apos;t submit your application right now. Please try again in a moment.
-            </div>
-          )}
-
-          <form ref={formRef} className="referral-form" onSubmit={handleSubmit} onReset={() => resetForm()} noValidate>
+<form ref={formRef} className="referral-form" onSubmit={handleSubmit} onReset={() => resetForm()} noValidate>
             <div
               style={{
                 position: 'absolute',
@@ -565,15 +554,44 @@ export default function ApplyPage() {
             </div>
 
             <div className="form-footer">
-              <div className="footer-status" aria-live="polite">
-                {status === 'submitting' ? 'Submitting your application...' : '* Required fields'}
+              <div className="footer-status">
+                {status === 'ok' && (
+                  <div className="status-banner status-banner--ok" role="status" aria-live="polite">
+                    <SuccessAnimation
+                      show={showSuccessAnimation}
+                      variant="default"
+                      size="sm"
+                      onAnimationComplete={() => setShowSuccessAnimation(false)}
+                    />
+                    <span>Application submitted. We&apos;ll log it and follow up with next steps.</span>
+                  </div>
+                )}
+                {status === 'error' && (
+                  <div
+                    ref={errorBannerRef}
+                    className="status-banner status-banner--error"
+                    role="alert"
+                    aria-live="assertive"
+                    tabIndex={-1}
+                  >
+                    <span className="status-icon" aria-hidden="true">!</span>
+                    <span>We couldn&apos;t submit your application right now. Please try again in a moment.</span>
+                  </div>
+                )}
               </div>
               <div className="actions">
                 <ActionBtn variant="ghost" type="reset">
                   Clear form
                 </ActionBtn>
-                <ActionBtn variant="primary" type="submit" disabled={submitting}>
-                  {submitting ? 'Submitting...' : 'Submit'}
+                <ActionBtn variant="primary" type="submit" disabled={submitting} aria-busy={submitting}>
+                  {submitting ? (
+                    <>
+                      Submitting...
+                      <span className="loading-indicator" aria-hidden="true" />
+                    </>
+                  ) : (
+                    'Submit'
+                  )}
                 </ActionBtn>
               </div>
             </div>
@@ -581,6 +599,7 @@ export default function ApplyPage() {
         </section>
       </main>
       <PublicFooter />
+      <Confetti active={confetti.active} onComplete={confetti.reset} />
     </AppShell>
   );
 }
