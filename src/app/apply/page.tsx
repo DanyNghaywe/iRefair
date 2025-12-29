@@ -531,7 +531,7 @@ export default function ApplyPage() {
               </div>
 
               <div className={`${fieldClass('resume')} field-full`}>
-                <label htmlFor="resume">Attach your CV (required)</label>
+                <label htmlFor="resume">Attach your CV tailored for this position (required)</label>
                 <div className="file-upload">
                   <input
                     ref={resumeInputRef}
@@ -556,8 +556,7 @@ export default function ApplyPage() {
                   </span>
                 </div>
                 <p id="resume-helper" className="field-hint">
-                  Upload 1 supported file: PDF or document. Max 10 MB. Files are scanned for security and may be
-                  reviewed/removed if not a CV.
+                  Upload a CV specific to this company and position. PDF or DOC/DOCX, max 10 MB.
                 </p>
                 <p className="field-error" id="resume-error" role="alert" aria-live="polite">
                   {errors.resume}
