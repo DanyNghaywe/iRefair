@@ -179,7 +179,7 @@ const translations: Record<
       professionalProfile: 'Professional Profile',
       experience: 'Experience snapshot',
       context: 'Referral context',
-      attachments: 'Attachments (optional)',
+      attachments: 'Attachments',
     },
     labels: {
       firstName: 'First Name',
@@ -293,7 +293,7 @@ const translations: Record<
       professionalProfile: 'Profil professionnel',
       experience: "Résumé de l'expérience",
       context: 'Contexte de recommandation',
-      attachments: 'Pièces jointes (optionnel)',
+      attachments: 'Pièces jointes',
     },
     labels: {
       firstName: 'Prenom',
@@ -590,6 +590,11 @@ function ApplicantPageContent() {
 
     if (!values.consentLegal) {
       nextErrors['consent-legal'] = 'Please confirm your consent to proceed.';
+    }
+
+    const resumeFile = resumeInputRef.current?.files?.[0];
+    if (!resumeFile) {
+      nextErrors.resume = 'Please upload your resume / CV.';
     }
 
     return nextErrors;
@@ -1164,9 +1169,7 @@ function ApplicantPageContent() {
               <fieldset>
                 <legend>{t.legends.attachments}</legend>
                 <div className={fieldClass('field', 'resume')}>
-                  <label htmlFor="resume">
-                    {t.labels.resume} <span className="optional">{t.optional}</span>
-                  </label>
+                  <label htmlFor="resume">{t.labels.resume}</label>
                   <div className="file-upload">
                     <input
                       ref={resumeInputRef}
