@@ -6,7 +6,338 @@ import { ActionBtn } from "@/components/ActionBtn";
 import { CenteredModal } from "@/components/CenteredModal";
 import { EmptyState } from "@/components/founder/EmptyState";
 import { Skeleton, SkeletonPortalRows, SkeletonStack } from "@/components/founder/Skeleton";
+import { useLanguage } from "@/components/LanguageProvider";
 import { useToast } from "@/components/Toast";
+
+type Language = "en" | "fr";
+
+const translations: Record<
+  Language,
+  {
+    header: {
+      eyebrow: string;
+      title: string;
+      lead: string;
+      referrer: string;
+      email: string;
+      company: string;
+      total: string;
+      noEmail: string;
+    };
+    table: {
+      title: string;
+      activeReferrals: string;
+      totalLabel: string;
+      candidate: string;
+      position: string;
+      cv: string;
+      status: string;
+      actions: string;
+      downloadCv: string;
+      noCv: string;
+      appId: string;
+      iRCRN: string;
+      caption: string;
+    };
+    statuses: Record<string, string>;
+    actionLabels: Record<string, string>;
+    modalTitles: Record<string, string>;
+    modalDescriptions: Record<string, string>;
+    successMessages: Record<string, string>;
+    modal: {
+      cancel: string;
+      confirm: string;
+      sending: string;
+      date: string;
+      time: string;
+      timezone: string;
+      meetingUrl: string;
+      meetingUrlPlaceholder: string;
+      notes: string;
+      notesPlaceholder: string;
+      includeUpdateLink: string;
+      missingFields: string;
+    };
+    empty: {
+      title: string;
+      description: string;
+    };
+    error: {
+      loadFailed: string;
+      errorLabel: string;
+      noData: string;
+      refreshMessage: string;
+    };
+    expiredLink: {
+      checkEmail: string;
+      sentMessage: string;
+      expiredTitle: string;
+      expiredMessage: string;
+      emailPlaceholder: string;
+      sendNewLink: string;
+      sending: string;
+      emailRequired: string;
+      emailRequiredMessage: string;
+      linkSent: string;
+      linkSentMessage: string;
+      requestFailed: string;
+    };
+    reschedule: string;
+    join: string;
+    languageLabel: string;
+    english: string;
+    french: string;
+  }
+> = {
+  en: {
+    header: {
+      eyebrow: "Referrer portal",
+      title: "Track your referrals",
+      lead: "Review candidates, download CVs, and manage your referrals.",
+      referrer: "Referrer",
+      email: "Email",
+      company: "Company",
+      total: "Total",
+      noEmail: "No email on file",
+    },
+    table: {
+      title: "Applications",
+      activeReferrals: "active referrals",
+      totalLabel: "total",
+      candidate: "Candidate",
+      position: "Position / iRCRN",
+      cv: "CV",
+      status: "Status",
+      actions: "Actions",
+      downloadCv: "Download CV",
+      noCv: "No CV available",
+      appId: "App ID",
+      iRCRN: "iRCRN",
+      caption: "Referrer portal applications",
+    },
+    statuses: {
+      new: "New",
+      "meeting requested": "Meeting Requested",
+      "meeting scheduled": "Meeting Scheduled",
+      "needs reschedule": "Needs Reschedule",
+      interviewed: "Interviewed",
+      hired: "Hired",
+      "not a good fit": "Not a Good Fit",
+      "cv mismatch": "CV Mismatch",
+      "cv update requested": "CV Update Requested",
+      "info requested": "Info Requested",
+    },
+    actionLabels: {
+      SCHEDULE_MEETING: "Schedule Meeting",
+      CANCEL_MEETING: "Cancel Meeting",
+      REJECT: "Not a Good Fit",
+      CV_MISMATCH: "CV Doesn't Match",
+      REQUEST_CV_UPDATE: "Request CV Update",
+      REQUEST_INFO: "Missing Information",
+      MARK_INTERVIEWED: "Mark as Interviewed",
+      OFFER_JOB: "Offer Job",
+    },
+    modalTitles: {
+      SCHEDULE_MEETING: "Schedule Meeting",
+      CANCEL_MEETING: "Cancel Meeting",
+      REJECT: "Not a Good Fit",
+      CV_MISMATCH: "CV Doesn't Match",
+      REQUEST_CV_UPDATE: "Request CV Update",
+      REQUEST_INFO: "Request Information",
+      MARK_INTERVIEWED: "Mark as Interviewed",
+      OFFER_JOB: "Offer Job",
+      default: "Confirm Action",
+    },
+    modalDescriptions: {
+      SCHEDULE_MEETING: "Schedule a meeting with this candidate. They will receive an email with the details.",
+      CANCEL_MEETING: "Cancel the scheduled meeting. The candidate will be notified.",
+      REJECT: "Mark this candidate as not a good fit. They will receive a polite rejection email.",
+      CV_MISMATCH: "The CV doesn't match your requirements. The candidate will receive feedback.",
+      REQUEST_CV_UPDATE: "Request the candidate to update their CV. They will receive a link to make changes.",
+      REQUEST_INFO: "Request additional information from the candidate.",
+      MARK_INTERVIEWED: "Mark this candidate as interviewed. They will receive a confirmation.",
+      OFFER_JOB: "Offer this candidate the job! They will receive the good news.",
+    },
+    successMessages: {
+      SCHEDULE_MEETING: "Meeting scheduled and candidate notified.",
+      CANCEL_MEETING: "Meeting cancelled and candidate notified.",
+      REJECT: "Candidate marked as not a good fit.",
+      CV_MISMATCH: "CV feedback sent to candidate.",
+      REQUEST_CV_UPDATE: "CV update request sent to candidate.",
+      REQUEST_INFO: "Information request sent to candidate.",
+      MARK_INTERVIEWED: "Candidate marked as interviewed.",
+      OFFER_JOB: "Job offer sent to candidate!",
+      default: "Action completed successfully.",
+    },
+    modal: {
+      cancel: "Cancel",
+      confirm: "Confirm",
+      sending: "Sending...",
+      date: "Date",
+      time: "Time",
+      timezone: "Timezone",
+      meetingUrl: "Meeting URL (optional)",
+      meetingUrlPlaceholder: "https://zoom.us/j/...",
+      notes: "Notes (optional)",
+      notesPlaceholder: "Add any notes or feedback...",
+      includeUpdateLink: "Include link for candidate to update their CV",
+      missingFields: "Please fill in date, time, and timezone.",
+    },
+    empty: {
+      title: "No applications assigned",
+      description: "Candidate applications will appear here once they're assigned to you. Check back soon for new referrals to review.",
+    },
+    error: {
+      loadFailed: "We could not load the portal",
+      errorLabel: "Error",
+      noData: "No data available",
+      refreshMessage: "Please refresh to try again.",
+    },
+    expiredLink: {
+      checkEmail: "Check your email",
+      sentMessage: "We've sent a new portal access link to",
+      expiredTitle: "Access Link Expired",
+      expiredMessage: "Your portal access link has expired or been revoked. Enter your email to receive a fresh link.",
+      emailPlaceholder: "your.email@example.com",
+      sendNewLink: "Send New Link",
+      sending: "Sending...",
+      emailRequired: "Email required",
+      emailRequiredMessage: "Please enter your email address.",
+      linkSent: "Link sent",
+      linkSentMessage: "Check your email for a new portal link.",
+      requestFailed: "Request failed",
+    },
+    reschedule: "Candidate requested to reschedule.",
+    join: "Join",
+    languageLabel: "Language",
+    english: "English",
+    french: "Français",
+  },
+  fr: {
+    header: {
+      eyebrow: "Portail référent",
+      title: "Suivez vos recommandations",
+      lead: "Examinez les candidats, téléchargez les CV et gérez vos recommandations.",
+      referrer: "Référent",
+      email: "E-mail",
+      company: "Entreprise",
+      total: "Total",
+      noEmail: "Aucun e-mail enregistré",
+    },
+    table: {
+      title: "Candidatures",
+      activeReferrals: "recommandations actives",
+      totalLabel: "total",
+      candidate: "Candidat",
+      position: "Poste / iRCRN",
+      cv: "CV",
+      status: "Statut",
+      actions: "Actions",
+      downloadCv: "Télécharger le CV",
+      noCv: "Aucun CV disponible",
+      appId: "ID candidature",
+      iRCRN: "iRCRN",
+      caption: "Candidatures du portail référent",
+    },
+    statuses: {
+      new: "Nouveau",
+      "meeting requested": "Réunion demandée",
+      "meeting scheduled": "Réunion planifiée",
+      "needs reschedule": "À replanifier",
+      interviewed: "Entretien effectué",
+      hired: "Embauché",
+      "not a good fit": "Profil non retenu",
+      "cv mismatch": "CV inadapté",
+      "cv update requested": "Mise à jour CV demandée",
+      "info requested": "Informations demandées",
+    },
+    actionLabels: {
+      SCHEDULE_MEETING: "Planifier une réunion",
+      CANCEL_MEETING: "Annuler la réunion",
+      REJECT: "Profil non retenu",
+      CV_MISMATCH: "CV non conforme",
+      REQUEST_CV_UPDATE: "Demander mise à jour CV",
+      REQUEST_INFO: "Informations manquantes",
+      MARK_INTERVIEWED: "Marquer comme interviewé",
+      OFFER_JOB: "Proposer le poste",
+    },
+    modalTitles: {
+      SCHEDULE_MEETING: "Planifier une réunion",
+      CANCEL_MEETING: "Annuler la réunion",
+      REJECT: "Profil non retenu",
+      CV_MISMATCH: "CV non conforme",
+      REQUEST_CV_UPDATE: "Demander mise à jour CV",
+      REQUEST_INFO: "Demander des informations",
+      MARK_INTERVIEWED: "Marquer comme interviewé",
+      OFFER_JOB: "Proposer le poste",
+      default: "Confirmer l'action",
+    },
+    modalDescriptions: {
+      SCHEDULE_MEETING: "Planifiez une réunion avec ce candidat. Il recevra un e-mail avec les détails.",
+      CANCEL_MEETING: "Annulez la réunion prévue. Le candidat sera informé.",
+      REJECT: "Marquez ce candidat comme non retenu. Il recevra un e-mail de refus courtois.",
+      CV_MISMATCH: "Le CV ne correspond pas à vos exigences. Le candidat recevra un retour.",
+      REQUEST_CV_UPDATE: "Demandez au candidat de mettre à jour son CV. Il recevra un lien pour effectuer les modifications.",
+      REQUEST_INFO: "Demandez des informations supplémentaires au candidat.",
+      MARK_INTERVIEWED: "Marquez ce candidat comme ayant passé l'entretien. Il recevra une confirmation.",
+      OFFER_JOB: "Proposez le poste à ce candidat ! Il recevra la bonne nouvelle.",
+    },
+    successMessages: {
+      SCHEDULE_MEETING: "Réunion planifiée et candidat informé.",
+      CANCEL_MEETING: "Réunion annulée et candidat informé.",
+      REJECT: "Candidat marqué comme non retenu.",
+      CV_MISMATCH: "Retour sur le CV envoyé au candidat.",
+      REQUEST_CV_UPDATE: "Demande de mise à jour du CV envoyée au candidat.",
+      REQUEST_INFO: "Demande d'informations envoyée au candidat.",
+      MARK_INTERVIEWED: "Candidat marqué comme interviewé.",
+      OFFER_JOB: "Offre d'emploi envoyée au candidat !",
+      default: "Action effectuée avec succès.",
+    },
+    modal: {
+      cancel: "Annuler",
+      confirm: "Confirmer",
+      sending: "Envoi...",
+      date: "Date",
+      time: "Heure",
+      timezone: "Fuseau horaire",
+      meetingUrl: "URL de la réunion (optionnel)",
+      meetingUrlPlaceholder: "https://zoom.us/j/...",
+      notes: "Notes (optionnel)",
+      notesPlaceholder: "Ajoutez des notes ou commentaires...",
+      includeUpdateLink: "Inclure un lien pour que le candidat mette à jour son CV",
+      missingFields: "Veuillez remplir la date, l'heure et le fuseau horaire.",
+    },
+    empty: {
+      title: "Aucune candidature assignée",
+      description: "Les candidatures apparaîtront ici une fois qu'elles vous seront assignées. Revenez bientôt pour de nouvelles recommandations à examiner.",
+    },
+    error: {
+      loadFailed: "Impossible de charger le portail",
+      errorLabel: "Erreur",
+      noData: "Aucune donnée disponible",
+      refreshMessage: "Veuillez actualiser pour réessayer.",
+    },
+    expiredLink: {
+      checkEmail: "Vérifiez votre e-mail",
+      sentMessage: "Nous avons envoyé un nouveau lien d'accès au portail à",
+      expiredTitle: "Lien d'accès expiré",
+      expiredMessage: "Votre lien d'accès au portail a expiré ou a été révoqué. Entrez votre e-mail pour recevoir un nouveau lien.",
+      emailPlaceholder: "votre.email@exemple.com",
+      sendNewLink: "Envoyer un nouveau lien",
+      sending: "Envoi...",
+      emailRequired: "E-mail requis",
+      emailRequiredMessage: "Veuillez entrer votre adresse e-mail.",
+      linkSent: "Lien envoyé",
+      linkSentMessage: "Vérifiez votre e-mail pour le nouveau lien du portail.",
+      requestFailed: "Échec de la demande",
+    },
+    reschedule: "Le candidat a demandé à replanifier.",
+    join: "Rejoindre",
+    languageLabel: "Langue",
+    english: "English",
+    french: "Français",
+  },
+};
 
 type PortalItem = {
   id: string;
@@ -45,33 +376,32 @@ type FeedbackAction =
 
 type ActionConfig = {
   code: FeedbackAction;
-  label: string;
   enabledStatuses?: string[];
   disabledStatuses?: string[];
 };
 
-const STATUS_LABELS: Record<string, { label: string; variant: "info" | "success" | "warning" | "error" | "neutral" }> = {
-  new: { label: "New", variant: "info" },
-  "meeting requested": { label: "Meeting Requested", variant: "info" },
-  "meeting scheduled": { label: "Meeting Scheduled", variant: "success" },
-  "needs reschedule": { label: "Needs Reschedule", variant: "warning" },
-  interviewed: { label: "Interviewed", variant: "success" },
-  hired: { label: "Hired", variant: "success" },
-  "not a good fit": { label: "Not a Good Fit", variant: "error" },
-  "cv mismatch": { label: "CV Mismatch", variant: "warning" },
-  "cv update requested": { label: "CV Update Requested", variant: "warning" },
-  "info requested": { label: "Info Requested", variant: "warning" },
+const STATUS_VARIANTS: Record<string, "info" | "success" | "warning" | "error" | "neutral"> = {
+  new: "info",
+  "meeting requested": "info",
+  "meeting scheduled": "success",
+  "needs reschedule": "warning",
+  interviewed: "success",
+  hired: "success",
+  "not a good fit": "error",
+  "cv mismatch": "warning",
+  "cv update requested": "warning",
+  "info requested": "warning",
 };
 
 const ACTIONS: ActionConfig[] = [
-  { code: "SCHEDULE_MEETING", label: "Schedule Meeting" },
-  { code: "CANCEL_MEETING", label: "Cancel Meeting", enabledStatuses: ["meeting scheduled"] },
-  { code: "REJECT", label: "Not a Good Fit", disabledStatuses: ["hired"] },
-  { code: "CV_MISMATCH", label: "CV Doesn't Match", disabledStatuses: ["hired"] },
-  { code: "REQUEST_CV_UPDATE", label: "Request CV Update", disabledStatuses: ["hired"] },
-  { code: "REQUEST_INFO", label: "Missing Information", disabledStatuses: ["hired"] },
-  { code: "MARK_INTERVIEWED", label: "Mark as Interviewed", enabledStatuses: ["meeting scheduled", "meeting requested"] },
-  { code: "OFFER_JOB", label: "Offer Job", enabledStatuses: ["interviewed"] },
+  { code: "SCHEDULE_MEETING" },
+  { code: "CANCEL_MEETING", enabledStatuses: ["meeting scheduled"] },
+  { code: "REJECT", disabledStatuses: ["hired"] },
+  { code: "CV_MISMATCH", disabledStatuses: ["hired"] },
+  { code: "REQUEST_CV_UPDATE", disabledStatuses: ["hired"] },
+  { code: "REQUEST_INFO", disabledStatuses: ["hired"] },
+  { code: "MARK_INTERVIEWED", enabledStatuses: ["meeting scheduled", "meeting requested"] },
+  { code: "OFFER_JOB", enabledStatuses: ["interviewed"] },
 ];
 
 const TIMEZONES = [
@@ -90,10 +420,11 @@ const TIMEZONES = [
   "UTC",
 ];
 
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status, statusLabels }: { status: string; statusLabels: Record<string, string> }) {
   const normalized = status?.toLowerCase().trim() || "new";
-  const config = STATUS_LABELS[normalized] || { label: status || "New", variant: "neutral" as const };
-  return <span className={`portal-badge portal-badge--${config.variant}`}>{config.label}</span>;
+  const variant = STATUS_VARIANTS[normalized] || "neutral";
+  const label = statusLabels[normalized] || status || statusLabels.new;
+  return <span className={`portal-badge portal-badge--${variant}`}>{label}</span>;
 }
 
 function formatMeetingDisplay(date?: string, time?: string, timezone?: string): string {
@@ -104,6 +435,8 @@ function formatMeetingDisplay(date?: string, time?: string, timezone?: string): 
 
 export default function PortalClient() {
   const toast = useToast();
+  const { language, setLanguage } = useLanguage();
+  const t = translations[language];
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<PortalResponse | null>(null);
@@ -164,7 +497,7 @@ export default function PortalClient() {
   // Handler for requesting new link
   const handleRequestLink = async () => {
     if (!requestEmail.trim()) {
-      toast.error("Email required", "Please enter your email address.");
+      toast.error(t.expiredLink.emailRequired, t.expiredLink.emailRequiredMessage);
       return;
     }
 
@@ -182,9 +515,9 @@ export default function PortalClient() {
       }
 
       setLinkRequested(true);
-      toast.success("Link sent", "Check your email for a new portal link.");
+      toast.success(t.expiredLink.linkSent, t.expiredLink.linkSentMessage);
     } catch (err) {
-      toast.error("Request failed", err instanceof Error ? err.message : "Please try again.");
+      toast.error(t.expiredLink.requestFailed, err instanceof Error ? err.message : "Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -257,7 +590,7 @@ export default function PortalClient() {
     // Validation for schedule meeting
     if (modalAction === "SCHEDULE_MEETING") {
       if (!meetingDate || !meetingTime || !meetingTimezone) {
-        toast.error("Missing required fields", "Please fill in date, time, and timezone.");
+        toast.error(t.modal.missingFields, t.modal.missingFields);
         return;
       }
     }
@@ -292,7 +625,7 @@ export default function PortalClient() {
         throw new Error(json?.error || "Unable to submit feedback");
       }
 
-      toast.success("Action completed", getSuccessMessage(modalAction));
+      toast.success(t.modalTitles[modalAction] || t.modalTitles.default, t.successMessages[modalAction] || t.successMessages.default);
 
       // Update local state
       setData((prev) =>
@@ -317,80 +650,12 @@ export default function PortalClient() {
 
       closeModal();
     } catch (err) {
-      toast.error("Action failed", err instanceof Error ? err.message : "Please try again.");
+      toast.error(t.expiredLink.requestFailed, err instanceof Error ? err.message : "Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const getSuccessMessage = (action: FeedbackAction): string => {
-    switch (action) {
-      case "SCHEDULE_MEETING":
-        return "Meeting scheduled and candidate notified.";
-      case "CANCEL_MEETING":
-        return "Meeting cancelled and candidate notified.";
-      case "REJECT":
-        return "Candidate marked as not a good fit.";
-      case "CV_MISMATCH":
-        return "CV feedback sent to candidate.";
-      case "REQUEST_CV_UPDATE":
-        return "CV update request sent to candidate.";
-      case "REQUEST_INFO":
-        return "Information request sent to candidate.";
-      case "MARK_INTERVIEWED":
-        return "Candidate marked as interviewed.";
-      case "OFFER_JOB":
-        return "Job offer sent to candidate!";
-      default:
-        return "Action completed successfully.";
-    }
-  };
-
-  const getModalTitle = (action: FeedbackAction): string => {
-    switch (action) {
-      case "SCHEDULE_MEETING":
-        return "Schedule Meeting";
-      case "CANCEL_MEETING":
-        return "Cancel Meeting";
-      case "REJECT":
-        return "Not a Good Fit";
-      case "CV_MISMATCH":
-        return "CV Doesn't Match";
-      case "REQUEST_CV_UPDATE":
-        return "Request CV Update";
-      case "REQUEST_INFO":
-        return "Request Information";
-      case "MARK_INTERVIEWED":
-        return "Mark as Interviewed";
-      case "OFFER_JOB":
-        return "Offer Job";
-      default:
-        return "Confirm Action";
-    }
-  };
-
-  const getModalDescription = (action: FeedbackAction): string => {
-    switch (action) {
-      case "SCHEDULE_MEETING":
-        return "Schedule a meeting with this candidate. They will receive an email with the details.";
-      case "CANCEL_MEETING":
-        return "Cancel the scheduled meeting. The candidate will be notified.";
-      case "REJECT":
-        return "Mark this candidate as not a good fit. They will receive a polite rejection email.";
-      case "CV_MISMATCH":
-        return "The CV doesn't match your requirements. The candidate will receive feedback.";
-      case "REQUEST_CV_UPDATE":
-        return "Request the candidate to update their CV. They will receive a link to make changes.";
-      case "REQUEST_INFO":
-        return "Request additional information from the candidate.";
-      case "MARK_INTERVIEWED":
-        return "Mark this candidate as interviewed. They will receive a confirmation.";
-      case "OFFER_JOB":
-        return "Offer this candidate the job! They will receive the good news.";
-      default:
-        return "";
-    }
-  };
 
   const isActionEnabled = (action: ActionConfig, status: string): boolean => {
     const normalized = status?.toLowerCase().trim() || "new";
@@ -407,32 +672,50 @@ export default function PortalClient() {
 
   const header = (
     <section className="card page-card portal-card" aria-labelledby="portal-title">
+      <div className="language-toggle" role="group" aria-label={t.languageLabel}>
+        <button
+          type="button"
+          className={`language-toggle__btn ${language === "en" ? "is-active" : ""}`}
+          onClick={() => setLanguage("en")}
+          aria-pressed={language === "en"}
+        >
+          {t.english}
+        </button>
+        <button
+          type="button"
+          className={`language-toggle__btn ${language === "fr" ? "is-active" : ""}`}
+          onClick={() => setLanguage("fr")}
+          aria-pressed={language === "fr"}
+        >
+          {t.french}
+        </button>
+      </div>
       <div className="card-header portal-header">
         <div className="portal-header__copy">
-          <p className="eyebrow">Referrer portal</p>
-          <h2 id="portal-title">Track your referrals</h2>
-          <p className="lead">Review candidates, download CVs, and manage your referrals.</p>
+          <p className="eyebrow">{t.header.eyebrow}</p>
+          <h2 id="portal-title">{t.header.title}</h2>
+          <p className="lead">{t.header.lead}</p>
         </div>
         {data ? (
           <dl className="portal-meta">
             <div className="portal-meta__item">
-              <dt>Referrer</dt>
+              <dt>{t.header.referrer}</dt>
               <dd>
-                {data.referrer.name || "Referrer"} - {data.referrer.irref}
+                {data.referrer.name || t.header.referrer} - {data.referrer.irref}
               </dd>
             </div>
             <div className="portal-meta__item">
-              <dt>Email</dt>
-              <dd>{data.referrer.email || "No email on file"}</dd>
+              <dt>{t.header.email}</dt>
+              <dd>{data.referrer.email || t.header.noEmail}</dd>
             </div>
             {data.referrer.company ? (
               <div className="portal-meta__item">
-                <dt>Company</dt>
+                <dt>{t.header.company}</dt>
                 <dd>{data.referrer.company}</dd>
               </div>
             ) : null}
             <div className="portal-meta__item">
-              <dt>Total</dt>
+              <dt>{t.header.total}</dt>
               <dd>{data.total}</dd>
             </div>
           </dl>
@@ -486,11 +769,10 @@ export default function PortalClient() {
                 ✓
               </div>
               <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 8, color: "#111827" }}>
-                Check your email
+                {t.expiredLink.checkEmail}
               </h2>
               <p style={{ fontSize: 16, color: "#1f2937", lineHeight: 1.6, maxWidth: 400, margin: "0 auto" }}>
-                We&apos;ve sent a new portal access link to <strong style={{ color: "#111827" }}>{requestEmail}</strong>.
-                The link will arrive within a few minutes.
+                {t.expiredLink.sentMessage} <strong style={{ color: "#111827" }}>{requestEmail}</strong>.
               </p>
             </div>
           ) : (
@@ -512,18 +794,16 @@ export default function PortalClient() {
                   🔒
                 </div>
                 <h2 style={{ fontSize: 24, fontWeight: 600, marginBottom: 8, color: "#111827" }}>
-                  Access Link Expired
+                  {t.expiredLink.expiredTitle}
                 </h2>
                 <p style={{ fontSize: 16, color: "#1f2937", lineHeight: 1.5, marginBottom: 32 }}>
-                  Your portal access link has expired or been revoked.
-                  <br />
-                  Enter your email to receive a fresh link.
+                  {t.expiredLink.expiredMessage}
                 </p>
               </div>
               <div style={{ maxWidth: 380, margin: "0 auto" }}>
                 <input
                   type="email"
-                  placeholder="your.email@example.com"
+                  placeholder={t.expiredLink.emailPlaceholder}
                   value={requestEmail}
                   onChange={(e) => setRequestEmail(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && handleRequestLink()}
@@ -553,7 +833,7 @@ export default function PortalClient() {
                   onClick={handleRequestLink}
                   disabled={submitting}
                 >
-                  {submitting ? "Sending..." : "Send New Link"}
+                  {submitting ? t.expiredLink.sending : t.expiredLink.sendNewLink}
                 </ActionBtn>
               </div>
             </div>
@@ -571,8 +851,8 @@ export default function PortalClient() {
           <div className="portal-state">
             <div className="portal-state__icon portal-state__icon--error" aria-hidden="true" />
             <div>
-              <p className="portal-state__title">We could not load the portal</p>
-              <p className="portal-state__message">Error: {error}</p>
+              <p className="portal-state__title">{t.error.loadFailed}</p>
+              <p className="portal-state__message">{t.error.errorLabel}: {error}</p>
             </div>
           </div>
         </section>
@@ -588,8 +868,8 @@ export default function PortalClient() {
           <div className="portal-state">
             <div className="portal-state__icon" aria-hidden="true" />
             <div>
-              <p className="portal-state__title">No data available</p>
-              <p className="portal-state__message">Please refresh to try again.</p>
+              <p className="portal-state__title">{t.error.noData}</p>
+              <p className="portal-state__message">{t.error.refreshMessage}</p>
             </div>
           </div>
         </section>
@@ -603,25 +883,25 @@ export default function PortalClient() {
       <section className="card page-card portal-card portal-table-card">
         <div className="portal-table-header">
           <div>
-            <p className="portal-table-title">Applications</p>
-            <p className="portal-table-sub">{sortedItems.length} active referrals</p>
+            <p className="portal-table-title">{t.table.title}</p>
+            <p className="portal-table-sub">{sortedItems.length} {t.table.activeReferrals}</p>
           </div>
           <div className="portal-table-meta">
-            <span className="portal-count-pill">{data.total} total</span>
+            <span className="portal-count-pill">{data.total} {t.table.totalLabel}</span>
           </div>
         </div>
         <div className="portal-table-wrapper">
           <div className="founder-table portal-table" ref={dropdownRef}>
             <div className="founder-table__container portal-table__scroll">
               <table>
-                <caption className="sr-only">Referrer portal applications</caption>
+                <caption className="sr-only">{t.table.caption}</caption>
                 <thead>
                   <tr>
-                    <th className="portal-col-candidate">Candidate</th>
-                    <th className="portal-col-position">Position / iRCRN</th>
-                    <th className="portal-col-cv">CV</th>
-                    <th className="portal-col-status">Status</th>
-                    <th className="portal-col-actions">Actions</th>
+                    <th className="portal-col-candidate">{t.table.candidate}</th>
+                    <th className="portal-col-position">{t.table.position}</th>
+                    <th className="portal-col-cv">{t.table.cv}</th>
+                    <th className="portal-col-status">{t.table.status}</th>
+                    <th className="portal-col-actions">{t.table.actions}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -630,8 +910,8 @@ export default function PortalClient() {
                       <td colSpan={5} className="portal-table-empty">
                         <EmptyState
                           variant="portal"
-                          title="No applications assigned"
-                          description="Candidate applications will appear here once they're assigned to you. Check back soon for new referrals to review."
+                          title={t.empty.title}
+                          description={t.empty.description}
                         />
                       </td>
                     </tr>
@@ -647,23 +927,23 @@ export default function PortalClient() {
                             <div className="portal-cell-title">{item.candidateName || item.candidateId}</div>
                             <div className="portal-cell-sub">{item.candidateEmail}</div>
                             <div className="portal-cell-sub">{item.candidatePhone}</div>
-                            <div className="portal-cell-meta">App ID: {item.id}</div>
+                            <div className="portal-cell-meta">{t.table.appId}: {item.id}</div>
                           </td>
                           <td className="portal-col-position">
                             <div className="portal-cell-title">{item.position}</div>
-                            <div className="portal-cell-sub">iRCRN: {item.iCrn || "-"}</div>
+                            <div className="portal-cell-sub">{t.table.iRCRN}: {item.iCrn || "-"}</div>
                           </td>
                           <td className="portal-col-cv">
                             {item.resumeDownloadUrl ? (
                               <a href={item.resumeDownloadUrl} target="_blank" rel="noreferrer" className="portal-link">
-                                Download CV
+                                {t.table.downloadCv}
                               </a>
                             ) : (
-                              <span className="portal-muted">No CV available</span>
+                              <span className="portal-muted">{t.table.noCv}</span>
                             )}
                           </td>
                           <td className="portal-col-status">
-                            <StatusBadge status={item.status} />
+                            <StatusBadge status={item.status} statusLabels={t.statuses} />
                             {hasMeeting && (
                               <div className="portal-meeting-info">
                                 <span className="portal-meeting-date">
@@ -676,14 +956,14 @@ export default function PortalClient() {
                                     rel="noreferrer"
                                     className="portal-meeting-link"
                                   >
-                                    Join
+                                    {t.join}
                                   </a>
                                 )}
                               </div>
                             )}
                             {needsReschedule && (
                               <div className="portal-reschedule-warning">
-                                Candidate requested to reschedule.
+                                {t.reschedule}
                               </div>
                             )}
                           </td>
@@ -697,7 +977,7 @@ export default function PortalClient() {
                                 aria-expanded={openDropdown === item.id}
                                 aria-haspopup="menu"
                               >
-                                Actions
+                                {t.table.actions}
                                 <svg
                                   width="12"
                                   height="12"
@@ -732,7 +1012,7 @@ export default function PortalClient() {
                                         disabled={!enabled}
                                         role="menuitem"
                                       >
-                                        {action.label}
+                                        {t.actionLabels[action.code]}
                                       </button>
                                     );
                                   })}
@@ -755,16 +1035,16 @@ export default function PortalClient() {
       <CenteredModal
         open={modalOpen}
         onClose={closeModal}
-        title={modalAction ? getModalTitle(modalAction) : ""}
-        description={modalAction ? getModalDescription(modalAction) : ""}
+        title={modalAction ? (t.modalTitles[modalAction] || t.modalTitles.default) : ""}
+        description={modalAction ? (t.modalDescriptions[modalAction] || "") : ""}
         size={modalAction === "SCHEDULE_MEETING" ? "md" : "sm"}
         footer={
           <>
             <ActionBtn variant="ghost" onClick={closeModal} disabled={submitting}>
-              Cancel
+              {t.modal.cancel}
             </ActionBtn>
             <ActionBtn variant="primary" onClick={handleSubmit} disabled={submitting}>
-              {submitting ? "Sending..." : "Confirm"}
+              {submitting ? t.modal.sending : t.modal.confirm}
             </ActionBtn>
           </>
         }
@@ -779,7 +1059,7 @@ export default function PortalClient() {
             {modalAction === "SCHEDULE_MEETING" && (
               <div className="portal-modal-fields">
                 <div className="portal-modal-field">
-                  <label htmlFor="meeting-date">Date *</label>
+                  <label htmlFor="meeting-date">{t.modal.date} *</label>
                   <input
                     id="meeting-date"
                     type="date"
@@ -789,7 +1069,7 @@ export default function PortalClient() {
                   />
                 </div>
                 <div className="portal-modal-field">
-                  <label htmlFor="meeting-time">Time *</label>
+                  <label htmlFor="meeting-time">{t.modal.time} *</label>
                   <input
                     id="meeting-time"
                     type="time"
@@ -799,7 +1079,7 @@ export default function PortalClient() {
                   />
                 </div>
                 <div className="portal-modal-field">
-                  <label htmlFor="meeting-timezone">Timezone *</label>
+                  <label htmlFor="meeting-timezone">{t.modal.timezone} *</label>
                   <select
                     id="meeting-timezone"
                     value={meetingTimezone}
@@ -814,13 +1094,13 @@ export default function PortalClient() {
                   </select>
                 </div>
                 <div className="portal-modal-field portal-modal-field--full">
-                  <label htmlFor="meeting-url">Meeting URL (optional)</label>
+                  <label htmlFor="meeting-url">{t.modal.meetingUrl}</label>
                   <input
                     id="meeting-url"
                     type="url"
                     value={meetingUrl}
                     onChange={(e) => setMeetingUrl(e.target.value)}
-                    placeholder="https://zoom.us/j/..."
+                    placeholder={t.modal.meetingUrlPlaceholder}
                   />
                 </div>
               </div>
@@ -835,19 +1115,19 @@ export default function PortalClient() {
                   onChange={(e) => setIncludeUpdateLink(e.target.checked)}
                 />
                 <label htmlFor="include-update-link">
-                  Include link for candidate to update their CV
+                  {t.modal.includeUpdateLink}
                 </label>
               </div>
             )}
 
             <div className="portal-modal-field portal-modal-field--full">
-              <label htmlFor="notes">Notes (optional)</label>
+              <label htmlFor="notes">{t.modal.notes}</label>
               <textarea
                 id="notes"
                 rows={3}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Add any notes or feedback..."
+                placeholder={t.modal.notesPlaceholder}
               />
             </div>
           </div>
