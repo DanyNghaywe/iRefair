@@ -200,6 +200,7 @@ export default function ApplyPage() {
   const [resumeName, setResumeName] = useState('');
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState<Status>('idle');
+  const [errorMessage, setErrorMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const confetti = useConfetti();
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
@@ -222,7 +223,10 @@ export default function ApplyPage() {
   const resetForm = (preserveStatus = false) => {
     formRef.current?.reset();
     setErrors({});
-    if (!preserveStatus) setStatus('idle');
+    if (!preserveStatus) {
+      setStatus('idle');
+      setErrorMessage('');
+    }
     setSubmitting(false);
     setApplicantId('');
     setApplicantKey('');
@@ -312,6 +316,7 @@ export default function ApplyPage() {
     const websiteInput = event.currentTarget.elements.namedItem('website');
     const honeypot = websiteInput instanceof HTMLInputElement ? websiteInput.value.trim() : '';
     setStatus('idle');
+    setErrorMessage('');
     const validationErrors = validate();
     const hasErrors = Object.keys(validationErrors).length > 0;
 
@@ -345,12 +350,13 @@ export default function ApplyPage() {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok) {
-        const errorMessage = typeof data?.error === 'string' ? data.error : 'Something went wrong.';
+        const message = typeof data?.error === 'string' ? data.error : 'Something went wrong.';
         if (data?.field === 'resume') {
-          setErrors((prev) => ({ ...prev, resume: errorMessage }));
+          setErrors((prev) => ({ ...prev, resume: message }));
           setStatus('idle');
           scrollToFirstError();
         } else {
+          setErrorMessage(message);
           setStatus('error');
         }
         return;
@@ -362,6 +368,7 @@ export default function ApplyPage() {
       resetForm(true);
     } catch (error) {
       console.error('Application submission failed', error);
+      setErrorMessage('Unable to connect. Please check your internet connection and try again.');
       setStatus('error');
     } finally {
       setSubmitting(false);
@@ -575,7 +582,7 @@ export default function ApplyPage() {
                     tabIndex={-1}
                   >
                     <span className="status-icon" aria-hidden="true">!</span>
-                    <span>We couldn&apos;t submit your application right now. Please try again in a moment.</span>
+                    <span>{errorMessage || 'Something went wrong. Please try again.'}</span>
                   </div>
                 )}
               </div>
