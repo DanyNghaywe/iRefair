@@ -1787,8 +1787,8 @@ button.disclaimer,
 
 .route-loading__animation {
   position: relative;
-  width: 220px;
-  height: 220px;
+  width: 154px;
+  height: 154px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1796,8 +1796,8 @@ button.disclaimer,
 
 .route-loading .wrapper {
   position: relative;
-  width: 200px;
-  height: 200px;
+  width: 140px;
+  height: 140px;
   background-color: transparent;
   border: none;
   user-select: none;
@@ -4861,13 +4861,13 @@ section.founder-auth input:focus-visible {
   }
 
   .route-loading__animation {
-    width: 180px;
-    height: 180px;
+    width: 126px;
+    height: 126px;
   }
 
   .route-loading .wrapper {
-    width: 160px;
-    height: 160px;
+    width: 112px;
+    height: 112px;
   }
 }
 
