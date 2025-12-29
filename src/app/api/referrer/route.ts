@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
 import { sendMail } from '@/lib/mailer';
 import { rateLimit, rateLimitHeaders, RATE_LIMITS } from '@/lib/rateLimit';
-import { appendReferrerRow, generateIRREF } from '@/lib/sheets';
+import { appendReferrerRow, generateIRREF, getReferrerByEmail, addPendingUpdate } from '@/lib/sheets';
 import { escapeHtml, normalizeHttpUrl } from '@/lib/validation';
-import { referrerRegistrationConfirmation } from '@/lib/emailTemplates';
+import { referrerRegistrationConfirmation, referrerAlreadyExistsEmail } from '@/lib/emailTemplates';
 
 type ReferrerPayload = {
   name?: string;
@@ -86,6 +86,39 @@ export async function POST(request: Request) {
 
     const careersPortal = careersPortalUrl || '';
     const linkedin = linkedinUrl || '';
+
+    // Check if referrer already exists with this email
+    const existingReferrer = await getReferrerByEmail(email);
+    if (existingReferrer) {
+      // Store the submitted data as a pending update
+      await addPendingUpdate(existingReferrer.record.irref, {
+        name,
+        email,
+        phone,
+        country,
+        company,
+        companyIndustry: resolveIndustry(companyIndustry, companyIndustryOther, companyIndustry),
+        careersPortal,
+        workType,
+        linkedin,
+      });
+
+      // Send email informing them they already have an iRREF
+      const emailTemplate = referrerAlreadyExistsEmail({
+        name: fallbackName,
+        iRref: existingReferrer.record.irref,
+        locale,
+      });
+
+      await sendMail({
+        to: email,
+        subject: emailTemplate.subject,
+        html: emailTemplate.html,
+        text: emailTemplate.text,
+      });
+
+      return NextResponse.json({ ok: true, iRref: existingReferrer.record.irref, isExisting: true });
+    }
 
     const iRref = await generateIRREF();
 

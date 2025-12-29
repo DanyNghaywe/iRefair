@@ -24,6 +24,7 @@ type ReferrerRecord = {
   careersPortal?: string;
   workType: string;
   linkedin: string;
+  pendingUpdates?: string;
   status: string;
   ownerNotes: string;
   tags: string;
@@ -32,8 +33,36 @@ type ReferrerRecord = {
   missingFields: string[];
 };
 
+type PendingUpdate = {
+  id: string;
+  timestamp: string;
+  status: "pending" | "approved" | "denied";
+  data: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    country?: string;
+    company?: string;
+    companyIndustry?: string;
+    careersPortal?: string;
+    workType?: string;
+    linkedin?: string;
+  };
+};
+
 const statusOptions = ["", "New", "Engaged", "Active", "Paused", "Closed"];
 const LINK_PREVIEW_MAX = 42;
+
+const fieldLabelMap: Record<string, string> = {
+  companyIndustry: "Industry",
+  careersPortal: "Careers Portal",
+  workType: "Work Type",
+};
+
+const formatFieldLabel = (key: string) => {
+  if (fieldLabelMap[key]) return fieldLabelMap[key];
+  return key.charAt(0).toUpperCase() + key.slice(1);
+};
 
 const truncateText = (value: string, max: number) => {
   if (value.length <= max) return value;
@@ -212,8 +241,25 @@ export default function ReferrerReviewPage() {
   const [portalMessage, setPortalMessage] = useState<string | null>(null);
   const [portalError, setPortalError] = useState<string | null>(null);
   const [rejectConfirm, setRejectConfirm] = useState(false);
+  const [pendingUpdateLoading, setPendingUpdateLoading] = useState<string | null>(null);
   const skipAutosaveRef = useRef(true);
   const skipDetailsAutosaveRef = useRef(true);
+
+  // Parse pending updates from referrer
+  const pendingUpdates = useMemo<PendingUpdate[]>(() => {
+    if (!referrer?.pendingUpdates) return [];
+    try {
+      const parsed = JSON.parse(referrer.pendingUpdates);
+      return Array.isArray(parsed) ? parsed : [];
+    } catch {
+      return [];
+    }
+  }, [referrer?.pendingUpdates]);
+
+  const pendingOnlyUpdates = useMemo(
+    () => pendingUpdates.filter((u) => u.status === "pending"),
+    [pendingUpdates],
+  );
 
   const approvalValue = useMemo(() => {
     const value = (referrer?.companyApproval || "pending").toLowerCase();
@@ -472,6 +518,36 @@ export default function ReferrerReviewPage() {
     }
   };
 
+  const handlePendingUpdate = async (updateId: string, action: "approve" | "deny") => {
+    if (!referrer || pendingUpdateLoading) return;
+    setPendingUpdateLoading(updateId);
+    setActionMessage(null);
+    setActionError(null);
+    try {
+      const response = await fetch(
+        `/api/founder/referrers/${encodeURIComponent(referrer.irref)}/pending-updates`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ updateId, action }),
+        },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.ok) {
+        setActionError(data?.error || "Unable to process update.");
+      } else {
+        // Refresh the referrer data to get updated pending updates
+        await fetchReferrer();
+        setActionMessage(action === "approve" ? "Update applied successfully." : "Update denied.");
+      }
+    } catch (error) {
+      console.error("Process pending update failed", error);
+      setActionError("Unable to process update.");
+    } finally {
+      setPendingUpdateLoading(null);
+    }
+  };
+
   if (!cleanIrref) {
     return (
       <div className="founder-page">
@@ -555,6 +631,156 @@ export default function ReferrerReviewPage() {
       <DetailPageShell
         main={
           <>
+            {pendingOnlyUpdates.length > 0 && (
+              <DetailSection
+                title={
+                  <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    Pending Updates
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        padding: "2px 8px",
+                        background: "#fef3c7",
+                        color: "#92400e",
+                        fontWeight: 600,
+                        borderRadius: "9999px",
+                        border: "1px solid #f59e0b",
+                      }}
+                    >
+                      {pendingOnlyUpdates.length}
+                    </span>
+                  </span>
+                }
+              >
+                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                  {pendingOnlyUpdates.map((update) => (
+                    <div
+                      key={update.id}
+                      style={{
+                        border: "1px solid #e5e7eb",
+                        borderRadius: "8px",
+                        padding: "16px",
+                        background: "#fafafa",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          marginBottom: "12px",
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: "11px",
+                            padding: "2px 8px",
+                            background: "#fef3c7",
+                            color: "#92400e",
+                            fontWeight: 600,
+                            borderRadius: "9999px",
+                            border: "1px solid #f59e0b",
+                          }}
+                        >
+                          Pending
+                        </span>
+                        <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                          {new Date(update.timestamp).toLocaleString()}
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: "4px",
+                          fontSize: "13px",
+                        }}
+                      >
+                        {Object.entries(update.data).map(([key, newValue]) => {
+                          const currentValue =
+                            referrer[key as keyof ReferrerRecord] || "";
+                          const hasChanged = newValue !== currentValue;
+                          if (!hasChanged && !newValue) return null;
+                          return (
+                            <div
+                              key={key}
+                              style={{
+                                display: "grid",
+                                gridTemplateColumns: "120px 1fr 1fr",
+                                gap: "16px",
+                                padding: "6px 0",
+                                borderBottom: "1px solid #f3f4f6",
+                              }}
+                            >
+                              <span style={{ fontWeight: 500, color: "#374151" }}>
+                                {formatFieldLabel(key)}
+                              </span>
+                              <span style={{ color: "#6b7280" }}>
+                                {String(currentValue) || "-"}
+                              </span>
+                              <span
+                                style={{
+                                  color: hasChanged ? "#059669" : "#6b7280",
+                                  fontWeight: hasChanged ? 500 : 400,
+                                }}
+                              >
+                                {String(newValue) || "-"}
+                                {hasChanged && " ✓"}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: "8px",
+                          marginTop: "12px",
+                          justifyContent: "flex-end",
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handlePendingUpdate(update.id, "approve")}
+                          disabled={pendingUpdateLoading === update.id}
+                          style={{
+                            border: "none",
+                            background: "#2563eb",
+                            color: "#ffffff",
+                            padding: "4px 12px",
+                            borderRadius: "4px",
+                            fontSize: "13px",
+                            fontWeight: 500,
+                            cursor: pendingUpdateLoading === update.id ? "not-allowed" : "pointer",
+                            opacity: pendingUpdateLoading === update.id ? 0.5 : 1,
+                          }}
+                        >
+                          {pendingUpdateLoading === update.id ? "Applying..." : "Approve"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handlePendingUpdate(update.id, "deny")}
+                          disabled={pendingUpdateLoading === update.id}
+                          style={{
+                            border: "1px solid #d1d5db",
+                            background: "#ffffff",
+                            color: "#374151",
+                            padding: "4px 12px",
+                            borderRadius: "4px",
+                            fontSize: "13px",
+                            cursor: pendingUpdateLoading === update.id ? "not-allowed" : "pointer",
+                            opacity: pendingUpdateLoading === update.id ? 0.5 : 1,
+                          }}
+                        >
+                          Deny
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </DetailSection>
+            )}
+
             <DetailSection title="Status + Approval">
               <div className="field-grid field-grid--two">
                 <div className="field">

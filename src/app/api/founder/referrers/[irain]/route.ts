@@ -37,6 +37,7 @@ type ReferrerRecord = {
   careersPortal?: string;
   workType: string;
   linkedin: string;
+  pendingUpdates?: string;
   status: string;
   ownerNotes: string;
   tags: string;

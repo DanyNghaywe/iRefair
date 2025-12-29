@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
 
 type DetailSectionProps = {
-  title?: string;
+  title?: ReactNode;
   className?: string;
   children: ReactNode;
 };
