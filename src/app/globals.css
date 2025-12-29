@@ -2474,12 +2474,12 @@ section.founder-auth input:focus-visible {
 
 .select-panel {
   position: relative;
-  z-index: 1;
+  z-index: 20;
   display: flex;
   justify-content: center;
   align-items: center;
   margin-top: 12px;
-  margin-bottom: 120px;
+  margin-bottom: 260px;
 }
 
 .field-label-row {
