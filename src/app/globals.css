@@ -2482,8 +2482,6 @@ section.founder-auth input:focus-visible {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-top: 12px;
-  margin-bottom: 260px;
 }
 
 .field-label-row {
