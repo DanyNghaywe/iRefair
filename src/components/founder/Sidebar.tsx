@@ -76,7 +76,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, Props>(function Sidebar(
         <Link href="/founder" className={styles.brand}>
           <div className={styles.logoWrap}>
             <Image
-              src="/logo-small.png"
+              src="/irefair-large.png"
               alt="iRefair"
               width={32}
               height={32}

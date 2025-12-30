@@ -21,7 +21,7 @@ export default function FounderLoginPage() {
             <div className="founder-login-header">
               <div className="founder-login-brand">
                 <Image
-                  src="/logo-medium.png"
+                  src="/irefair-large.png"
                   alt="iRefair"
                   width={80}
                   height={80}
