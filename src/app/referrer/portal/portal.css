@@ -126,7 +126,7 @@
 
 .portal-table-sub {
   margin: 4px 0 0;
-  color: var(--muted);
+  color: rgba(15, 23, 42, 0.7);
   font-size: 14px;
 }
 
