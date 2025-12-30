@@ -19,6 +19,8 @@
   --accent-secondary-rgb: 244, 124, 93;
   --error: #e75d6b;
   --error-rgb: 231, 93, 107;
+  --validation-warning: #fbbf24;
+  --validation-warning-rgb: 251, 191, 36;
   --surface-soft: linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.12));
   --shadow: 0 24px 70px rgba(35, 46, 89, 0.16);
 
@@ -2544,23 +2546,22 @@ section.founder-auth input:focus-visible {
 
 .field-error {
   margin: 6px 0 0;
-  color: rgba(var(--error-rgb), 0.95);
+  color: rgba(var(--validation-warning-rgb), 0.95);
   font-size: var(--font-size-small);
   line-height: 1.4;
-  font-weight: 600;
+  font-weight: 500;
 }
 
 .field.has-error input,
 .field.has-error select,
 .field.has-error textarea,
 .field.has-error .file-upload-trigger {
-  border-color: rgba(var(--error-rgb), 0.9);
-  box-shadow: 0 0 0 2px rgba(var(--error-rgb), 0.3);
-  animation: fieldShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+  border-color: rgba(var(--validation-warning-rgb), 0.6);
+  box-shadow: 0 0 0 2px rgba(var(--validation-warning-rgb), 0.15);
 }
 
 .field.has-error .file-upload-trigger {
-  color: var(--error);
+  color: var(--validation-warning);
 }
 
 @keyframes fieldShake {
@@ -2996,7 +2997,7 @@ section.founder-auth input:focus-visible {
 }
 
 .ops-scope .field-error {
-  color: rgba(var(--error-rgb), 0.9);
+  color: rgba(var(--validation-warning-rgb), 0.9);
 }
 
 .ops-scope {
@@ -5638,6 +5639,26 @@ input[type="radio"] {
 .founder-checkbox label {
   cursor: pointer;
   line-height: 1.5;
+}
+
+/* Consent checkbox validation error states */
+.consent-checkbox.has-error,
+.founder-checkbox.has-error {
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(var(--validation-warning-rgb), 0.06);
+  border: 1px solid rgba(var(--validation-warning-rgb), 0.25);
+}
+
+.consent-checkbox.has-error .field-error,
+.founder-checkbox.has-error .field-error {
+  flex-basis: 100%;
+  margin-top: 8px;
+}
+
+.consent-checkbox.has-error,
+.founder-checkbox.has-error {
+  flex-wrap: wrap;
 }
 
 /* ==========================================================================

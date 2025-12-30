@@ -441,9 +441,6 @@ export default function ReferrerPage() {
     } else if (!isValidUrl(values.careersPortal)) {
       nextErrors['referrer-careers-portal'] = 'Please enter a valid URL (http/https).';
     }
-    if (!values.consentLegal) {
-      nextErrors['consent-legal'] = 'Please confirm your consent to proceed.';
-    }
 
     return nextErrors;
   };
@@ -481,6 +478,13 @@ export default function ReferrerPage() {
       setStatus('idle');
       setSubmitting(false);
       scrollToFirstError();
+      return;
+    }
+
+    // Use browser native validation for consent checkbox
+    const consentCheckbox = event.currentTarget.querySelector<HTMLInputElement>('#consent-legal');
+    if (consentCheckbox && !consentCheckbox.checkValidity()) {
+      consentCheckbox.reportValidity();
       return;
     }
 
@@ -610,6 +614,7 @@ export default function ReferrerPage() {
               className="referral-form"
               action="#"
               method="post"
+              noValidate
               onSubmit={handleSubmit}
               onReset={() => {
                 setErrors({});
@@ -852,22 +857,14 @@ export default function ReferrerPage() {
                       <li key={index}>{renderConsentPoint(item)}</li>
                     ))}
                   </ul>
-                  <div className={fieldClass('consent-checkbox consent-legal', 'consent-legal')}>
+                  <div className="consent-checkbox consent-legal">
                     <input
                       id="consent-legal"
                       name="consent-legal"
                       type="checkbox"
                       required
-                      aria-describedby="consent-legal-error"
-                      aria-invalid={Boolean(errors['consent-legal'])}
-                      onChange={() => clearError('consent-legal')}
                     />
                     <label htmlFor="consent-legal">{t.consentAgreement}</label>
-                    {errors['consent-legal'] && (
-                      <p className="field-error" id="consent-legal-error" role="alert">
-                        {errors['consent-legal']}
-                      </p>
-                    )}
                   </div>
                 </div>
               </section>
