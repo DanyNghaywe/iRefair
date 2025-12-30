@@ -119,7 +119,7 @@ export default function CandidateReviewPage() {
     setLoading(true);
     setNotFound(false);
 
-    const response = await fetch(`/api/founder/candidates/${encodeURIComponent(cleanIrain)}`, {
+    const response = await fetch(`/api/founder/applicants/${encodeURIComponent(cleanIrain)}`, {
       cache: "no-store",
     });
 
@@ -200,7 +200,7 @@ export default function CandidateReviewPage() {
   const patchCandidate = async (patch: Record<string, string>) => {
     if (!candidate) return;
     setSaving(true);
-    await fetch(`/api/founder/candidates/${encodeURIComponent(candidate.irain)}`, {
+    await fetch(`/api/founder/applicants/${encodeURIComponent(candidate.irain)}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(patch),
@@ -294,7 +294,7 @@ export default function CandidateReviewPage() {
     setActionError(null);
     try {
       const response = await fetch(
-        `/api/founder/candidates/${encodeURIComponent(candidate.irain)}/request-resume`,
+        `/api/founder/applicants/${encodeURIComponent(candidate.irain)}/request-resume`,
         { method: "POST" },
       );
       const data = await response.json().catch(() => ({}));
@@ -326,8 +326,8 @@ export default function CandidateReviewPage() {
         <div className="card referrer-review__empty">
           <h2>Candidate not found</h2>
           <p className="field-hint">This candidate ID is missing or invalid.</p>
-          <ActionBtn as="link" href="/founder/candidates" variant="ghost">
-            &larr; Back to Candidates
+          <ActionBtn as="link" href="/founder/applicants" variant="ghost">
+            &larr; Back to Applicants
           </ActionBtn>
         </div>
       </div>
@@ -371,8 +371,8 @@ export default function CandidateReviewPage() {
         <div className="card referrer-review__empty">
           <h2>Candidate not found</h2>
           <p className="field-hint">Double-check the iRAIN and try again.</p>
-          <ActionBtn as="link" href="/founder/candidates" variant="ghost">
-            &larr; Back to Candidates
+          <ActionBtn as="link" href="/founder/applicants" variant="ghost">
+            &larr; Back to Applicants
           </ActionBtn>
         </div>
       </div>
@@ -718,8 +718,8 @@ export default function CandidateReviewPage() {
                   </div>
                 ) : null}
               </div>
-              <ActionBtn as="link" href="/founder/candidates" variant="ghost">
-                &larr; Back to Candidates
+              <ActionBtn as="link" href="/founder/applicants" variant="ghost">
+                &larr; Back to Applicants
               </ActionBtn>
             </DetailSection>
 

@@ -75,7 +75,7 @@ export default function CandidatesPage() {
     if (eligibleFilter === "eligible") params.set("eligible", "true");
     if (eligibleFilter === "ineligible") params.set("eligible", "false");
 
-    const response = await fetch(`/api/founder/candidates?${params.toString()}`, { cache: "no-store" });
+    const response = await fetch(`/api/founder/applicants?${params.toString()}`, { cache: "no-store" });
     const data = await response.json();
     if (data?.ok) {
       setItems(data.items ?? []);
@@ -90,7 +90,7 @@ export default function CandidatesPage() {
   }, [search, statusFilter, eligibleFilter]);
 
   const handleRowClick = (row: CandidateRecord) => {
-    router.push(`/founder/candidates/${encodeURIComponent(row.irain)}`);
+    router.push(`/founder/applicants/${encodeURIComponent(row.irain)}`);
   };
 
   const columns = useMemo<OpsColumn<CandidateRecord>[]>(
@@ -135,7 +135,7 @@ export default function CandidatesPage() {
         render: (row: CandidateRecord) => {
           const id = row.irain?.trim();
           if (!id) return null;
-          const href = `/founder/candidates/${encodeURIComponent(id)}?edit=1`;
+          const href = `/founder/applicants/${encodeURIComponent(id)}?edit=1`;
           return (
             <ActionBtn
               as="link"
