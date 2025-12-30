@@ -97,14 +97,13 @@ export default function LoginForm() {
       )}
 
       <div className={fieldClass("email")}>
-        <label htmlFor="email">Email</label>
         <input
           id="email"
           name="email"
           type="email"
           inputMode="email"
           autoComplete="username"
-          placeholder=""
+          placeholder=" "
           value={email}
           aria-invalid={Boolean(errors.email)}
           aria-describedby="email-error"
@@ -115,19 +114,19 @@ export default function LoginForm() {
           disabled={status === "submitting"}
           required
         />
+        <label htmlFor="email">Email</label>
         <p className="field-error" id="email-error" role="alert" aria-live="polite">
           {errors.email}
         </p>
       </div>
 
       <div className={fieldClass("password")}>
-        <label htmlFor="password">Password</label>
         <input
           id="password"
           name="password"
           type="password"
           autoComplete="current-password"
-          placeholder=""
+          placeholder=" "
           value={password}
           aria-invalid={Boolean(errors.password)}
           aria-describedby="password-error"
@@ -138,6 +137,7 @@ export default function LoginForm() {
           disabled={status === "submitting"}
           required
         />
+        <label htmlFor="password">Password</label>
         <p className="field-error" id="password-error" role="alert" aria-live="polite">
           {errors.password}
         </p>

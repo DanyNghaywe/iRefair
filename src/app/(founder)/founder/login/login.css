@@ -77,7 +77,7 @@
 .founder-login-header {
   text-align: center;
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .founder-login-header h2 {
@@ -103,7 +103,7 @@
 .founder-login-form {
   display: grid;
   gap: 16px;
-  margin-top: 4px;
+  margin-top: 20px;
 }
 
 .founder-login-field {
