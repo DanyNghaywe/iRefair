@@ -28,12 +28,8 @@
       "Bash(git mv:*)",
       "Bash(powershell \"if \\(Test-Path ''update-remaining-files.ps1''\\) { .\\\\update-remaining-files.ps1 } else { Write-Host ''Script not found, will update files manually'' }\")",
       "Bash(powershell:*)",
-      "Bash(npx eslint:*)",
-      "Bash(find:*)",
-      "Bash(timeout 15 npm run dev)",
-      "Bash(git pull:*)",
-      "Bash(git stash:*)",
-      "Bash(git stash pop:*)"
+      "Bash(timeout:*)",
+      "Bash(git merge:*)"
     ]
   }
 }
