@@ -43,8 +43,8 @@
 .table td {
   padding: 14px 16px;
   text-align: left;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.06);
-  color: #0f172a;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
 }
 
 .table thead th {
@@ -57,14 +57,14 @@
   z-index: 1;
   font-size: 12px;
   font-weight: 600;
-  color: var(--ink, #0f172a);
+  color: #f8fafc;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
 
 .table tbody tr td {
   font-size: 14px;
-  color: #0f172a;
+  color: #e2e8f0;
   transition: background 0.15s ease;
 }
 
@@ -119,7 +119,7 @@
 
 .empty {
   text-align: center;
-  color: #334155;
+  color: #cbd5e1;
   padding: 48px 24px;
   font-size: 15px;
 }
@@ -131,7 +131,7 @@
 }
 
 .sortIndicator {
-  color: #94a3b8;
+  color: #a0aec0;
   transition: color 0.15s ease;
 }
 
@@ -141,22 +141,22 @@
 }
 
 .sortable:hover {
-  color: #0f172a;
+  color: #ffffff;
 }
 
 .sortable:hover .sortIndicator {
-  color: #64748b;
+  color: #cbd5e1;
 }
 
 .table td a {
-  color: #0284c7;
+  color: #38bdf8;
   text-decoration: none;
   font-weight: 500;
   transition: color 0.15s ease;
 }
 
 .table td a:hover {
-  color: #0369a1;
+  color: #7dd3fc;
   text-decoration: underline;
 }
 
@@ -183,24 +183,25 @@
 
   .responsiveCards tr {
     display: block;
-    background: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
     border-radius: 12px;
-    border: 1px solid rgba(15, 23, 42, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.12);
     padding: 16px;
-    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
   }
 
   .responsiveCards td {
     display: block;
     padding: 6px 0;
     border-bottom: none;
+    color: #e2e8f0;
   }
 
   .responsiveCards td::before {
     content: attr(data-label);
     font-size: 11px;
     font-weight: 600;
-    color: #64748b;
+    color: #a0aec0;
     text-transform: uppercase;
     letter-spacing: 0.05em;
     display: block;

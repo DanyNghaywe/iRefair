@@ -44,9 +44,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+  background: transparent;
   border-radius: 10px;
-  box-shadow: 0 4px 12px rgba(14, 165, 233, 0.3);
 }
 
 .brandLogo {
@@ -62,14 +61,14 @@
 .brandText {
   font-size: 16px;
   font-weight: 700;
-  color: #0f172a;
+  color: #f8fafc;
   letter-spacing: -0.02em;
 }
 
 .brandLabel {
   font-size: 11px;
   font-weight: 500;
-  color: #64748b;
+  color: #cbd5e1;
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
@@ -93,7 +92,7 @@
 .navLabel {
   font-size: 11px;
   font-weight: 600;
-  color: #94a3b8;
+  color: #a0aec0;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   padding: 8px 12px 12px;
@@ -107,7 +106,7 @@
   padding: 11px 14px;
   border-radius: 10px;
   text-decoration: none;
-  color: #1e293b;
+  color: #cbd5e1;
   font-size: 14px;
   font-weight: 500;
   transition: all 0.15s ease;
@@ -115,7 +114,7 @@
 }
 
 .navLink:hover {
-  color: var(--ink, #0f172a);
+  color: #f8fafc;
   background: rgba(255, 255, 255, 0.12);
 }
 
@@ -140,7 +139,7 @@
 
 /* Active State */
 .navLinkActive {
-  color: var(--accent-primary, #0ea5e9);
+  color: #ffffff;
   background: rgba(255, 255, 255, 0.18);
   border-color: rgba(255, 255, 255, 0.22);
   font-weight: 600;
@@ -148,12 +147,12 @@
 
 .navLinkActive .navIcon {
   opacity: 1;
-  color: var(--accent-primary, #0ea5e9);
+  color: #ffffff;
 }
 
 .navLinkActive:hover {
   background: rgba(255, 255, 255, 0.22);
-  color: var(--accent-primary, #0ea5e9);
+  color: #ffffff;
 }
 
 .activeIndicator {
@@ -183,7 +182,7 @@
 .footerLabel {
   font-size: 12px;
   font-weight: 600;
-  color: var(--ink, #0f172a);
+  color: #e2e8f0;
   display: flex;
   align-items: center;
   gap: 6px;
