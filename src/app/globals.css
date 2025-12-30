@@ -2998,12 +2998,8 @@ section.founder-auth input:focus-visible {
 }
 
 .ops-scope {
-  --accent-primary: var(--accent-2);
-  --accent-primary-rgb: 61, 139, 253;
-  --glass-bg: linear-gradient(150deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0.12));
-  --glass-bg-2: linear-gradient(150deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.18));
-  --glass-border: rgba(255, 255, 255, 0.32);
-  --glass-shadow: 0 22px 48px rgba(15, 23, 42, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  --accent-primary: #0ea5e9;
+  --accent-primary-rgb: 14, 165, 233;
 }
 
 /* Sidebar styles moved to Sidebar.module.css */
@@ -3056,12 +3052,18 @@ section.founder-auth input:focus-visible {
 
 .founder-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 16px;
 }
 
 .founder-card {
-  padding: 16px;
+  padding: 20px;
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
 }
 
 .founder-card__header {
@@ -3072,21 +3074,26 @@ section.founder-auth input:focus-visible {
 }
 
 .founder-card__title {
-  font-weight: 700;
-  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
 .founder-card__value {
-  font-size: var(--font-size-2xl);
-  font-weight: 800;
+  font-size: 32px;
+  font-weight: 700;
   color: var(--ink);
-  margin-top: 6px;
+  margin-top: 8px;
+  letter-spacing: -0.02em;
+  line-height: 1.1;
 }
 
 .founder-card__meta {
   color: var(--muted);
   font-size: var(--font-size-sm);
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 .founder-topbar {
@@ -3097,6 +3104,8 @@ section.founder-auth input:focus-visible {
   align-items: center;
   gap: 16px;
   flex-wrap: wrap;
+  padding: 8px 0 16px;
+  margin-bottom: 8px;
 }
 
 .founder-topbar__titles {
@@ -3108,55 +3117,62 @@ section.founder-auth input:focus-visible {
 .founder-topbar__titles h1 {
   margin: 0;
   font-size: var(--font-size-h2);
+  font-weight: 700;
   color: var(--ink);
+  letter-spacing: -0.02em;
 }
 
 .founder-topbar__titles p {
-  margin: 2px 0 0;
+  margin: 4px 0 0;
   color: var(--muted);
+  font-size: 15px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
-
-.ops-scope .founder-topbar__titles {
-  isolation: isolate;
-  background: transparent;
-}
-
-.ops-scope .founder-topbar__titles p {
-  color: #5d6174;
-  mix-blend-mode: normal;
 }
 
 .founder-topbar__controls {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
 .founder-topbar__search input {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  color: #e2e8f0;
-  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--ink);
+  padding: 10px 14px;
   border-radius: 10px;
   min-width: 260px;
+  font-size: 14px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.founder-topbar__search input:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.founder-topbar__search input::placeholder {
+  color: var(--muted);
 }
 
 .founder-button {
-  background: linear-gradient(135deg, var(--accent-primary, #00e0ff), #5be7ff);
-  color: #0b1021;
+  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+  color: #ffffff;
   border: none;
   border-radius: 10px;
-  padding: 10px 14px;
-  font-weight: 700;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 2px 8px rgba(14, 165, 233, 0.25);
 }
 
 .founder-button:hover {
   transform: translateY(-1px);
-  box-shadow: 0 10px 30px rgba(0, 224, 255, 0.24);
+  box-shadow: 0 6px 20px rgba(14, 165, 233, 0.35);
 }
 
 .founder-button:disabled {
@@ -3167,16 +3183,24 @@ section.founder-auth input:focus-visible {
 }
 
 .founder-button--ghost {
-  background: transparent;
-  color: #e2e8f0;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--ink);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: none;
+}
+
+.founder-button--ghost:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
 }
 
 .ops-scope .founder-card,
 .ops-scope .founder-sidebar {
-  background: var(--glass-bg, linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08)));
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.22));
-  box-shadow: var(--glass-shadow, 0 18px 44px rgba(15, 23, 42, 0.12));
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
   color: var(--ink);
 }
 
@@ -3184,9 +3208,9 @@ section.founder-auth input:focus-visible {
   background: var(--glass-bg);
   border: 1px solid var(--glass-border);
   border-radius: var(--glass-radius);
+  box-shadow: var(--glass-shadow), var(--glass-highlight);
   backdrop-filter: blur(var(--glass-blur));
   -webkit-backdrop-filter: blur(var(--glass-blur));
-  box-shadow: var(--glass-shadow), var(--glass-highlight);
   color: var(--ink);
 }
 
@@ -3208,12 +3232,12 @@ section.founder-auth input:focus-visible {
 .ops-scope .founder-fieldset input,
 .ops-scope .founder-fieldset textarea {
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.14));
-  color: var(--ink, #fff);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--ink);
 }
 
 .ops-scope .founder-topbar__search input::placeholder {
-  color: rgba(15, 23, 42, 0.45);
+  color: var(--muted);
 }
 
 .ops-scope .founder-toolbar select,
@@ -3297,29 +3321,34 @@ section.founder-auth input:focus-visible {
 }
 
 .ops-scope .founder-table thead th {
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.68), rgba(255, 255, 255, 0.4));
-  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
-  color: var(--ink);
+  background: linear-gradient(150deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.12));
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .ops-scope .founder-badge--success {
-  background: rgba(34, 197, 94, 0.18);
+  background: rgba(34, 197, 94, 0.15);
   border-color: rgba(34, 197, 94, 0.25);
-  color: rgba(220, 255, 235, 0.92);
+  color: #4ade80;
 }
 
 .ops-scope .founder-badge--danger {
-  background: rgba(239, 68, 68, 0.16);
+  background: rgba(239, 68, 68, 0.15);
   border-color: rgba(239, 68, 68, 0.25);
-  color: rgba(255, 225, 225, 0.92);
+  color: #f87171;
 }
 
 .founder-toolbar {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .founder-toolbar select,
@@ -3327,11 +3356,23 @@ section.founder-auth input:focus-visible {
 .founder-fieldset select,
 .founder-fieldset input,
 .founder-fieldset textarea {
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 10px;
-  color: #e2e8f0;
-  padding: 10px;
+  color: var(--ink);
+  padding: 10px 14px;
+  font-size: 14px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.founder-toolbar select:focus,
+.founder-toolbar input:focus,
+.founder-fieldset select:focus,
+.founder-fieldset input:focus,
+.founder-fieldset textarea:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.28);
 }
 
 /* Base founder-table styles moved to DataTable.module.css */
@@ -3346,13 +3387,14 @@ section.founder-auth input:focus-visible {
 }
 
 .ops-scope .empty-state__illustration {
-  color: var(--ink);
+  color: var(--muted);
 }
 
 .ops-scope .founder-table th,
 .ops-scope .founder-table td {
-  padding: 10px 12px;
-  font-size: var(--font-size-base);
+  padding: 12px 14px;
+  font-size: 14px;
+  color: var(--ink);
 }
 
 .ops-scope .col-nowrap {
@@ -3464,17 +3506,20 @@ section.founder-auth input:focus-visible {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 12px 14px;
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .founder-field span {
-  color: #94a3b8;
+  color: var(--muted);
+  font-size: 13px;
 }
 
 .founder-field strong {
-  color: #f8fafc;
+  color: var(--ink);
+  font-weight: 600;
 }
 
 .founder-fieldset {
@@ -3484,7 +3529,9 @@ section.founder-auth input:focus-visible {
 }
 
 .founder-fieldset label {
-  color: #cbd5e1;
+  color: #475569;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .founder-fieldset textarea {
@@ -3501,41 +3548,42 @@ section.founder-auth input:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 700;
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.15);
   white-space: nowrap;
 }
 
 .founder-badge--neutral {
-  background: rgba(255, 255, 255, 0.06);
-  color: #e2e8f0;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--muted);
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .founder-badge--accent {
-  background: rgba(0, 224, 255, 0.12);
+  background: rgba(14, 165, 233, 0.15);
   color: #67e8f9;
-  border-color: rgba(0, 224, 255, 0.2);
+  border-color: rgba(14, 165, 233, 0.25);
 }
 
 .founder-badge--success {
-  background: rgba(34, 197, 94, 0.16);
+  background: rgba(34, 197, 94, 0.15);
   color: #4ade80;
   border-color: rgba(34, 197, 94, 0.25);
 }
 
 .founder-badge--warning {
-  background: rgba(234, 179, 8, 0.14);
+  background: rgba(234, 179, 8, 0.15);
   color: #facc15;
   border-color: rgba(234, 179, 8, 0.25);
 }
 
 .founder-badge--danger {
-  background: rgba(248, 113, 113, 0.14);
+  background: rgba(239, 68, 68, 0.15);
   color: #f87171;
-  border-color: rgba(248, 113, 113, 0.25);
+  border-color: rgba(239, 68, 68, 0.25);
 }
 
 .founder-list {
@@ -3763,26 +3811,37 @@ section.founder-auth input:focus-visible {
 .founder-modal__body input,
 .founder-modal__body textarea {
   width: 100%;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: #ffffff;
+  border: 1px solid rgba(15, 23, 42, 0.12);
   border-radius: 10px;
-  color: #e2e8f0;
-  padding: 10px;
+  color: #0f172a;
+  padding: 10px 14px;
+  font-size: 14px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.founder-modal__body input:focus,
+.founder-modal__body textarea:focus {
+  outline: none;
+  border-color: #0ea5e9;
+  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
 }
 
 .ops-layout {
   position: relative;
   z-index: 11;
   display: grid;
-  grid-template-columns: 320px 1fr;
+  grid-template-columns: 280px 1fr;
   gap: 24px;
   width: 100%;
   max-width: 1600px;
   align-items: start;
+  padding: 0 8px;
 }
 
 .ops-main {
   min-width: 0;
+  padding: 4px 0;
 }
 
 .ops-scope .ops-main {
