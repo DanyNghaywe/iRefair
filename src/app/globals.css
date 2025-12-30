@@ -3920,6 +3920,7 @@ section.founder-auth input:focus-visible {
 
 .founder-login-brand__logo {
   border-radius: 12px;
+  padding: 6px;
 }
 
 .founder-login-header h1 {
