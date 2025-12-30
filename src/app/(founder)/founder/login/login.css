@@ -225,6 +225,21 @@
   justify-content: center;
 }
 
+.founder-login-btn {
+  width: 100%;
+  border-radius: 999px;
+  min-height: 50px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  outline: none;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
+}
+
+.founder-login-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22),
+    0 0 0 3px rgba(var(--accent-primary-rgb), 0.25);
+}
+
 .founder-login-btn--primary {
   background: linear-gradient(135deg, rgba(var(--accent-primary-rgb), 0.95), rgba(122, 215, 227, 0.95));
   border-color: rgba(var(--accent-primary-rgb), 0.6);

@@ -117,18 +117,11 @@ export default function ReferrersPage() {
         ellipsis: true,
         width: "240px",
         render: (row) => (
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+          <div className="referrer-name-cell">
             <span>{row.name}</span>
             {row.pendingUpdateCount && row.pendingUpdateCount > 0 ? (
               <span
-                className="founder-pill"
-                style={{
-                  fontSize: "11px",
-                  padding: "2px 6px",
-                  background: "#fef3c7",
-                  color: "#92400e",
-                  border: "1px solid #f59e0b",
-                }}
+                className="pending-updates-badge"
                 title={`${row.pendingUpdateCount} pending update${row.pendingUpdateCount > 1 ? "s" : ""}`}
               >
                 {row.pendingUpdateCount} update{row.pendingUpdateCount > 1 ? "s" : ""}

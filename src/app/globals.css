@@ -22,6 +22,10 @@
   --surface-soft: linear-gradient(145deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.12));
   --shadow: 0 24px 70px rgba(35, 46, 89, 0.16);
 
+  /* Portal input styling */
+  --portal-input-bg: rgba(255, 255, 255, 0.95);
+  --portal-input-border: #d1d5db;
+
   /* Shadow base color (slate-900) - use consistently for all shadows */
   --shadow-color: 15, 23, 42;
 
@@ -3903,23 +3907,6 @@ section.founder-auth input:focus-visible {
   gap: 22px;
 }
 
-.founder-login-card .founderField {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.founder-login-card .founderField label {
-  margin: 0;
-  line-height: 1.1;
-}
-
-.founder-login-card .founderField input {
-  padding: 0 0 8px 0;
-  margin: 0;
-  line-height: 1.2;
-}
-
 .founder-login-header {
   display: grid;
   gap: 10px;
@@ -4008,31 +3995,6 @@ section.founder-auth input:focus-visible {
   transition: border-color 0.2s ease, box-shadow 0.25s ease, transform 0.15s ease;
 }
 
-.founderField label {
-  display: block;
-  margin: 0 0 10px;
-  font-size: var(--font-size-base);
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.88);
-  letter-spacing: 0.2px;
-}
-
-.founderField input {
-  width: 100%;
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  border-radius: 12px;
-  padding: 0 0 10px;
-  color: rgba(255, 255, 255, 0.92);
-}
-
-.founderField input:focus-visible {
-  outline: none;
-  background: inherit;
-  border-color: rgba(var(--accent-primary-rgb), 0.55);
-  box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.14);
-}
-
 .founder-login-screen input::placeholder {
   color: rgba(255, 255, 255, 0.78);
 }
@@ -4115,25 +4077,6 @@ section.founder-auth input:focus-visible {
   width: 100%;
 }
 
-/* Fix: Removed !important by using compound selectors
-   Reason: .btn class has border-radius and border styles that conflict
-   Solution: Use .founder-login-card .founderLoginBtn for higher specificity */
-.founder-login-card .founderLoginBtn,
-.founder-login-screen .founderLoginBtn {
-  width: 100%;
-  border-radius: 999px;
-  min-height: 50px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  outline: none;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22);
-}
-
-.founder-login-card .founderLoginBtn:focus-visible,
-.founder-login-screen .founderLoginBtn:focus-visible {
-  outline: none;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.22), 0 0 0 3px rgba(var(--accent-primary-rgb), 0.25);
-}
-
 .founder-login-back {
   display: inline-flex;
   justify-content: center;
@@ -4162,6 +4105,85 @@ section.founder-auth input:focus-visible {
 .ops-scope .page-card .field:focus-within {
   box-shadow: none;
   outline: none;
+}
+
+/* Pending Updates UI (scoped to ops) */
+.ops-scope .pending-updates-badge {
+  display: inline-block;
+  font-size: 11px;
+  padding: 2px 8px;
+  background: #fef3c7;
+  color: #92400e;
+  font-weight: 600;
+  border-radius: 9999px;
+  border: 1px solid #f59e0b;
+}
+
+.ops-scope .pending-updates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ops-scope .pending-update-card {
+  border: 1px solid var(--line, #e5e7eb);
+  border-radius: 8px;
+  padding: 16px;
+  background: #fafafa;
+}
+
+.ops-scope .pending-update-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.ops-scope .pending-update-timestamp {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.ops-scope .pending-update-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.ops-scope .pending-update-row {
+  display: grid;
+  grid-template-columns: 120px 1fr 1fr;
+  gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.ops-scope .pending-update-label {
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.ops-scope .pending-update-value {
+  color: var(--muted);
+}
+
+.ops-scope .pending-update-value.is-changed {
+  color: #059669;
+  font-weight: 500;
+}
+
+.ops-scope .pending-update-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  justify-content: flex-end;
+}
+
+.ops-scope .referrer-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 /* ==========================================================================

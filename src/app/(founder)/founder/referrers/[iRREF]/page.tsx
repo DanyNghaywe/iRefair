@@ -634,95 +634,39 @@ export default function ReferrerReviewPage() {
             {pendingOnlyUpdates.length > 0 && (
               <DetailSection
                 title={
-                  <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <span className="referrer-name-cell">
                     Pending Updates
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        padding: "2px 8px",
-                        background: "#fef3c7",
-                        color: "#92400e",
-                        fontWeight: 600,
-                        borderRadius: "9999px",
-                        border: "1px solid #f59e0b",
-                      }}
-                    >
+                    <span className="pending-updates-badge">
                       {pendingOnlyUpdates.length}
                     </span>
                   </span>
                 }
               >
-                <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                <div className="pending-updates-list">
                   {pendingOnlyUpdates.map((update) => (
-                    <div
-                      key={update.id}
-                      style={{
-                        border: "1px solid #e5e7eb",
-                        borderRadius: "8px",
-                        padding: "16px",
-                        background: "#fafafa",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          marginBottom: "12px",
-                        }}
-                      >
-                        <span
-                          style={{
-                            fontSize: "11px",
-                            padding: "2px 8px",
-                            background: "#fef3c7",
-                            color: "#92400e",
-                            fontWeight: 600,
-                            borderRadius: "9999px",
-                            border: "1px solid #f59e0b",
-                          }}
-                        >
-                          Pending
-                        </span>
-                        <span style={{ fontSize: "12px", color: "#6b7280" }}>
+                    <div key={update.id} className="pending-update-card">
+                      <div className="pending-update-header">
+                        <span className="pending-updates-badge">Pending</span>
+                        <span className="pending-update-timestamp">
                           {new Date(update.timestamp).toLocaleString()}
                         </span>
                       </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          flexDirection: "column",
-                          gap: "4px",
-                          fontSize: "13px",
-                        }}
-                      >
+                      <div className="pending-update-fields">
                         {Object.entries(update.data).map(([key, newValue]) => {
                           const currentValue =
                             referrer[key as keyof ReferrerRecord] || "";
                           const hasChanged = newValue !== currentValue;
                           if (!hasChanged && !newValue) return null;
                           return (
-                            <div
-                              key={key}
-                              style={{
-                                display: "grid",
-                                gridTemplateColumns: "120px 1fr 1fr",
-                                gap: "16px",
-                                padding: "6px 0",
-                                borderBottom: "1px solid #f3f4f6",
-                              }}
-                            >
-                              <span style={{ fontWeight: 500, color: "#374151" }}>
+                            <div key={key} className="pending-update-row">
+                              <span className="pending-update-label">
                                 {formatFieldLabel(key)}
                               </span>
-                              <span style={{ color: "#6b7280" }}>
+                              <span className="pending-update-value">
                                 {String(currentValue) || "-"}
                               </span>
                               <span
-                                style={{
-                                  color: hasChanged ? "#059669" : "#6b7280",
-                                  fontWeight: hasChanged ? 500 : 400,
-                                }}
+                                className={`pending-update-value${hasChanged ? " is-changed" : ""}`}
                               >
                                 {String(newValue) || "-"}
                                 {hasChanged && " ✓"}
@@ -731,49 +675,25 @@ export default function ReferrerReviewPage() {
                           );
                         })}
                       </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "8px",
-                          marginTop: "12px",
-                          justifyContent: "flex-end",
-                        }}
-                      >
-                        <button
-                          type="button"
+                      <div className="pending-update-actions">
+                        <ActionBtn
+                          as="button"
+                          variant="primary"
+                          size="sm"
                           onClick={() => handlePendingUpdate(update.id, "approve")}
                           disabled={pendingUpdateLoading === update.id}
-                          style={{
-                            border: "none",
-                            background: "#2563eb",
-                            color: "#ffffff",
-                            padding: "4px 12px",
-                            borderRadius: "4px",
-                            fontSize: "13px",
-                            fontWeight: 500,
-                            cursor: pendingUpdateLoading === update.id ? "not-allowed" : "pointer",
-                            opacity: pendingUpdateLoading === update.id ? 0.5 : 1,
-                          }}
                         >
                           {pendingUpdateLoading === update.id ? "Applying..." : "Approve"}
-                        </button>
-                        <button
-                          type="button"
+                        </ActionBtn>
+                        <ActionBtn
+                          as="button"
+                          variant="ghost"
+                          size="sm"
                           onClick={() => handlePendingUpdate(update.id, "deny")}
                           disabled={pendingUpdateLoading === update.id}
-                          style={{
-                            border: "1px solid #d1d5db",
-                            background: "#ffffff",
-                            color: "#374151",
-                            padding: "4px 12px",
-                            borderRadius: "4px",
-                            fontSize: "13px",
-                            cursor: pendingUpdateLoading === update.id ? "not-allowed" : "pointer",
-                            opacity: pendingUpdateLoading === update.id ? 0.5 : 1,
-                          }}
                         >
                           Deny
-                        </button>
+                        </ActionBtn>
                       </div>
                     </div>
                   ))}

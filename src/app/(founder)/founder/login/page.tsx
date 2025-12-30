@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Suspense } from "react";
 
 import { AppShell } from "@/components/AppShell";
+import "./login.css";
 import { Skeleton, SkeletonStack } from "@/components/founder/Skeleton";
 import LoginForm from "./LoginForm";
 

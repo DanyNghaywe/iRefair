@@ -96,7 +96,7 @@ export default function LoginForm() {
         </div>
       )}
 
-      <div className={`founderField ${fieldClass("email")}`}>
+      <div className={fieldClass("email")}>
         <label htmlFor="email">Email</label>
         <input
           id="email"
@@ -120,7 +120,7 @@ export default function LoginForm() {
         </p>
       </div>
 
-      <div className={`founderField ${fieldClass("password")}`}>
+      <div className={fieldClass("password")}>
         <label htmlFor="password">Password</label>
         <input
           id="password"
@@ -155,7 +155,7 @@ export default function LoginForm() {
           variant="primary"
           type="submit"
           disabled={status === "submitting"}
-          className="founder-login-submit founderLoginBtn"
+          className="founder-login-submit founder-login-btn"
           aria-busy={status === "submitting"}
         >
           {status === "submitting" ? "Signing in..." : "Log in"}

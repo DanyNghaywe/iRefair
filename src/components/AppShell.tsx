@@ -19,7 +19,9 @@ export function AppShell({ children, variant = "default" }: AppShellProps) {
     <div className="app">
       <div className="background-hero" aria-hidden="true" />
       <ParticlesBackground />
-      <div className={boardClass}>{children}</div>
+      <div id="main-content" tabIndex={-1} className={boardClass}>
+        {children}
+      </div>
     </div>
   );
 }

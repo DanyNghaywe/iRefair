@@ -414,6 +414,7 @@ export default function ReferrerPage() {
       phone: valueOf('referrer-phone'),
       country: valueOf('referrer-country'),
       website: valueOf('website'),
+      consentLegal: formData.get('consent-legal') === 'on',
     };
   };
 
@@ -439,6 +440,9 @@ export default function ReferrerPage() {
       nextErrors['referrer-careers-portal'] = 'Please enter the careers portal URL.';
     } else if (!isValidUrl(values.careersPortal)) {
       nextErrors['referrer-careers-portal'] = 'Please enter a valid URL (http/https).';
+    }
+    if (!values.consentLegal) {
+      nextErrors['consent-legal'] = 'Please confirm your consent to proceed.';
     }
 
     return nextErrors;
@@ -848,15 +852,22 @@ export default function ReferrerPage() {
                       <li key={index}>{renderConsentPoint(item)}</li>
                     ))}
                   </ul>
-                  <div className="consent-checkbox">
+                  <div className={fieldClass('consent-checkbox consent-legal', 'consent-legal')}>
                     <input
                       id="consent-legal"
                       name="consent-legal"
                       type="checkbox"
                       required
-                      aria-describedby="consent-legal-help"
+                      aria-describedby="consent-legal-error"
+                      aria-invalid={Boolean(errors['consent-legal'])}
+                      onChange={() => clearError('consent-legal')}
                     />
                     <label htmlFor="consent-legal">{t.consentAgreement}</label>
+                    {errors['consent-legal'] && (
+                      <p className="field-error" id="consent-legal-error" role="alert">
+                        {errors['consent-legal']}
+                      </p>
+                    )}
                   </div>
                 </div>
               </section>

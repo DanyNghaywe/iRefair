@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 
+import { ActionBtn } from "@/components/ActionBtn";
 import { AppShell } from "@/components/AppShell";
 import { PublicFooter } from "@/components/PublicFooter";
 
@@ -65,7 +66,7 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
 
   return (
     <AppShell>
-      <main id="main-content" className="error-page">
+      <main className="error-page">
         <section className="glass-card error-page__card">
           <ErrorIllustration />
           <div className="error-page__content">
@@ -81,12 +82,12 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
               </p>
             )}
             <div className="error-page__actions">
-              <button type="button" className="btn btn-primary" onClick={reset}>
+              <ActionBtn as="button" variant="primary" onClick={reset}>
                 Try again
-              </button>
-              <a href="/" className="btn btn-ghost">
+              </ActionBtn>
+              <ActionBtn as="link" href="/" variant="ghost">
                 Go home
-              </a>
+              </ActionBtn>
             </div>
           </div>
         </section>

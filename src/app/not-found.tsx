@@ -1,5 +1,4 @@
-import Link from "next/link";
-
+import { ActionBtn } from "@/components/ActionBtn";
 import { AppShell } from "@/components/AppShell";
 import { PublicFooter } from "@/components/PublicFooter";
 
@@ -50,7 +49,7 @@ function NotFoundIllustration() {
 export default function NotFound() {
   return (
     <AppShell>
-      <main id="main-content" className="not-found">
+      <main className="not-found">
         <section className="glass-card not-found__card">
           <NotFoundIllustration />
           <div className="not-found__content">
@@ -61,12 +60,12 @@ export default function NotFound() {
               Let's get you back on track.
             </p>
             <div className="not-found__actions">
-              <Link href="/" className="btn btn-primary">
+              <ActionBtn as="link" href="/" variant="primary">
                 Go home
-              </Link>
-              <Link href="/applicant" className="btn btn-ghost">
+              </ActionBtn>
+              <ActionBtn as="link" href="/hiring-companies" variant="ghost">
                 Find referrers
-              </Link>
+              </ActionBtn>
             </div>
           </div>
         </section>
