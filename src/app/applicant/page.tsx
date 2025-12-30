@@ -179,7 +179,7 @@ const translations: Record<
       professionalProfile: 'Professional Profile',
       experience: 'Experience snapshot',
       context: 'Referral context',
-      attachments: 'Attachments (optional)',
+      attachments: 'Attachments',
     },
     labels: {
       firstName: 'First Name',
@@ -213,7 +213,7 @@ const translations: Record<
       hasPostings: 'Do you already have specific job postings?',
       postingNotes: 'Links and notes',
       pitch: 'Brief pitch',
-      resume: 'Upload resume / CV',
+      resume: 'Upload your general CV / resume',
     },
     placeholders: {
       phone: '+1-XXX-XXXX or +961-XX-XXXXXX',
@@ -241,7 +241,7 @@ const translations: Record<
     },
     optional: '(optional)',
     upload: 'Upload resume',
-    uploadHint: 'Accepted: PDF, DOC, DOCX. Max size 10MB.',
+    uploadHint: 'Upload your main CV (not tailored to a specific job). You can submit a company-specific CV when applying to positions. Accepted: PDF, DOC, DOCX. Max 10MB.',
     noFile: 'No file selected yet',
     buttons: {
       submit: 'Send referral request',
@@ -293,7 +293,7 @@ const translations: Record<
       professionalProfile: 'Profil professionnel',
       experience: "Résumé de l'expérience",
       context: 'Contexte de recommandation',
-      attachments: 'Pièces jointes (optionnel)',
+      attachments: 'Pièces jointes',
     },
     labels: {
       firstName: 'Prenom',
@@ -328,7 +328,7 @@ const translations: Record<
       hasPostings: 'Avez-vous déjà des offres spécifiques ?',
       postingNotes: 'Liens et notes',
       pitch: 'Présentation concise',
-      resume: 'Télécharger le CV',
+      resume: 'Téléchargez votre CV général',
     },
     placeholders: {
       phone: '+1-XXX-XXXX ou +961-XX-XXXXXX',
@@ -356,7 +356,7 @@ const translations: Record<
     },
     optional: '(optionnel)',
     upload: 'Télécharger le CV',
-    uploadHint: 'Formats acceptés : PDF, DOC, DOCX. Taille max 10 Mo.',
+    uploadHint: 'Téléchargez votre CV principal (non adapté à un poste spécifique). Vous pourrez soumettre un CV adapté lors de vos candidatures. Formats : PDF, DOC, DOCX. Max 10 Mo.',
     noFile: 'Aucun fichier sélectionné',
     buttons: {
       submit: 'Envoyer la demande de recommandation',
@@ -590,6 +590,11 @@ function ApplicantPageContent() {
 
     if (!values.consentLegal) {
       nextErrors['consent-legal'] = 'Please confirm your consent to proceed.';
+    }
+
+    const resumeFile = resumeInputRef.current?.files?.[0];
+    if (!resumeFile) {
+      nextErrors.resume = 'Please upload your resume / CV.';
     }
 
     return nextErrors;
@@ -1164,9 +1169,7 @@ function ApplicantPageContent() {
               <fieldset>
                 <legend>{t.legends.attachments}</legend>
                 <div className={fieldClass('field', 'resume')}>
-                  <label htmlFor="resume">
-                    {t.labels.resume} <span className="optional">{t.optional}</span>
-                  </label>
+                  <label htmlFor="resume">{t.labels.resume}</label>
                   <div className="file-upload">
                     <input
                       ref={resumeInputRef}

@@ -58,6 +58,7 @@ export const REFERRER_HEADERS = [
   'LinkedIn',
 ];
 export const REFERRER_PORTAL_TOKEN_VERSION_HEADER = 'Portal Token Version';
+export const REFERRER_PENDING_UPDATES_HEADER = 'Pending Updates';
 export const MATCH_SHEET_NAME = 'Matches';
 export const MATCH_HEADERS = [
   'Match ID',
@@ -71,7 +72,7 @@ export const MATCH_HEADERS = [
   'Intro Sent At',
 ];
 export const ADMIN_TRACKING_COLUMNS = ['Status', 'Owner Notes', 'Tags', 'Last Contacted At', 'Next Action At'];
-const REFERRER_SECURITY_COLUMNS = [REFERRER_PORTAL_TOKEN_VERSION_HEADER];
+const REFERRER_SECURITY_COLUMNS = [REFERRER_PORTAL_TOKEN_VERSION_HEADER, REFERRER_PENDING_UPDATES_HEADER];
 export const APPLICATION_ADMIN_COLUMNS = [
   'Status',
   'Owner Notes',
@@ -1781,7 +1782,7 @@ export async function listApplicants(params: ApplicantListParams) {
 
 export async function listReferrers(params: ReferrerListParams) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
-  await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN', 'Company Approval']);
+  await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN', 'Company Approval', REFERRER_PENDING_UPDATES_HEADER]);
 
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
@@ -1814,6 +1815,20 @@ export async function listReferrers(params: ReferrerListParams) {
       if (!getHeaderValue(headerMap, row, 'Company')) missingFields.push('Company');
       if (!getHeaderValue(headerMap, row, 'Careers Portal')) missingFields.push('Careers Portal');
 
+      // Check for pending updates
+      const pendingUpdatesRaw = getHeaderValue(headerMap, row, REFERRER_PENDING_UPDATES_HEADER);
+      let pendingUpdateCount = 0;
+      if (pendingUpdatesRaw) {
+        try {
+          const updates = JSON.parse(pendingUpdatesRaw);
+          if (Array.isArray(updates)) {
+            pendingUpdateCount = updates.filter((u: PendingReferrerUpdate) => u.status === 'pending').length;
+          }
+        } catch {
+          // ignore parse errors
+        }
+      }
+
       return {
         irref: getHeaderValue(headerMap, row, 'iRREF'),
         timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
@@ -1829,6 +1844,8 @@ export async function listReferrers(params: ReferrerListParams) {
         workType: getHeaderValue(headerMap, row, 'Work Type'),
         linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
         portalTokenVersion: getHeaderValue(headerMap, row, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
+        pendingUpdates: pendingUpdatesRaw,
+        pendingUpdateCount,
         status: getHeaderValue(headerMap, row, 'Status'),
         ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
         tags: getHeaderValue(headerMap, row, 'Tags'),
@@ -2772,6 +2789,7 @@ export async function getReferrerByIrref(irref: string) {
           workType: getHeaderValue(headerMap, row, 'Work Type'),
           linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
           portalTokenVersion: getHeaderValue(headerMap, row, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
+          pendingUpdates: getHeaderValue(headerMap, row, REFERRER_PENDING_UPDATES_HEADER),
           status: getHeaderValue(headerMap, row, 'Status'),
           ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
           tags: getHeaderValue(headerMap, row, 'Tags'),
@@ -2830,6 +2848,7 @@ export async function getReferrerByEmail(email: string) {
           workType: getHeaderValue(headerMap, row, 'Work Type'),
           linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
           portalTokenVersion: getHeaderValue(headerMap, row, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
+          pendingUpdates: getHeaderValue(headerMap, row, REFERRER_PENDING_UPDATES_HEADER),
           status: getHeaderValue(headerMap, row, 'Status'),
           ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
           tags: getHeaderValue(headerMap, row, 'Tags'),
@@ -2840,6 +2859,112 @@ export async function getReferrerByEmail(email: string) {
     }
   }
   return null;
+}
+
+export type PendingReferrerUpdate = {
+  id: string;
+  timestamp: string;
+  status: 'pending' | 'approved' | 'denied';
+  data: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    country?: string;
+    company?: string;
+    companyIndustry?: string;
+    careersPortal?: string;
+    workType?: string;
+    linkedin?: string;
+  };
+};
+
+export async function addPendingUpdate(
+  irref: string,
+  updateData: PendingReferrerUpdate['data'],
+): Promise<{ success: boolean }> {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureColumns(REFERRER_SHEET_NAME, [REFERRER_PENDING_UPDATES_HEADER]);
+
+  const referrer = await getReferrerByIrref(irref);
+  if (!referrer) {
+    return { success: false };
+  }
+
+  // Parse existing pending updates
+  const existingUpdatesRaw = referrer.record.pendingUpdates || '';
+  let pendingUpdates: PendingReferrerUpdate[] = [];
+
+  if (existingUpdatesRaw) {
+    try {
+      pendingUpdates = JSON.parse(existingUpdatesRaw);
+      if (!Array.isArray(pendingUpdates)) {
+        pendingUpdates = [];
+      }
+    } catch {
+      pendingUpdates = [];
+    }
+  }
+
+  // Add new update
+  const newUpdate: PendingReferrerUpdate = {
+    id: `update-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    timestamp: new Date().toISOString(),
+    status: 'pending',
+    data: updateData,
+  };
+
+  pendingUpdates.push(newUpdate);
+
+  // Store back as JSON
+  const result = await updateRowById(REFERRER_SHEET_NAME, 'iRREF', irref, {
+    [REFERRER_PENDING_UPDATES_HEADER]: JSON.stringify(pendingUpdates),
+  });
+
+  return { success: result.updated };
+}
+
+export async function updatePendingUpdateStatus(
+  irref: string,
+  updateId: string,
+  newStatus: 'approved' | 'denied',
+): Promise<{ success: boolean; update?: PendingReferrerUpdate }> {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureColumns(REFERRER_SHEET_NAME, [REFERRER_PENDING_UPDATES_HEADER]);
+
+  const referrer = await getReferrerByIrref(irref);
+  if (!referrer) {
+    return { success: false };
+  }
+
+  const existingUpdatesRaw = referrer.record.pendingUpdates || '';
+  let pendingUpdates: PendingReferrerUpdate[] = [];
+
+  if (existingUpdatesRaw) {
+    try {
+      pendingUpdates = JSON.parse(existingUpdatesRaw);
+      if (!Array.isArray(pendingUpdates)) {
+        return { success: false };
+      }
+    } catch {
+      return { success: false };
+    }
+  }
+
+  // Find and update the specific update
+  const updateIndex = pendingUpdates.findIndex((u) => u.id === updateId);
+  if (updateIndex === -1) {
+    return { success: false };
+  }
+
+  pendingUpdates[updateIndex].status = newStatus;
+  const updatedUpdate = pendingUpdates[updateIndex];
+
+  // Store back as JSON
+  const result = await updateRowById(REFERRER_SHEET_NAME, 'iRREF', irref, {
+    [REFERRER_PENDING_UPDATES_HEADER]: JSON.stringify(pendingUpdates),
+  });
+
+  return { success: result.updated, update: updatedUpdate };
 }
 
 export async function getMatchById(matchId: string) {

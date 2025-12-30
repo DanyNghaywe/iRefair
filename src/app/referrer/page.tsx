@@ -99,7 +99,7 @@ const translations: Record<
     };
     selects: { selectLabel: string };
     optional: string;
-    statusMessages: { ok: string; error: string };
+    statusMessages: { ok: string; okExisting: string; error: string };
     errors: { submissionFailed: string };
     buttons: { submit: string; submitting: string; reset: string };
     disclaimer: {
@@ -168,6 +168,7 @@ const translations: Record<
     optional: '(optional)',
     statusMessages: {
       ok: "We've received your details. We'll reach out when there's an applicant match.",
+      okExisting: "We've received your submission. Our admin team will review any updates and be in touch.",
       error: "We couldn't send your details right now. Please try again in a moment.",
     },
     errors: {
@@ -253,6 +254,7 @@ const translations: Record<
     optional: '(optionnel)',
     statusMessages: {
       ok: "Nous avons bien reçu vos informations. Nous vous contacterons lorsqu'un candidat correspondra.",
+      okExisting: "Nous avons reçu votre soumission. Notre équipe d'administration examinera toute mise à jour et vous contactera.",
       error: "Impossible d'envoyer vos informations pour l'instant. Veuillez réessayer dans un instant.",
     },
     errors: {
@@ -308,6 +310,7 @@ export default function ReferrerPage() {
   const [countrySelection, setCountrySelection] = useState('');
   const [workTypeSelection, setWorkTypeSelection] = useState('');
   const [iRref, setIRref] = useState<string | null>(null);
+  const [isExisting, setIsExisting] = useState(false);
   const confetti = useConfetti();
   const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const t = translations[language];
@@ -509,11 +512,13 @@ export default function ReferrerPage() {
       }
 
       setIRref(typeof data.iRref === 'string' ? data.iRref : null);
+      setIsExisting(data.isExisting === true);
       setStatus('ok');
       confetti.trigger();
       setShowSuccessAnimation(true);
     } catch {
       setIRref(null);
+      setIsExisting(false);
       setStatus('error');
     } finally {
       setSubmitting(false);
@@ -607,6 +612,7 @@ export default function ReferrerPage() {
                 linkedinInputRef.current?.setCustomValidity('');
                 setStatus('idle');
                 setIRref(null);
+                setIsExisting(false);
                 setCompanyIndustrySelection('');
                 setCountrySelection('');
                 setWorkTypeSelection('');
@@ -860,7 +866,7 @@ export default function ReferrerPage() {
                   {status === 'ok' && (
                     <div className="status-banner status-banner--ok" role="status" aria-live="polite">
                       <span className="status-icon" aria-hidden="true">✓</span>
-                      <span>{t.statusMessages.ok}</span>
+                      <span>{isExisting ? t.statusMessages.okExisting : t.statusMessages.ok}</span>
                     </div>
                   )}
                   {status === 'error' && (

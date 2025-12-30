@@ -22,6 +22,8 @@ type ReferrerRecord = {
   careersPortal?: string;
   workType: string;
   linkedin: string;
+  pendingUpdates?: string;
+  pendingUpdateCount?: number;
   status: string;
   ownerNotes: string;
   tags: string;
@@ -108,7 +110,33 @@ export default function ReferrersPage() {
         width: "200px",
         render: (row) => <span title={row.irref}>{row.irref}</span>,
       },
-      { key: "name", label: "Name", sortable: true, ellipsis: true, width: "200px" },
+      {
+        key: "name",
+        label: "Name",
+        sortable: true,
+        ellipsis: true,
+        width: "240px",
+        render: (row) => (
+          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+            <span>{row.name}</span>
+            {row.pendingUpdateCount && row.pendingUpdateCount > 0 ? (
+              <span
+                className="founder-pill"
+                style={{
+                  fontSize: "11px",
+                  padding: "2px 6px",
+                  background: "#fef3c7",
+                  color: "#92400e",
+                  border: "1px solid #f59e0b",
+                }}
+                title={`${row.pendingUpdateCount} pending update${row.pendingUpdateCount > 1 ? "s" : ""}`}
+              >
+                {row.pendingUpdateCount} update{row.pendingUpdateCount > 1 ? "s" : ""}
+              </span>
+            ) : null}
+          </div>
+        ),
+      },
       { key: "email", label: "Email", ellipsis: true, width: "320px" },
       { key: "company", label: "Company", sortable: true, ellipsis: true, width: "240px" },
       { key: "companyIndustry", label: "Industry", sortable: true, ellipsis: true, width: "240px" },

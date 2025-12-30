@@ -828,6 +828,100 @@ ${replyText}: info@andbeyondca.com
   return { subject, html, text };
 }
 
+type ReferrerAlreadyExistsParams = {
+  name: string;
+  iRref: string;
+  locale?: 'en' | 'fr';
+};
+
+export function referrerAlreadyExistsEmail(params: ReferrerAlreadyExistsParams): TemplateResult {
+  const { name, iRref, locale = 'en' } = params;
+
+  const subject = t(
+    'Your iRREF is already registered - iRefair',
+    'Votre iRREF est déjà enregistré - iRefair',
+    locale
+  );
+
+  const greeting = `${t('Hi', 'Bonjour', locale)} ${escapeHtml(name)},`;
+  const eyebrowText = t('REFERRER ALREADY REGISTERED', 'RÉFÉRENT DÉJÀ ENREGISTRÉ', locale);
+  const iRrefLabel = t('iRREF', 'iRREF', locale);
+
+  const mainText1 = t(
+    "We received your referrer form submission. However, we found that you already have an iRREF registered with this email address.",
+    "Nous avons reçu votre formulaire de recommandateur. Cependant, nous avons constaté que vous avez déjà un iRREF enregistré avec cette adresse e-mail.",
+    locale
+  );
+
+  const mainText2 = t(
+    "Our admin team will review the information you submitted. If you intended to update your details, we'll update your existing record accordingly.",
+    "Notre équipe d'administration examinera les informations que vous avez soumises. Si vous avez l'intention de mettre à jour vos détails, nous mettrons à jour votre dossier existant en conséquence.",
+    locale
+  );
+
+  const mainText3 = t(
+    "If you have any questions or need immediate assistance with updating your information, please don't hesitate to contact our admin team directly.",
+    "Si vous avez des questions ou si vous avez besoin d'une assistance immédiate pour mettre à jour vos informations, n'hésitez pas à contacter notre équipe d'administration directement.",
+    locale
+  );
+
+  const contactLabel = t('Contact Admin', 'Contacter l\'administrateur', locale);
+  const contactEmail = 'info@andbeyondca.com';
+
+  const content = `
+    <h1 style="margin:0 0 14px 0;font-size:22px;line-height:1.5;font-weight:700;color:#1f2a37;">
+      ${greeting}
+    </h1>
+    <p style="margin:0 0 14px 0;font-size:14px;line-height:1.7;color:#3b4251;">
+      ${escapeHtml(mainText1)}
+    </p>
+    <p style="margin:0 0 14px 0;font-size:14px;line-height:1.7;color:#3b4251;">
+      ${escapeHtml(mainText2)}
+    </p>
+    <p style="margin:0 0 20px 0;font-size:14px;line-height:1.7;color:#3b4251;">
+      ${escapeHtml(mainText3)}
+    </p>
+    <div style="text-align:center;margin:0 0 20px 0;">
+      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#3b4251;">
+        ${escapeHtml(contactLabel)}:
+      </p>
+      <a href="mailto:${contactEmail}" style="display:inline-block;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;background:#2f5fb3;color:#ffffff;border:1px solid #2f5fb3;box-shadow:0 8px 18px rgba(47,95,179,0.16);">${contactEmail}</a>
+    </div>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${escapeHtml(eyebrowText)}</div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">${iRrefLabel}: <strong style="color:#1f2a37;">${escapeHtml(iRref)}</strong></div>
+    </div>
+  `;
+
+  const preheader = t(
+    'You already have an iRREF registered with this email. Our admin team will review your submission.',
+    'Vous avez déjà un iRREF enregistré avec cet e-mail. Notre équipe d\'administration examinera votre soumission.',
+    locale
+  );
+
+  const html = emailWrapper(content, preheader, customHeader);
+
+  const text = `${greeting}
+
+${mainText1}
+
+${mainText2}
+
+${mainText3}
+
+${iRrefLabel}: ${iRref}
+
+${contactLabel}: ${contactEmail}
+
+- ${t('The iRefair team', 'L\'équipe iRefair', locale)}`;
+
+  return { subject, html, text };
+}
+
 type ReferrerPortalLinkParams = {
   name: string;
   iRref: string;
