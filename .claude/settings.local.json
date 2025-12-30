@@ -27,7 +27,8 @@
       "Bash(node:*)",
       "Bash(git mv:*)",
       "Bash(powershell \"if \\(Test-Path ''update-remaining-files.ps1''\\) { .\\\\update-remaining-files.ps1 } else { Write-Host ''Script not found, will update files manually'' }\")",
-      "Bash(powershell:*)"
+      "Bash(powershell:*)",
+      "Bash(timeout:*)"
     ]
   }
 }
