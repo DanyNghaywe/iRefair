@@ -1,0 +1,276 @@
+/* ==========================================================================
+   Role Selector - Animated dropdown with tilt effect
+   ========================================================================== */
+
+.role-selector {
+  --background: rgba(255, 255, 255, 0.1);
+  --background-hover: rgba(255, 255, 255, 0.15);
+  --border: rgba(255, 255, 255, 0.18);
+  --border-hover: rgba(255, 255, 255, 0.28);
+  --text: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.65);
+  --list-bg: rgba(255, 255, 255, 0.12);
+  --list-text: rgba(255, 255, 255, 0.7);
+  --list-text-hover: #ffffff;
+  --list-border: rgba(255, 255, 255, 0.15);
+  --accent: var(--accent-primary, #4cc8e0);
+  --item-height: 72px;
+  --radius: 20px;
+
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  max-width: 420px;
+  font-size: 16px;
+  line-height: 1.4;
+  transform-style: preserve-3d;
+}
+
+/* ==========================================================================
+   Trigger Button
+   ========================================================================== */
+
+.role-selector__button {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--background);
+  color: var(--text);
+  font-family: inherit;
+  font-size: inherit;
+  text-align: left;
+  cursor: pointer;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.role-selector__button:hover {
+  background: var(--background-hover);
+  border-color: var(--border-hover);
+}
+
+.role-selector__button:focus-visible {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(76, 200, 224, 0.2);
+}
+
+/* Hide button content when dropdown is open - list shows through */
+.role-selector.is-open .role-selector__button {
+  background: transparent;
+  border-color: transparent;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.role-selector.is-open .role-selector__content,
+.role-selector.is-open .role-selector__arrow {
+  opacity: 0;
+}
+
+.role-selector__content {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.role-selector__label {
+  font-weight: 600;
+  font-size: 17px;
+  letter-spacing: -0.01em;
+}
+
+.role-selector__description {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+
+/* Arrow */
+.role-selector__arrow {
+  position: relative;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.role-selector__arrow::before,
+.role-selector__arrow::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  width: 9px;
+  height: 9px;
+  border: 2px solid currentColor;
+  border-left: 0;
+  border-bottom: 0;
+  opacity: 0.5;
+  transition: opacity 0.2s ease;
+}
+
+.role-selector__arrow::before {
+  top: -2px;
+  transform: translateX(-50%) rotate(-45deg);
+}
+
+.role-selector__arrow::after {
+  bottom: -2px;
+  transform: translateX(-50%) rotate(135deg);
+}
+
+.role-selector.is-open .role-selector__arrow {
+  transform: rotate(180deg);
+}
+
+.role-selector.is-open .role-selector__arrow::before,
+.role-selector.is-open .role-selector__arrow::after {
+  opacity: 0.8;
+}
+
+/* ==========================================================================
+   Dropdown List
+   ========================================================================== */
+
+.role-selector__list {
+  position: absolute;
+  left: 0;
+  top: 0;
+  right: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--list-bg);
+  border: 1px solid var(--list-border);
+  border-radius: var(--radius);
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.25),
+    0 12px 48px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  transform: translateY(var(--selected-offset, 0));
+  transition: opacity 0.25s ease, transform 0.4s cubic-bezier(0.2, 0.9, 0.4, 1.1);
+  overflow: hidden;
+}
+
+.role-selector:not(.is-open) .role-selector__list {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.role-selector.is-open .role-selector__list {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ==========================================================================
+   List Options
+   ========================================================================== */
+
+.role-selector__option {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  padding: 18px 24px;
+  min-height: var(--item-height);
+  color: var(--list-text);
+  cursor: pointer;
+  transition: color 0.2s ease, background 0.2s ease;
+  outline: none;
+}
+
+.role-selector__option:not(:last-child) {
+  border-bottom: 1px solid var(--list-border);
+}
+
+.role-selector__option:hover,
+.role-selector__option.is-focused {
+  color: var(--list-text-hover);
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.role-selector__option.is-selected {
+  color: var(--text);
+}
+
+.role-selector__option:focus-visible {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--list-text-hover);
+}
+
+.role-selector__option-label {
+  font-weight: 600;
+  font-size: 17px;
+}
+
+.role-selector__option-description {
+  font-size: 14px;
+  opacity: 0.65;
+}
+
+/* ==========================================================================
+   Tilt Animations
+   ========================================================================== */
+
+.role-selector.tilt-up {
+  animation: role-tilt-up 0.4s ease forwards;
+}
+
+.role-selector.tilt-down {
+  animation: role-tilt-down 0.4s ease forwards;
+}
+
+@keyframes role-tilt-up {
+  0%, 100% {
+    transform: perspective(600px) rotateX(0);
+  }
+  40%, 60% {
+    transform: perspective(600px) rotateX(5deg);
+  }
+}
+
+@keyframes role-tilt-down {
+  0%, 100% {
+    transform: perspective(600px) rotateX(0);
+  }
+  40%, 60% {
+    transform: perspective(600px) rotateX(-5deg);
+  }
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 480px) {
+  .role-selector {
+    max-width: 100%;
+    --item-height: 68px;
+  }
+
+  .role-selector__button {
+    padding: 16px 20px;
+  }
+
+  .role-selector__option {
+    padding: 16px 20px;
+  }
+
+  .role-selector__label,
+  .role-selector__option-label {
+    font-size: 16px;
+  }
+
+  .role-selector__description,
+  .role-selector__option-description {
+    font-size: 13px;
+  }
+}
