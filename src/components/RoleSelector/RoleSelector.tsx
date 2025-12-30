@@ -15,7 +15,7 @@ type Role = {
 const roles: Role[] = [
   {
     id: "applicant",
-    label: "I'm a Candidate",
+    label: "I'm an Applicant",
     href: "/applicant",
     description: "Looking for job referrals in Canada",
   },
@@ -32,7 +32,6 @@ export function RoleSelector() {
   const { startNavigation } = useNavigationLoader();
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [tiltDirection, setTiltDirection] = useState<"up" | "down" | null>(null);
   const [focusedIndex, setFocusedIndex] = useState(-1);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -111,29 +110,18 @@ export function RoleSelector() {
 
   const handleSelect = useCallback(
     (index: number) => {
-      const previousIndex = selectedIndex;
-
-      // Set tilt direction
-      setTiltDirection(index > previousIndex ? "down" : "up");
       setSelectedIndex(index);
-
-      // Close and navigate after animation
-      setTimeout(() => {
-        setTiltDirection(null);
-        setIsOpen(false);
-        setFocusedIndex(-1);
-        startNavigation(roles[index].href);
-        router.push(roles[index].href);
-      }, 500);
+      setIsOpen(false);
+      setFocusedIndex(-1);
+      startNavigation(roles[index].href);
+      router.push(roles[index].href);
     },
-    [selectedIndex, router, startNavigation]
+    [router, startNavigation]
   );
 
   const menuClasses = [
     "role-selector",
     isOpen && "is-open",
-    tiltDirection === "up" && "tilt-up",
-    tiltDirection === "down" && "tilt-down",
   ]
     .filter(Boolean)
     .join(" ");
