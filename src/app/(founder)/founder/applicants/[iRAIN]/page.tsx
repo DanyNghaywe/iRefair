@@ -1,6 +1,7 @@
 "use client";
 
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useParams, useSearchParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
@@ -1138,12 +1139,14 @@ export default function CandidateReviewPage() {
                 <ul className="founder-list">
                   {applications.map((app) => (
                     <li key={app.id}>
-                      <div className="founder-list__title">
-                        {app.position || "Application"} <Badge tone="neutral">{app.iCrn}</Badge>
-                      </div>
-                      <div className="founder-list__meta">
-                        {app.id} - {app.status || "Unassigned"}
-                      </div>
+                      <Link href={`/founder/applications/${app.id}`} className="founder-list__link">
+                        <div className="founder-list__title">
+                          {app.position || "Application"} <Badge tone="neutral">{app.iCrn}</Badge>
+                        </div>
+                        <div className="founder-list__meta">
+                          {app.id} - {app.status || "Unassigned"}
+                        </div>
+                      </Link>
                     </li>
                   ))}
                 </ul>

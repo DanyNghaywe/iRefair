@@ -3927,6 +3927,20 @@ section.founder-auth input:focus-visible {
   font-size: var(--font-size-sm);
 }
 
+.founder-list__link {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+  padding: 8px 10px;
+  margin: -8px -10px;
+  border-radius: 6px;
+  transition: background-color 0.15s ease;
+}
+
+.founder-list__link:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
 .founder-pill {
   display: inline-flex;
   align-items: center;
