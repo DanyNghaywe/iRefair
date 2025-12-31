@@ -842,42 +842,44 @@ export default function CandidateReviewPage() {
                   </select>
                 </div>
                 <div className="field">
-                  <label htmlFor="candidate-tags">Tags</label>
+                  <label htmlFor="candidate-tags">Skills / Interests</label>
                   <input
                     id="candidate-tags"
                     type="text"
                     value={tags}
                     onChange={(event) => setTags(event.target.value)}
-                    placeholder="Comma separated tags"
+                    placeholder="e.g. iPhone repair, soldering, retail"
                   />
                 </div>
                 <div className="field">
-                  <label htmlFor="candidate-last-contacted">Last Contacted At</label>
+                  <label htmlFor="candidate-last-contacted">Last Contact Date</label>
                   <input
                     id="candidate-last-contacted"
                     type="text"
                     value={lastContactedAt}
                     onChange={(event) => setLastContactedAt(event.target.value)}
+                    placeholder="e.g. 2025-01-15"
                   />
                 </div>
                 <div className="field">
-                  <label htmlFor="candidate-next-action">Next Action At</label>
+                  <label htmlFor="candidate-next-action">Next Follow-up</label>
                   <input
                     id="candidate-next-action"
                     type="text"
                     value={nextActionAt}
                     onChange={(event) => setNextActionAt(event.target.value)}
+                    placeholder="e.g. 2025-01-20 or Call Monday"
                   />
                 </div>
               </div>
               <div className="field" style={{ marginTop: "var(--gap)" }}>
-                <label htmlFor="candidate-notes">Owner Notes</label>
+                <label htmlFor="candidate-notes">Internal Notes</label>
                 <textarea
                   id="candidate-notes"
                   rows={4}
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
-                  placeholder="Add context, outreach details, blockers..."
+                  placeholder="Add interview notes, availability, concerns..."
                 />
               </div>
             </DetailSection>
