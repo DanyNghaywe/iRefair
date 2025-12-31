@@ -160,6 +160,7 @@ export default function CandidateReviewPage() {
   const [resumeUploading, setResumeUploading] = useState(false);
   const [resumeError, setResumeError] = useState<string | null>(null);
   const [resumeSuccess, setResumeSuccess] = useState<string | null>(null);
+  const [pendingResumeFile, setPendingResumeFile] = useState<File | null>(null);
   const resumeInputRef = useRef<HTMLInputElement | null>(null);
 
   // Store original values when entering edit mode
@@ -420,7 +421,7 @@ export default function CandidateReviewPage() {
     setStatus("reviewed");
   };
 
-  const handleResumeUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+  const handleResumeFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file || !candidate) return;
 
@@ -441,13 +442,21 @@ export default function CandidateReviewPage() {
       return;
     }
 
+    setResumeError(null);
+    setResumeSuccess(null);
+    setPendingResumeFile(file);
+  };
+
+  const handleResumeUploadSubmit = async () => {
+    if (!pendingResumeFile || !candidate) return;
+
     setResumeUploading(true);
     setResumeError(null);
     setResumeSuccess(null);
 
     try {
       const formData = new FormData();
-      formData.append("resume", file);
+      formData.append("resume", pendingResumeFile);
 
       const response = await fetch(
         `/api/founder/applicants/${encodeURIComponent(candidate.irain)}/resume`,
@@ -459,7 +468,7 @@ export default function CandidateReviewPage() {
       if (!response.ok || !data?.ok) {
         setResumeError(data?.error || "Unable to upload resume.");
       } else {
-        setResumeFileName(data.resumeFileName || file.name);
+        setResumeFileName(data.resumeFileName || pendingResumeFile.name);
         setResumeFileId(data.resumeFileId || "");
         setResumeSuccess("Resume uploaded successfully.");
         updateLocalCandidate({
@@ -467,6 +476,7 @@ export default function CandidateReviewPage() {
           resumeFileId: data.resumeFileId,
           resumeUrl: data.resumeUrl,
         });
+        setPendingResumeFile(null);
       }
     } catch (error) {
       console.error("Resume upload failed", error);
@@ -474,6 +484,11 @@ export default function CandidateReviewPage() {
     } finally {
       setResumeUploading(false);
     }
+  };
+
+  const handleResumeUploadCancel = () => {
+    setPendingResumeFile(null);
+    setResumeError(null);
   };
 
   if (!cleanIrain) {
@@ -929,17 +944,43 @@ export default function CandidateReviewPage() {
                     type="file"
                     accept=".pdf,.doc,.docx"
                     className="file-input"
-                    onChange={handleResumeUpload}
+                    onChange={handleResumeFileSelect}
                     disabled={resumeUploading}
                   />
-                  <ActionBtn
-                    as="button"
-                    variant="ghost"
-                    onClick={() => resumeInputRef.current?.click()}
-                    disabled={resumeUploading}
-                  >
-                    {resumeUploading ? "Uploading..." : "Choose File"}
-                  </ActionBtn>
+                  {pendingResumeFile ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: "var(--gap)", flexWrap: "wrap" }}>
+                      <span style={{ fontStyle: "italic" }}>{pendingResumeFile.name}</span>
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <ActionBtn
+                          as="button"
+                          variant="primary"
+                          size="sm"
+                          onClick={handleResumeUploadSubmit}
+                          disabled={resumeUploading}
+                        >
+                          {resumeUploading ? "Uploading..." : "Submit"}
+                        </ActionBtn>
+                        <ActionBtn
+                          as="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleResumeUploadCancel}
+                          disabled={resumeUploading}
+                        >
+                          Cancel
+                        </ActionBtn>
+                      </div>
+                    </div>
+                  ) : (
+                    <ActionBtn
+                      as="button"
+                      variant="ghost"
+                      onClick={() => resumeInputRef.current?.click()}
+                      disabled={resumeUploading}
+                    >
+                      Choose File
+                    </ActionBtn>
+                  )}
                 </div>
                 <p className="field-hint">PDF, DOC, or DOCX. Max 10MB.</p>
                 {resumeError && (
