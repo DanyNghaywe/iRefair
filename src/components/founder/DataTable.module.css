@@ -122,6 +122,8 @@
   color: #cbd5e1;
   padding: 48px 24px;
   font-size: 15px;
+  height: 400px;
+  vertical-align: middle;
 }
 
 .headerCell {
@@ -206,5 +208,9 @@
     letter-spacing: 0.05em;
     display: block;
     margin-bottom: 4px;
+  }
+
+  .empty {
+    height: 280px;
   }
 }

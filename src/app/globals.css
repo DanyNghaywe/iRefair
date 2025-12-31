@@ -3489,7 +3489,8 @@ section.founder-auth input:focus-visible {
 }
 
 .ops-scope .empty-state__illustration {
-  color: #a0aec0;
+  color: #f8fafc;
+  opacity: 1;
 }
 
 .ops-scope .founder-table th,
