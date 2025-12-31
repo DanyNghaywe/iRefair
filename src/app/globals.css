@@ -3151,6 +3151,15 @@ section.founder-auth input:focus-visible {
   background: rgba(255, 255, 255, 0.42);
 }
 
+/* Founder page detail inputs - placeholder styles */
+.ops-scope .founder-page .field input::placeholder,
+.ops-scope .founder-page .card .field input::placeholder,
+.ops-scope .founder-page .field textarea::placeholder,
+.ops-scope .founder-page .card .field textarea::placeholder {
+  color: rgba(226, 232, 240, 0.7);
+  font-style: italic;
+}
+
 .founder-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
