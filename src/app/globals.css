@@ -3116,9 +3116,20 @@ section.founder-auth input:focus-visible {
 /* Founder page detail inputs - base styles for consistency */
 .ops-scope .founder-page .field input,
 .ops-scope .founder-page .card .field input,
+.ops-scope .founder-page .field select,
+.ops-scope .founder-page .card .field select,
 .ops-scope .founder-page .field textarea,
 .ops-scope .founder-page .card .field textarea {
   background: rgba(255, 255, 255, 0.18);
+  border: none;
+  box-shadow: none;
+}
+
+.ops-scope .founder-page .field input,
+.ops-scope .founder-page .card .field input,
+.ops-scope .founder-page .field select,
+.ops-scope .founder-page .card .field select {
+  height: 48px;
 }
 
 /* Founder page detail inputs - focus styles */
