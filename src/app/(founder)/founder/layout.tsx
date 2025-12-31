@@ -13,6 +13,7 @@ const navItems = [
   { href: "/founder/referrers", label: "Referrers" },
   { href: "/founder/applications", label: "Applications" },
   { href: "/founder/matches", label: "Matches" },
+  { href: "/founder/calendar", label: "Calendar" },
   { href: "/founder/settings", label: "Settings" },
 ];
 

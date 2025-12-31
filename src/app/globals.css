@@ -6508,3 +6508,185 @@ input[type="radio"] {
     background: rgba(255, 255, 255, 0.92);
   }
 }
+
+/* ==========================================================================
+   Calendar Page
+   ========================================================================== */
+
+/* Large stat layout */
+.calendar-stat {
+  text-align: center;
+  padding: 32px 24px;
+}
+
+/* Date/time row */
+.calendar-stat__row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Readable date */
+.calendar-stat__date {
+  font-size: 18px;
+  font-weight: 600;
+  color: #f8fafc;
+}
+
+/* Large time */
+.calendar-stat__time {
+  font-size: 48px;
+  font-weight: 700;
+  color: #f8fafc;
+  line-height: 1;
+}
+
+.calendar-stat__label {
+  font-size: var(--font-size-sm);
+  color: #cbd5e1;
+  margin-top: 4px;
+}
+
+/* 3-col grid responsive */
+.calendar-actions {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+/* Clickable card */
+.calendar-action {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  text-decoration: none;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+  cursor: pointer;
+}
+
+.calendar-action:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.calendar-action:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.25);
+}
+
+/* Icon pill */
+.calendar-action__icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  color: var(--accent-primary);
+}
+
+.calendar-action__content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Title */
+.calendar-action__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #f8fafc;
+  margin-bottom: 4px;
+}
+
+/* Muted desc */
+.calendar-action__desc {
+  font-size: var(--font-size-sm);
+  color: #cbd5e1;
+}
+
+/* Arrow */
+.calendar-action__arrow {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: #64748b;
+  transition:
+    color 0.15s ease,
+    transform 0.15s ease;
+}
+
+.calendar-action:hover .calendar-action__arrow {
+  color: var(--accent-primary);
+  transform: translateX(4px);
+}
+
+/* Iframe container */
+.calendar-embed {
+  display: flex;
+  flex-direction: column;
+}
+
+.calendar-embed__header {
+  font-size: 14px;
+  font-weight: 600;
+  color: #cbd5e1;
+  margin-bottom: 16px;
+}
+
+/* Iframe sizing */
+.calendar-embed__frame {
+  border-radius: 8px;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+.calendar-embed__iframe {
+  width: 100%;
+  height: 600px;
+  border: none;
+  display: block;
+}
+
+.calendar-embed__fallback {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: var(--font-size-sm);
+  color: var(--accent-primary);
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.calendar-embed__fallback:hover {
+  opacity: 0.8;
+  text-decoration: underline;
+}
+
+.calendar-embed__fallback:focus {
+  outline: none;
+  text-decoration: underline;
+}
+
+/* Responsive: tablet - 2 columns */
+@media (max-width: 1024px) {
+  .calendar-actions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Responsive: mobile - 1 column */
+@media (max-width: 640px) {
+  .calendar-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-stat__time {
+    font-size: 36px;
+  }
+
+  .calendar-embed__iframe {
+    height: 500px;
+  }
+}
