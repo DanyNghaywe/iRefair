@@ -7,6 +7,7 @@ import { ActionBtn } from "@/components/ActionBtn";
 import { Badge } from "@/components/founder/Badge";
 import { Drawer } from "@/components/founder/Drawer";
 import { EmptyState } from "@/components/founder/EmptyState";
+import { FilterBar, type FilterConfig } from "@/components/founder/FilterBar";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
 
@@ -267,6 +268,22 @@ export default function MatchesPage() {
       )
     : null;
 
+  const filters = useMemo<FilterConfig[]>(
+    () => [
+      {
+        type: "select",
+        key: "stage",
+        label: "All stages",
+        value: stageFilter,
+        options: stageOptions
+          .filter((value) => value)
+          .map((value) => ({ value: value.toLowerCase(), label: value })),
+        onChange: setStageFilter,
+      },
+    ],
+    [stageFilter],
+  );
+
   return (
     <div className="founder-page">
       <Topbar
@@ -275,26 +292,16 @@ export default function MatchesPage() {
         searchValue={searchInput}
         searchPlaceholder="Search by match, candidate, referrer..."
         onSearchChange={setSearchInput}
+      />
+
+      <FilterBar
+        filters={filters}
         actions={
-          <div className="founder-toolbar">
-            <select value={stageFilter} onChange={(event) => setStageFilter(event.target.value)}>
-              <option value="">All stages</option>
-              {stageOptions
-                .filter((value) => value)
-                .map((value) => (
-                  <option key={value} value={value.toLowerCase()}>
-                    {value}
-                  </option>
-                ))}
-            </select>
-            {matchCreateEnabled ? (
-              <ActionBtn as="button" variant="primary" type="button" onClick={() => setShowModal(true)}>
-                Create match
-              </ActionBtn>
-            ) : (
-              <span className="founder-card__meta">Create match: disabled</span>
-            )}
-          </div>
+          matchCreateEnabled ? (
+            <ActionBtn as="button" variant="primary" type="button" onClick={() => setShowModal(true)}>
+              Create match
+            </ActionBtn>
+          ) : null
         }
       />
 

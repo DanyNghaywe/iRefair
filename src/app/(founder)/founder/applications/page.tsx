@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { Badge } from "@/components/founder/Badge";
 import { EmptyState } from "@/components/founder/EmptyState";
+import { FilterBar, type FilterConfig } from "@/components/founder/FilterBar";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
 
@@ -119,6 +120,29 @@ export default function ApplicationsPage() {
     [],
   );
 
+  const filters = useMemo<FilterConfig[]>(
+    () => [
+      {
+        type: "text",
+        key: "ircrn",
+        placeholder: "Filter by iRCRN",
+        value: ircrnFilter,
+        onChange: setIrcrnFilter,
+      },
+      {
+        type: "select",
+        key: "status",
+        label: "All statuses",
+        value: statusFilter,
+        options: statusOptions
+          .filter((value) => value)
+          .map((value) => ({ value: value.toLowerCase(), label: value })),
+        onChange: setStatusFilter,
+      },
+    ],
+    [ircrnFilter, statusFilter],
+  );
+
   return (
     <div className="founder-page">
       <Topbar
@@ -127,27 +151,9 @@ export default function ApplicationsPage() {
         searchValue={searchInput}
         searchPlaceholder="Search by ID, candidate, position..."
         onSearchChange={setSearchInput}
-        actions={
-          <div className="founder-toolbar">
-            <input
-              type="text"
-              placeholder="Filter iRCRN"
-              value={ircrnFilter}
-              onChange={(event) => setIrcrnFilter(event.target.value)}
-            />
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-              <option value="">All statuses</option>
-              {statusOptions
-                .filter((value) => value)
-                .map((value) => (
-                  <option key={value} value={value.toLowerCase()}>
-                    {value}
-                  </option>
-                ))}
-            </select>
-          </div>
-        }
       />
+
+      <FilterBar filters={filters} />
 
       <OpsDataTable<ApplicationRecord>
         columns={columns}

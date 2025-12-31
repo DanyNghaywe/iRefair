@@ -3486,6 +3486,216 @@ section.founder-auth input:focus-visible {
   border-color: rgba(255, 255, 255, 0.28);
 }
 
+/* FilterBar component styles */
+.founder-filter-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  margin-bottom: 16px;
+}
+
+.founder-filter-bar__filters {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  flex: 1;
+}
+
+/* Custom Select component styles */
+.founder-select {
+  position: relative;
+  display: inline-block;
+}
+
+.founder-select__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #e2e8f0;
+  padding: 8px 12px;
+  font-size: 13px;
+  min-width: 140px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.founder-select__trigger:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.founder-select__trigger:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.founder-select.is-active .founder-select__trigger {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #f8fafc;
+}
+
+.founder-select__label {
+  color: #e2e8f0;
+}
+
+.founder-select__label--active {
+  color: #f8fafc;
+}
+
+.founder-select__dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 100;
+  min-width: 100%;
+  max-height: 280px;
+  overflow-y: auto;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: #1a3a4a;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 10px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.founder-select__option {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.founder-select__option:hover,
+.founder-select__option:focus {
+  background: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+  outline: none;
+}
+
+.founder-select__option.is-selected {
+  background: #166534;
+  color: #4ade80;
+}
+
+.founder-select__option.is-selected:hover {
+  background: #15803d;
+}
+
+/* Text input wrapper styles */
+.founder-filter-bar__input-wrapper {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.founder-filter-bar__input-wrapper input {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  color: #cbd5e1;
+  padding: 8px 12px;
+  font-size: 13px;
+  transition: all 0.15s ease;
+  min-width: 140px;
+}
+
+.founder-filter-bar__input-wrapper.is-active input {
+  background: rgba(34, 197, 94, 0.1);
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #f8fafc;
+  padding-right: 32px;
+}
+
+.founder-filter-bar__input-wrapper input:focus {
+  outline: none;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #f8fafc;
+}
+
+.founder-filter-bar__input-wrapper input:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+
+.founder-filter-bar__input-wrapper input::placeholder {
+  color: #94a3b8;
+}
+
+.founder-filter-bar__clear {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 4px;
+  color: #f8fafc;
+  cursor: pointer;
+  opacity: 0.7;
+  transition: all 0.15s ease;
+}
+
+.founder-filter-bar__clear:hover {
+  background: rgba(255, 255, 255, 0.25);
+  opacity: 1;
+}
+
+.founder-filter-bar__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Responsive adjustments for FilterBar */
+@media (max-width: 768px) {
+  .founder-filter-bar {
+    padding: 10px 12px;
+  }
+
+  .founder-filter-bar__select-wrapper select,
+  .founder-filter-bar__input-wrapper input {
+    min-width: 120px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .founder-filter-bar__select-wrapper.is-active select,
+  .founder-filter-bar__input-wrapper.is-active input {
+    padding-right: 28px;
+  }
+
+  .founder-filter-bar__clear {
+    width: 18px;
+    height: 18px;
+    right: 4px;
+  }
+}
+
 /* Base founder-table styles moved to DataTable.module.css */
 /* Context-specific overrides kept below for .ops-scope */
 

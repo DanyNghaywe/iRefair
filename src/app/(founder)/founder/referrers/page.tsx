@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
 import { EmptyState } from "@/components/founder/EmptyState";
+import { FilterBar, type FilterConfig } from "@/components/founder/FilterBar";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
 
@@ -203,6 +204,41 @@ export default function ReferrersPage() {
     [],
   );
 
+  const filters = useMemo<FilterConfig[]>(
+    () => [
+      {
+        type: "text",
+        key: "company",
+        placeholder: "Filter by company",
+        value: companyFilter,
+        onChange: setCompanyFilter,
+      },
+      {
+        type: "select",
+        key: "status",
+        label: "All statuses",
+        value: statusFilter,
+        options: statusOptions
+          .filter((value) => value)
+          .map((value) => ({ value: value.toLowerCase(), label: value })),
+        onChange: setStatusFilter,
+      },
+      {
+        type: "select",
+        key: "approval",
+        label: "All approvals",
+        value: approvalFilter,
+        options: [
+          { value: "pending", label: "Pending" },
+          { value: "approved", label: "Approved" },
+          { value: "denied", label: "Denied" },
+        ],
+        onChange: setApprovalFilter,
+      },
+    ],
+    [companyFilter, statusFilter, approvalFilter],
+  );
+
   return (
     <div className="founder-page">
       <Topbar
@@ -211,33 +247,9 @@ export default function ReferrersPage() {
         searchValue={searchInput}
         searchPlaceholder="Search by name, email, company..."
         onSearchChange={setSearchInput}
-        actions={
-          <div className="founder-toolbar">
-            <input
-              type="text"
-              placeholder="Filter company"
-              value={companyFilter}
-              onChange={(event) => setCompanyFilter(event.target.value)}
-            />
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-              <option value="">All statuses</option>
-              {statusOptions
-                .filter((value) => value)
-                .map((value) => (
-                  <option key={value} value={value.toLowerCase()}>
-                    {value}
-                  </option>
-                ))}
-            </select>
-            <select value={approvalFilter} onChange={(event) => setApprovalFilter(event.target.value)}>
-              <option value="">All approvals</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="denied">Denied</option>
-            </select>
-          </div>
-        }
       />
+
+      <FilterBar filters={filters} />
 
       <OpsDataTable<ReferrerRecord>
         columns={columns}

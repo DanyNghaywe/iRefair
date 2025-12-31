@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ActionBtn } from "@/components/ActionBtn";
 import { Badge } from "@/components/founder/Badge";
 import { EmptyState } from "@/components/founder/EmptyState";
+import { FilterBar, type FilterConfig } from "@/components/founder/FilterBar";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
 
@@ -157,6 +158,33 @@ export default function CandidatesPage() {
     [router],
   );
 
+  const filters = useMemo<FilterConfig[]>(
+    () => [
+      {
+        type: "select",
+        key: "eligibility",
+        label: "All eligibility",
+        value: eligibleFilter === "all" ? "" : eligibleFilter,
+        options: [
+          { value: "eligible", label: "Eligible" },
+          { value: "ineligible", label: "Ineligible" },
+        ],
+        onChange: (value) => setEligibleFilter(value === "" ? "all" : (value as "eligible" | "ineligible")),
+      },
+      {
+        type: "select",
+        key: "status",
+        label: "All statuses",
+        value: statusFilter,
+        options: statusOptions
+          .filter((status) => status)
+          .map((value) => ({ value: value.toLowerCase(), label: value })),
+        onChange: setStatusFilter,
+      },
+    ],
+    [eligibleFilter, statusFilter],
+  );
+
   return (
     <div className="founder-page">
       <Topbar
@@ -165,31 +193,9 @@ export default function CandidatesPage() {
         searchValue={searchInput}
         searchPlaceholder="Search by name, email, iRAIN..."
         onSearchChange={setSearchInput}
-        actions={
-          <div className="founder-toolbar">
-            <select
-              value={eligibleFilter}
-              onChange={(event) =>
-                setEligibleFilter(event.target.value as "all" | "eligible" | "ineligible")
-              }
-            >
-              <option value="all">Eligibility</option>
-              <option value="eligible">Eligible</option>
-              <option value="ineligible">Ineligible</option>
-            </select>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-              <option value="">All statuses</option>
-              {statusOptions
-                .filter((status) => status)
-                .map((value) => (
-                  <option key={value} value={value.toLowerCase()}>
-                    {value}
-                  </option>
-                ))}
-            </select>
-          </div>
-        }
       />
+
+      <FilterBar filters={filters} />
 
       {/* Candidates table reference:
           - Wrapper chain: founder-page -> OpsDataTable (adds founder-card) -> DataTable -> div.founder-table > .founder-table__container (overflow: auto scroll) > table.data-table.candidates-table.
