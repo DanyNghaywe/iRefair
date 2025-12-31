@@ -572,69 +572,75 @@ export default function CandidateReviewPage() {
                     />
                   )}
                 </div>
-                <div className="field">
-                  <label htmlFor="candidate-province">Province</label>
-                  {editDetails ? (
-                    <Select
-                      id="candidate-province"
-                      name="candidate-province"
-                      options={PROVINCES}
-                      placeholder="Select"
-                      value={province}
-                      onChange={(value) => setProvince(Array.isArray(value) ? value[0] : value)}
-                    />
-                  ) : (
-                    <input
-                      id="candidate-province"
-                      type="text"
-                      value={province || "-"}
-                      readOnly
-                      tabIndex={-1}
-                    />
-                  )}
-                </div>
-                <div className="field">
-                  <label htmlFor="candidate-work-auth">Work Authorization</label>
-                  {editDetails ? (
-                    <Select
-                      id="candidate-work-auth"
-                      name="candidate-work-auth"
-                      options={yesNoOptions.filter(Boolean)}
-                      placeholder="Select"
-                      value={workAuthorization}
-                      onChange={(value) => setWorkAuthorization(Array.isArray(value) ? value[0] : value)}
-                    />
-                  ) : (
-                    <input
-                      id="candidate-work-auth"
-                      type="text"
-                      value={workAuthorization || "-"}
-                      readOnly
-                      tabIndex={-1}
-                    />
-                  )}
-                </div>
-                <div className="field">
-                  <label htmlFor="candidate-eligible-move">Eligible to Move (6 Months)</label>
-                  {editDetails ? (
-                    <Select
-                      id="candidate-eligible-move"
-                      name="candidate-eligible-move"
-                      options={yesNoOptions.filter(Boolean)}
-                      placeholder="Select"
-                      value={eligibleMoveCanada}
-                      onChange={(value) => setEligibleMoveCanada(Array.isArray(value) ? value[0] : value)}
-                    />
-                  ) : (
-                    <input
-                      id="candidate-eligible-move"
-                      type="text"
-                      value={eligibleMoveCanada || "-"}
-                      readOnly
-                      tabIndex={-1}
-                    />
-                  )}
-                </div>
+                {locatedCanada === "Yes" && (
+                  <div className="field">
+                    <label htmlFor="candidate-province">Province</label>
+                    {editDetails ? (
+                      <Select
+                        id="candidate-province"
+                        name="candidate-province"
+                        options={PROVINCES}
+                        placeholder="Select"
+                        value={province}
+                        onChange={(value) => setProvince(Array.isArray(value) ? value[0] : value)}
+                      />
+                    ) : (
+                      <input
+                        id="candidate-province"
+                        type="text"
+                        value={province || "-"}
+                        readOnly
+                        tabIndex={-1}
+                      />
+                    )}
+                  </div>
+                )}
+                {locatedCanada === "Yes" && (
+                  <div className="field">
+                    <label htmlFor="candidate-work-auth">Work Authorization</label>
+                    {editDetails ? (
+                      <Select
+                        id="candidate-work-auth"
+                        name="candidate-work-auth"
+                        options={yesNoOptions.filter(Boolean)}
+                        placeholder="Select"
+                        value={workAuthorization}
+                        onChange={(value) => setWorkAuthorization(Array.isArray(value) ? value[0] : value)}
+                      />
+                    ) : (
+                      <input
+                        id="candidate-work-auth"
+                        type="text"
+                        value={workAuthorization || "-"}
+                        readOnly
+                        tabIndex={-1}
+                      />
+                    )}
+                  </div>
+                )}
+                {locatedCanada === "No" && (
+                  <div className="field">
+                    <label htmlFor="candidate-eligible-move">Eligible to Move (6 Months)</label>
+                    {editDetails ? (
+                      <Select
+                        id="candidate-eligible-move"
+                        name="candidate-eligible-move"
+                        options={yesNoOptions.filter(Boolean)}
+                        placeholder="Select"
+                        value={eligibleMoveCanada}
+                        onChange={(value) => setEligibleMoveCanada(Array.isArray(value) ? value[0] : value)}
+                      />
+                    ) : (
+                      <input
+                        id="candidate-eligible-move"
+                        type="text"
+                        value={eligibleMoveCanada || "-"}
+                        readOnly
+                        tabIndex={-1}
+                      />
+                    )}
+                  </div>
+                )}
                 <div className="field">
                   <label htmlFor="candidate-country">Country of Origin</label>
                   {editDetails ? (
