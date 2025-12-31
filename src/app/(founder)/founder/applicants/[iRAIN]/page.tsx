@@ -870,7 +870,7 @@ export default function CandidateReviewPage() {
                   />
                 </div>
               </div>
-              <div className="field">
+              <div className="field" style={{ marginTop: "var(--gap)" }}>
                 <label htmlFor="candidate-notes">Owner Notes</label>
                 <textarea
                   id="candidate-notes"
