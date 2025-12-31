@@ -459,19 +459,11 @@ export default function ReferrerPage() {
     const linkedinInput = linkedinInputRef.current;
     const linkedinInvalid = Boolean(values.linkedin) && !isValidLinkedInProfileUrl(values.linkedin);
     linkedinInput?.setCustomValidity('');
-    if (linkedinInvalid && linkedinInput) {
-      linkedinInput.setCustomValidity('Please enter a valid LinkedIn profile URL.');
+    if (linkedinInvalid) {
+      validationErrors['referrer-linkedin'] = 'Please enter a valid LinkedIn profile URL.';
     }
 
     const hasErrors = Object.keys(validationErrors).length > 0;
-
-    if (linkedinInvalid) {
-      setErrors(validationErrors);
-      setStatus('idle');
-      setSubmitting(false);
-      linkedinInput?.reportValidity();
-      return;
-    }
 
     if (hasErrors) {
       setErrors(validationErrors);
