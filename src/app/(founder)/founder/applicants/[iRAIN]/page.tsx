@@ -150,7 +150,25 @@ export default function CandidateReviewPage() {
   const [applications, setApplications] = useState<ApplicationRecord[]>([]);
   const [appsLoading, setAppsLoading] = useState(false);
   const skipAutosaveRef = useRef(true);
-  const skipDetailsAutosaveRef = useRef(true);
+
+  // Store original values when entering edit mode
+  const originalDetailsRef = useRef<{
+    firstName: string;
+    middleName: string;
+    familyName: string;
+    email: string;
+    phone: string;
+    locatedCanada: string;
+    province: string;
+    workAuthorization: string;
+    eligibleMoveCanada: string;
+    countryOfOrigin: string;
+    languages: string;
+    languagesOther: string;
+    industryType: string;
+    industryOther: string;
+    employmentStatus: string;
+  } | null>(null);
 
   const fullName = useMemo(
     () => [firstName, middleName, familyName].filter(Boolean).join(" ").trim(),
@@ -217,7 +235,7 @@ export default function CandidateReviewPage() {
     setActionMessage(null);
     setActionError(null);
     skipAutosaveRef.current = true;
-    skipDetailsAutosaveRef.current = true;
+    originalDetailsRef.current = null;
   }, [candidate?.irain]);
 
   const fetchApplications = async (irainValue: string) => {
@@ -283,12 +301,51 @@ export default function CandidateReviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notes, tags, status, lastContactedAt, nextActionAt, candidate?.irain]);
 
-  useEffect(() => {
-    if (!candidate) return;
-    if (skipDetailsAutosaveRef.current) {
-      skipDetailsAutosaveRef.current = false;
-      return;
+  const handleStartEdit = () => {
+    originalDetailsRef.current = {
+      firstName,
+      middleName,
+      familyName,
+      email,
+      phone,
+      locatedCanada,
+      province,
+      workAuthorization,
+      eligibleMoveCanada,
+      countryOfOrigin,
+      languages,
+      languagesOther,
+      industryType,
+      industryOther,
+      employmentStatus,
+    };
+    setEditDetails(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (originalDetailsRef.current) {
+      setFirstName(originalDetailsRef.current.firstName);
+      setMiddleName(originalDetailsRef.current.middleName);
+      setFamilyName(originalDetailsRef.current.familyName);
+      setEmail(originalDetailsRef.current.email);
+      setPhone(originalDetailsRef.current.phone);
+      setLocatedCanada(originalDetailsRef.current.locatedCanada);
+      setProvince(originalDetailsRef.current.province);
+      setWorkAuthorization(originalDetailsRef.current.workAuthorization);
+      setEligibleMoveCanada(originalDetailsRef.current.eligibleMoveCanada);
+      setCountryOfOrigin(originalDetailsRef.current.countryOfOrigin);
+      setLanguages(originalDetailsRef.current.languages);
+      setLanguagesOther(originalDetailsRef.current.languagesOther);
+      setIndustryType(originalDetailsRef.current.industryType);
+      setIndustryOther(originalDetailsRef.current.industryOther);
+      setEmploymentStatus(originalDetailsRef.current.employmentStatus);
     }
+    originalDetailsRef.current = null;
+    setEditDetails(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!candidate) return;
     const patch: Record<string, string> = {};
     const addIfChanged = (key: string, value: string, current: string) => {
       if (value !== current) patch[key] = value;
@@ -309,31 +366,12 @@ export default function CandidateReviewPage() {
     addIfChanged("industryOther", industryOther, candidate.industryOther || "");
     addIfChanged("employmentStatus", employmentStatus, candidate.employmentStatus || "");
 
-    if (!Object.keys(patch).length) return;
-
-    const timer = setTimeout(() => {
-      patchCandidate(patch);
-    }, 600);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    firstName,
-    middleName,
-    familyName,
-    email,
-    phone,
-    locatedCanada,
-    province,
-    workAuthorization,
-    eligibleMoveCanada,
-    countryOfOrigin,
-    languages,
-    languagesOther,
-    industryType,
-    industryOther,
-    employmentStatus,
-    candidate?.irain,
-  ]);
+    if (Object.keys(patch).length) {
+      await patchCandidate(patch);
+    }
+    originalDetailsRef.current = null;
+    setEditDetails(false);
+  };
 
   const handleRequestResume = async () => {
     if (!candidate) return;
@@ -868,9 +906,20 @@ export default function CandidateReviewPage() {
                 />
               </div>
               <div className="flow-stack">
-                <ActionBtn as="button" variant="ghost" onClick={() => setEditDetails((prev) => !prev)}>
-                  {editDetails ? "Done editing" : "Edit details"}
-                </ActionBtn>
+                {editDetails ? (
+                  <>
+                    <ActionBtn as="button" variant="primary" onClick={handleSaveEdit} disabled={saving}>
+                      {saving ? "Saving..." : "Save"}
+                    </ActionBtn>
+                    <ActionBtn as="button" variant="ghost" onClick={handleCancelEdit} disabled={saving}>
+                      Cancel
+                    </ActionBtn>
+                  </>
+                ) : (
+                  <ActionBtn as="button" variant="ghost" onClick={handleStartEdit}>
+                    Edit details
+                  </ActionBtn>
+                )}
                 <ActionBtn as="button" variant="primary" onClick={handleMarkReviewed}>
                   Mark Reviewed
                 </ActionBtn>

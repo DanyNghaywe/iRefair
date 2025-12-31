@@ -262,7 +262,19 @@ export default function ReferrerReviewPage() {
   const [rejectConfirm, setRejectConfirm] = useState(false);
   const [pendingUpdateLoading, setPendingUpdateLoading] = useState<string | null>(null);
   const skipAutosaveRef = useRef(true);
-  const skipDetailsAutosaveRef = useRef(true);
+
+  // Store original values when entering edit mode
+  const originalDetailsRef = useRef<{
+    name: string;
+    email: string;
+    phone: string;
+    country: string;
+    company: string;
+    companyIndustry: string;
+    careersPortal: string;
+    workType: string;
+    linkedin: string;
+  } | null>(null);
 
   // Parse pending updates from referrer
   const pendingUpdates = useMemo<PendingUpdate[]>(() => {
@@ -347,7 +359,7 @@ export default function ReferrerReviewPage() {
     setPortalError(null);
     setRejectConfirm(false);
     skipAutosaveRef.current = true;
-    skipDetailsAutosaveRef.current = true;
+    originalDetailsRef.current = null;
   }, [referrer?.irref]);
 
   const updateLocal = (patch: Partial<ReferrerRecord>) => {
@@ -379,12 +391,39 @@ export default function ReferrerReviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notes, tags, status, referrer?.irref]);
 
-  useEffect(() => {
-    if (!referrer) return;
-    if (skipDetailsAutosaveRef.current) {
-      skipDetailsAutosaveRef.current = false;
-      return;
+  const handleStartEdit = () => {
+    originalDetailsRef.current = {
+      name,
+      email,
+      phone,
+      country,
+      company,
+      companyIndustry,
+      careersPortal,
+      workType,
+      linkedin,
+    };
+    setEditDetails(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (originalDetailsRef.current) {
+      setName(originalDetailsRef.current.name);
+      setEmail(originalDetailsRef.current.email);
+      setPhone(originalDetailsRef.current.phone);
+      setCountry(originalDetailsRef.current.country);
+      setCompany(originalDetailsRef.current.company);
+      setCompanyIndustry(originalDetailsRef.current.companyIndustry);
+      setCareersPortal(originalDetailsRef.current.careersPortal);
+      setWorkType(originalDetailsRef.current.workType);
+      setLinkedin(originalDetailsRef.current.linkedin);
     }
+    originalDetailsRef.current = null;
+    setEditDetails(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!referrer) return;
     const patch: Record<string, string> = {};
     const addIfChanged = (key: string, value: string, current: string) => {
       if (value !== current) patch[key] = value;
@@ -399,25 +438,12 @@ export default function ReferrerReviewPage() {
     addIfChanged("workType", workType, referrer.workType || "");
     addIfChanged("linkedin", linkedin, referrer.linkedin || "");
 
-    if (!Object.keys(patch).length) return;
-
-    const timer = setTimeout(() => {
-      patchReferrer(patch);
-    }, 600);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    name,
-    email,
-    phone,
-    country,
-    company,
-    companyIndustry,
-    careersPortal,
-    workType,
-    linkedin,
-    referrer?.irref,
-  ]);
+    if (Object.keys(patch).length) {
+      await patchReferrer(patch);
+    }
+    originalDetailsRef.current = null;
+    setEditDetails(false);
+  };
 
   const handlePortalLink = async () => {
     if (!referrer || portalLoading) return;
@@ -1013,9 +1039,20 @@ export default function ReferrerReviewPage() {
               />
             </div>
             <div className="flow-stack">
-              <ActionBtn as="button" variant="ghost" onClick={() => setEditDetails((prev) => !prev)}>
-                {editDetails ? "Done editing" : "Edit details"}
-              </ActionBtn>
+              {editDetails ? (
+                <>
+                  <ActionBtn as="button" variant="primary" onClick={handleSaveEdit} disabled={saving}>
+                    {saving ? "Saving..." : "Save"}
+                  </ActionBtn>
+                  <ActionBtn as="button" variant="ghost" onClick={handleCancelEdit} disabled={saving}>
+                    Cancel
+                  </ActionBtn>
+                </>
+              ) : (
+                <ActionBtn as="button" variant="ghost" onClick={handleStartEdit}>
+                  Edit details
+                </ActionBtn>
+              )}
               <ActionBtn
                 as="button"
                 variant="primary"
