@@ -7,8 +7,10 @@ import { ActionBtn } from "@/components/ActionBtn";
 import { AutosaveHint } from "@/components/founder/AutosaveHint";
 import { DetailPageShell } from "@/components/founder/DetailPageShell";
 import { DetailSection } from "@/components/founder/DetailSection";
+import { Select } from "@/components/Select";
 import { Skeleton, SkeletonDetailGrid, SkeletonStack } from "@/components/founder/Skeleton";
 import { Topbar } from "@/components/founder/Topbar";
+import { countryOptions } from "@/lib/countries";
 
 type ReferrerRecord = {
   irref: string;
@@ -52,6 +54,23 @@ type PendingUpdate = {
 
 const statusOptions = ["", "New", "Engaged", "Active", "Paused", "Closed"];
 const LINK_PREVIEW_MAX = 42;
+
+const COMPANY_INDUSTRY_OPTIONS: string[] = [
+  "Technology",
+  "Finance",
+  "Healthcare",
+  "Education",
+  "Retail",
+  "Hospitality",
+  "Marketing / Media",
+  "Engineering / Construction",
+  "Consulting",
+  "Not for profit",
+  "Compliance / Audit",
+  "Other",
+];
+
+const WORK_TYPE_OPTIONS: string[] = ["On-site", "Remote", "Hybrid"];
 
 const fieldLabelMap: Record<string, string> = {
   companyIndustry: "Industry",
@@ -738,47 +757,81 @@ export default function ReferrerReviewPage() {
               <div className="field-grid field-grid--two">
                 <div className="field">
                   <label htmlFor="profile-name">Name</label>
-                  <input
-                    id="profile-name"
-                    type="text"
-                    value={editDetails ? name : name || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setName(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="profile-name"
+                      type="text"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="profile-name"
+                      type="text"
+                      value={name || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="profile-email">Email</label>
-                  <input
-                    id="profile-email"
-                    type="email"
-                    value={editDetails ? email : email || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setEmail(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="profile-email"
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="profile-email"
+                      type="text"
+                      value={email || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="profile-phone">Phone</label>
-                  <input
-                    id="profile-phone"
-                    type="text"
-                    value={editDetails ? phone : phone || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setPhone(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="profile-phone"
+                      type="text"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="profile-phone"
+                      type="text"
+                      value={phone || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="profile-country">Country</label>
-                  <input
-                    id="profile-country"
-                    type="text"
-                    value={editDetails ? country : country || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setCountry(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <Select
+                      id="profile-country"
+                      name="profile-country"
+                      options={countryOptions()}
+                      placeholder="Select"
+                      value={country}
+                      onChange={(value) => setCountry(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="profile-country"
+                      type="text"
+                      value={country || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="profile-irref">Referrer iRREF</label>
@@ -795,14 +848,22 @@ export default function ReferrerReviewPage() {
               <div className="field-grid field-grid--two">
                 <div className="field">
                   <label htmlFor="company-name">Company</label>
-                  <input
-                    id="company-name"
-                    type="text"
-                    value={editDetails ? company : company || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setCompany(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="company-name"
+                      type="text"
+                      value={company}
+                      onChange={(event) => setCompany(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="company-name"
+                      type="text"
+                      value={company || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="company-ircrn">Company iRCRN</label>
@@ -810,25 +871,45 @@ export default function ReferrerReviewPage() {
                 </div>
                 <div className="field">
                   <label htmlFor="company-industry">Industry</label>
-                  <input
-                    id="company-industry"
-                    type="text"
-                    value={editDetails ? companyIndustry : companyIndustry || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setCompanyIndustry(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <Select
+                      id="company-industry"
+                      name="company-industry"
+                      options={COMPANY_INDUSTRY_OPTIONS}
+                      placeholder="Select"
+                      value={companyIndustry}
+                      onChange={(value) => setCompanyIndustry(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="company-industry"
+                      type="text"
+                      value={companyIndustry || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="company-work-type">Work Type</label>
-                  <input
-                    id="company-work-type"
-                    type="text"
-                    value={editDetails ? workType : workType || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setWorkType(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <Select
+                      id="company-work-type"
+                      name="company-work-type"
+                      options={WORK_TYPE_OPTIONS}
+                      placeholder="Select"
+                      value={workType}
+                      onChange={(value) => setWorkType(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="company-work-type"
+                      type="text"
+                      value={workType || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
               </div>
             </DetailSection>
@@ -837,25 +918,41 @@ export default function ReferrerReviewPage() {
               <div className="field-grid field-grid--two">
                 <div className="field">
                   <label htmlFor="link-careers">Careers Portal</label>
-                  <input
-                    id="link-careers"
-                    type="url"
-                    value={editDetails ? careersPortal : careersPortal || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setCareersPortal(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="link-careers"
+                      type="url"
+                      value={careersPortal}
+                      onChange={(event) => setCareersPortal(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="link-careers"
+                      type="text"
+                      value={careersPortal || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="link-linkedin">LinkedIn</label>
-                  <input
-                    id="link-linkedin"
-                    type="url"
-                    value={editDetails ? linkedin : linkedin || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setLinkedin(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="link-linkedin"
+                      type="url"
+                      value={linkedin}
+                      onChange={(event) => setLinkedin(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="link-linkedin"
+                      type="text"
+                      value={linkedin || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
               </div>
               <div className="referrer-review__link-list">

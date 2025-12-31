@@ -8,8 +8,10 @@ import { AutosaveHint } from "@/components/founder/AutosaveHint";
 import { Badge } from "@/components/founder/Badge";
 import { DetailPageShell } from "@/components/founder/DetailPageShell";
 import { DetailSection } from "@/components/founder/DetailSection";
+import { Select } from "@/components/Select";
 import { Skeleton, SkeletonDetailGrid, SkeletonStack } from "@/components/founder/Skeleton";
 import { Topbar } from "@/components/founder/Topbar";
+import { countryOptions } from "@/lib/countries";
 
 type CandidateRecord = {
   irain: string;
@@ -53,6 +55,52 @@ type ApplicationRecord = {
 const statusOptions = ["", "New", "Reviewed", "In Progress", "On Hold", "Closed"];
 const yesNoOptions = ["", "Yes", "No"];
 const employmentOptions = ["", "Yes", "No", "Temporary Work"];
+
+const PROVINCES: string[] = [
+  "Alberta",
+  "British Columbia",
+  "Manitoba",
+  "New Brunswick",
+  "Newfoundland and Labrador",
+  "Nova Scotia",
+  "Ontario",
+  "Prince Edward Island",
+  "Quebec",
+  "Saskatchewan",
+  "Northwest Territories",
+  "Nunavut",
+  "Yukon",
+];
+
+const LANGUAGE_OPTIONS = [
+  { value: "English", label: "English" },
+  { value: "Arabic", label: "Arabic" },
+  { value: "French", label: "French" },
+  { value: "Other", label: "Other" },
+];
+
+const INDUSTRY_OPTIONS: string[] = [
+  "Information Technology (IT)",
+  "Finance / Banking / Accounting",
+  "Healthcare / Medical",
+  "Education / Academia",
+  "Engineering / Construction",
+  "Marketing / Advertising / PR",
+  "Media / Entertainment / Journalism",
+  "Legal / Law",
+  "Human Resources / Recruitment",
+  "Retail / E-commerce",
+  "Hospitality / Travel / Tourism",
+  "Logistics / Transportation",
+  "Manufacturing",
+  "Non-Profit / NGO",
+  "Real Estate",
+  "Energy / Utilities",
+  "Telecommunications",
+  "Agriculture / Food Industry",
+  "Compliance/ Audit/ Monitoring & Evaluation",
+  "Other",
+];
 
 const computeEligibility = (located: string, eligibleMove: string) => {
   const locatedYes = located.trim().toLowerCase() === "yes";
@@ -396,58 +444,98 @@ export default function CandidateReviewPage() {
               <div className="field-grid field-grid--two">
                 <div className="field">
                   <label htmlFor="candidate-first-name">First Name</label>
-                  <input
-                    id="candidate-first-name"
-                    type="text"
-                    value={editDetails ? firstName : firstName || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setFirstName(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="candidate-first-name"
+                      type="text"
+                      value={firstName}
+                      onChange={(event) => setFirstName(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-first-name"
+                      type="text"
+                      value={firstName || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-middle-name">Middle Name</label>
-                  <input
-                    id="candidate-middle-name"
-                    type="text"
-                    value={editDetails ? middleName : middleName || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setMiddleName(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="candidate-middle-name"
+                      type="text"
+                      value={middleName}
+                      onChange={(event) => setMiddleName(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-middle-name"
+                      type="text"
+                      value={middleName || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-family-name">Family Name</label>
-                  <input
-                    id="candidate-family-name"
-                    type="text"
-                    value={editDetails ? familyName : familyName || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setFamilyName(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="candidate-family-name"
+                      type="text"
+                      value={familyName}
+                      onChange={(event) => setFamilyName(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-family-name"
+                      type="text"
+                      value={familyName || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-email">Email</label>
-                  <input
-                    id="candidate-email"
-                    type="email"
-                    value={editDetails ? email : email || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setEmail(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="candidate-email"
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-email"
+                      type="text"
+                      value={email || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-phone">Phone</label>
-                  <input
-                    id="candidate-phone"
-                    type="text"
-                    value={editDetails ? phone : phone || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setPhone(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="candidate-phone"
+                      type="text"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-phone"
+                      type="text"
+                      value={phone || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-irain">Candidate iRAIN</label>
@@ -481,14 +569,24 @@ export default function CandidateReviewPage() {
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-province">Province</label>
-                  <input
-                    id="candidate-province"
-                    type="text"
-                    value={editDetails ? province : province || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setProvince(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <Select
+                      id="candidate-province"
+                      name="candidate-province"
+                      options={PROVINCES}
+                      placeholder="Select"
+                      value={province}
+                      onChange={(value) => setProvince(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-province"
+                      type="text"
+                      value={province || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-work-auth">Work Authorization</label>
@@ -524,59 +622,113 @@ export default function CandidateReviewPage() {
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-country">Country of Origin</label>
-                  <input
-                    id="candidate-country"
-                    type="text"
-                    value={editDetails ? countryOfOrigin : countryOfOrigin || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setCountryOfOrigin(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <Select
+                      id="candidate-country"
+                      name="candidate-country"
+                      options={countryOptions()}
+                      placeholder="Select"
+                      value={countryOfOrigin}
+                      onChange={(value) => setCountryOfOrigin(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-country"
+                      type="text"
+                      value={countryOfOrigin || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-languages">Languages</label>
-                  <input
-                    id="candidate-languages"
-                    type="text"
-                    value={editDetails ? languages : languages || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setLanguages(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <Select
+                      id="candidate-languages"
+                      name="candidate-languages"
+                      options={LANGUAGE_OPTIONS}
+                      placeholder="Select"
+                      multi
+                      values={languages ? languages.split(", ").map((l) => l.trim()).filter(Boolean) : []}
+                      onChange={(value) => {
+                        const arr = Array.isArray(value) ? value : value ? [value] : [];
+                        setLanguages(arr.join(", "));
+                      }}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-languages"
+                      type="text"
+                      value={languages || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
-                <div className="field">
-                  <label htmlFor="candidate-languages-other">Languages Other</label>
-                  <input
-                    id="candidate-languages-other"
-                    type="text"
-                    value={editDetails ? languagesOther : languagesOther || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setLanguagesOther(event.target.value)}
-                  />
-                </div>
+                {languages.includes("Other") && (
+                  <div className="field">
+                    <label htmlFor="candidate-languages-other">Languages Other</label>
+                    {editDetails ? (
+                      <input
+                        id="candidate-languages-other"
+                        type="text"
+                        value={languagesOther}
+                        onChange={(event) => setLanguagesOther(event.target.value)}
+                      />
+                    ) : (
+                      <input
+                        id="candidate-languages-other"
+                        type="text"
+                        value={languagesOther || "-"}
+                        readOnly
+                        tabIndex={-1}
+                      />
+                    )}
+                  </div>
+                )}
                 <div className="field">
                   <label htmlFor="candidate-industry-type">Industry Type</label>
-                  <input
-                    id="candidate-industry-type"
-                    type="text"
-                    value={editDetails ? industryType : industryType || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setIndustryType(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <Select
+                      id="candidate-industry-type"
+                      name="candidate-industry-type"
+                      options={INDUSTRY_OPTIONS}
+                      placeholder="Select"
+                      value={industryType}
+                      onChange={(value) => setIndustryType(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-industry-type"
+                      type="text"
+                      value={industryType || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
-                <div className="field">
-                  <label htmlFor="candidate-industry-other">Industry Other</label>
-                  <input
-                    id="candidate-industry-other"
-                    type="text"
-                    value={editDetails ? industryOther : industryOther || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setIndustryOther(event.target.value)}
-                  />
-                </div>
+                {industryType === "Other" && (
+                  <div className="field">
+                    <label htmlFor="candidate-industry-other">Industry Other</label>
+                    {editDetails ? (
+                      <input
+                        id="candidate-industry-other"
+                        type="text"
+                        value={industryOther}
+                        onChange={(event) => setIndustryOther(event.target.value)}
+                      />
+                    ) : (
+                      <input
+                        id="candidate-industry-other"
+                        type="text"
+                        value={industryOther || "-"}
+                        readOnly
+                        tabIndex={-1}
+                      />
+                    )}
+                  </div>
+                )}
                 <div className="field">
                   <label htmlFor="candidate-employment-status">Employment Status</label>
                   <select

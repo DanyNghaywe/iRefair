@@ -3113,6 +3113,33 @@ section.founder-auth input:focus-visible {
   align-self: flex-start;
 }
 
+/* Founder page detail inputs - base styles for consistency */
+.ops-scope .founder-page .field input,
+.ops-scope .founder-page .card .field input,
+.ops-scope .founder-page .field textarea,
+.ops-scope .founder-page .card .field textarea {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Founder page detail inputs - focus styles */
+.ops-scope .founder-page .field input:focus,
+.ops-scope .founder-page .field input:focus-visible,
+.ops-scope .founder-page .card .field input:focus,
+.ops-scope .founder-page .card .field input:focus-visible,
+.ops-scope .founder-page .field select:focus,
+.ops-scope .founder-page .field select:focus-visible,
+.ops-scope .founder-page .card .field select:focus,
+.ops-scope .founder-page .card .field select:focus-visible,
+.ops-scope .founder-page .field textarea:focus,
+.ops-scope .founder-page .field textarea:focus-visible,
+.ops-scope .founder-page .card .field textarea:focus,
+.ops-scope .founder-page .card .field textarea:focus-visible {
+  outline: none;
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
+  background: rgba(255, 255, 255, 0.42);
+}
+
 .founder-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
