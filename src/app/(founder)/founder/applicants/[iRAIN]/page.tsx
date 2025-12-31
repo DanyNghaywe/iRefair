@@ -553,19 +553,24 @@ export default function CandidateReviewPage() {
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-located">Located in Canada</label>
-                  <select
-                    id="candidate-located"
-                    value={locatedCanada}
-                    onChange={(event) => setLocatedCanada(event.target.value)}
-                    disabled={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                  >
-                    {yesNoOptions.map((value) => (
-                      <option key={value} value={value}>
-                        {value || "Select"}
-                      </option>
-                    ))}
-                  </select>
+                  {editDetails ? (
+                    <Select
+                      id="candidate-located"
+                      name="candidate-located"
+                      options={yesNoOptions.filter(Boolean)}
+                      placeholder="Select"
+                      value={locatedCanada}
+                      onChange={(value) => setLocatedCanada(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-located"
+                      type="text"
+                      value={locatedCanada || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-province">Province</label>
@@ -590,35 +595,45 @@ export default function CandidateReviewPage() {
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-work-auth">Work Authorization</label>
-                  <select
-                    id="candidate-work-auth"
-                    value={workAuthorization}
-                    onChange={(event) => setWorkAuthorization(event.target.value)}
-                    disabled={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                  >
-                    {yesNoOptions.map((value) => (
-                      <option key={value} value={value}>
-                        {value || "Select"}
-                      </option>
-                    ))}
-                  </select>
+                  {editDetails ? (
+                    <Select
+                      id="candidate-work-auth"
+                      name="candidate-work-auth"
+                      options={yesNoOptions.filter(Boolean)}
+                      placeholder="Select"
+                      value={workAuthorization}
+                      onChange={(value) => setWorkAuthorization(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-work-auth"
+                      type="text"
+                      value={workAuthorization || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-eligible-move">Eligible to Move (6 Months)</label>
-                  <select
-                    id="candidate-eligible-move"
-                    value={eligibleMoveCanada}
-                    onChange={(event) => setEligibleMoveCanada(event.target.value)}
-                    disabled={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                  >
-                    {yesNoOptions.map((value) => (
-                      <option key={value} value={value}>
-                        {value || "Select"}
-                      </option>
-                    ))}
-                  </select>
+                  {editDetails ? (
+                    <Select
+                      id="candidate-eligible-move"
+                      name="candidate-eligible-move"
+                      options={yesNoOptions.filter(Boolean)}
+                      placeholder="Select"
+                      value={eligibleMoveCanada}
+                      onChange={(value) => setEligibleMoveCanada(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-eligible-move"
+                      type="text"
+                      value={eligibleMoveCanada || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-country">Country of Origin</label>
@@ -731,19 +746,24 @@ export default function CandidateReviewPage() {
                 )}
                 <div className="field">
                   <label htmlFor="candidate-employment-status">Employment Status</label>
-                  <select
-                    id="candidate-employment-status"
-                    value={employmentStatus}
-                    onChange={(event) => setEmploymentStatus(event.target.value)}
-                    disabled={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                  >
-                    {employmentOptions.map((value) => (
-                      <option key={value} value={value}>
-                        {value || "Select"}
-                      </option>
-                    ))}
-                  </select>
+                  {editDetails ? (
+                    <Select
+                      id="candidate-employment-status"
+                      name="candidate-employment-status"
+                      options={employmentOptions.filter(Boolean)}
+                      placeholder="Select"
+                      value={employmentStatus}
+                      onChange={(value) => setEmploymentStatus(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-employment-status"
+                      type="text"
+                      value={employmentStatus || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-eligibility">Eligibility</label>
