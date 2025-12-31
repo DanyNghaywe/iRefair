@@ -2741,6 +2741,9 @@ export async function getApplicantByIrain(irain: string) {
           reason: eligibilityReason,
         },
         missingFields,
+        resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name') || undefined,
+        resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID') || undefined,
+        resumeUrl: getHeaderValue(headerMap, row, 'Resume URL') || undefined,
       },
     };
   }

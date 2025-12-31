@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
@@ -39,6 +39,9 @@ type CandidateRecord = {
   nextActionAt: string;
   eligibility: { eligible: boolean; reason: string };
   missingFields: string[];
+  resumeFileName?: string;
+  resumeFileId?: string;
+  resumeUrl?: string;
 };
 
 type ApplicationRecord = {
@@ -151,6 +154,14 @@ export default function CandidateReviewPage() {
   const [appsLoading, setAppsLoading] = useState(false);
   const skipAutosaveRef = useRef(true);
 
+  // Resume upload state
+  const [resumeFileName, setResumeFileName] = useState("");
+  const [resumeFileId, setResumeFileId] = useState("");
+  const [resumeUploading, setResumeUploading] = useState(false);
+  const [resumeError, setResumeError] = useState<string | null>(null);
+  const [resumeSuccess, setResumeSuccess] = useState<string | null>(null);
+  const resumeInputRef = useRef<HTMLInputElement | null>(null);
+
   // Store original values when entering edit mode
   const originalDetailsRef = useRef<{
     firstName: string;
@@ -232,8 +243,12 @@ export default function CandidateReviewPage() {
     setStatus((candidate.status || "").toLowerCase());
     setLastContactedAt(candidate.lastContactedAt || "");
     setNextActionAt(candidate.nextActionAt || "");
+    setResumeFileName(candidate.resumeFileName || "");
+    setResumeFileId(candidate.resumeFileId || "");
     setActionMessage(null);
     setActionError(null);
+    setResumeError(null);
+    setResumeSuccess(null);
     skipAutosaveRef.current = true;
     originalDetailsRef.current = null;
   }, [candidate?.irain]);
@@ -403,6 +418,62 @@ export default function CandidateReviewPage() {
     if (!candidate) return;
     await patchCandidate({ status: "reviewed" });
     setStatus("reviewed");
+  };
+
+  const handleResumeUpload = async (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !candidate) return;
+
+    // Reset input so same file can be selected again
+    event.target.value = "";
+
+    // Client-side validation
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    const allowedExtensions = ["pdf", "doc", "docx"];
+    if (!extension || !allowedExtensions.includes(extension)) {
+      setResumeError("Please upload a PDF, DOC, or DOCX file.");
+      return;
+    }
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      setResumeError("File size exceeds 10MB limit.");
+      return;
+    }
+
+    setResumeUploading(true);
+    setResumeError(null);
+    setResumeSuccess(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("resume", file);
+
+      const response = await fetch(
+        `/api/founder/applicants/${encodeURIComponent(candidate.irain)}/resume`,
+        { method: "POST", body: formData },
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data?.ok) {
+        setResumeError(data?.error || "Unable to upload resume.");
+      } else {
+        setResumeFileName(data.resumeFileName || file.name);
+        setResumeFileId(data.resumeFileId || "");
+        setResumeSuccess("Resume uploaded successfully.");
+        updateLocalCandidate({
+          resumeFileName: data.resumeFileName,
+          resumeFileId: data.resumeFileId,
+          resumeUrl: data.resumeUrl,
+        });
+      }
+    } catch (error) {
+      console.error("Resume upload failed", error);
+      setResumeError("Unable to upload resume.");
+    } finally {
+      setResumeUploading(false);
+    }
   };
 
   if (!cleanIrain) {
@@ -819,6 +890,68 @@ export default function CandidateReviewPage() {
                     tabIndex={-1}
                   />
                 </div>
+              </div>
+            </DetailSection>
+
+            <DetailSection title="Resume">
+              {resumeFileName ? (
+                <div className="field-grid">
+                  <div className="field">
+                    <label>Current Resume</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-sm)" }}>
+                      <span style={{ flex: 1 }}>{resumeFileName}</span>
+                      {resumeFileId && (
+                        <ActionBtn
+                          as="link"
+                          href={`https://drive.google.com/file/d/${resumeFileId}/view`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          variant="ghost"
+                          size="sm"
+                        >
+                          View
+                        </ActionBtn>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="founder-card__meta">No resume on file.</p>
+              )}
+              <div className="field" style={{ marginTop: "var(--gap)" }}>
+                <label htmlFor="resume-upload">
+                  {resumeFileName ? "Replace Resume" : "Upload Resume"}
+                </label>
+                <div className="file-upload">
+                  <input
+                    ref={resumeInputRef}
+                    id="resume-upload"
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    className="file-input"
+                    onChange={handleResumeUpload}
+                    disabled={resumeUploading}
+                  />
+                  <ActionBtn
+                    as="button"
+                    variant="ghost"
+                    onClick={() => resumeInputRef.current?.click()}
+                    disabled={resumeUploading}
+                  >
+                    {resumeUploading ? "Uploading..." : "Choose File"}
+                  </ActionBtn>
+                </div>
+                <p className="field-hint">PDF, DOC, or DOCX. Max 10MB.</p>
+                {resumeError && (
+                  <div className="status-banner status-banner--error" role="alert">
+                    {resumeError}
+                  </div>
+                )}
+                {resumeSuccess && (
+                  <div className="status-banner status-banner--ok" role="status">
+                    {resumeSuccess}
+                  </div>
+                )}
               </div>
             </DetailSection>
 
