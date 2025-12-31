@@ -1,10 +1,31 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ChangeEvent } from 'react';
+/**
+ * Select Component - Custom accessible select/dropdown
+ *
+ * SAFARI STACKING CONTEXT FIX:
+ * In Safari, backdrop-filter creates an isolated stacking context. When a Select
+ * dropdown is inside a fieldset/card and the next sibling section has backdrop-filter,
+ * the dropdown gets painted behind it regardless of z-index. This component uses
+ * a React Portal to render the dropdown list at document.body level with position: fixed,
+ * completely escaping all ancestor stacking contexts.
+ *
+ * @see https://bugs.webkit.org/show_bug.cgi?id=176308
+ */
+
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ChangeEvent } from 'react';
+import { createPortal } from 'react-dom';
 
 import styles from './Select.module.css';
 
 type Option = { value: string; label: string };
+
+type DropdownPosition = {
+  top: number;
+  left: number;
+  width: number;
+  direction: 'down' | 'up';
+};
 
 type SelectProps = {
   id: string;
@@ -20,6 +41,8 @@ type SelectProps = {
   ariaInvalid?: boolean;
   onChange?: (value: string | string[]) => void;
 };
+
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
 export function Select({
   id,
@@ -45,6 +68,8 @@ export function Select({
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [prefersNative, setPrefersNative] = useState(false);
+  const [mounted, setMounted] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
   const typeaheadRef = useRef('');
   const typeaheadTimeoutRef = useRef<number | null>(null);
 
@@ -58,6 +83,67 @@ export function Select({
   const resolvedSelectedValues = isControlledMulti ? values ?? [] : selectedValues;
   const selectedIndex = normalizedOptions.findIndex((opt) => opt.value === resolvedSelectedValue);
   const shouldUseNative = !multi && prefersNative;
+
+  const DROPDOWN_OFFSET = 8;
+  const DROPDOWN_MAX_HEIGHT = 260;
+
+  // Client-side mount detection for portal
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Calculate dropdown position based on trigger element
+  const updateDropdownPosition = () => {
+    if (!triggerRef.current || !isOpen) return;
+
+    const triggerRect = triggerRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const spaceBelow = viewportHeight - triggerRect.bottom - DROPDOWN_OFFSET;
+    const spaceAbove = triggerRect.top - DROPDOWN_OFFSET;
+
+    // Decide direction: prefer below, flip up if not enough space
+    const direction: 'down' | 'up' =
+      spaceBelow >= Math.min(DROPDOWN_MAX_HEIGHT, spaceBelow) || spaceBelow >= spaceAbove ? 'down' : 'up';
+
+    let top: number;
+    if (direction === 'down') {
+      top = triggerRect.bottom + DROPDOWN_OFFSET;
+    } else {
+      const listHeight = listRef.current?.offsetHeight || DROPDOWN_MAX_HEIGHT;
+      top = triggerRect.top - DROPDOWN_OFFSET - Math.min(listHeight, DROPDOWN_MAX_HEIGHT);
+    }
+
+    // Clamp to viewport bounds with padding
+    top = Math.max(8, top);
+
+    setDropdownPosition({
+      top,
+      left: triggerRect.left,
+      width: triggerRect.width,
+      direction,
+    });
+  };
+
+  // Position dropdown when open and reposition on scroll/resize
+  useIsomorphicLayoutEffect(() => {
+    if (!isOpen || !mounted) {
+      setDropdownPosition(null);
+      return;
+    }
+
+    updateDropdownPosition();
+
+    const handleReposition = () => updateDropdownPosition();
+
+    // Listen for scroll on all ancestors and window
+    window.addEventListener('scroll', handleReposition, true);
+    window.addEventListener('resize', handleReposition);
+
+    return () => {
+      window.removeEventListener('scroll', handleReposition, true);
+      window.removeEventListener('resize', handleReposition);
+    };
+  }, [isOpen, mounted]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -96,11 +182,16 @@ export function Select({
     };
   }, []);
 
+  // Handle outside clicks - updated to work with portal
   useEffect(() => {
     if (!isOpen) return;
 
     const handlePointer = (event: MouseEvent | TouchEvent) => {
-      if (wrapperRef.current && !wrapperRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const isOutsideWrapper = wrapperRef.current && !wrapperRef.current.contains(target);
+      const isOutsideList = listRef.current && !listRef.current.contains(target);
+
+      if (isOutsideWrapper && isOutsideList) {
         setIsOpen(false);
       }
     };
@@ -112,13 +203,13 @@ export function Select({
       }
     };
 
-    document.addEventListener('mousedown', handlePointer);
-    document.addEventListener('touchstart', handlePointer);
+    document.addEventListener('mousedown', handlePointer, true);
+    document.addEventListener('touchstart', handlePointer, true);
     document.addEventListener('keydown', handleEscape);
 
     return () => {
-      document.removeEventListener('mousedown', handlePointer);
-      document.removeEventListener('touchstart', handlePointer);
+      document.removeEventListener('mousedown', handlePointer, true);
+      document.removeEventListener('touchstart', handlePointer, true);
       document.removeEventListener('keydown', handleEscape);
     };
   }, [isOpen]);
@@ -325,6 +416,7 @@ export function Select({
 
       <button
         type="button"
+        id={`${id}-trigger`}
         ref={triggerRef}
         className={styles.trigger}
         aria-haspopup="listbox"
@@ -366,16 +458,26 @@ export function Select({
         </span>
       </button>
 
-      {isOpen && (
+      {/* Dropdown rendered in portal to escape Safari stacking context issues */}
+      {isOpen && mounted && createPortal(
         <ul
-          className={styles.dropdown}
+          className={`${styles.dropdown} ${styles.dropdownPortal}`}
           role="listbox"
           id={listboxId}
           aria-activedescendant={activeOptionId}
           aria-multiselectable={multi || undefined}
+          aria-labelledby={`${id}-trigger`}
           tabIndex={-1}
           onKeyDown={handleKeyDown}
           ref={listRef}
+          style={{
+            position: 'fixed',
+            top: dropdownPosition?.top ?? 0,
+            left: dropdownPosition?.left ?? 0,
+            width: dropdownPosition?.width ?? 'auto',
+            visibility: dropdownPosition ? 'visible' : 'hidden',
+          }}
+          data-direction={dropdownPosition?.direction}
         >
           {normalizedOptions.map((opt, index) => {
             const isHighlighted = index === highlightedIndex;
@@ -400,7 +502,8 @@ export function Select({
               </li>
             );
           })}
-        </ul>
+        </ul>,
+        document.body
       )}
     </div>
   );

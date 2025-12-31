@@ -108,6 +108,25 @@
   z-index: 20;
 }
 
+/**
+ * Portal-rendered dropdown styles
+ *
+ * SAFARI STACKING CONTEXT FIX:
+ * When rendered via React Portal to document.body, the dropdown escapes
+ * all ancestor stacking contexts created by backdrop-filter, transform,
+ * filter, etc. This ensures the dropdown always appears above other
+ * content regardless of DOM structure.
+ *
+ * @see https://bugs.webkit.org/show_bug.cgi?id=176308
+ */
+.dropdownPortal {
+  /* Override absolute positioning from .dropdown */
+  position: fixed;
+  margin-top: 0;
+  /* Maximum z-index to ensure visibility above all other content including modals */
+  z-index: 99999;
+}
+
 .dropdown::-webkit-scrollbar {
   width: 10px;
 }

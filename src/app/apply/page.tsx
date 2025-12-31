@@ -1,13 +1,33 @@
 'use client';
 
+/**
+ * Apply Page - Application form for job applicants
+ *
+ * SAFARI STACKING CONTEXT FIX:
+ * The ComboInput component renders its dropdown via React Portal to document.body
+ * to escape Safari's backdrop-filter stacking context issues.
+ *
+ * @see https://bugs.webkit.org/show_bug.cgi?id=176308
+ */
+
 import Link from 'next/link';
-import { ChangeEvent, FormEvent, type KeyboardEvent, useEffect, useMemo, useRef, useState } from 'react';
+import { ChangeEvent, FormEvent, type KeyboardEvent, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { ActionBtn } from '@/components/ActionBtn';
 import { AppShell } from '@/components/AppShell';
 import { Confetti, useConfetti } from '@/components/Confetti';
 import { useLanguage } from '@/components/LanguageProvider';
 import { PublicFooter } from '@/components/PublicFooter';
 import { SuccessAnimation } from '@/components/SuccessAnimation';
+
+const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
+
+type DropdownPosition = {
+  top: number;
+  left: number;
+  width: number;
+  direction: 'down' | 'up';
+};
 
 type Language = 'en' | 'fr';
 
@@ -190,6 +210,9 @@ type ComboInputProps = {
   onChange: (value: string) => void;
 };
 
+const COMBO_DROPDOWN_OFFSET = 8;
+const COMBO_DROPDOWN_MAX_HEIGHT = 260;
+
 function ComboInput({
   id,
   name,
@@ -203,7 +226,10 @@ function ComboInput({
 }: ComboInputProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
+  const [mounted, setMounted] = useState(false);
+  const [dropdownPosition, setDropdownPosition] = useState<DropdownPosition | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const listRef = useRef<HTMLUListElement | null>(null);
   const listId = `${id}-listbox`;
 
   const filteredOptions = useMemo(() => {
@@ -217,12 +243,92 @@ function ComboInput({
   const activeOptionId =
     isOpen && visibleOptions.length > 0 ? `${id}-option-${highlightedIndex}` : undefined;
 
+  // Client-side mount detection for portal
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Calculate dropdown position based on input element
+  const updateDropdownPosition = () => {
+    if (!inputRef.current || !isOpen) return;
+
+    const inputRect = inputRef.current.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const spaceBelow = viewportHeight - inputRect.bottom - COMBO_DROPDOWN_OFFSET;
+    const spaceAbove = inputRect.top - COMBO_DROPDOWN_OFFSET;
+
+    // Decide direction: prefer below, flip up if not enough space
+    const direction: 'down' | 'up' =
+      spaceBelow >= Math.min(COMBO_DROPDOWN_MAX_HEIGHT, spaceBelow) || spaceBelow >= spaceAbove ? 'down' : 'up';
+
+    let top: number;
+    if (direction === 'down') {
+      top = inputRect.bottom + COMBO_DROPDOWN_OFFSET;
+    } else {
+      const listHeight = listRef.current?.offsetHeight || COMBO_DROPDOWN_MAX_HEIGHT;
+      top = inputRect.top - COMBO_DROPDOWN_OFFSET - Math.min(listHeight, COMBO_DROPDOWN_MAX_HEIGHT);
+    }
+
+    // Clamp to viewport bounds with padding
+    top = Math.max(8, top);
+
+    setDropdownPosition({
+      top,
+      left: inputRect.left,
+      width: inputRect.width,
+      direction,
+    });
+  };
+
+  // Position dropdown when open and reposition on scroll/resize
+  useIsomorphicLayoutEffect(() => {
+    if (!isOpen || !mounted) {
+      setDropdownPosition(null);
+      return;
+    }
+
+    updateDropdownPosition();
+
+    const handleReposition = () => updateDropdownPosition();
+
+    window.addEventListener('scroll', handleReposition, true);
+    window.addEventListener('resize', handleReposition);
+
+    return () => {
+      window.removeEventListener('scroll', handleReposition, true);
+      window.removeEventListener('resize', handleReposition);
+    };
+  }, [isOpen, mounted]);
+
   useEffect(() => {
     if (!isOpen) return;
     if (highlightedIndex >= visibleOptions.length) {
       setHighlightedIndex(0);
     }
   }, [highlightedIndex, isOpen, visibleOptions.length]);
+
+  // Handle outside clicks for portal
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handlePointer = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node;
+      const isOutsideInput = inputRef.current && !inputRef.current.contains(target);
+      const isOutsideList = listRef.current && !listRef.current.contains(target);
+
+      if (isOutsideInput && isOutsideList) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointer, true);
+    document.addEventListener('touchstart', handlePointer, true);
+
+    return () => {
+      document.removeEventListener('mousedown', handlePointer, true);
+      document.removeEventListener('touchstart', handlePointer, true);
+    };
+  }, [isOpen]);
 
   const openDropdown = () => {
     if (!options.length) return;
@@ -284,6 +390,20 @@ function ComboInput({
     }
   };
 
+  const handleBlur = (event: React.FocusEvent<HTMLInputElement>) => {
+    // Delay close to allow click on dropdown options
+    const relatedTarget = event.relatedTarget as Node | null;
+    if (listRef.current && relatedTarget && listRef.current.contains(relatedTarget)) {
+      return;
+    }
+    // Use timeout to allow mousedown to fire before closing
+    setTimeout(() => {
+      if (!listRef.current?.contains(document.activeElement)) {
+        closeDropdown();
+      }
+    }, 150);
+  };
+
   return (
     <div className="combo-field">
       <input
@@ -304,15 +424,32 @@ function ComboInput({
         aria-describedby={ariaDescribedBy}
         aria-invalid={ariaInvalid}
         onFocus={openDropdown}
-        onBlur={closeDropdown}
+        onBlur={handleBlur}
         onChange={(event) => {
           onChange(event.target.value);
           openDropdown();
         }}
         onKeyDown={handleKeyDown}
       />
-      {isOpen && visibleOptions.length > 0 && (
-        <ul id={listId} className="select-dropdown combo-dropdown" role="listbox">
+      {/* Dropdown rendered in portal to escape Safari stacking context issues */}
+      {isOpen && visibleOptions.length > 0 && mounted && createPortal(
+        <ul
+          ref={listRef}
+          id={listId}
+          className="select-dropdown combo-dropdown combo-dropdown-portal"
+          role="listbox"
+          aria-labelledby={id}
+          style={{
+            position: 'fixed',
+            top: dropdownPosition?.top ?? 0,
+            left: dropdownPosition?.left ?? 0,
+            width: dropdownPosition?.width ?? 'auto',
+            maxHeight: COMBO_DROPDOWN_MAX_HEIGHT,
+            visibility: dropdownPosition ? 'visible' : 'hidden',
+            zIndex: 99999,
+          }}
+          data-direction={dropdownPosition?.direction}
+        >
           {visibleOptions.map((option, index) => (
             <li
               key={`${option}-${index}`}
@@ -331,7 +468,8 @@ function ComboInput({
               {option}
             </li>
           ))}
-        </ul>
+        </ul>,
+        document.body
       )}
     </div>
   );

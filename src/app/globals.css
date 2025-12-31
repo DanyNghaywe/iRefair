@@ -1187,6 +1187,66 @@ label {
   margin-top: 6px;
 }
 
+/**
+ * Portal-rendered combo dropdown styles
+ *
+ * SAFARI STACKING CONTEXT FIX:
+ * When rendered via React Portal to document.body, the dropdown escapes
+ * all ancestor stacking contexts created by backdrop-filter, transform,
+ * filter, etc. This ensures the dropdown always appears above other
+ * content regardless of DOM structure.
+ *
+ * @see https://bugs.webkit.org/show_bug.cgi?id=176308
+ */
+.combo-dropdown-portal {
+  position: fixed;
+  margin-top: 0;
+  z-index: 99999;
+  background: var(--panel);
+  border: 1px solid #e2e6f1;
+  border-radius: 14px;
+  box-shadow: 0 18px 32px rgba(15, 23, 42, 0.2);
+  list-style: none;
+  padding: 6px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(var(--accent-primary-rgb), 0.35) transparent;
+}
+
+.combo-dropdown-portal::-webkit-scrollbar {
+  width: 10px;
+}
+
+.combo-dropdown-portal::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 12px;
+}
+
+.combo-dropdown-portal::-webkit-scrollbar-thumb {
+  background: rgba(var(--accent-primary-rgb), 0.35);
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.combo-dropdown-portal .select-option {
+  padding: 10px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+  color: var(--ink);
+}
+
+.combo-dropdown-portal .select-option.is-highlighted {
+  background: rgba(var(--accent-primary-rgb), 0.12);
+}
+
+.combo-dropdown-portal .select-option.is-selected {
+  font-weight: 700;
+  background: rgba(var(--accent-primary-rgb), 0.18);
+  color: var(--accent-primary);
+}
+
 select:hover {
   background-color: rgba(255, 255, 255, 0.38);
   box-shadow: 0 0 0 2px rgba(var(--accent-primary-rgb), 0.2);
