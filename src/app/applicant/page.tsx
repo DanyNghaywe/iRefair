@@ -592,6 +592,12 @@ function ApplicantPageContent() {
       nextErrors['consent-legal'] = 'Please confirm your consent to proceed.';
     }
 
+    if (!values.linkedin) {
+      nextErrors.linkedin = 'Please enter your LinkedIn profile URL.';
+    } else if (!isValidLinkedInProfileUrl(values.linkedin)) {
+      nextErrors.linkedin = 'Please enter a valid LinkedIn profile URL.';
+    }
+
     const resumeFile = resumeInputRef.current?.files?.[0];
     if (!resumeFile) {
       nextErrors.resume = 'Please upload your resume / CV.';
@@ -1127,9 +1133,7 @@ function ApplicantPageContent() {
                     </p>
                   </div>
                   <div className={fieldClass('field', 'linkedin')}>
-                    <label htmlFor="linkedin">
-                      {t.labels.linkedin} <span className="optional">{t.optional}</span>
-                    </label>
+                    <label htmlFor="linkedin">{t.labels.linkedin}</label>
                     <input
                       id="linkedin"
                       name="linkedin"
@@ -1137,6 +1141,7 @@ function ApplicantPageContent() {
                       inputMode="url"
                       autoComplete="url"
                       ref={linkedinInputRef}
+                      required
                       aria-invalid={Boolean(errors.linkedin)}
                       aria-describedby="linkedin-error"
                       placeholder={t.placeholders.linkedin}
