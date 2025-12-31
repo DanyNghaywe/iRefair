@@ -5,7 +5,7 @@
 }
 
 .container {
-  overflow: auto;
+  overflow: hidden;
   width: 100%;
   background: linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
   border-radius: 20px;
@@ -61,6 +61,7 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
+
 
 .table tbody tr td {
   font-size: 14px;
