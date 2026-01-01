@@ -1100,8 +1100,13 @@ export default function CandidateReviewPage() {
                     Edit details
                   </ActionBtn>
                 )}
-                <ActionBtn as="button" variant="primary" onClick={handleMarkReviewed}>
-                  Mark Reviewed
+                <ActionBtn
+                  as="button"
+                  variant={status === "reviewed" ? "ghost" : "primary"}
+                  onClick={handleMarkReviewed}
+                  disabled={status === "reviewed"}
+                >
+                  {status === "reviewed" ? "Reviewed" : "Mark Reviewed"}
                 </ActionBtn>
                 <ActionBtn
                   as="button"
