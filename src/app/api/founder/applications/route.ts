@@ -16,11 +16,12 @@ export async function GET(request: NextRequest) {
   const search = searchParams.get('search') ?? undefined;
   const status = searchParams.get('status') ?? undefined;
   const ircrn = searchParams.get('ircrn') ?? undefined;
+  const referrerIrref = searchParams.get('referrerIrref') ?? undefined;
   const limit = Number.parseInt(searchParams.get('limit') || '', 10);
   const offset = Number.parseInt(searchParams.get('offset') || '', 10);
 
   try {
-    const data = await listApplications({ search, status, ircrn, limit, offset });
+    const data = await listApplications({ search, status, ircrn, referrerIrref, limit, offset });
     return NextResponse.json({ ok: true, ...data });
   } catch (error) {
     console.error('Error listing applications', error);

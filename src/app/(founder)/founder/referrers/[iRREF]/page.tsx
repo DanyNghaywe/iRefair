@@ -3,8 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 
+import Link from "next/link";
+
 import { ActionBtn } from "@/components/ActionBtn";
 import { AutosaveHint } from "@/components/founder/AutosaveHint";
+import { Badge } from "@/components/founder/Badge";
 import { DetailPageShell } from "@/components/founder/DetailPageShell";
 import { DetailSection } from "@/components/founder/DetailSection";
 import { Select } from "@/components/Select";
@@ -50,6 +53,14 @@ type PendingUpdate = {
     workType?: string;
     linkedin?: string;
   };
+};
+
+type ApplicationItem = {
+  id: string;
+  applicantId: string;
+  iCrn: string;
+  position: string;
+  status: string;
 };
 
 const statusOptions = ["", "New", "Engaged", "Active", "Paused", "Closed"];
@@ -261,6 +272,8 @@ export default function ReferrerReviewPage() {
   const [portalError, setPortalError] = useState<string | null>(null);
   const [rejectConfirm, setRejectConfirm] = useState(false);
   const [pendingUpdateLoading, setPendingUpdateLoading] = useState<string | null>(null);
+  const [applications, setApplications] = useState<ApplicationItem[]>([]);
+  const [appsLoading, setAppsLoading] = useState(false);
   const skipAutosaveRef = useRef(true);
 
   // Store original values when entering edit mode
@@ -337,6 +350,20 @@ export default function ReferrerReviewPage() {
   useEffect(() => {
     fetchReferrer();
   }, [fetchReferrer]);
+
+  const fetchApplications = async (irrefValue: string) => {
+    setAppsLoading(true);
+    const params = new URLSearchParams({ referrerIrref: irrefValue, limit: "50", offset: "0" });
+    const response = await fetch(`/api/founder/applications?${params.toString()}`, { cache: "no-store" });
+    const data = await response.json();
+    if (data?.ok) setApplications(data.items ?? []);
+    setAppsLoading(false);
+  };
+
+  useEffect(() => {
+    if (!referrer?.irref) return;
+    fetchApplications(referrer.irref);
+  }, [referrer?.irref]);
 
   useEffect(() => {
     if (!referrer) return;
@@ -1026,88 +1053,116 @@ export default function ReferrerReviewPage() {
           </>
         }
         sidebar={
-          <DetailSection title="Decision" className="referrer-review__decision">
-            <div className="field">
-              <label htmlFor="decision-status">Current status</label>
-              <input
-                id="decision-status"
-                type="text"
-                value={approvalLabel}
-                readOnly
-                tabIndex={-1}
-                aria-readonly="true"
-              />
-            </div>
-            <div className="flow-stack">
-              {editDetails ? (
-                <>
-                  <ActionBtn as="button" variant="primary" onClick={handleSaveEdit} disabled={saving}>
-                    {saving ? "Saving..." : "Save"}
+          <>
+            <DetailSection title="Decision" className="referrer-review__decision">
+              <div className="field">
+                <label htmlFor="decision-status">Current status</label>
+                <input
+                  id="decision-status"
+                  type="text"
+                  value={approvalLabel}
+                  readOnly
+                  tabIndex={-1}
+                  aria-readonly="true"
+                />
+              </div>
+              <div className="flow-stack">
+                {editDetails ? (
+                  <>
+                    <ActionBtn as="button" variant="primary" onClick={handleSaveEdit} disabled={saving}>
+                      {saving ? "Saving..." : "Save"}
+                    </ActionBtn>
+                    <ActionBtn as="button" variant="ghost" onClick={handleCancelEdit} disabled={saving}>
+                      Cancel
+                    </ActionBtn>
+                  </>
+                ) : (
+                  <ActionBtn as="button" variant="ghost" onClick={handleStartEdit}>
+                    Edit details
                   </ActionBtn>
-                  <ActionBtn as="button" variant="ghost" onClick={handleCancelEdit} disabled={saving}>
-                    Cancel
-                  </ActionBtn>
-                </>
-              ) : (
-                <ActionBtn as="button" variant="ghost" onClick={handleStartEdit}>
-                  Edit details
-                </ActionBtn>
-              )}
-              <ActionBtn
-                as="button"
-                variant="primary"
-                onClick={() => handleApproval("approved")}
-                disabled={!referrer || approvalLoading}
-              >
-                {approvalLoading ? "Updating..." : "Approve"}
-              </ActionBtn>
-              {rejectConfirm ? (
-                <>
-                  <ActionBtn
-                    as="button"
-                    variant="ghost"
-                    onClick={() => handleApproval("denied")}
-                    disabled={!referrer || approvalLoading}
-                  >
-                    {approvalLoading ? "Updating..." : "Confirm reject"}
-                  </ActionBtn>
-                  <ActionBtn
-                    as="button"
-                    variant="ghost"
-                    onClick={() => setRejectConfirm(false)}
-                    disabled={approvalLoading}
-                  >
-                    Cancel
-                  </ActionBtn>
-                </>
-              ) : (
+                )}
                 <ActionBtn
                   as="button"
-                  variant="ghost"
-                  onClick={() => setRejectConfirm(true)}
+                  variant="primary"
+                  onClick={() => handleApproval("approved")}
                   disabled={!referrer || approvalLoading}
                 >
-                  Reject
+                  {approvalLoading ? "Updating..." : "Approve"}
                 </ActionBtn>
+                {rejectConfirm ? (
+                  <>
+                    <ActionBtn
+                      as="button"
+                      variant="ghost"
+                      onClick={() => handleApproval("denied")}
+                      disabled={!referrer || approvalLoading}
+                    >
+                      {approvalLoading ? "Updating..." : "Confirm reject"}
+                    </ActionBtn>
+                    <ActionBtn
+                      as="button"
+                      variant="ghost"
+                      onClick={() => setRejectConfirm(false)}
+                      disabled={approvalLoading}
+                    >
+                      Cancel
+                    </ActionBtn>
+                  </>
+                ) : (
+                  <ActionBtn
+                    as="button"
+                    variant="ghost"
+                    onClick={() => setRejectConfirm(true)}
+                    disabled={!referrer || approvalLoading}
+                  >
+                    Reject
+                  </ActionBtn>
+                )}
+              </div>
+              <div>
+                <AutosaveHint saving={saving} />
+                {actionMessage ? (
+                  <div className="status-banner status-banner--ok" role="status" aria-live="polite">
+                    {actionMessage}
+                  </div>
+                ) : null}
+                {actionError ? (
+                  <div className="status-banner status-banner--error" role="alert">
+                    {actionError}
+                  </div>
+                ) : null}
+              </div>
+              <ActionBtn as="link" href="/founder/referrers" variant="ghost">
+                &larr; Back to Referrers
+              </ActionBtn>
+            </DetailSection>
+
+            <DetailSection title="Applications">
+              {appsLoading ? (
+                <SkeletonStack>
+                  <Skeleton variant="text" width="100%" />
+                  <Skeleton variant="text" width="80%" />
+                </SkeletonStack>
+              ) : applications.length === 0 ? (
+                <p className="founder-card__meta">No applications yet.</p>
+              ) : (
+                <ul className="founder-list">
+                  {applications.map((app) => (
+                    <li key={app.id}>
+                      <Link href={`/founder/applications/${app.id}`} className="founder-list__link">
+                        <div className="founder-list__title">
+                          {app.position || "Application"} <Badge tone="neutral">{app.iCrn}</Badge>
+                        </div>
+                        <div className="founder-list__meta">
+                          {app.id} - {app.status || "Unassigned"}
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               )}
-            </div>
-            <div>
-              <AutosaveHint saving={saving} />
-              {actionMessage ? (
-                <div className="status-banner status-banner--ok" role="status" aria-live="polite">
-                  {actionMessage}
-                </div>
-              ) : null}
-              {actionError ? (
-                <div className="status-banner status-banner--error" role="alert">
-                  {actionError}
-                </div>
-              ) : null}
-            </div>
-            <ActionBtn as="link" href="/founder/referrers" variant="ghost">
-              &larr; Back to Referrers
-            </ActionBtn>
-          </DetailSection>
+            </DetailSection>
+          </>
         }
       />
     </div>
