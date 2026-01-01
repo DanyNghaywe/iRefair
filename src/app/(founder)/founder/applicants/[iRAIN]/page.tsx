@@ -1001,20 +1001,16 @@ export default function CandidateReviewPage() {
               <div className="field-grid field-grid--two">
                 <div className="field">
                   <label htmlFor="candidate-status">Status</label>
-                  <select
+                  <Select
                     id="candidate-status"
+                    name="candidate-status"
+                    options={statusOptions
+                      .filter((opt) => opt)
+                      .map((opt) => ({ value: opt.toLowerCase(), label: opt }))}
+                    placeholder="Unassigned"
                     value={status}
-                    onChange={(event) => setStatus(event.target.value)}
-                  >
-                    <option value="">Unassigned</option>
-                    {statusOptions
-                      .filter((value) => value)
-                      .map((value) => (
-                        <option key={value} value={value.toLowerCase()}>
-                          {value}
-                        </option>
-                      ))}
-                  </select>
+                    onChange={(value) => setStatus(Array.isArray(value) ? value[0] : value)}
+                  />
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-tags">Skills / Interests</label>
@@ -1076,7 +1072,14 @@ export default function CandidateReviewPage() {
                 <input
                   id="decision-status"
                   type="text"
-                  value={status || "Unassigned"}
+                  value={
+                    status
+                      ? status
+                          .split(" ")
+                          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(" ")
+                      : "Unassigned"
+                  }
                   readOnly
                   tabIndex={-1}
                   aria-readonly="true"
