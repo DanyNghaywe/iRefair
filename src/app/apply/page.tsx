@@ -658,7 +658,6 @@ export default function ApplyPage() {
       setStatus('ok');
       confetti.trigger();
       setShowSuccessAnimation(true);
-      resetForm(true);
     } catch (error) {
       console.error('Application submission failed', error);
       setErrorMessage(t.statusMessages.networkError);
