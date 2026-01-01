@@ -210,6 +210,7 @@ export async function POST(request: Request) {
       applicantPhone: applicant.phone,
       applicantId: applicant.id || applicantId,
       iCrn,
+      companyName: referrer.company,
       position,
       resumeFileName: resumeEntry.name,
       referenceNumber,

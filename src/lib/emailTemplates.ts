@@ -1236,6 +1236,7 @@ type ReferrerApplicationParams = {
   applicantPhone?: string;
   applicantId: string;
   iCrn: string;
+  companyName?: string;
   position: string;
   resumeUrl?: string;
   resumeFileName?: string;
@@ -1252,6 +1253,7 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
     applicantPhone,
     applicantId,
     iCrn,
+    companyName,
     position,
     resumeUrl,
     resumeFileName,
@@ -1260,13 +1262,15 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
     feedbackDeclineUrl,
   } = params;
 
-  const subject = `New application for ${position || iCrn}`;
+  const displayCompany = companyName || iCrn;
+  const subject = `New application for ${position} at ${displayCompany}`;
   const greeting = referrerName ? `Hi ${referrerName},` : 'Hi,';
   const displayResumeName = resumeFileName || 'Resume';
   const safeGreetingHtml = referrerName ? `Hi ${escapeHtml(referrerName)},` : 'Hi,';
   const normalizedResumeUrl = resumeUrl ? normalizeHttpUrl(resumeUrl) : null;
   const safeApplicantId = escapeHtml(applicantId);
   const safeIrcrn = escapeHtml(iCrn);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : '';
   const safePosition = position ? escapeHtml(position) : '';
   const safeReferenceNumber = referenceNumber ? escapeHtml(referenceNumber) : '';
   const safeApplicantName = applicantName ? escapeHtml(applicantName) : 'Not provided';
@@ -1285,8 +1289,10 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
   const textLines = [
     greeting,
     '',
-    `A applicant just applied for ${iCrn}.`,
+    `An applicant just applied for ${position} at ${displayCompany}.`,
     `- Applicant ID: ${applicantId}`,
+    companyName ? `- Company: ${companyName}` : null,
+    `- Company iRCRN: ${iCrn}`,
     position ? `- Position: ${position}` : null,
     referenceNumber ? `- Reference Number: ${referenceNumber}` : null,
     applicantName ? `- Name: ${applicantName}` : null,
@@ -1301,13 +1307,14 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
     .filter(Boolean)
     .join('\n');
 
+  const safeDisplayCompany = escapeHtml(displayCompany);
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">New application received!</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">A applicant is interested in ${safePosition || safeIrcrn}</p>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">An applicant is interested in ${safePosition} at ${safeDisplayCompany}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${safeGreetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Great news! A applicant just applied through iRefair. Here are the details:
+      Great news! An applicant just applied through iRefair. Here are the details:
     </p>
 
     ${divider}
@@ -1326,6 +1333,7 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
       <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Application Details</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
         ${safePosition ? infoRow('Position', safePosition) : ''}
+        ${safeCompanyName ? infoRow('Company', safeCompanyName) : ''}
         ${infoRow('Company iRCRN', safeIrcrn)}
         ${safeReferenceNumber ? infoRow('Reference #', safeReferenceNumber) : ''}
         ${infoRow('Resume', normalizedResumeUrl ? `<a href="${escapeHtml(normalizedResumeUrl)}" target="_blank" style="color: ${colors.primary};">${escapeHtml(displayResumeName)}</a>` : '<span style="color: ' + colors.muted + ';">Not provided</span>')}
@@ -1352,11 +1360,11 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
       <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">NEW APPLICATION RECEIVED</div>
-      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRCRN: <strong style="color:#1f2a37;">${safeIrcrn}</strong></div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">${safeCompanyName ? `Company: <strong style="color:#1f2a37;">${safeCompanyName}</strong> &bull; ` : ''}iRCRN: <strong style="color:#1f2a37;">${safeIrcrn}</strong></div>
     </div>
   `;
 
-  const html = emailWrapper(content, `New application for ${position || iCrn}`, customHeader);
+  const html = emailWrapper(content, `New application for ${position} at ${displayCompany}`, customHeader);
 
   return { subject, text: textLines, html };
 }
