@@ -969,6 +969,19 @@ body:has(.board--transparent) {
   font-weight: 700;
 }
 
+.apply-bottom-info {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.apply-bottom-info p {
+  margin: 0;
+}
+
 .inline-toggle {
   background: none;
   border: none;

@@ -695,12 +695,6 @@ export default function ApplyPage() {
               <p className="eyebrow">{t.eyebrow}</p>
               <h2 id="apply-title">{t.title}</h2>
               <p className="lead">{t.lead}</p>
-              <p className="apply-text">
-                {t.applyText}{' '}
-                <Link href="/hiring-companies" className="hiring-link hiring-link--cta">
-                  {t.findIrcrn}
-                </Link>
-              </p>
               <p className="apply-link-row">
                 {t.moreInfo}{' '}
                 <Link href="https://andbeyondca.com/impact/" target="_blank" rel="noreferrer">
@@ -911,6 +905,14 @@ export default function ApplyPage() {
               </div>
             </div>
           </form>
+          <div className="apply-bottom-info">
+            <p>
+              {t.applyText}{' '}
+              <Link href="/hiring-companies" className="hiring-link hiring-link--cta">
+                {t.findIrcrn}
+              </Link>
+            </p>
+          </div>
         </section>
       </main>
       <PublicFooter />
