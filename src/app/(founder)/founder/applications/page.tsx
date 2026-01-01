@@ -106,6 +106,7 @@ export default function ApplicationsPage() {
         render: (row: ApplicationRecord) => <span title={row.id}>{row.id}</span>,
       },
       { key: "applicantId", label: "Applicant", sortable: true, ellipsis: true, width: "240px" },
+      { key: "referrerIrref", label: "Referrer", sortable: true, ellipsis: true, width: "240px" },
       { key: "iCrn", label: "iRCRN", sortable: true, nowrap: true, width: "200px" },
       { key: "position", label: "Position", sortable: true, ellipsis: true, width: "320px" },
       {
