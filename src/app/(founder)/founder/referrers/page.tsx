@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
 import { EmptyState } from "@/components/founder/EmptyState";
@@ -46,13 +46,16 @@ function PencilIcon() {
   );
 }
 
-export default function ReferrersPage() {
+function ReferrersPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get("search") || "";
+
   const [items, setItems] = useState<ReferrerRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const [search, setSearch] = useState(initialSearch);
   const [statusFilter, setStatusFilter] = useState("");
   const [companyFilter, setCompanyFilter] = useState("");
   const [approvalFilter, setApprovalFilter] = useState("");
@@ -269,5 +272,13 @@ export default function ReferrersPage() {
         tableClassName="referrers-table"
       />
     </div>
+  );
+}
+
+export default function ReferrersPage() {
+  return (
+    <Suspense>
+      <ReferrersPageContent />
+    </Suspense>
   );
 }

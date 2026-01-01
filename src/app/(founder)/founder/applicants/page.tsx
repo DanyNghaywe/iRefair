@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
 import { Badge } from "@/components/founder/Badge";
@@ -51,15 +51,18 @@ function PencilIcon() {
   );
 }
 
-export default function CandidatesPage() {
+function CandidatesPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get("search") || "";
+
   const [items, setItems] = useState<CandidateRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const [search, setSearch] = useState(initialSearch);
   const [statusFilter, setStatusFilter] = useState("");
   const [eligibleFilter, setEligibleFilter] = useState<"all" | "eligible" | "ineligible">("all");
-  const router = useRouter();
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(searchInput.trim()), 300);
@@ -217,5 +220,13 @@ export default function CandidatesPage() {
         tableClassName="candidates-table"
       />
     </div>
+  );
+}
+
+export default function CandidatesPage() {
+  return (
+    <Suspense>
+      <CandidatesPageContent />
+    </Suspense>
   );
 }

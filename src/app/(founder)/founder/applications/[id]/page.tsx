@@ -445,16 +445,6 @@ export default function ApplicationDetailPage() {
                     View Referrer
                   </ActionBtn>
                 )}
-                {application.iCrn && (
-                  <ActionBtn
-                    as="link"
-                    href={`/founder/positions?search=${encodeURIComponent(application.iCrn)}`}
-                    variant="ghost"
-                    size="sm"
-                  >
-                    View Position
-                  </ActionBtn>
-                )}
               </div>
             </DetailSection>
           </>
