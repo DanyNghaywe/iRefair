@@ -5,7 +5,8 @@
 }
 
 .container {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
   width: 100%;
   padding: 2px;
   background: linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
@@ -63,6 +64,14 @@
   text-transform: uppercase;
   letter-spacing: 0.05em;
   padding: 16px;
+}
+
+.table thead th:first-child {
+  border-top-left-radius: 18px;
+}
+
+.table thead th:last-child {
+  border-top-right-radius: 18px;
 }
 
 
