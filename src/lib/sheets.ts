@@ -509,6 +509,65 @@ type ApplicationRow = {
 
 let sheetsClient: ReturnType<typeof google.sheets> | null = null;
 const headersInitialized = new Set<string>();
+const headersCache = new Map<string, string[]>();
+
+/**
+ * Get cached headers for a sheet, or fetch them if not cached.
+ * This reduces redundant API calls when listing data.
+ */
+async function getCachedHeaders(sheetName: string): Promise<string[]> {
+  const cached = headersCache.get(sheetName);
+  if (cached) return cached;
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!1:1`,
+  });
+  const headers = (headerRow.data.values?.[0] ?? []).map((v) => String(v));
+  if (headers.length) {
+    headersCache.set(sheetName, headers);
+  }
+  return headers;
+}
+
+/**
+ * Fetch sheet data with headers in a single API call.
+ * Returns both headers and data rows, using cached headers when available.
+ */
+async function getSheetDataWithHeaders(sheetName: string): Promise<{
+  headers: string[];
+  rows: string[][];
+}> {
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  // Get headers (from cache if available) to determine column range
+  const headers = await getCachedHeaders(sheetName);
+  if (!headers.length) {
+    return { headers: [], rows: [] };
+  }
+
+  const lastCol = toColumnLetter(headers.length - 1);
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const allRows = existing.data.values ?? [];
+  // Update cache with fresh headers from the response
+  const freshHeaders = (allRows[0] ?? []).map((v) => String(v));
+  if (freshHeaders.length) {
+    headersCache.set(sheetName, freshHeaders);
+  }
+
+  return {
+    headers: freshHeaders.length ? freshHeaders : headers,
+    rows: allRows.slice(1),
+  };
+}
 const SHEET_BY_PREFIX: Record<SubmissionPrefix, string> = {
   CAND: APPLICANT_SHEET_NAME,
   REF: REFERRER_SHEET_NAME,
@@ -803,6 +862,11 @@ export async function ensureHeaders(
     }
   }
   headersInitialized.add(sheetName);
+  // Cache the headers to avoid redundant fetches in list functions
+  const finalHeaders = await getCachedHeaders(sheetName);
+  if (finalHeaders.length) {
+    headersCache.set(sheetName, finalHeaders);
+  }
   await ensureAdminColumnsForSheet(sheetName);
   return { created: createdSheet };
 }
@@ -1522,17 +1586,11 @@ export async function ensureColumns(
   requiredHeaders: string[],
 ): Promise<{ appended: string[]; headers: string[] }> {
   if (!requiredHeaders.length) {
-    return { appended: [], headers: [] };
+    return { appended: [], headers: headersCache.get(sheetName) ?? [] };
   }
 
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-
-  const current = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${sheetName}!1:1`,
-  });
-  const existingHeaders = (current.data.values?.[0] ?? []).map((value) => String(value));
+  // Use cached headers if available, otherwise fetch
+  const existingHeaders = await getCachedHeaders(sheetName);
   const existingSet = new Set(existingHeaders.map((header) => header.trim()));
   const missing = requiredHeaders.filter((header) => !existingSet.has(header));
 
@@ -1540,6 +1598,8 @@ export async function ensureColumns(
     return { appended: [], headers: existingHeaders };
   }
 
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
   const updatedHeaders = [...existingHeaders, ...missing];
   const headerRange = `${sheetName}!A1:${toColumnLetter(updatedHeaders.length - 1)}1`;
 
@@ -1549,6 +1609,9 @@ export async function ensureColumns(
     valueInputOption: 'RAW',
     requestBody: { majorDimension: 'ROWS', values: [updatedHeaders] },
   });
+
+  // Update the cache with new headers
+  headersCache.set(sheetName, updatedHeaders);
 
   try {
     await applyProSheetFormatting(sheetName, updatedHeaders);
@@ -1679,24 +1742,11 @@ function normalizeSearch(value?: string) {
 export async function listApplicants(params: ApplicantListParams) {
   await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
 
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-  const headerRow = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${APPLICANT_SHEET_NAME}!1:1`,
-  });
-  const headers = headerRow.data.values?.[0] ?? [];
+  // Use cached headers + single data fetch
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME);
   if (!headers.length) return { total: 0, items: [] as unknown[] };
 
-  const lastCol = toColumnLetter(headers.length - 1);
-  const existing = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${APPLICANT_SHEET_NAME}!A:${lastCol}`,
-    majorDimension: 'ROWS',
-  });
-
   const headerMap = buildHeaderMap(headers);
-  const rows = (existing.data.values ?? []).slice(1);
   const searchTerm = normalizeSearch(params.search);
   const statusFilter = normalizeSearch(params.status);
   const locationFilter = normalizeSearch(params.locatedCanada);
@@ -1797,24 +1847,11 @@ export async function listReferrers(params: ReferrerListParams) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
   await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN', 'Company Approval', REFERRER_PENDING_UPDATES_HEADER]);
 
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-  const headerRow = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${REFERRER_SHEET_NAME}!1:1`,
-  });
-  const headers = headerRow.data.values?.[0] ?? [];
+  // Use cached headers + single data fetch
+  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_SHEET_NAME);
   if (!headers.length) return { total: 0, items: [] as unknown[] };
 
-  const lastCol = toColumnLetter(headers.length - 1);
-  const existing = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${REFERRER_SHEET_NAME}!A:${lastCol}`,
-    majorDimension: 'ROWS',
-  });
-
   const headerMap = buildHeaderMap(headers);
-  const rows = (existing.data.values ?? []).slice(1);
   const searchTerm = normalizeSearch(params.search);
   const statusFilter = normalizeSearch(params.status);
   const companyFilter = normalizeSearch(params.company);
@@ -1919,24 +1956,11 @@ export async function listApprovedReferrerCompanies(): Promise<CompanyRow[]> {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
   await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN', 'Company Approval']);
 
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-  const headerRow = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${REFERRER_SHEET_NAME}!1:1`,
-  });
-  const headers = headerRow.data.values?.[0] ?? [];
+  // Use cached headers + single data fetch
+  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_SHEET_NAME);
   if (!headers.length) return [];
 
-  const lastCol = toColumnLetter(headers.length - 1);
-  const existing = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${REFERRER_SHEET_NAME}!A:${lastCol}`,
-    majorDimension: 'ROWS',
-  });
-
   const headerMap = buildHeaderMap(headers);
-  const rows = (existing.data.values ?? []).slice(1);
   const items: CompanyRow[] = [];
 
   for (const row of rows) {
@@ -2167,24 +2191,11 @@ export async function listApplications(
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
   await ensureColumns(APPLICATION_SHEET_NAME, ['Resume File ID']);
 
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-  const headerRow = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${APPLICATION_SHEET_NAME}!1:1`,
-  });
-  const headers = headerRow.data.values?.[0] ?? [];
+  // Use cached headers + single data fetch
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME);
   if (!headers.length) return { total: 0, items: [] };
 
-  const lastCol = toColumnLetter(headers.length - 1);
-  const existing = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${APPLICATION_SHEET_NAME}!A:${lastCol}`,
-    majorDimension: 'ROWS',
-  });
-
   const headerMap = buildHeaderMap(headers);
-  const rows = (existing.data.values ?? []).slice(1);
   const searchTerm = normalizeSearch(params.search);
   const statusFilter = normalizeSearch(params.status);
   const ircrnFilter = normalizeSearch(params.ircrn);
@@ -2367,24 +2378,11 @@ export async function findApplicationByRescheduleTokenHash(tokenHash: string) {
 export async function listMatches(params: MatchListParams) {
   await ensureHeaders(MATCH_SHEET_NAME, MATCH_HEADERS);
 
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-  const headerRow = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${MATCH_SHEET_NAME}!1:1`,
-  });
-  const headers = headerRow.data.values?.[0] ?? [];
+  // Use cached headers + single data fetch
+  const { headers, rows } = await getSheetDataWithHeaders(MATCH_SHEET_NAME);
   if (!headers.length) return { total: 0, items: [] as unknown[] };
 
-  const lastCol = toColumnLetter(headers.length - 1);
-  const existing = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${MATCH_SHEET_NAME}!A:${lastCol}`,
-    majorDimension: 'ROWS',
-  });
-
   const headerMap = buildHeaderMap(headers);
-  const rows = (existing.data.values ?? []).slice(1);
   const searchTerm = normalizeSearch(params.search);
   const stageFilter = normalizeSearch(params.stage);
 
