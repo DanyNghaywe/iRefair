@@ -241,7 +241,7 @@ export default function ApplicationDetailPage() {
                 <div className="field">
                   <label htmlFor="app-applicant">Applicant</label>
                   {application.applicantId ? (
-                    <a href={`/founder/applicants?search=${encodeURIComponent(application.applicantId)}`}>
+                    <a href={`/founder/applicants/${encodeURIComponent(application.applicantId)}`}>
                       {application.applicantId}
                     </a>
                   ) : (
@@ -428,7 +428,7 @@ export default function ApplicationDetailPage() {
                 {application.applicantId && (
                   <ActionBtn
                     as="link"
-                    href={`/founder/applicants?search=${encodeURIComponent(application.applicantId)}`}
+                    href={`/founder/applicants/${encodeURIComponent(application.applicantId)}`}
                     variant="ghost"
                     size="sm"
                   >
@@ -438,7 +438,7 @@ export default function ApplicationDetailPage() {
                 {application.referrerIrref && (
                   <ActionBtn
                     as="link"
-                    href={`/founder/referrers?search=${encodeURIComponent(application.referrerIrref)}`}
+                    href={`/founder/referrers/${encodeURIComponent(application.referrerIrref)}`}
                     variant="ghost"
                     size="sm"
                   >
