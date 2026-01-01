@@ -520,10 +520,23 @@ export type ApplicantLookupResult = {
   record: ApplicantRow & { timestamp: string; legacyApplicantId: string };
 };
 
+/**
+ * Unescape a value that was escaped by escapeSheetsFormula() when writing to sheets.
+ * Removes the leading single quote that was added to prevent formula injection.
+ */
+function unescapeSheetsFormula(value: string): string {
+  if (!value) return value;
+  // If value starts with ' followed by a formula character, remove the quote
+  if (/^'[=+\-@]/.test(value)) {
+    return value.slice(1);
+  }
+  return value;
+}
+
 function cellValue(row: (string | number | null | undefined)[], index: number) {
   const value = row[index];
   if (value === undefined || value === null) return '';
-  return String(value).trim();
+  return unescapeSheetsFormula(String(value).trim());
 }
 
 function buildApplicantRecordFromRow(row: (string | number | null | undefined)[]): ApplicantRow & {
