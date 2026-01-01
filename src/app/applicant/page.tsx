@@ -588,10 +588,6 @@ function ApplicantPageContent() {
       nextErrors['country-of-origin'] = 'Please select your country of origin.';
     }
 
-    if (!values.consentLegal) {
-      nextErrors['consent-legal'] = 'Please confirm your consent to proceed.';
-    }
-
     if (values.linkedin && !isValidLinkedInProfileUrl(values.linkedin)) {
       nextErrors.linkedin = 'Please enter a valid LinkedIn profile URL.';
     }
@@ -660,6 +656,13 @@ function ApplicantPageContent() {
       if (linkedinInvalid && errorKeys.length === 1) {
         linkedinInput?.reportValidity();
       }
+      return;
+    }
+
+    // Use browser native validation for consent checkbox
+    const consentCheckbox = event.currentTarget.querySelector<HTMLInputElement>('#consent-legal');
+    if (consentCheckbox && !consentCheckbox.checkValidity()) {
+      consentCheckbox.reportValidity();
       return;
     }
 
@@ -800,6 +803,7 @@ function ApplicantPageContent() {
               className="referral-form"
               action="#"
               method="post"
+              noValidate
               onSubmit={handleSubmit}
               onReset={() => {
                 setErrors({});
@@ -1216,19 +1220,14 @@ function ApplicantPageContent() {
                       <li key={index}>{item}</li>
                     ))}
                   </ul>
-                  <div className={fieldClass('consent-checkbox', 'consent-legal')}>
+                  <div className="consent-checkbox consent-legal">
                     <input
                       id="consent-legal"
                       name="consent-legal"
                       type="checkbox"
                       required
-                      aria-describedby="consent-legal-error"
-                      onChange={handleFieldChange('consent-legal')}
                     />
                     <label htmlFor="consent-legal">{t.consentAgreement}</label>
-                    <p className="field-error" id="consent-legal-error" role="alert" aria-live="polite">
-                      {errors['consent-legal']}
-                    </p>
                   </div>
                 </div>
               </section>
