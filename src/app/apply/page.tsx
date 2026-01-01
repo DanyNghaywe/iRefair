@@ -38,6 +38,7 @@ const translations: Record<
     title: string;
     lead: string;
     applyText: string;
+    findIrcrn: string;
     moreInfo: string;
     moreInfoLink: string;
     labels: {
@@ -86,6 +87,7 @@ const translations: Record<
     title: 'iRefair - Apply Now',
     lead: 'iRefair is a free initiative created to support Lebanese and Arab newcomers in Canada by connecting them with professionals who can refer them for jobs.',
     applyText: 'Use this form to apply to the company you wish to join. You will need your iRefair iRAIN and the iRefair Company Reference Number (iRCRN).',
+    findIrcrn: 'Find iRCRN codes',
     moreInfo: 'For more info, visit',
     moreInfoLink: '&BeyondCA',
     labels: {
@@ -133,6 +135,7 @@ const translations: Record<
     title: 'iRefair - Postuler maintenant',
     lead: "iRefair est une initiative gratuite créée pour soutenir les nouveaux arrivants libanais et arabes au Canada en les mettant en contact avec des professionnels qui peuvent les recommander pour des emplois.",
     applyText: "Utilisez ce formulaire pour postuler à l'entreprise que vous souhaitez rejoindre. Vous aurez besoin de votre iRAIN iRefair et du numéro de référence de l'entreprise iRefair (iRCRN).",
+    findIrcrn: 'Trouver les codes iRCRN',
     moreInfo: 'Pour plus d\'informations, visitez',
     moreInfoLink: '&BeyondCA',
     labels: {
@@ -692,7 +695,12 @@ export default function ApplyPage() {
               <p className="eyebrow">{t.eyebrow}</p>
               <h2 id="apply-title">{t.title}</h2>
               <p className="lead">{t.lead}</p>
-              <p className="apply-text">{t.applyText}</p>
+              <p className="apply-text">
+                {t.applyText}{' '}
+                <Link href="/hiring-companies" className="hiring-link hiring-link--cta">
+                  {t.findIrcrn}
+                </Link>
+              </p>
               <p className="apply-link-row">
                 {t.moreInfo}{' '}
                 <Link href="https://andbeyondca.com/impact/" target="_blank" rel="noreferrer">
