@@ -104,7 +104,7 @@ const translations: Record<
       title: "Applications",
       activeReferrals: "active referrals",
       totalLabel: "total",
-      candidate: "Candidate",
+      candidate: "Applicant",
       position: "Position / iRCRN",
       cv: "CV",
       status: "Status",
@@ -228,7 +228,7 @@ const translations: Record<
       title: "Candidatures",
       activeReferrals: "recommandations actives",
       totalLabel: "total",
-      candidate: "Candidat",
+      candidate: "Candidat(e)",
       position: "Poste / iRCRN",
       cv: "CV",
       status: "Statut",
@@ -341,10 +341,10 @@ const translations: Record<
 
 type PortalItem = {
   id: string;
-  candidateId: string;
-  candidateName: string;
-  candidateEmail: string;
-  candidatePhone: string;
+  applicantId: string;
+  applicantName: string;
+  applicantEmail: string;
+  applicantPhone: string;
   position: string;
   iCrn: string;
   resumeFileName: string;
@@ -924,10 +924,9 @@ export default function PortalClient() {
                       return (
                         <tr key={item.id}>
                           <td className="portal-col-candidate">
-                            <div className="portal-cell-title">{item.candidateName || item.candidateId}</div>
-                            <div className="portal-cell-sub">{item.candidateEmail}</div>
-                            <div className="portal-cell-sub">{item.candidatePhone}</div>
-                            <div className="portal-cell-meta">{t.table.appId}: {item.id}</div>
+                            <div className="portal-cell-title">{item.applicantName || item.applicantId}</div>
+                            <div className="portal-cell-sub">{item.applicantEmail}</div>
+                            <div className="portal-cell-sub">{item.applicantPhone}</div>
                           </td>
                           <td className="portal-col-position">
                             <div className="portal-cell-title">{item.position}</div>
@@ -1052,7 +1051,7 @@ export default function PortalClient() {
         {modalItem && (
           <div className="portal-modal-content">
             <div className="portal-modal-candidate">
-              <strong>{modalItem.candidateName || modalItem.candidateId}</strong>
+              <strong>{modalItem.applicantName || modalItem.applicantId}</strong>
               <span>{modalItem.position}</span>
             </div>
 
