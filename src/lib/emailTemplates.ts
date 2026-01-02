@@ -1243,6 +1243,7 @@ type ReferrerApplicationParams = {
   referenceNumber?: string;
   feedbackApproveUrl?: string;
   feedbackDeclineUrl?: string;
+  portalUrl?: string;
 };
 
 export function applicationSubmittedToReferrer(params: ReferrerApplicationParams): TemplateResult {
@@ -1260,6 +1261,7 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
     referenceNumber,
     feedbackApproveUrl,
     feedbackDeclineUrl,
+    portalUrl,
   } = params;
 
   const displayCompany = companyName || iCrn;
@@ -1278,10 +1280,12 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
   const safeApplicantPhone = applicantPhone ? escapeHtml(applicantPhone) : '';
   const approveLink = feedbackApproveUrl ? normalizeHttpUrl(feedbackApproveUrl) : null;
   const declineLink = feedbackDeclineUrl ? normalizeHttpUrl(feedbackDeclineUrl) : null;
+  const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
 
   const textCtas = [
     feedbackApproveUrl ? `Approve: ${feedbackApproveUrl}` : null,
     feedbackDeclineUrl ? `Decline: ${feedbackDeclineUrl}` : null,
+    portalUrl ? `Your Referrer Portal: ${portalUrl}` : null,
   ]
     .filter(Boolean)
     .join('\n');
@@ -1350,6 +1354,12 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
         ${declineLink ? `<td>${button('Decline', declineLink, 'danger')}</td>` : ''}
       </tr>
     </table>
+
+    ${normalizedPortalUrl ? `
+    <p style="margin: 24px 0 12px 0; color: ${colors.muted}; font-size: 14px;">
+      Or manage all your applications in your <a href="${escapeHtml(normalizedPortalUrl)}" style="color: ${colors.primary};">Referrer Portal</a>.
+    </p>
+    ` : ''}
 
     <p style="margin: 24px 0 0 0; color: ${colors.muted}; font-size: 14px;">
       Thank you for your quick review!

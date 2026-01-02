@@ -9,6 +9,7 @@ import { hashApplicantSecret } from '@/lib/applicantUpdateToken';
 import {
   appendApplicationRow,
   findApplicantByIdentifier,
+  findDuplicateApplication,
   findReferrerByIrcrn,
   findReferrerByIrcrnStrict,
   generateSubmissionId,
@@ -17,6 +18,7 @@ import {
   ReferrerLookupError,
 } from '@/lib/sheets';
 import { ensureResumeLooksLikeCv, scanBufferForViruses } from '@/lib/fileScan';
+import { ensureReferrerPortalTokenVersion, buildReferrerPortalLink } from '@/lib/referrerPortalLink';
 
 export const runtime = 'nodejs';
 
@@ -126,6 +128,22 @@ export async function POST(request: Request) {
       );
     }
 
+    // Check for duplicate application
+    const existingApplicationId = await findDuplicateApplication(
+      applicantRecord.record.id || applicantId,
+      iCrn,
+      position,
+    );
+    if (existingApplicationId) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `You have already applied for this position at this company (Application ID: ${existingApplicationId}).`,
+        },
+        { status: 409 },
+      );
+    }
+
     let referrer = null;
     if (strictMode) {
       try {
@@ -203,6 +221,17 @@ export async function POST(request: Request) {
     const feedbackApproveUrl = `mailto:${feedbackRecipient}?subject=${feedbackSubject}&body=${approveBody}`;
     const feedbackDeclineUrl = `mailto:${feedbackRecipient}?subject=${feedbackSubject}&body=${declineBody}`;
 
+    // Generate portal link for the referrer (skip for fallback referrer)
+    let portalUrl: string | undefined;
+    if (referrer.irref && referrer.irref !== 'fallback') {
+      try {
+        const tokenVersion = await ensureReferrerPortalTokenVersion(referrer.irref);
+        portalUrl = buildReferrerPortalLink(referrer.irref, tokenVersion);
+      } catch (err) {
+        console.warn('Failed to generate referrer portal link:', err);
+      }
+    }
+
     const template = applicationSubmittedToReferrer({
       referrerName: referrer.name,
       applicantName: applicantName || undefined,
@@ -216,6 +245,7 @@ export async function POST(request: Request) {
       referenceNumber,
       feedbackApproveUrl,
       feedbackDeclineUrl,
+      portalUrl,
     });
 
     await sendMail({

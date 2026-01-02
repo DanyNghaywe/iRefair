@@ -3181,6 +3181,43 @@ export async function findApplicationsByApplicantId(
 }
 
 /**
+ * Check if a duplicate application exists for the same applicant, company, and position.
+ * Returns the existing application ID if found, null otherwise.
+ * Excludes archived applications.
+ */
+export async function findDuplicateApplication(
+  applicantId: string,
+  iCrn: string,
+  position: string,
+): Promise<string | null> {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME);
+  const headerMap = buildHeaderMap(headers);
+
+  const searchApplicantId = applicantId.trim().toLowerCase();
+  const searchIcrn = iCrn.trim().toLowerCase();
+  const searchPosition = position.trim().toLowerCase();
+
+  for (const row of rows) {
+    const rowApplicantId = getHeaderValue(headerMap, row, 'Applicant ID').toLowerCase();
+    const rowIcrn = getHeaderValue(headerMap, row, 'iRCRN').toLowerCase();
+    const rowPosition = getHeaderValue(headerMap, row, 'Position').toLowerCase();
+    const archived = getHeaderValue(headerMap, row, 'Archived');
+
+    if (
+      rowApplicantId === searchApplicantId &&
+      rowIcrn === searchIcrn &&
+      rowPosition === searchPosition &&
+      archived !== 'true'
+    ) {
+      return getHeaderValue(headerMap, row, 'ID');
+    }
+  }
+
+  return null;
+}
+
+/**
  * Find all applications linked to a referrer by their iRREF.
  */
 export async function findApplicationsByReferrerIrref(
