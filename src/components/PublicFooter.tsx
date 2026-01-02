@@ -13,7 +13,7 @@ export function PublicFooter() {
         <div className="public-footer__brand">
           <div className="public-footer__brand-row">
             <Image
-              src="/logo-small.png"
+              src="/iRefair transparent white text.png"
               alt=""
               width={32}
               height={32}

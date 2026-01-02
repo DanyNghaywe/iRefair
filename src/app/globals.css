@@ -1619,12 +1619,12 @@ button.disclaimer,
 .hiring-table td {
   padding: 12px 16px;
   border-bottom: 1px solid rgba(15, 23, 42, 0.12);
+  color: #e0f2ff;
 }
 
 .hiring-table th {
   background: rgba(255, 255, 255, 0.12); /* subtle frosted header */
   font-weight: 600;
-  color: #0f1d36;
 }
 
 .hiring-table tr:nth-child(odd) td {

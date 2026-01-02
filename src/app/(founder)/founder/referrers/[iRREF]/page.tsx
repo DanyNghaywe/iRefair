@@ -1081,42 +1081,46 @@ export default function ReferrerReviewPage() {
                     Edit details
                   </ActionBtn>
                 )}
-                <ActionBtn
-                  as="button"
-                  variant="primary"
-                  onClick={() => handleApproval("approved")}
-                  disabled={!referrer || approvalLoading}
-                >
-                  {approvalLoading ? "Updating..." : "Approve"}
-                </ActionBtn>
-                {rejectConfirm ? (
+                {approvalValue === "pending" && (
                   <>
                     <ActionBtn
                       as="button"
-                      variant="ghost"
-                      onClick={() => handleApproval("denied")}
+                      variant="primary"
+                      onClick={() => handleApproval("approved")}
                       disabled={!referrer || approvalLoading}
                     >
-                      {approvalLoading ? "Updating..." : "Confirm reject"}
+                      {approvalLoading ? "Updating..." : "Approve"}
                     </ActionBtn>
-                    <ActionBtn
-                      as="button"
-                      variant="ghost"
-                      onClick={() => setRejectConfirm(false)}
-                      disabled={approvalLoading}
-                    >
-                      Cancel
-                    </ActionBtn>
+                    {rejectConfirm ? (
+                      <>
+                        <ActionBtn
+                          as="button"
+                          variant="ghost"
+                          onClick={() => handleApproval("denied")}
+                          disabled={!referrer || approvalLoading}
+                        >
+                          {approvalLoading ? "Updating..." : "Confirm reject"}
+                        </ActionBtn>
+                        <ActionBtn
+                          as="button"
+                          variant="ghost"
+                          onClick={() => setRejectConfirm(false)}
+                          disabled={approvalLoading}
+                        >
+                          Cancel
+                        </ActionBtn>
+                      </>
+                    ) : (
+                      <ActionBtn
+                        as="button"
+                        variant="ghost"
+                        onClick={() => setRejectConfirm(true)}
+                        disabled={!referrer || approvalLoading}
+                      >
+                        Reject
+                      </ActionBtn>
+                    )}
                   </>
-                ) : (
-                  <ActionBtn
-                    as="button"
-                    variant="ghost"
-                    onClick={() => setRejectConfirm(true)}
-                    disabled={!referrer || approvalLoading}
-                  >
-                    Reject
-                  </ActionBtn>
                 )}
               </div>
               <div>

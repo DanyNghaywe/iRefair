@@ -29,7 +29,12 @@
       "Bash(powershell \"if \\(Test-Path ''update-remaining-files.ps1''\\) { .\\\\update-remaining-files.ps1 } else { Write-Host ''Script not found, will update files manually'' }\")",
       "Bash(powershell:*)",
       "Bash(timeout:*)",
-      "Bash(git merge:*)"
+      "Bash(git merge:*)",
+      "Bash(cmd /c \"del \\\\?\\\\c:\\\\Users\\\\Makram\\\\Documents\\\\iRefair\\\\nul\")",
+      "Bash(cmd //c \"cd /d c:\\\\Users\\\\Makram\\\\Documents\\\\iRefair && del /f /q nul\")",
+      "Bash(python -c \"import os; os.remove\\(r''\\\\?\\\\c:\\\\Users\\\\Makram\\\\Documents\\\\iRefair\\\\nul''\\)\")",
+      "Bash(python -c \"import os; os.remove\\(''\\\\\\\\?\\\\\\\\C:\\\\\\\\Users\\\\\\\\Makram\\\\\\\\Documents\\\\\\\\iRefair\\\\\\\\nul''\\)\")",
+      "Bash(python -c \"import os; p = chr\\(92\\)*2 + ''?'' + chr\\(92\\) + ''C:'' + chr\\(92\\) + ''Users'' + chr\\(92\\) + ''Makram'' + chr\\(92\\) + ''Documents'' + chr\\(92\\) + ''iRefair'' + chr\\(92\\) + ''nul''; os.remove\\(p\\)\")"
     ]
   }
 }
