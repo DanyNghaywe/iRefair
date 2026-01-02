@@ -1054,13 +1054,24 @@ body:has(.board--transparent) {
 
 /* Danger button modifier */
 .action-btn--danger {
-  color: #f87171 !important;
-  border-color: rgba(248, 113, 113, 0.4) !important;
+  background: linear-gradient(135deg, #dc2626, #b91c1c) !important;
+  color: #ffffff !important;
+  border: 1px solid rgba(220, 38, 38, 0.5) !important;
+  border-radius: 0 !important;
+  box-shadow: 0 8px 20px rgba(220, 38, 38, 0.35) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .action-btn--danger:hover {
-  background: rgba(248, 113, 113, 0.15) !important;
-  border-color: rgba(248, 113, 113, 0.6) !important;
+  background: linear-gradient(135deg, #b91c1c, #991b1b) !important;
+  box-shadow: 0 10px 24px rgba(220, 38, 38, 0.45) !important;
+  transform: translateY(-1px);
+}
+
+.action-btn--danger:active {
+  background: linear-gradient(135deg, #991b1b, #b91c1c) !important;
+  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3) !important;
+  transform: translateY(1px);
 }
 
 .status-icon {
