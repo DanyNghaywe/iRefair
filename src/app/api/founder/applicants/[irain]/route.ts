@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
-import { deleteApplicantByIrain, getApplicantByIrain, updateApplicantFields } from '@/lib/sheets';
+import { archiveApplicantByIrain, getApplicantByIrain, updateApplicantFields } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -127,18 +127,21 @@ export async function DELETE(
   }
 
   try {
-    const result = await deleteApplicantByIrain(params.irain);
+    const result = await archiveApplicantByIrain(params.irain);
     if (!result.success) {
       if (result.reason === 'not_found') {
         return NextResponse.json({ ok: false, error: 'Applicant not found' }, { status: 404 });
       }
-      return NextResponse.json({ ok: false, error: 'Unable to delete applicant.' }, { status: 500 });
+      if (result.reason === 'already_archived') {
+        return NextResponse.json({ ok: false, error: 'Applicant is already archived' }, { status: 400 });
+      }
+      return NextResponse.json({ ok: false, error: 'Unable to archive applicant.' }, { status: 500 });
     }
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, archivedApplications: result.archivedApplications });
   } catch (error) {
-    console.error('Error deleting applicant', error);
+    console.error('Error archiving applicant', error);
     return NextResponse.json(
-      { ok: false, error: 'Unable to delete applicant.' },
+      { ok: false, error: 'Unable to archive applicant.' },
       { status: 500 },
     );
   }

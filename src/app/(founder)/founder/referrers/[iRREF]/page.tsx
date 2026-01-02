@@ -635,14 +635,14 @@ export default function ReferrerReviewPage() {
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok) {
-        setActionError(data?.error || "Unable to delete referrer.");
+        setActionError(data?.error || "Unable to archive referrer.");
         setDeleteConfirm(false);
       } else {
         router.push("/founder/referrers");
       }
     } catch (error) {
-      console.error("Delete referrer failed", error);
-      setActionError("Unable to delete referrer.");
+      console.error("Archive referrer failed", error);
+      setActionError("Unable to archive referrer.");
       setDeleteConfirm(false);
     } finally {
       setDeleteLoading(false);
@@ -1155,6 +1155,9 @@ export default function ReferrerReviewPage() {
                   <>
                     {deleteConfirm ? (
                       <>
+                        <div className="status-banner status-banner--warning" role="alert" style={{ marginBottom: "8px" }}>
+                          This will also archive all related applications.
+                        </div>
                         <ActionBtn
                           as="button"
                           variant="ghost"
@@ -1162,7 +1165,7 @@ export default function ReferrerReviewPage() {
                           disabled={!referrer || deleteLoading}
                           className="action-btn--danger"
                         >
-                          {deleteLoading ? "Deleting..." : "Confirm delete"}
+                          {deleteLoading ? "Archiving..." : "Confirm archive"}
                         </ActionBtn>
                         <ActionBtn
                           as="button"
@@ -1180,7 +1183,7 @@ export default function ReferrerReviewPage() {
                         onClick={() => setDeleteConfirm(true)}
                         disabled={!referrer || deleteLoading}
                       >
-                        Delete referrer
+                        Archive referrer
                       </ActionBtn>
                     )}
                   </>

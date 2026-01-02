@@ -439,14 +439,14 @@ export default function CandidateReviewPage() {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok || !data?.ok) {
-        setActionError(data?.error || "Unable to delete applicant.");
+        setActionError(data?.error || "Unable to archive applicant.");
         setDeleteConfirm(false);
       } else {
         router.push("/founder/applicants");
       }
     } catch (error) {
-      console.error("Delete applicant failed", error);
-      setActionError("Unable to delete applicant.");
+      console.error("Archive applicant failed", error);
+      setActionError("Unable to archive applicant.");
       setDeleteConfirm(false);
     } finally {
       setDeleteLoading(false);
@@ -1149,13 +1149,16 @@ export default function CandidateReviewPage() {
                 </ActionBtn>
                 {deleteConfirm ? (
                   <>
+                    <div className="status-banner status-banner--warning" role="alert" style={{ marginBottom: "8px" }}>
+                      This will also archive all related applications.
+                    </div>
                     <ActionBtn
                       as="button"
                       className="action-btn--danger"
                       onClick={handleDelete}
                       disabled={deleteLoading}
                     >
-                      {deleteLoading ? "Deleting..." : "Confirm delete"}
+                      {deleteLoading ? "Archiving..." : "Confirm archive"}
                     </ActionBtn>
                     <ActionBtn
                       as="button"
@@ -1172,7 +1175,7 @@ export default function CandidateReviewPage() {
                     variant="ghost"
                     onClick={() => setDeleteConfirm(true)}
                   >
-                    Delete applicant
+                    Archive applicant
                   </ActionBtn>
                 )}
               </div>

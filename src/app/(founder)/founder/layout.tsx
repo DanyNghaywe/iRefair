@@ -14,6 +14,7 @@ const navItems = [
   { href: "/founder/applications", label: "Applications" },
   { href: "/founder/matches", label: "Matches" },
   { href: "/founder/calendar", label: "Calendar" },
+  { href: "/founder/archive", label: "Archive" },
   { href: "/founder/settings", label: "Settings" },
 ];
 

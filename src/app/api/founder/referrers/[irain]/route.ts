@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
-import { deleteReferrerByIrref, getReferrerByIrref, updateReferrerFields } from '@/lib/sheets';
+import { archiveReferrerByIrref, getReferrerByIrref, updateReferrerFields } from '@/lib/sheets';
 import { normalizeHttpUrl } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
@@ -178,18 +178,21 @@ export async function DELETE(
   }
 
   try {
-    const result = await deleteReferrerByIrref(params.irain);
+    const result = await archiveReferrerByIrref(params.irain);
     if (!result.success) {
       if (result.reason === 'not_found') {
         return NextResponse.json({ ok: false, error: 'Referrer not found' }, { status: 404 });
       }
-      return NextResponse.json({ ok: false, error: 'Unable to delete referrer.' }, { status: 500 });
+      if (result.reason === 'already_archived') {
+        return NextResponse.json({ ok: false, error: 'Referrer is already archived' }, { status: 400 });
+      }
+      return NextResponse.json({ ok: false, error: 'Unable to archive referrer.' }, { status: 500 });
     }
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, archivedApplications: result.archivedApplications });
   } catch (error) {
-    console.error('Error deleting referrer', error);
+    console.error('Error archiving referrer', error);
     return NextResponse.json(
-      { ok: false, error: 'Unable to delete referrer.' },
+      { ok: false, error: 'Unable to archive referrer.' },
       { status: 500 },
     );
   }

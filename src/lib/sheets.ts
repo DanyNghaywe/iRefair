@@ -88,6 +88,8 @@ export const APPLICATION_ADMIN_COLUMNS = [
   'Update Request Purpose',
 ];
 
+export const ARCHIVE_COLUMNS = ['Archived', 'ArchivedAt', 'ArchivedBy'];
+
 const IRCRN_REGEX = /^iRCRN(\d{10})$/i;
 const IRAIN_REGEX = /^iRAIN(\d{10})$/i;
 const IRREF_REGEX = /^iRREF(\d{10})$/i;
@@ -1567,15 +1569,15 @@ export async function formatSheet(sheetName: string, headers: string[]) {
 
 async function ensureAdminColumnsForSheet(sheetName: string) {
   if (sheetName === APPLICANT_SHEET_NAME) {
-    return ensureColumns(sheetName, [...ADMIN_TRACKING_COLUMNS, ...APPLICANT_SECURITY_COLUMNS]);
+    return ensureColumns(sheetName, [...ADMIN_TRACKING_COLUMNS, ...APPLICANT_SECURITY_COLUMNS, ...ARCHIVE_COLUMNS]);
   }
 
   if (sheetName === REFERRER_SHEET_NAME) {
-    return ensureColumns(sheetName, [...ADMIN_TRACKING_COLUMNS, ...REFERRER_SECURITY_COLUMNS]);
+    return ensureColumns(sheetName, [...ADMIN_TRACKING_COLUMNS, ...REFERRER_SECURITY_COLUMNS, ...ARCHIVE_COLUMNS]);
   }
 
   if (sheetName === APPLICATION_SHEET_NAME) {
-    return ensureColumns(sheetName, APPLICATION_ADMIN_COLUMNS);
+    return ensureColumns(sheetName, [...APPLICATION_ADMIN_COLUMNS, ...ARCHIVE_COLUMNS]);
   }
 
   return { appended: [], headers: [] };
@@ -1629,6 +1631,7 @@ type ApplicantListParams = {
   locatedCanada?: string;
   limit?: number;
   offset?: number;
+  includeArchived?: boolean;
 };
 
 type ReferrerListParams = {
@@ -1638,6 +1641,7 @@ type ReferrerListParams = {
   approval?: string;
   limit?: number;
   offset?: number;
+  includeArchived?: boolean;
 };
 
 type ApplicationListParams = {
@@ -1647,6 +1651,7 @@ type ApplicationListParams = {
   referrerIrref?: string;
   limit?: number;
   offset?: number;
+  includeArchived?: boolean;
 };
 
 type ApplicationListItem = {
@@ -1673,6 +1678,9 @@ type ApplicationListItem = {
   updateRequestExpiresAt: string;
   updateRequestPurpose: string;
   missingFields: string[];
+  archived: string;
+  archivedAt: string;
+  archivedBy: string;
 };
 
 type MatchListParams = {
@@ -1803,11 +1811,17 @@ export async function listApplicants(params: ApplicantListParams) {
           reason: eligibilityReason,
         },
         missingFields,
+        archived: getHeaderValue(headerMap, row, 'Archived'),
+        archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt'),
+        archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy'),
       };
 
       return record;
     })
     .filter((record) => {
+      // Filter out archived records by default
+      if (!params.includeArchived && record.archived === 'true') return false;
+
       if (searchTerm) {
         const haystack = [
           record.irain,
@@ -1902,9 +1916,15 @@ export async function listReferrers(params: ReferrerListParams) {
         lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
         nextActionAt: getHeaderValue(headerMap, row, 'Next Action At'),
         missingFields,
+        archived: getHeaderValue(headerMap, row, 'Archived'),
+        archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt'),
+        archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy'),
       };
     })
     .filter((record) => {
+      // Filter out archived records by default
+      if (!params.includeArchived && record.archived === 'true') return false;
+
       if (searchTerm) {
         const haystack = [
           record.irref,
@@ -2232,9 +2252,15 @@ export async function listApplications(
         updateRequestExpiresAt: getHeaderValue(headerMap, row, 'Update Request Expires At'),
         updateRequestPurpose: getHeaderValue(headerMap, row, 'Update Request Purpose'),
         missingFields,
+        archived: getHeaderValue(headerMap, row, 'Archived'),
+        archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt'),
+        archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy'),
       };
     })
     .filter((record) => {
+      // Filter out archived records by default
+      if (!params.includeArchived && record.archived === 'true') return false;
+
       if (searchTerm) {
         const haystack = [
           record.id,
@@ -2312,6 +2338,9 @@ export async function getApplicationById(id: string) {
           updateRequestTokenHash: getHeaderValue(headerMap, row, 'Update Request Token Hash'),
           updateRequestExpiresAt: getHeaderValue(headerMap, row, 'Update Request Expires At'),
           updateRequestPurpose: getHeaderValue(headerMap, row, 'Update Request Purpose'),
+          archived: getHeaderValue(headerMap, row, 'Archived'),
+          archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt'),
+          archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy'),
         },
       };
     }
@@ -2755,6 +2784,9 @@ export async function getApplicantByIrain(irain: string) {
         resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name') || undefined,
         resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID') || undefined,
         resumeUrl: getHeaderValue(headerMap, row, 'Resume URL') || undefined,
+        archived: getHeaderValue(headerMap, row, 'Archived'),
+        archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt'),
+        archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy'),
       },
     };
   }
@@ -2809,6 +2841,9 @@ export async function getReferrerByIrref(irref: string) {
           tags: getHeaderValue(headerMap, row, 'Tags'),
           lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
           nextActionAt: getHeaderValue(headerMap, row, 'Next Action At'),
+          archived: getHeaderValue(headerMap, row, 'Archived'),
+          archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt'),
+          archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy'),
         },
       };
     }
@@ -3083,6 +3118,420 @@ export async function deleteApplicantByIrain(
     return { success: true };
   } catch (error) {
     console.error('Error deleting applicant row', error);
+    return { success: false, reason: 'error' };
+  }
+}
+
+// ============================================================================
+// Archive Functions
+// ============================================================================
+
+/**
+ * Archive a row by setting the Archived, ArchivedAt, and ArchivedBy columns.
+ */
+async function archiveRowById(
+  sheetName: string,
+  idHeaderName: string,
+  id: string,
+  archivedBy?: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'error' }> {
+  const now = new Date().toISOString();
+  const result = await updateRowById(sheetName, idHeaderName, id, {
+    Archived: 'true',
+    ArchivedAt: now,
+    ArchivedBy: archivedBy || '',
+  });
+
+  if (!result.updated) {
+    return { success: false, reason: result.reason === 'not_found' ? 'not_found' : 'error' };
+  }
+  return { success: true };
+}
+
+/**
+ * Find all applications linked to an applicant by their Applicant ID.
+ */
+export async function findApplicationsByApplicantId(
+  applicantId: string,
+  includeArchived: boolean = false,
+): Promise<Array<{ id: string; rowIndex: number }>> {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME);
+  const headerMap = buildHeaderMap(headers);
+
+  const results: Array<{ id: string; rowIndex: number }> = [];
+  const searchId = applicantId.trim().toLowerCase();
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowApplicantId = getHeaderValue(headerMap, row, 'Applicant ID').toLowerCase();
+    const archived = getHeaderValue(headerMap, row, 'Archived');
+
+    if (rowApplicantId === searchId) {
+      if (includeArchived || archived !== 'true') {
+        results.push({
+          id: getHeaderValue(headerMap, row, 'ID'),
+          rowIndex: i + 2, // +1 for header, +1 for 1-indexed
+        });
+      }
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Find all applications linked to a referrer by their iRREF.
+ */
+export async function findApplicationsByReferrerIrref(
+  referrerIrref: string,
+  includeArchived: boolean = false,
+): Promise<Array<{ id: string; rowIndex: number }>> {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME);
+  const headerMap = buildHeaderMap(headers);
+
+  const results: Array<{ id: string; rowIndex: number }> = [];
+  const searchIrref = referrerIrref.trim().toLowerCase();
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowReferrerIrref = getHeaderValue(headerMap, row, 'Referrer iRREF').toLowerCase();
+    const archived = getHeaderValue(headerMap, row, 'Archived');
+
+    if (rowReferrerIrref === searchIrref) {
+      if (includeArchived || archived !== 'true') {
+        results.push({
+          id: getHeaderValue(headerMap, row, 'ID'),
+          rowIndex: i + 2, // +1 for header, +1 for 1-indexed
+        });
+      }
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Archive an applicant and cascade archive all their applications.
+ */
+export async function archiveApplicantByIrain(
+  irain: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'already_archived' | 'error'; archivedApplications?: number }> {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+  await ensureColumns(APPLICANT_SHEET_NAME, ARCHIVE_COLUMNS);
+  await ensureColumns(APPLICATION_SHEET_NAME, ARCHIVE_COLUMNS);
+
+  const applicant = await getApplicantByIrain(irain);
+  if (!applicant) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  // Check if already archived
+  if (applicant.record.archived === 'true') {
+    return { success: false, reason: 'already_archived' };
+  }
+
+  try {
+    // 1. Find and archive related applications (cascade)
+    const relatedApps = await findApplicationsByApplicantId(irain, false);
+    for (const app of relatedApps) {
+      await archiveRowById(APPLICATION_SHEET_NAME, 'ID', app.id, irain);
+    }
+
+    // 2. Archive the applicant
+    const result = await archiveRowById(APPLICANT_SHEET_NAME, 'iRAIN', irain);
+
+    return {
+      success: result.success,
+      reason: result.reason,
+      archivedApplications: relatedApps.length,
+    };
+  } catch (error) {
+    console.error('Error archiving applicant', error);
+    return { success: false, reason: 'error' };
+  }
+}
+
+/**
+ * Archive a referrer and cascade archive all their applications.
+ */
+export async function archiveReferrerByIrref(
+  irref: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'already_archived' | 'error'; archivedApplications?: number }> {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureColumns(REFERRER_SHEET_NAME, ARCHIVE_COLUMNS);
+  await ensureColumns(APPLICATION_SHEET_NAME, ARCHIVE_COLUMNS);
+
+  const referrer = await getReferrerByIrref(irref);
+  if (!referrer) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  // Check if already archived
+  if (referrer.record.archived === 'true') {
+    return { success: false, reason: 'already_archived' };
+  }
+
+  try {
+    // 1. Find and archive related applications (cascade)
+    const relatedApps = await findApplicationsByReferrerIrref(irref, false);
+    for (const app of relatedApps) {
+      await archiveRowById(APPLICATION_SHEET_NAME, 'ID', app.id, irref);
+    }
+
+    // 2. Archive the referrer
+    const result = await archiveRowById(REFERRER_SHEET_NAME, 'iRREF', irref);
+
+    return {
+      success: result.success,
+      reason: result.reason,
+      archivedApplications: relatedApps.length,
+    };
+  } catch (error) {
+    console.error('Error archiving referrer', error);
+    return { success: false, reason: 'error' };
+  }
+}
+
+/**
+ * List only archived applicants.
+ */
+export async function listArchivedApplicants(params: Omit<ApplicantListParams, 'includeArchived'>) {
+  const result = await listApplicants({ ...params, includeArchived: true });
+  const items = result.items as Array<{ archived?: string }>;
+  const archivedItems = items.filter((item) => item.archived === 'true');
+  return {
+    total: archivedItems.length,
+    items: archivedItems,
+  };
+}
+
+/**
+ * List only archived referrers.
+ */
+export async function listArchivedReferrers(params: Omit<ReferrerListParams, 'includeArchived'>) {
+  const result = await listReferrers({ ...params, includeArchived: true });
+  const items = result.items as Array<{ archived?: string }>;
+  const archivedItems = items.filter((item) => item.archived === 'true');
+  return {
+    total: archivedItems.length,
+    items: archivedItems,
+  };
+}
+
+/**
+ * List only archived applications.
+ */
+export async function listArchivedApplications(params: Omit<ApplicationListParams, 'includeArchived'>) {
+  const result = await listApplications({ ...params, includeArchived: true });
+  const archivedItems = result.items.filter((item) => item.archived === 'true');
+  return {
+    total: archivedItems.length,
+    items: archivedItems,
+  };
+}
+
+// ============================================================================
+// Restore Functions
+// ============================================================================
+
+/**
+ * Restore an archived applicant (does NOT cascade restore applications).
+ */
+export async function restoreApplicantByIrain(
+  irain: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+  await ensureColumns(APPLICANT_SHEET_NAME, ARCHIVE_COLUMNS);
+
+  const applicant = await getApplicantByIrain(irain);
+  if (!applicant) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  if (applicant.record.archived !== 'true') {
+    return { success: false, reason: 'not_archived' };
+  }
+
+  try {
+    const result = await updateRowById(APPLICANT_SHEET_NAME, 'iRAIN', irain, {
+      Archived: '',
+      ArchivedAt: '',
+      ArchivedBy: '',
+    });
+
+    return { success: result.updated, reason: result.reason === 'not_found' ? 'not_found' : undefined };
+  } catch (error) {
+    console.error('Error restoring applicant', error);
+    return { success: false, reason: 'error' };
+  }
+}
+
+/**
+ * Restore an archived referrer (does NOT cascade restore applications).
+ */
+export async function restoreReferrerByIrref(
+  irref: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureColumns(REFERRER_SHEET_NAME, ARCHIVE_COLUMNS);
+
+  const referrer = await getReferrerByIrref(irref);
+  if (!referrer) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  if (referrer.record.archived !== 'true') {
+    return { success: false, reason: 'not_archived' };
+  }
+
+  try {
+    const result = await updateRowById(REFERRER_SHEET_NAME, 'iRREF', irref, {
+      Archived: '',
+      ArchivedAt: '',
+      ArchivedBy: '',
+    });
+
+    return { success: result.updated, reason: result.reason === 'not_found' ? 'not_found' : undefined };
+  } catch (error) {
+    console.error('Error restoring referrer', error);
+    return { success: false, reason: 'error' };
+  }
+}
+
+/**
+ * Restore an archived application.
+ */
+export async function restoreApplicationById(
+  id: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  await ensureColumns(APPLICATION_SHEET_NAME, ARCHIVE_COLUMNS);
+
+  const application = await getApplicationById(id);
+  if (!application) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  if (application.record.archived !== 'true') {
+    return { success: false, reason: 'not_archived' };
+  }
+
+  try {
+    const result = await updateRowById(APPLICATION_SHEET_NAME, 'ID', id, {
+      Archived: '',
+      ArchivedAt: '',
+      ArchivedBy: '',
+    });
+
+    return { success: result.updated, reason: result.reason === 'not_found' ? 'not_found' : undefined };
+  } catch (error) {
+    console.error('Error restoring application', error);
+    return { success: false, reason: 'error' };
+  }
+}
+
+// ============================================================================
+// Permanent Delete Functions (for archived records only)
+// ============================================================================
+
+/**
+ * Permanently delete an archived applicant (hard delete from sheet).
+ */
+export async function permanentlyDeleteApplicant(
+  irain: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+
+  const applicant = await getApplicantByIrain(irain);
+  if (!applicant) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  if (applicant.record.archived !== 'true') {
+    return { success: false, reason: 'not_archived' };
+  }
+
+  // Use the existing hard delete function
+  return deleteApplicantByIrain(irain);
+}
+
+/**
+ * Permanently delete an archived referrer (hard delete from sheet).
+ */
+export async function permanentlyDeleteReferrer(
+  irref: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+
+  const referrer = await getReferrerByIrref(irref);
+  if (!referrer) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  if (referrer.record.archived !== 'true') {
+    return { success: false, reason: 'not_archived' };
+  }
+
+  // Use the existing hard delete function
+  return deleteReferrerByIrref(irref);
+}
+
+/**
+ * Permanently delete an archived application (hard delete from sheet).
+ */
+export async function permanentlyDeleteApplication(
+  id: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+
+  const application = await getApplicationById(id);
+  if (!application) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  if (application.record.archived !== 'true') {
+    return { success: false, reason: 'not_archived' };
+  }
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  // Get the sheetId for the Applications sheet
+  const doc = await sheets.spreadsheets.get({ spreadsheetId });
+  const targetSheet = doc.data.sheets?.find(
+    (sheet) => sheet.properties?.title === APPLICATION_SHEET_NAME,
+  );
+  const sheetId = targetSheet?.properties?.sheetId;
+
+  if (sheetId === undefined) {
+    console.error(`Unable to find sheet "${APPLICATION_SHEET_NAME}" for deletion.`);
+    return { success: false, reason: 'error' };
+  }
+
+  try {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId,
+                dimension: 'ROWS',
+                startIndex: application.rowIndex - 1,
+                endIndex: application.rowIndex,
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error permanently deleting application', error);
     return { success: false, reason: 'error' };
   }
 }
