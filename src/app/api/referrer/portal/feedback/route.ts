@@ -22,7 +22,6 @@ import {
   infoRequestToApplicant,
   interviewCompletedToApplicant,
   jobOfferToApplicant,
-  buildReferrerEmailCc,
 } from '@/lib/emailTemplates';
 import { normalizeHttpUrl } from '@/lib/validation';
 import { escapeHtml } from '@/lib/validation';
@@ -314,8 +313,6 @@ export async function POST(request: NextRequest) {
   await updateApplicationAdmin(applicationId, patch);
 
   // Send emails
-  const cc = buildReferrerEmailCc(referrerEmail);
-
   if (applicantEmail) {
     try {
       let template;
@@ -415,7 +412,6 @@ export async function POST(request: NextRequest) {
       if (template) {
         await sendMail({
           to: applicantEmail,
-          cc,
           replyTo: referrerEmail || undefined,
           subject: template.subject,
           text: template.text,

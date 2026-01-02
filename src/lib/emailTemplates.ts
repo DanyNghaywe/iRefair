@@ -2297,12 +2297,3 @@ Please log in to your portal to review the updates.
 
   return { subject, text, html };
 }
-
-/**
- * Helper to build CC list for referrer-triggered emails to applicants.
- * Includes referrer email and founder email, filtering out empty values.
- */
-export function buildReferrerEmailCc(referrerEmail?: string): string[] {
-  const founderEmail = process.env.FOUNDER_EMAIL;
-  return [referrerEmail, founderEmail].filter((e): e is string => Boolean(e && e.trim()));
-}
