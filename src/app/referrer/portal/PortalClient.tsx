@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ActionBtn } from "@/components/ActionBtn";
 import { CenteredModal } from "@/components/CenteredModal";
@@ -87,6 +87,23 @@ const translations: Record<
     languageLabel: string;
     english: string;
     french: string;
+    expanded: {
+      countryOfOrigin: string;
+      languages: string;
+      location: string;
+      workAuthorization: string;
+      eligibleToMove: string;
+      industry: string;
+      employmentStatus: string;
+      inCanada: string;
+      outsideCanada: string;
+      yes: string;
+      no: string;
+      employed: string;
+      notEmployed: string;
+      tempWork: string;
+      notProvided: string;
+    };
   }
 > = {
   en: {
@@ -212,6 +229,23 @@ const translations: Record<
     languageLabel: "Language",
     english: "English",
     french: "Français",
+    expanded: {
+      countryOfOrigin: "Country of Origin",
+      languages: "Languages",
+      location: "Location",
+      workAuthorization: "Work Authorization",
+      eligibleToMove: "Eligible to Move",
+      industry: "Industry",
+      employmentStatus: "Employment Status",
+      inCanada: "In Canada",
+      outsideCanada: "Outside Canada",
+      yes: "Yes",
+      no: "No",
+      employed: "Currently Employed",
+      notEmployed: "Not Employed",
+      tempWork: "Temporary Work",
+      notProvided: "Not provided",
+    },
   },
   fr: {
     header: {
@@ -336,6 +370,23 @@ const translations: Record<
     languageLabel: "Langue",
     english: "English",
     french: "Français",
+    expanded: {
+      countryOfOrigin: "Pays d'origine",
+      languages: "Langues",
+      location: "Emplacement",
+      workAuthorization: "Autorisation de travail",
+      eligibleToMove: "Éligible à déménager",
+      industry: "Secteur",
+      employmentStatus: "Statut d'emploi",
+      inCanada: "Au Canada",
+      outsideCanada: "Hors du Canada",
+      yes: "Oui",
+      no: "Non",
+      employed: "Actuellement employé",
+      notEmployed: "Sans emploi",
+      tempWork: "Travail temporaire",
+      notProvided: "Non fourni",
+    },
   },
 };
 
@@ -355,6 +406,17 @@ type PortalItem = {
   meetingTime?: string;
   meetingTimezone?: string;
   meetingUrl?: string;
+  // Additional applicant details for expanded view
+  countryOfOrigin?: string;
+  languages?: string;
+  languagesOther?: string;
+  locatedCanada?: string;
+  province?: string;
+  authorizedCanada?: string;
+  eligibleMoveCanada?: string;
+  industryType?: string;
+  industryOther?: string;
+  employmentStatus?: string;
 };
 
 type PortalResponse = {
@@ -464,6 +526,21 @@ export default function PortalClient() {
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
   const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Expanded rows state
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  const toggleRowExpanded = useCallback((itemId: string) => {
+    setExpandedRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(itemId)) {
+        next.delete(itemId);
+      } else {
+        next.add(itemId);
+      }
+      return next;
+    });
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -920,106 +997,213 @@ export default function PortalClient() {
                       const normalizedStatus = item.status?.toLowerCase().trim() || "new";
                       const hasMeeting = normalizedStatus === "meeting scheduled" && item.meetingDate;
                       const needsReschedule = normalizedStatus === "needs reschedule";
+                      const isExpanded = expandedRows.has(item.id);
+
+                      // Format display values for expanded content
+                      const formatLocation = () => {
+                        if (item.locatedCanada?.toLowerCase() === "yes") {
+                          return item.province ? `${t.expanded.inCanada} (${item.province})` : t.expanded.inCanada;
+                        }
+                        return t.expanded.outsideCanada;
+                      };
+
+                      const formatLanguages = () => {
+                        const langs = item.languages || "";
+                        const other = item.languagesOther || "";
+                        if (!langs && !other) return t.expanded.notProvided;
+                        return other ? `${langs}, ${other}` : langs;
+                      };
+
+                      const formatIndustry = () => {
+                        const industry = item.industryType || "";
+                        const other = item.industryOther || "";
+                        if (!industry) return t.expanded.notProvided;
+                        return industry.toLowerCase() === "other" && other ? other : industry;
+                      };
+
+                      const formatEmployment = () => {
+                        const status = item.employmentStatus?.toLowerCase() || "";
+                        if (status === "yes") return t.expanded.employed;
+                        if (status === "no") return t.expanded.notEmployed;
+                        if (status === "temp" || status === "temporary") return t.expanded.tempWork;
+                        return item.employmentStatus || t.expanded.notProvided;
+                      };
+
+                      const formatWorkAuth = () => {
+                        if (item.locatedCanada?.toLowerCase() === "yes") {
+                          const auth = item.authorizedCanada?.toLowerCase();
+                          if (auth === "yes") return t.expanded.yes;
+                          if (auth === "no") return t.expanded.no;
+                          return item.authorizedCanada || t.expanded.notProvided;
+                        } else {
+                          const eligible = item.eligibleMoveCanada?.toLowerCase();
+                          if (eligible === "yes") return t.expanded.yes;
+                          if (eligible === "no") return t.expanded.no;
+                          return item.eligibleMoveCanada || t.expanded.notProvided;
+                        }
+                      };
 
                       return (
-                        <tr key={item.id}>
-                          <td className="portal-col-candidate">
-                            <div className="portal-cell-title">{item.applicantName || item.applicantId}</div>
-                            <div className="portal-cell-sub">{item.applicantEmail}</div>
-                            <div className="portal-cell-sub">{item.applicantPhone}</div>
-                          </td>
-                          <td className="portal-col-position">
-                            <div className="portal-cell-title">{item.position}</div>
-                            <div className="portal-cell-sub">{t.table.iRCRN}: {item.iCrn || "-"}</div>
-                          </td>
-                          <td className="portal-col-cv">
-                            {item.resumeDownloadUrl ? (
-                              <a href={item.resumeDownloadUrl} target="_blank" rel="noreferrer" className="portal-link">
-                                {t.table.downloadCv}
-                              </a>
-                            ) : (
-                              <span className="portal-muted">{t.table.noCv}</span>
-                            )}
-                          </td>
-                          <td className="portal-col-status">
-                            <StatusBadge status={item.status} statusLabels={t.statuses} />
-                            {hasMeeting && (
-                              <div className="portal-meeting-info">
-                                <span className="portal-meeting-date">
-                                  {formatMeetingDisplay(item.meetingDate, item.meetingTime, item.meetingTimezone)}
-                                </span>
-                                {item.meetingUrl && (
-                                  <a
-                                    href={item.meetingUrl}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="portal-meeting-link"
-                                  >
-                                    {t.join}
-                                  </a>
-                                )}
-                              </div>
-                            )}
-                            {needsReschedule && (
-                              <div className="portal-reschedule-warning">
-                                {t.reschedule}
-                              </div>
-                            )}
-                          </td>
-                          <td className="portal-col-actions">
-                            <div className="portal-dropdown">
-                              <ActionBtn
-                                size="sm"
-                                variant="ghost"
-                                className="portal-dropdown-trigger"
-                                onClick={(e) => handleDropdownToggle(item.id, e)}
-                                aria-expanded={openDropdown === item.id}
-                                aria-haspopup="menu"
-                              >
-                                {t.table.actions}
+                        <React.Fragment key={item.id}>
+                          <tr
+                            className={`portal-row-expandable ${isExpanded ? "portal-row-expanded" : ""}`}
+                            onClick={() => toggleRowExpanded(item.id)}
+                            style={{ cursor: "pointer" }}
+                          >
+                            <td className="portal-col-candidate">
+                              <div className="portal-cell-expand-wrapper">
                                 <svg
-                                  width="12"
-                                  height="12"
+                                  className={`portal-expand-icon ${isExpanded ? "portal-expand-icon--open" : ""}`}
+                                  width="16"
+                                  height="16"
                                   viewBox="0 0 24 24"
                                   fill="none"
                                   stroke="currentColor"
                                   strokeWidth="2"
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
-                                  style={{ marginLeft: 4 }}
                                 >
-                                  <polyline points="6 9 12 15 18 9" />
+                                  <polyline points="9 18 15 12 9 6" />
                                 </svg>
-                              </ActionBtn>
-                              {openDropdown === item.id && dropdownPosition && (
-                                <div
-                                  className="portal-dropdown-menu portal-dropdown-menu--fixed"
-                                  role="menu"
-                                  style={{
-                                    top: dropdownPosition.top,
-                                    left: dropdownPosition.left,
-                                  }}
-                                >
-                                  {ACTIONS.map((action) => {
-                                    const enabled = isActionEnabled(action, item.status);
-                                    return (
-                                      <button
-                                        key={action.code}
-                                        type="button"
-                                        className={`portal-dropdown-item ${!enabled ? "portal-dropdown-item--disabled" : ""}`}
-                                        onClick={() => enabled && openModal(item, action.code)}
-                                        disabled={!enabled}
-                                        role="menuitem"
-                                      >
-                                        {t.actionLabels[action.code]}
-                                      </button>
-                                    );
-                                  })}
+                                <div>
+                                  <div className="portal-cell-title">{item.applicantName || item.applicantId}</div>
+                                  <div className="portal-cell-sub">{item.applicantEmail}</div>
+                                  <div className="portal-cell-sub">{item.applicantPhone}</div>
+                                </div>
+                              </div>
+                            </td>
+                            <td className="portal-col-position">
+                              <div className="portal-cell-title">{item.position}</div>
+                              <div className="portal-cell-sub">{t.table.iRCRN}: {item.iCrn || "-"}</div>
+                            </td>
+                            <td className="portal-col-cv" onClick={(e) => e.stopPropagation()}>
+                              {item.resumeDownloadUrl ? (
+                                <a href={item.resumeDownloadUrl} target="_blank" rel="noreferrer" className="portal-link">
+                                  {t.table.downloadCv}
+                                </a>
+                              ) : (
+                                <span className="portal-muted">{t.table.noCv}</span>
+                              )}
+                            </td>
+                            <td className="portal-col-status">
+                              <StatusBadge status={item.status} statusLabels={t.statuses} />
+                              {hasMeeting && (
+                                <div className="portal-meeting-info">
+                                  <span className="portal-meeting-date">
+                                    {formatMeetingDisplay(item.meetingDate, item.meetingTime, item.meetingTimezone)}
+                                  </span>
+                                  {item.meetingUrl && (
+                                    <a
+                                      href={item.meetingUrl}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="portal-meeting-link"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      {t.join}
+                                    </a>
+                                  )}
                                 </div>
                               )}
-                            </div>
-                          </td>
-                        </tr>
+                              {needsReschedule && (
+                                <div className="portal-reschedule-warning">
+                                  {t.reschedule}
+                                </div>
+                              )}
+                            </td>
+                            <td className="portal-col-actions" onClick={(e) => e.stopPropagation()}>
+                              <div className="portal-dropdown">
+                                <ActionBtn
+                                  size="sm"
+                                  variant="ghost"
+                                  className="portal-dropdown-trigger"
+                                  onClick={(e) => handleDropdownToggle(item.id, e)}
+                                  aria-expanded={openDropdown === item.id}
+                                  aria-haspopup="menu"
+                                >
+                                  {t.table.actions}
+                                  <svg
+                                    width="12"
+                                    height="12"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    style={{ marginLeft: 4 }}
+                                  >
+                                    <polyline points="6 9 12 15 18 9" />
+                                  </svg>
+                                </ActionBtn>
+                                {openDropdown === item.id && dropdownPosition && (
+                                  <div
+                                    className="portal-dropdown-menu portal-dropdown-menu--fixed"
+                                    role="menu"
+                                    style={{
+                                      top: dropdownPosition.top,
+                                      left: dropdownPosition.left,
+                                    }}
+                                  >
+                                    {ACTIONS.map((action) => {
+                                      const enabled = isActionEnabled(action, item.status);
+                                      return (
+                                        <button
+                                          key={action.code}
+                                          type="button"
+                                          className={`portal-dropdown-item ${!enabled ? "portal-dropdown-item--disabled" : ""}`}
+                                          onClick={() => enabled && openModal(item, action.code)}
+                                          disabled={!enabled}
+                                          role="menuitem"
+                                        >
+                                          {t.actionLabels[action.code]}
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr className="portal-expanded-row">
+                              <td colSpan={5}>
+                                <div className="portal-expanded-content">
+                                  <div className="portal-detail-grid">
+                                    <div className="portal-detail-item">
+                                      <span className="portal-detail-label">{t.expanded.countryOfOrigin}</span>
+                                      <span className="portal-detail-value">{item.countryOfOrigin || t.expanded.notProvided}</span>
+                                    </div>
+                                    <div className="portal-detail-item">
+                                      <span className="portal-detail-label">{t.expanded.languages}</span>
+                                      <span className="portal-detail-value">{formatLanguages()}</span>
+                                    </div>
+                                    <div className="portal-detail-item">
+                                      <span className="portal-detail-label">{t.expanded.industry}</span>
+                                      <span className="portal-detail-value">{formatIndustry()}</span>
+                                    </div>
+                                    <div className="portal-detail-item">
+                                      <span className="portal-detail-label">{t.expanded.location}</span>
+                                      <span className="portal-detail-value">{formatLocation()}</span>
+                                    </div>
+                                    <div className="portal-detail-item">
+                                      <span className="portal-detail-label">
+                                        {item.locatedCanada?.toLowerCase() === "yes"
+                                          ? t.expanded.workAuthorization
+                                          : t.expanded.eligibleToMove}
+                                      </span>
+                                      <span className="portal-detail-value">{formatWorkAuth()}</span>
+                                    </div>
+                                    <div className="portal-detail-item">
+                                      <span className="portal-detail-label">{t.expanded.employmentStatus}</span>
+                                      <span className="portal-detail-value">{formatEmployment()}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
                       );
                     })
                   )}

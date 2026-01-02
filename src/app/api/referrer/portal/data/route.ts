@@ -35,6 +35,17 @@ async function buildItems(referrerIrref: string) {
         meetingTime: app.meetingTime || '',
         meetingTimezone: app.meetingTimezone || '',
         meetingUrl: app.meetingUrl || '',
+        // Additional applicant details for expanded view
+        countryOfOrigin: applicant?.record.countryOfOrigin || '',
+        languages: applicant?.record.languages || '',
+        languagesOther: applicant?.record.languagesOther || '',
+        locatedCanada: applicant?.record.locatedCanada || '',
+        province: applicant?.record.province || '',
+        authorizedCanada: applicant?.record.authorizedCanada || '',
+        eligibleMoveCanada: applicant?.record.eligibleMoveCanada || '',
+        industryType: applicant?.record.industryType || '',
+        industryOther: applicant?.record.industryOther || '',
+        employmentStatus: applicant?.record.employmentStatus || '',
       };
     }),
   );
