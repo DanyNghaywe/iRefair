@@ -3034,6 +3034,59 @@ export async function deleteReferrerByIrref(
   }
 }
 
+export async function deleteApplicantByIrain(
+  irain: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'error' }> {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+
+  const applicant = await getApplicantByIrain(irain);
+  if (!applicant) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  // Get the sheetId for the Applicants sheet
+  const doc = await sheets.spreadsheets.get({ spreadsheetId });
+  const targetSheet = doc.data.sheets?.find(
+    (sheet) => sheet.properties?.title === APPLICANT_SHEET_NAME,
+  );
+  const sheetId = targetSheet?.properties?.sheetId;
+
+  if (sheetId === undefined) {
+    console.error(`Unable to find sheet "${APPLICANT_SHEET_NAME}" for deletion.`);
+    return { success: false, reason: 'error' };
+  }
+
+  try {
+    // Delete the row using batchUpdate with deleteDimension
+    // rowIndex is 1-indexed, but the API uses 0-indexed startIndex
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId,
+                dimension: 'ROWS',
+                startIndex: applicant.rowIndex - 1, // Convert to 0-indexed
+                endIndex: applicant.rowIndex, // End is exclusive
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting applicant row', error);
+    return { success: false, reason: 'error' };
+  }
+}
+
 export async function getMatchById(matchId: string) {
   await ensureHeaders(MATCH_SHEET_NAME, MATCH_HEADERS);
   const spreadsheetId = getSpreadsheetIdOrThrow();

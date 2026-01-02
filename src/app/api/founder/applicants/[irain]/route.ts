@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
-import { getApplicantByIrain, updateApplicantFields } from '@/lib/sheets';
+import { deleteApplicantByIrain, getApplicantByIrain, updateApplicantFields } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -109,6 +109,36 @@ export async function PATCH(
     console.error('Error updating applicant admin fields', error);
     return NextResponse.json(
       { ok: false, error: 'Unable to update applicant.' },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ irain: string }> },
+) {
+  const params = await context.params;
+
+  try {
+    requireFounder(request);
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const result = await deleteApplicantByIrain(params.irain);
+    if (!result.success) {
+      if (result.reason === 'not_found') {
+        return NextResponse.json({ ok: false, error: 'Applicant not found' }, { status: 404 });
+      }
+      return NextResponse.json({ ok: false, error: 'Unable to delete applicant.' }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error('Error deleting applicant', error);
+    return NextResponse.json(
+      { ok: false, error: 'Unable to delete applicant.' },
       { status: 500 },
     );
   }

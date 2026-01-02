@@ -2,7 +2,7 @@
 
 import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
 import { AutosaveHint } from "@/components/founder/AutosaveHint";
@@ -121,6 +121,7 @@ export default function CandidateReviewPage() {
   const cleanIrain = typeof irain === "string" ? irain.trim() : "";
   const searchParams = useSearchParams();
   const initialEdit = searchParams?.get("edit") === "1";
+  const router = useRouter();
 
   const [candidate, setCandidate] = useState<CandidateRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -151,6 +152,8 @@ export default function CandidateReviewPage() {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [applications, setApplications] = useState<ApplicationRecord[]>([]);
   const [appsLoading, setAppsLoading] = useState(false);
   const skipAutosaveRef = useRef(true);
@@ -420,6 +423,34 @@ export default function CandidateReviewPage() {
     if (!candidate) return;
     await patchCandidate({ status: "reviewed" });
     setStatus("reviewed");
+  };
+
+  const handleDelete = async () => {
+    if (!candidate || deleteLoading) return;
+    setDeleteLoading(true);
+    setActionMessage(null);
+    setActionError(null);
+
+    try {
+      const response = await fetch(
+        `/api/founder/applicants/${encodeURIComponent(candidate.irain)}`,
+        { method: "DELETE" },
+      );
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data?.ok) {
+        setActionError(data?.error || "Unable to delete applicant.");
+        setDeleteConfirm(false);
+      } else {
+        router.push("/founder/applicants");
+      }
+    } catch (error) {
+      console.error("Delete applicant failed", error);
+      setActionError("Unable to delete applicant.");
+      setDeleteConfirm(false);
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   const handleResumeFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
@@ -1116,6 +1147,34 @@ export default function CandidateReviewPage() {
                 >
                   {actionLoading ? "Sending..." : "Request updated resume"}
                 </ActionBtn>
+                {deleteConfirm ? (
+                  <>
+                    <ActionBtn
+                      as="button"
+                      className="action-btn--danger"
+                      onClick={handleDelete}
+                      disabled={deleteLoading}
+                    >
+                      {deleteLoading ? "Deleting..." : "Confirm delete"}
+                    </ActionBtn>
+                    <ActionBtn
+                      as="button"
+                      variant="ghost"
+                      onClick={() => setDeleteConfirm(false)}
+                      disabled={deleteLoading}
+                    >
+                      Cancel
+                    </ActionBtn>
+                  </>
+                ) : (
+                  <ActionBtn
+                    as="button"
+                    variant="ghost"
+                    onClick={() => setDeleteConfirm(true)}
+                  >
+                    Delete applicant
+                  </ActionBtn>
+                )}
               </div>
               <div>
                 <AutosaveHint saving={saving} />
