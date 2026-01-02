@@ -1052,6 +1052,17 @@ body:has(.board--transparent) {
   color: #ffe3dc;
 }
 
+/* Danger button modifier */
+.action-btn--danger {
+  color: #f87171 !important;
+  border-color: rgba(248, 113, 113, 0.4) !important;
+}
+
+.action-btn--danger:hover {
+  background: rgba(248, 113, 113, 0.15) !important;
+  border-color: rgba(248, 113, 113, 0.6) !important;
+}
+
 .status-icon {
   display: none;
 }

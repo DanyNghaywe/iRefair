@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import Link from "next/link";
 
@@ -271,8 +271,11 @@ export default function ReferrerReviewPage() {
   const [portalMessage, setPortalMessage] = useState<string | null>(null);
   const [portalError, setPortalError] = useState<string | null>(null);
   const [rejectConfirm, setRejectConfirm] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [pendingUpdateLoading, setPendingUpdateLoading] = useState<string | null>(null);
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
+  const router = useRouter();
   const [appsLoading, setAppsLoading] = useState(false);
   const skipAutosaveRef = useRef(true);
 
@@ -617,6 +620,32 @@ export default function ReferrerReviewPage() {
       setActionError("Unable to process update.");
     } finally {
       setPendingUpdateLoading(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!referrer || deleteLoading) return;
+    setDeleteLoading(true);
+    setActionMessage(null);
+    setActionError(null);
+    try {
+      const response = await fetch(
+        `/api/founder/referrers/${encodeURIComponent(referrer.irref)}`,
+        { method: "DELETE" },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.ok) {
+        setActionError(data?.error || "Unable to delete referrer.");
+        setDeleteConfirm(false);
+      } else {
+        router.push("/founder/referrers");
+      }
+    } catch (error) {
+      console.error("Delete referrer failed", error);
+      setActionError("Unable to delete referrer.");
+      setDeleteConfirm(false);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -1118,6 +1147,40 @@ export default function ReferrerReviewPage() {
                         disabled={!referrer || approvalLoading}
                       >
                         Reject
+                      </ActionBtn>
+                    )}
+                  </>
+                )}
+                {approvalValue !== "pending" && (
+                  <>
+                    {deleteConfirm ? (
+                      <>
+                        <ActionBtn
+                          as="button"
+                          variant="ghost"
+                          onClick={handleDelete}
+                          disabled={!referrer || deleteLoading}
+                          className="action-btn--danger"
+                        >
+                          {deleteLoading ? "Deleting..." : "Confirm delete"}
+                        </ActionBtn>
+                        <ActionBtn
+                          as="button"
+                          variant="ghost"
+                          onClick={() => setDeleteConfirm(false)}
+                          disabled={deleteLoading}
+                        >
+                          Cancel
+                        </ActionBtn>
+                      </>
+                    ) : (
+                      <ActionBtn
+                        as="button"
+                        variant="ghost"
+                        onClick={() => setDeleteConfirm(true)}
+                        disabled={!referrer || deleteLoading}
+                      >
+                        Delete referrer
                       </ActionBtn>
                     )}
                   </>
