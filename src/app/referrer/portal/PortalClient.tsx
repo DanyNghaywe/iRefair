@@ -497,7 +497,7 @@ const STATUS_VARIANTS: Record<string, "info" | "success" | "warning" | "error" |
 };
 
 const ACTIONS: ActionConfig[] = [
-  { code: "SCHEDULE_MEETING", disabledStatuses: ["hired", "not a good fit", "cv mismatch"] },
+  { code: "SCHEDULE_MEETING", disabledStatuses: ["hired", "not a good fit", "cv mismatch", "meeting scheduled"] },
   { code: "CANCEL_MEETING", enabledStatuses: ["meeting scheduled"] },
   { code: "REJECT", disabledStatuses: ["hired", "not a good fit", "cv mismatch"] },
   { code: "RESCIND_REJECTION", enabledStatuses: ["not a good fit", "cv mismatch"] },
