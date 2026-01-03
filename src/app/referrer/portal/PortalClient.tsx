@@ -4,9 +4,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 
 import { ActionBtn } from "@/components/ActionBtn";
 import { CenteredModal } from "@/components/CenteredModal";
+import { DatePicker } from "@/components/DatePicker";
 import { EmptyState } from "@/components/founder/EmptyState";
 import { Skeleton, SkeletonPortalRows, SkeletonStack } from "@/components/founder/Skeleton";
 import { useLanguage } from "@/components/LanguageProvider";
+import { Select } from "@/components/Select";
+import { TimePicker } from "@/components/TimePicker";
 import { useToast } from "@/components/Toast";
 
 type Language = "en" | "fr";
@@ -505,20 +508,20 @@ const ACTIONS: ActionConfig[] = [
   { code: "OFFER_JOB", enabledStatuses: ["interviewed"] },
 ];
 
-const TIMEZONES = [
-  "America/Toronto",
-  "America/Vancouver",
-  "America/Edmonton",
-  "America/Winnipeg",
-  "America/Halifax",
-  "America/St_Johns",
-  "America/New_York",
-  "America/Chicago",
-  "America/Denver",
-  "America/Los_Angeles",
-  "Europe/London",
-  "Europe/Paris",
-  "UTC",
+const TIMEZONE_OPTIONS = [
+  { value: "America/Toronto", label: "Toronto (EST)" },
+  { value: "America/Vancouver", label: "Vancouver (PST)" },
+  { value: "America/Edmonton", label: "Edmonton (MST)" },
+  { value: "America/Winnipeg", label: "Winnipeg (CST)" },
+  { value: "America/Halifax", label: "Halifax (AST)" },
+  { value: "America/St_Johns", label: "St. John's (NST)" },
+  { value: "America/New_York", label: "New York (EST)" },
+  { value: "America/Chicago", label: "Chicago (CST)" },
+  { value: "America/Denver", label: "Denver (MST)" },
+  { value: "America/Los_Angeles", label: "Los Angeles (PST)" },
+  { value: "Europe/London", label: "London (GMT)" },
+  { value: "Europe/Paris", label: "Paris (CET)" },
+  { value: "UTC", label: "UTC" },
 ];
 
 function StatusBadge({ status, statusLabels }: { status: string; statusLabels: Record<string, string> }) {
@@ -1416,38 +1419,43 @@ export default function PortalClient() {
               <div className="portal-modal-fields">
                 <div className="portal-modal-field">
                   <label htmlFor="meeting-date">{t.modal.date} *</label>
-                  <input
+                  <DatePicker
                     id="meeting-date"
-                    type="date"
                     value={meetingDate}
-                    onChange={(e) => setMeetingDate(e.target.value)}
+                    onChange={setMeetingDate}
                     required
+                    placeholder={language === "fr" ? "Choisir une date" : "Select date"}
+                    minDate={new Date().toISOString().split("T")[0]}
+                    locale={language}
                   />
                 </div>
                 <div className="portal-modal-field">
                   <label htmlFor="meeting-time">{t.modal.time} *</label>
-                  <input
+                  <TimePicker
                     id="meeting-time"
-                    type="time"
                     value={meetingTime}
-                    onChange={(e) => setMeetingTime(e.target.value)}
+                    onChange={setMeetingTime}
                     required
+                    placeholder={language === "fr" ? "Choisir l'heure" : "Select time"}
+                    interval={30}
+                    minTime="08:00"
+                    maxTime="20:00"
+                    locale={language}
                   />
                 </div>
-                <div className="portal-modal-field">
+                <div className="portal-modal-field portal-modal-field--full">
                   <label htmlFor="meeting-timezone">{t.modal.timezone} *</label>
-                  <select
-                    id="meeting-timezone"
-                    value={meetingTimezone}
-                    onChange={(e) => setMeetingTimezone(e.target.value)}
-                    required
-                  >
-                    {TIMEZONES.map((tz) => (
-                      <option key={tz} value={tz}>
-                        {tz.replace("_", " ")}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="portal-select-wrapper">
+                    <Select
+                      id="meeting-timezone"
+                      name="meeting-timezone"
+                      options={TIMEZONE_OPTIONS}
+                      value={meetingTimezone}
+                      onChange={(val) => setMeetingTimezone(val as string)}
+                      required
+                      placeholder={language === "fr" ? "Choisir le fuseau" : "Select timezone"}
+                    />
+                  </div>
                 </div>
                 <div className="portal-modal-field portal-modal-field--full">
                   <label htmlFor="meeting-url">{t.modal.meetingUrl}</label>
