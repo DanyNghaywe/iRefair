@@ -467,6 +467,8 @@
   right: auto;
   z-index: 9999;
   margin-top: 0;
+  max-height: calc(100vh - 100px);
+  overflow-y: auto;
 }
 
 .portal-dropdown-item {
@@ -792,4 +794,108 @@
   .portal-expanded-content {
     padding-left: 20px;
   }
+}
+
+/* Sortable columns */
+.portal-col-sortable {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease;
+}
+
+.portal-col-sortable:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+
+.portal-th-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.portal-sort-icon {
+  opacity: 0.3;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  flex-shrink: 0;
+}
+
+.portal-col-sortable:hover .portal-sort-icon {
+  opacity: 0.5;
+}
+
+.portal-sort-icon--active {
+  opacity: 1 !important;
+}
+
+.portal-sort-icon--desc {
+  transform: rotate(180deg);
+}
+
+/* Action history timeline */
+.portal-history {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.portal-history-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #64748b;
+  margin: 0 0 12px;
+}
+
+.portal-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.portal-timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 13px;
+  color: #475569;
+}
+
+.portal-timeline-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #94a3b8;
+  margin-top: 5px;
+  flex-shrink: 0;
+}
+
+.portal-timeline-item:first-child .portal-timeline-dot {
+  background-color: #3b82f6;
+}
+
+.portal-timeline-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.portal-timeline-action {
+  font-weight: 500;
+  color: #1e293b;
+}
+
+.portal-timeline-meta {
+  font-size: 12px;
+  color: #94a3b8;
+  margin-top: 2px;
+}
+
+.portal-timeline-notes {
+  font-size: 12px;
+  color: #64748b;
+  font-style: italic;
+  margin-top: 4px;
 }

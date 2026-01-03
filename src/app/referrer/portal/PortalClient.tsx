@@ -104,6 +104,11 @@ const translations: Record<
       tempWork: string;
       notProvided: string;
     };
+    history: {
+      title: string;
+      noHistory: string;
+      by: string;
+    };
   }
 > = {
   en: {
@@ -148,6 +153,7 @@ const translations: Record<
       SCHEDULE_MEETING: "Schedule Meeting",
       CANCEL_MEETING: "Cancel Meeting",
       REJECT: "Not a Good Fit",
+      RESCIND_REJECTION: "Rescind Rejection",
       CV_MISMATCH: "CV Doesn't Match",
       REQUEST_CV_UPDATE: "Request CV Update",
       REQUEST_INFO: "Missing Information",
@@ -158,6 +164,7 @@ const translations: Record<
       SCHEDULE_MEETING: "Schedule Meeting",
       CANCEL_MEETING: "Cancel Meeting",
       REJECT: "Not a Good Fit",
+      RESCIND_REJECTION: "Rescind Rejection",
       CV_MISMATCH: "CV Doesn't Match",
       REQUEST_CV_UPDATE: "Request CV Update",
       REQUEST_INFO: "Request Information",
@@ -169,6 +176,7 @@ const translations: Record<
       SCHEDULE_MEETING: "Schedule a meeting with this candidate. They will receive an email with the details.",
       CANCEL_MEETING: "Cancel the scheduled meeting. The candidate will be notified.",
       REJECT: "Mark this candidate as not a good fit. They will receive a polite rejection email.",
+      RESCIND_REJECTION: "Undo the rejection and give this candidate another chance. Their status will be reset to New.",
       CV_MISMATCH: "The CV doesn't match your requirements. The candidate will receive feedback.",
       REQUEST_CV_UPDATE: "Request the candidate to update their CV. They will receive a link to make changes.",
       REQUEST_INFO: "Request additional information from the candidate.",
@@ -179,6 +187,7 @@ const translations: Record<
       SCHEDULE_MEETING: "Meeting scheduled and candidate notified.",
       CANCEL_MEETING: "Meeting cancelled and candidate notified.",
       REJECT: "Candidate marked as not a good fit.",
+      RESCIND_REJECTION: "Rejection rescinded. Candidate is back under consideration.",
       CV_MISMATCH: "CV feedback sent to candidate.",
       REQUEST_CV_UPDATE: "CV update request sent to candidate.",
       REQUEST_INFO: "Information request sent to candidate.",
@@ -246,6 +255,11 @@ const translations: Record<
       tempWork: "Temporary Work",
       notProvided: "Not provided",
     },
+    history: {
+      title: "Activity History",
+      noHistory: "No activity recorded yet",
+      by: "by",
+    },
   },
   fr: {
     header: {
@@ -289,6 +303,7 @@ const translations: Record<
       SCHEDULE_MEETING: "Planifier une réunion",
       CANCEL_MEETING: "Annuler la réunion",
       REJECT: "Profil non retenu",
+      RESCIND_REJECTION: "Annuler le refus",
       CV_MISMATCH: "CV non conforme",
       REQUEST_CV_UPDATE: "Demander mise à jour CV",
       REQUEST_INFO: "Informations manquantes",
@@ -299,6 +314,7 @@ const translations: Record<
       SCHEDULE_MEETING: "Planifier une réunion",
       CANCEL_MEETING: "Annuler la réunion",
       REJECT: "Profil non retenu",
+      RESCIND_REJECTION: "Annuler le refus",
       CV_MISMATCH: "CV non conforme",
       REQUEST_CV_UPDATE: "Demander mise à jour CV",
       REQUEST_INFO: "Demander des informations",
@@ -310,6 +326,7 @@ const translations: Record<
       SCHEDULE_MEETING: "Planifiez une réunion avec ce candidat. Il recevra un e-mail avec les détails.",
       CANCEL_MEETING: "Annulez la réunion prévue. Le candidat sera informé.",
       REJECT: "Marquez ce candidat comme non retenu. Il recevra un e-mail de refus courtois.",
+      RESCIND_REJECTION: "Annulez le refus et donnez une autre chance à ce candidat. Son statut sera réinitialisé à Nouveau.",
       CV_MISMATCH: "Le CV ne correspond pas à vos exigences. Le candidat recevra un retour.",
       REQUEST_CV_UPDATE: "Demandez au candidat de mettre à jour son CV. Il recevra un lien pour effectuer les modifications.",
       REQUEST_INFO: "Demandez des informations supplémentaires au candidat.",
@@ -320,6 +337,7 @@ const translations: Record<
       SCHEDULE_MEETING: "Réunion planifiée et candidat informé.",
       CANCEL_MEETING: "Réunion annulée et candidat informé.",
       REJECT: "Candidat marqué comme non retenu.",
+      RESCIND_REJECTION: "Refus annulé. Le candidat est de nouveau pris en considération.",
       CV_MISMATCH: "Retour sur le CV envoyé au candidat.",
       REQUEST_CV_UPDATE: "Demande de mise à jour du CV envoyée au candidat.",
       REQUEST_INFO: "Demande d'informations envoyée au candidat.",
@@ -387,6 +405,11 @@ const translations: Record<
       tempWork: "Travail temporaire",
       notProvided: "Non fourni",
     },
+    history: {
+      title: "Historique des activités",
+      noHistory: "Aucune activité enregistrée",
+      by: "par",
+    },
   },
 };
 
@@ -417,6 +440,20 @@ type PortalItem = {
   industryType?: string;
   industryOther?: string;
   employmentStatus?: string;
+  // Action history
+  actionHistory?: Array<{
+    action: string;
+    timestamp: string;
+    performedBy: string;
+    performedByEmail?: string;
+    notes?: string;
+    meetingDetails?: {
+      date: string;
+      time: string;
+      timezone: string;
+      url: string;
+    };
+  }>;
 };
 
 type PortalResponse = {
@@ -430,6 +467,7 @@ type FeedbackAction =
   | "SCHEDULE_MEETING"
   | "CANCEL_MEETING"
   | "REJECT"
+  | "RESCIND_REJECTION"
   | "CV_MISMATCH"
   | "REQUEST_CV_UPDATE"
   | "REQUEST_INFO"
@@ -456,12 +494,13 @@ const STATUS_VARIANTS: Record<string, "info" | "success" | "warning" | "error" |
 };
 
 const ACTIONS: ActionConfig[] = [
-  { code: "SCHEDULE_MEETING" },
+  { code: "SCHEDULE_MEETING", disabledStatuses: ["hired", "not a good fit", "cv mismatch"] },
   { code: "CANCEL_MEETING", enabledStatuses: ["meeting scheduled"] },
-  { code: "REJECT", disabledStatuses: ["hired"] },
-  { code: "CV_MISMATCH", disabledStatuses: ["hired"] },
-  { code: "REQUEST_CV_UPDATE", disabledStatuses: ["hired"] },
-  { code: "REQUEST_INFO", disabledStatuses: ["hired"] },
+  { code: "REJECT", disabledStatuses: ["hired", "not a good fit", "cv mismatch"] },
+  { code: "RESCIND_REJECTION", enabledStatuses: ["not a good fit", "cv mismatch"] },
+  { code: "CV_MISMATCH", disabledStatuses: ["hired", "not a good fit", "cv mismatch"] },
+  { code: "REQUEST_CV_UPDATE", disabledStatuses: ["hired", "not a good fit", "cv mismatch"] },
+  { code: "REQUEST_INFO", disabledStatuses: ["hired", "not a good fit", "cv mismatch"] },
   { code: "MARK_INTERVIEWED", enabledStatuses: ["meeting scheduled", "meeting requested"] },
   { code: "OFFER_JOB", enabledStatuses: ["interviewed"] },
 ];
@@ -524,11 +563,26 @@ export default function PortalClient() {
 
   // Dropdown state
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number } | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{ top?: number | "auto"; bottom?: number | "auto"; left: number } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Expanded rows state
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  // Sorting state
+  type SortColumn = "candidate" | "position" | "status";
+  type SortDirection = "asc" | "desc";
+  const [sortColumn, setSortColumn] = useState<SortColumn>("candidate");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
+  const handleSort = useCallback((column: SortColumn) => {
+    if (sortColumn === column) {
+      setSortDirection((prev) => (prev === "asc" ? "desc" : "asc"));
+    } else {
+      setSortColumn(column);
+      setSortDirection("asc");
+    }
+  }, [sortColumn]);
 
   const toggleRowExpanded = useCallback((itemId: string) => {
     setExpandedRows((prev) => {
@@ -613,7 +667,7 @@ export default function PortalClient() {
   }, []);
 
   // Handle dropdown toggle with position calculation
-  const handleDropdownToggle = (itemId: string, event: React.MouseEvent<HTMLButtonElement>) => {
+  const handleDropdownToggle = (itemId: string, event: React.MouseEvent<HTMLButtonElement>, itemStatus: string) => {
     if (openDropdown === itemId) {
       setOpenDropdown(null);
       setDropdownPosition(null);
@@ -621,23 +675,32 @@ export default function PortalClient() {
       const button = event.currentTarget;
       const rect = button.getBoundingClientRect();
       const menuWidth = 180;
-      const menuHeight = 320; // Approximate max height for 8 items
 
-      // Calculate position - prefer below and aligned to right edge of button
-      let top = rect.bottom + 4;
+      // Calculate menu height: ~44px per item + 24px padding (conservative estimate)
+      const enabledCount = ACTIONS.filter((a) => isActionEnabled(a, itemStatus)).length;
+      const menuHeight = enabledCount * 44 + 24;
+
+      const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+      const spaceBelow = viewportHeight - rect.bottom;
+      const spaceAbove = rect.top;
+
       let left = rect.right - menuWidth;
-
-      // If menu would go off the bottom of the viewport, position above
-      if (top + menuHeight > window.innerHeight) {
-        top = rect.top - menuHeight - 4;
-      }
-
       // Ensure menu doesn't go off the left edge
       if (left < 8) {
         left = 8;
       }
 
-      setDropdownPosition({ top, left });
+      // If not enough space below but enough above, position above
+      const positionAbove = spaceBelow < menuHeight && spaceAbove > spaceBelow;
+
+      if (positionAbove) {
+        // Use bottom positioning so dropdown bottom aligns with button top
+        const bottom = viewportHeight - rect.top;
+        setDropdownPosition({ bottom, left, top: "auto" });
+      } else {
+        // Position below - dropdown top aligns with button bottom
+        setDropdownPosition({ top: rect.bottom, left, bottom: "auto" });
+      }
       setOpenDropdown(itemId);
     }
   };
@@ -744,8 +807,22 @@ export default function PortalClient() {
 
   const sortedItems = useMemo(() => {
     if (!data?.items) return [];
-    return [...data.items].sort((a, b) => a.id.localeCompare(b.id));
-  }, [data]);
+    return [...data.items].sort((a, b) => {
+      let comparison = 0;
+      switch (sortColumn) {
+        case "candidate":
+          comparison = (a.applicantName || a.applicantId).localeCompare(b.applicantName || b.applicantId);
+          break;
+        case "position":
+          comparison = (a.position || "").localeCompare(b.position || "");
+          break;
+        case "status":
+          comparison = (a.status || "new").localeCompare(b.status || "new");
+          break;
+      }
+      return sortDirection === "asc" ? comparison : -comparison;
+    });
+  }, [data, sortColumn, sortDirection]);
 
   const header = (
     <section className="card page-card portal-card" aria-labelledby="portal-title">
@@ -974,10 +1051,61 @@ export default function PortalClient() {
                 <caption className="sr-only">{t.table.caption}</caption>
                 <thead>
                   <tr>
-                    <th className="portal-col-candidate">{t.table.candidate}</th>
-                    <th className="portal-col-position">{t.table.position}</th>
+                    <th className="portal-col-candidate portal-col-sortable" onClick={() => handleSort("candidate")}>
+                      <span className="portal-th-content">
+                        {t.table.candidate}
+                        <svg
+                          className={`portal-sort-icon ${sortColumn === "candidate" ? "portal-sort-icon--active" : ""} ${sortColumn === "candidate" && sortDirection === "desc" ? "portal-sort-icon--desc" : ""}`}
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M12 5v14M5 12l7-7 7 7" />
+                        </svg>
+                      </span>
+                    </th>
+                    <th className="portal-col-position portal-col-sortable" onClick={() => handleSort("position")}>
+                      <span className="portal-th-content">
+                        {t.table.position}
+                        <svg
+                          className={`portal-sort-icon ${sortColumn === "position" ? "portal-sort-icon--active" : ""} ${sortColumn === "position" && sortDirection === "desc" ? "portal-sort-icon--desc" : ""}`}
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M12 5v14M5 12l7-7 7 7" />
+                        </svg>
+                      </span>
+                    </th>
                     <th className="portal-col-cv">{t.table.cv}</th>
-                    <th className="portal-col-status">{t.table.status}</th>
+                    <th className="portal-col-status portal-col-sortable" onClick={() => handleSort("status")}>
+                      <span className="portal-th-content">
+                        {t.table.status}
+                        <svg
+                          className={`portal-sort-icon ${sortColumn === "status" ? "portal-sort-icon--active" : ""} ${sortColumn === "status" && sortDirection === "desc" ? "portal-sort-icon--desc" : ""}`}
+                          width="12"
+                          height="12"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M12 5v14M5 12l7-7 7 7" />
+                        </svg>
+                      </span>
+                    </th>
                     <th className="portal-col-actions">{t.table.actions}</th>
                   </tr>
                 </thead>
@@ -998,6 +1126,7 @@ export default function PortalClient() {
                       const hasMeeting = normalizedStatus === "meeting scheduled" && item.meetingDate;
                       const needsReschedule = normalizedStatus === "needs reschedule";
                       const isExpanded = expandedRows.has(item.id);
+                      const hasAnyAction = ACTIONS.some((action) => isActionEnabled(action, item.status));
 
                       // Format display values for expanded content
                       const formatLocation = () => {
@@ -1112,57 +1241,62 @@ export default function PortalClient() {
                               )}
                             </td>
                             <td className="portal-col-actions" onClick={(e) => e.stopPropagation()}>
-                              <div className="portal-dropdown">
-                                <ActionBtn
-                                  size="sm"
-                                  variant="ghost"
-                                  className="portal-dropdown-trigger"
-                                  onClick={(e) => handleDropdownToggle(item.id, e)}
-                                  aria-expanded={openDropdown === item.id}
-                                  aria-haspopup="menu"
-                                >
-                                  {t.table.actions}
-                                  <svg
-                                    width="12"
-                                    height="12"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                    style={{ marginLeft: 4 }}
+                              {hasAnyAction ? (
+                                <div className="portal-dropdown">
+                                  <ActionBtn
+                                    size="sm"
+                                    variant="ghost"
+                                    className="portal-dropdown-trigger"
+                                    onClick={(e) => handleDropdownToggle(item.id, e, item.status)}
+                                    aria-expanded={openDropdown === item.id}
+                                    aria-haspopup="menu"
                                   >
-                                    <polyline points="6 9 12 15 18 9" />
-                                  </svg>
-                                </ActionBtn>
-                                {openDropdown === item.id && dropdownPosition && (
-                                  <div
-                                    className="portal-dropdown-menu portal-dropdown-menu--fixed"
-                                    role="menu"
-                                    style={{
-                                      top: dropdownPosition.top,
-                                      left: dropdownPosition.left,
-                                    }}
-                                  >
-                                    {ACTIONS.map((action) => {
-                                      const enabled = isActionEnabled(action, item.status);
-                                      return (
-                                        <button
-                                          key={action.code}
-                                          type="button"
-                                          className={`portal-dropdown-item ${!enabled ? "portal-dropdown-item--disabled" : ""}`}
-                                          onClick={() => enabled && openModal(item, action.code)}
-                                          disabled={!enabled}
-                                          role="menuitem"
-                                        >
-                                          {t.actionLabels[action.code]}
-                                        </button>
-                                      );
-                                    })}
-                                  </div>
-                                )}
-                              </div>
+                                    {t.table.actions}
+                                    <svg
+                                      width="12"
+                                      height="12"
+                                      viewBox="0 0 24 24"
+                                      fill="none"
+                                      stroke="currentColor"
+                                      strokeWidth="2"
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      style={{ marginLeft: 4 }}
+                                    >
+                                      <polyline points="6 9 12 15 18 9" />
+                                    </svg>
+                                  </ActionBtn>
+                                  {openDropdown === item.id && dropdownPosition && (
+                                    <div
+                                      className="portal-dropdown-menu portal-dropdown-menu--fixed"
+                                      role="menu"
+                                      style={{
+                                        top: dropdownPosition.top,
+                                        bottom: dropdownPosition.bottom,
+                                        left: dropdownPosition.left,
+                                      }}
+                                    >
+                                      {ACTIONS.map((action) => {
+                                        const enabled = isActionEnabled(action, item.status);
+                                        if (!enabled) return null;
+                                        return (
+                                          <button
+                                            key={action.code}
+                                            type="button"
+                                            className="portal-dropdown-item"
+                                            onClick={() => openModal(item, action.code)}
+                                            role="menuitem"
+                                          >
+                                            {t.actionLabels[action.code]}
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="portal-muted">—</span>
+                              )}
                             </td>
                           </tr>
                           {isExpanded && (
@@ -1199,6 +1333,45 @@ export default function PortalClient() {
                                       <span className="portal-detail-value">{formatEmployment()}</span>
                                     </div>
                                   </div>
+                                  {/* Action History */}
+                                  {item.actionHistory && item.actionHistory.length > 0 && (
+                                    <div className="portal-history">
+                                      <h4 className="portal-history-title">{t.history.title}</h4>
+                                      <ul className="portal-timeline">
+                                        {[...item.actionHistory].reverse().map((entry, idx) => {
+                                          const actionLabel = t.actionLabels[entry.action] || entry.action;
+                                          const date = new Date(entry.timestamp);
+                                          const dateStr = date.toLocaleDateString(language === "fr" ? "fr-CA" : "en-CA", {
+                                            year: "numeric",
+                                            month: "short",
+                                            day: "numeric",
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                          });
+                                          return (
+                                            <li key={idx} className="portal-timeline-item">
+                                              <span className="portal-timeline-dot" />
+                                              <div className="portal-timeline-content">
+                                                <span className="portal-timeline-action">{actionLabel}</span>
+                                                <div className="portal-timeline-meta">
+                                                  {dateStr}
+                                                  {entry.performedBy && entry.performedBy !== "applicant" && (
+                                                    <> — {t.history.by} {entry.performedByEmail || entry.performedBy}</>
+                                                  )}
+                                                  {entry.performedBy === "applicant" && (
+                                                    <> — {t.history.by} {t.table.candidate.toLowerCase()}</>
+                                                  )}
+                                                </div>
+                                                {entry.notes && (
+                                                  <div className="portal-timeline-notes">"{entry.notes}"</div>
+                                                )}
+                                              </div>
+                                            </li>
+                                          );
+                                        })}
+                                      </ul>
+                                    </div>
+                                  )}
                                 </div>
                               </td>
                             </tr>

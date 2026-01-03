@@ -32,6 +32,7 @@ type FeedbackAction =
   | 'SCHEDULE_MEETING'
   | 'CANCEL_MEETING'
   | 'REJECT'
+  | 'RESCIND_REJECTION'
   | 'CV_MISMATCH'
   | 'REQUEST_CV_UPDATE'
   | 'REQUEST_INFO'
@@ -42,6 +43,7 @@ const VALID_ACTIONS: FeedbackAction[] = [
   'SCHEDULE_MEETING',
   'CANCEL_MEETING',
   'REJECT',
+  'RESCIND_REJECTION',
   'CV_MISMATCH',
   'REQUEST_CV_UPDATE',
   'REQUEST_INFO',
@@ -74,6 +76,8 @@ function getStatusForAction(action: FeedbackAction): string {
       return 'new';
     case 'REJECT':
       return 'not a good fit';
+    case 'RESCIND_REJECTION':
+      return 'new';
     case 'CV_MISMATCH':
       return 'cv mismatch';
     case 'REQUEST_CV_UPDATE':
@@ -184,6 +188,31 @@ export async function POST(request: NextRequest) {
     }
     // Idempotent OFFER_JOB - just return success
     return NextResponse.json({ ok: true, status: 'hired' });
+  }
+
+  if (currentStatus === 'not a good fit') {
+    if (action !== 'RESCIND_REJECTION') {
+      return NextResponse.json(
+        { ok: false, error: 'This application has already been rejected.' },
+        { status: 400 },
+      );
+    }
+  }
+
+  if (currentStatus === 'cv mismatch') {
+    if (action !== 'RESCIND_REJECTION') {
+      return NextResponse.json(
+        { ok: false, error: 'This application has been marked as CV mismatch.' },
+        { status: 400 },
+      );
+    }
+  }
+
+  if (action === 'RESCIND_REJECTION' && currentStatus !== 'not a good fit' && currentStatus !== 'cv mismatch') {
+    return NextResponse.json(
+      { ok: false, error: 'Can only rescind rejection when application is rejected or marked as CV mismatch.' },
+      { status: 400 },
+    );
   }
 
   if (action === 'OFFER_JOB' && currentStatus !== 'interviewed') {

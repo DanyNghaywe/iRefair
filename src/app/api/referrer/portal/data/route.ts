@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { findApplicantByIdentifier, getReferrerByIrref, listApplications, normalizeStatus } from '@/lib/sheets';
+import { parseActionHistory } from '@/lib/actionHistory';
 import { normalizePortalTokenVersion, verifyReferrerToken } from '@/lib/referrerPortalToken';
 import { getReferrerPortalToken } from '@/lib/referrerPortalAuth';
 
@@ -46,6 +47,8 @@ async function buildItems(referrerIrref: string) {
         industryType: applicant?.record.industryType || '',
         industryOther: applicant?.record.industryOther || '',
         employmentStatus: applicant?.record.employmentStatus || '',
+        // Action history for timeline display
+        actionHistory: parseActionHistory(app.actionHistory),
       };
     }),
   );
