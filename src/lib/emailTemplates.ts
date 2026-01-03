@@ -1037,7 +1037,7 @@ ${jobOpeningsButton}: ${openingsUrl}
 export function meetFounderInvite(referrerName: string, irref: string, link?: string): TemplateResult {
   const subject = "Invitation: Meet the Founder at iRefair";
   const normalizedLink = link ? normalizeHttpUrl(link) : null;
-  const joinLink = normalizedLink || "Schedule link not provided yet — we will follow up with a calendar invitation.";
+  const joinLink = normalizedLink || "Schedule link not provided yet - we will follow up with a calendar invitation.";
   const greeting = referrerName ? `Hi ${referrerName},` : "Hi there,";
   const greetingHtml = referrerName ? `Hi ${escapeHtml(referrerName)},` : "Hi there,";
   const safeIrref = escapeHtml(irref);
@@ -1050,7 +1050,7 @@ Meet link: ${joinLink}
 
 If the link is unavailable, reply with your availability and we will send you a calendar invite.
 
-— Founder, iRefair`;
+- Founder, iRefair`;
 
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">You're invited to meet!</h1>
@@ -1076,7 +1076,7 @@ If the link is unavailable, reply with your availability and we will send you a 
       </p>
     ` : `
       <p style="margin: 0 0 16px 0; color: ${colors.muted}; font-size: 14px; background: ${colors.background}; padding: 16px; border-radius: 10px;">
-        Schedule link not provided yet — reply with your availability and we'll send you a calendar invite.
+        Schedule link not provided yet - reply with your availability and we'll send you a calendar invite.
       </p>
     `}
 
@@ -1109,7 +1109,7 @@ export function resumeRequest(applicantName: string, irain: string): TemplateRes
 
 Thanks for being part of iRefair (iRAIN ${irain}). Could you reply to this email with your latest resume or CV? This will help us share the most up-to-date profile with referrers.
 
-— Founder, iRefair`;
+- Founder, iRefair`;
 
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Resume update request</h1>
@@ -1180,7 +1180,7 @@ I'm connecting you via iRefair for the role/context noted below.
 
 Please take the conversation forward and let us know if you need anything else.
 
-— Founder, iRefair`;
+- Founder, iRefair`;
 
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">You've been connected!</h1>
@@ -1190,7 +1190,7 @@ Please take the conversation forward and let us know if you need anything else.
       Hello <strong>${introApplicantHtml}</strong> and <strong>${introReferrerHtml}</strong>,
     </p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      I'm connecting you for the opportunity below. Please take the conversation forward — I'm confident this could be a great match!
+      I'm connecting you for the opportunity below. Please take the conversation forward - I'm confident this could be a great match!
     </p>
 
     ${divider}
@@ -1430,7 +1430,7 @@ What happens next?
 Keep this email for your records. You can use the same iRAIN and Applicant Key to apply to other companies.
 
 Good luck!
-— The iRefair Team`;
+- The iRefair Team`;
 
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Application received! 🎉</h1>
@@ -1544,7 +1544,7 @@ Meeting Details:
 Please join on time. If you need to reschedule, use this link: ${rescheduleUrl}
 
 Good luck with your meeting!
-— The iRefair Team`;
+- The iRefair Team`;
 
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Meeting scheduled!</h1>
@@ -1624,7 +1624,7 @@ Unfortunately, your scheduled meeting with ${referrerName || 'the referrer'} at 
 
 If appropriate, a new meeting may be scheduled. We'll keep you posted.
 
-— The iRefair Team`;
+- The iRefair Team`;
 
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Meeting cancelled</h1>
@@ -1686,12 +1686,12 @@ export function rejectionToApplicant(params: RejectionParams): TemplateResult {
 
 Thank you for your interest in ${position || 'the position'} at ${companyName || 'the company'}.
 
-After careful review, we've decided not to move forward with your application at this time. This decision doesn't reflect on your qualifications — it simply means we're pursuing applicants whose experience more closely matches our current needs.
+After careful review, we've decided not to move forward with your application at this time. This decision doesn't reflect on your qualifications - it simply means we're pursuing applicants whose experience more closely matches our current needs.
 
 We encourage you to continue exploring opportunities on iRefair. The right match is out there!
 
 Best of luck in your job search.
-— The iRefair Team`;
+- The iRefair Team`;
 
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Application update</h1>
@@ -1702,7 +1702,7 @@ Best of luck in your job search.
       Thank you for your interest in <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong>.
     </p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      After careful review, we've decided not to move forward with your application at this time. This decision doesn't reflect on your qualifications — it simply means we're pursuing applicants whose experience more closely matches our current needs.
+      After careful review, we've decided not to move forward with your application at this time. This decision doesn't reflect on your qualifications - it simply means we're pursuing applicants whose experience more closely matches our current needs.
     </p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
       We encourage you to continue exploring opportunities on iRefair. The right match is out there!
@@ -1767,9 +1767,9 @@ Thank you for applying to ${position || 'the position'} at ${companyName || 'the
 After reviewing your CV, we found that it doesn't quite match the requirements for this role.${feedback ? `\n\nFeedback: ${feedback}` : ''}
 ${updateUrl ? `\nIf you'd like to update your CV and resubmit, you can do so here: ${updateUrl}\n\nThis link expires in 7 days.` : ''}
 
-Don't be discouraged — there are many opportunities on iRefair that may be a better fit!
+Don't be discouraged - there are many opportunities on iRefair that may be a better fit!
 
-— The iRefair Team`;
+- The iRefair Team`;
 
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">CV feedback</h1>
@@ -1804,7 +1804,7 @@ Don't be discouraged — there are many opportunities on iRefair that may be a b
     ` : ''}
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Don't be discouraged — there are many opportunities on iRefair that may be a better fit!
+      Don't be discouraged - there are many opportunities on iRefair that may be a better fit!
     </p>
 
     <p style="margin: 16px 0 0 0; color: ${colors.ink}; font-size: 15px;">
@@ -1863,7 +1863,7 @@ Please update your CV here: ${updateUrl}
 
 This link expires in 7 days.
 
-— The iRefair Team`;
+- The iRefair Team`;
 
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">CV update requested</h1>
@@ -1947,7 +1947,7 @@ Please provide the information here: ${updateUrl}
 
 This link expires in 7 days.
 
-— The iRefair Team`;
+- The iRefair Team`;
 
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Information requested</h1>
@@ -2016,7 +2016,7 @@ Thank you for completing your interview for ${position || 'the position'} at ${c
 
 The referrer will be reviewing your interview and will follow up with next steps. We'll keep you posted on any updates.
 
-— The iRefair Team`;
+- The iRefair Team`;
 
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Interview completed</h1>
@@ -2073,9 +2073,9 @@ Congratulations! We're thrilled to inform you that ${companyName || 'the company
 
 The referrer or hiring team will be in touch with the formal offer details.
 
-This is a huge milestone — well done!
+This is a huge milestone - well done!
 
-— The iRefair Team`;
+- The iRefair Team`;
 
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Congratulations! 🎉</h1>
@@ -2096,7 +2096,7 @@ This is a huge milestone — well done!
       The referrer or hiring team will be in touch with the formal offer details.
     </p>
     <p style="margin: 16px 0 0 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      This is a huge milestone — well done!
+      This is a huge milestone - well done!
     </p>
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
@@ -2159,7 +2159,7 @@ Application ID: ${applicationId}${applicantEmail ? `\nApplicant email: ${applica
 
 Please log in to your portal to reschedule the meeting.
 
-— The iRefair Team`;
+- The iRefair Team`;
 
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Reschedule request</h1>
@@ -2251,7 +2251,7 @@ Application ID: ${applicationId}${applicantEmail ? `\nApplicant email: ${applica
 
 Please log in to your portal to review the updates.
 
-— The iRefair Team`;
+- The iRefair Team`;
 
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Applicant updated</h1>
