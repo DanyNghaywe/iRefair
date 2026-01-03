@@ -588,6 +588,9 @@ export default function PortalClient() {
   }, [sortColumn]);
 
   const toggleRowExpanded = useCallback((itemId: string) => {
+    // Close any open dropdown when clicking on a row
+    setOpenDropdown(null);
+    setDropdownPosition(null);
     setExpandedRows((prev) => {
       const next = new Set(prev);
       if (next.has(itemId)) {
@@ -660,7 +663,10 @@ export default function PortalClient() {
   // Close dropdown on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      const target = e.target as HTMLElement;
+      // Only keep dropdown open if clicking inside the dropdown menu itself or the trigger button
+      const clickedInsideDropdown = target.closest(".portal-dropdown-menu") || target.closest(".portal-dropdown-trigger");
+      if (!clickedInsideDropdown) {
         setOpenDropdown(null);
         setDropdownPosition(null);
       }
