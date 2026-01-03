@@ -150,6 +150,7 @@ const translations: Record<
       "not a good fit": "Not a Good Fit",
       "cv mismatch": "CV Mismatch",
       "cv update requested": "CV Update Requested",
+      "cv updated": "CV Updated",
       "info requested": "Info Requested",
     },
     actionLabels: {
@@ -162,6 +163,7 @@ const translations: Record<
       REQUEST_INFO: "Missing Information",
       MARK_INTERVIEWED: "Mark as Interviewed",
       OFFER_JOB: "Offer Job",
+      CV_UPDATED: "CV Updated",
     },
     modalTitles: {
       SCHEDULE_MEETING: "Schedule Meeting",
@@ -182,6 +184,7 @@ const translations: Record<
       RESCIND_REJECTION: "Undo the rejection and give this candidate another chance. Their status will be reset to New.",
       CV_MISMATCH: "The CV doesn't match your requirements. The candidate will receive feedback.",
       REQUEST_CV_UPDATE: "Request the candidate to update their CV. They will receive a link to make changes.",
+      REQUEST_CV_UPDATE_MEETING_WARNING: "A meeting is scheduled with this candidate. Requesting a CV update will cancel the meeting. You can reschedule after reviewing the updated CV.",
       REQUEST_INFO: "Request additional information from the candidate.",
       MARK_INTERVIEWED: "Mark this candidate as interviewed. They will receive a confirmation.",
       OFFER_JOB: "Offer this candidate the job! They will receive the good news.",
@@ -300,6 +303,7 @@ const translations: Record<
       "not a good fit": "Profil non retenu",
       "cv mismatch": "CV inadapté",
       "cv update requested": "Mise à jour CV demandée",
+      "cv updated": "CV mis à jour",
       "info requested": "Informations demandées",
     },
     actionLabels: {
@@ -312,6 +316,7 @@ const translations: Record<
       REQUEST_INFO: "Informations manquantes",
       MARK_INTERVIEWED: "Marquer comme interviewé",
       OFFER_JOB: "Proposer le poste",
+      CV_UPDATED: "CV mis à jour",
     },
     modalTitles: {
       SCHEDULE_MEETING: "Planifier une réunion",
@@ -332,6 +337,7 @@ const translations: Record<
       RESCIND_REJECTION: "Annulez le refus et donnez une autre chance à ce candidat. Son statut sera réinitialisé à Nouveau.",
       CV_MISMATCH: "Le CV ne correspond pas à vos exigences. Le candidat recevra un retour.",
       REQUEST_CV_UPDATE: "Demandez au candidat de mettre à jour son CV. Il recevra un lien pour effectuer les modifications.",
+      REQUEST_CV_UPDATE_MEETING_WARNING: "Une réunion est prévue avec ce candidat. Demander une mise à jour du CV annulera la réunion. Vous pourrez replanifier après avoir examiné le CV mis à jour.",
       REQUEST_INFO: "Demandez des informations supplémentaires au candidat.",
       MARK_INTERVIEWED: "Marquez ce candidat comme ayant passé l'entretien. Il recevra une confirmation.",
       OFFER_JOB: "Proposez le poste à ce candidat ! Il recevra la bonne nouvelle.",
@@ -777,6 +783,8 @@ export default function PortalClient() {
       toast.success(t.modalTitles[modalAction] || t.modalTitles.default, t.successMessages[modalAction] || t.successMessages.default);
 
       // Update local state
+      const shouldClearMeeting = modalAction === "CANCEL_MEETING" ||
+        (modalAction === "REQUEST_CV_UPDATE" && modalItem.status?.toLowerCase().trim() === "meeting scheduled");
       setData((prev) =>
         prev
           ? {
@@ -786,10 +794,10 @@ export default function PortalClient() {
                   ? {
                       ...item,
                       status: json.status || item.status,
-                      meetingDate: modalAction === "SCHEDULE_MEETING" ? meetingDate : modalAction === "CANCEL_MEETING" ? "" : item.meetingDate,
-                      meetingTime: modalAction === "SCHEDULE_MEETING" ? meetingTime : modalAction === "CANCEL_MEETING" ? "" : item.meetingTime,
-                      meetingTimezone: modalAction === "SCHEDULE_MEETING" ? meetingTimezone : modalAction === "CANCEL_MEETING" ? "" : item.meetingTimezone,
-                      meetingUrl: modalAction === "SCHEDULE_MEETING" ? meetingUrl : modalAction === "CANCEL_MEETING" ? "" : item.meetingUrl,
+                      meetingDate: modalAction === "SCHEDULE_MEETING" ? meetingDate : shouldClearMeeting ? "" : item.meetingDate,
+                      meetingTime: modalAction === "SCHEDULE_MEETING" ? meetingTime : shouldClearMeeting ? "" : item.meetingTime,
+                      meetingTimezone: modalAction === "SCHEDULE_MEETING" ? meetingTimezone : shouldClearMeeting ? "" : item.meetingTimezone,
+                      meetingUrl: modalAction === "SCHEDULE_MEETING" ? meetingUrl : shouldClearMeeting ? "" : item.meetingUrl,
                     }
                   : item
               ),
@@ -1401,7 +1409,11 @@ export default function PortalClient() {
         open={modalOpen}
         onClose={closeModal}
         title={modalAction ? (t.modalTitles[modalAction] || t.modalTitles.default) : ""}
-        description={modalAction ? (t.modalDescriptions[modalAction] || "") : ""}
+        description={modalAction ? (
+          modalAction === "REQUEST_CV_UPDATE" && modalItem?.status?.toLowerCase().trim() === "meeting scheduled"
+            ? t.modalDescriptions.REQUEST_CV_UPDATE_MEETING_WARNING
+            : (t.modalDescriptions[modalAction] || "")
+        ) : ""}
         size={modalAction === "SCHEDULE_MEETING" ? "md" : "sm"}
         footer={
           <>

@@ -1833,6 +1833,7 @@ type CvUpdateRequestParams = {
   feedback?: string;
   updateToken: string;
   applicationId: string;
+  meetingWasCancelled?: boolean;
 };
 
 export function cvUpdateRequestToApplicant(params: CvUpdateRequestParams): TemplateResult {
@@ -1843,6 +1844,7 @@ export function cvUpdateRequestToApplicant(params: CvUpdateRequestParams): Templ
     feedback,
     updateToken,
     applicationId,
+    meetingWasCancelled,
   } = params;
 
   const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
@@ -1855,9 +1857,13 @@ export function cvUpdateRequestToApplicant(params: CvUpdateRequestParams): Templ
 
   const subject = `Action needed: Update your CV`;
 
+  const meetingCancelledText = meetingWasCancelled
+    ? '\n\nNote: Your previously scheduled meeting has been cancelled. Once you update your CV, the referrer will review it and schedule a new meeting with you.'
+    : '';
+
   const text = `${greeting}
 
-The referrer reviewing your application for ${position || 'the position'} at ${companyName || 'the company'} has requested that you update your CV.${feedback ? `\n\nFeedback: ${feedback}` : ''}
+The referrer reviewing your application for ${position || 'the position'} at ${companyName || 'the company'} has requested that you update your CV.${feedback ? `\n\nFeedback: ${feedback}` : ''}${meetingCancelledText}
 
 Please update your CV here: ${updateUrl}
 
@@ -1878,6 +1884,14 @@ This link expires in 7 days.
       <div style="background: ${colors.background}; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid ${colors.primary};">
         <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">Feedback:</p>
         <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">${safeFeedback}</p>
+      </div>
+    ` : ''}
+
+    ${meetingWasCancelled ? `
+      <div style="background: #fef3c7; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid #f59e0b;">
+        <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
+          <strong>Note:</strong> Your previously scheduled meeting has been cancelled. Once you update your CV, the referrer will review it and schedule a new meeting with you.
+        </p>
       </div>
     ` : ''}
 

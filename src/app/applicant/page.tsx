@@ -421,6 +421,9 @@ function ApplicantPageContent() {
   const updateAppId = searchParams.get('appId') || '';
   const hasUpdateRequest = Boolean(updateToken && updateAppId);
   const [showUpdateBanner, setShowUpdateBanner] = useState(hasUpdateRequest);
+  const [prefillLoading, setPrefillLoading] = useState(hasUpdateRequest);
+  const [prefillError, setPrefillError] = useState('');
+  const [updatePurpose, setUpdatePurpose] = useState<'cv' | 'info'>('cv');
 
   const t = translations[language];
 
@@ -464,6 +467,78 @@ function ApplicantPageContent() {
       scrollToStatusError();
     }
   }, [status]);
+
+  // Fetch existing applicant data for prefill when update token is present
+  useEffect(() => {
+    if (!hasUpdateRequest) return;
+
+    const fetchPrefillData = async () => {
+      try {
+        const res = await fetch(`/api/applicant/data?updateToken=${encodeURIComponent(updateToken)}&appId=${encodeURIComponent(updateAppId)}`);
+        const json = await res.json();
+
+        if (!res.ok || !json?.ok) {
+          setPrefillError(json?.error || 'Failed to load your existing data');
+          setPrefillLoading(false);
+          return;
+        }
+
+        const data = json.data;
+
+        // Set the update purpose (cv or info)
+        if (json.updatePurpose) {
+          setUpdatePurpose(json.updatePurpose);
+        }
+
+        // Set controlled state values
+        if (data.countryOfOrigin) setCountrySelection(data.countryOfOrigin);
+        if (data.locatedCanada) setLocatedInCanada(data.locatedCanada);
+        if (data.province) setProvinceSelection(data.province);
+        if (data.authorizedCanada) setAuthorizedCanada(data.authorizedCanada);
+        if (data.eligibleMoveCanada) setEligibleMoveCanada(data.eligibleMoveCanada);
+        if (data.industryType) setIndustrySelection(data.industryType);
+        if (data.employmentStatus) setEmploymentStatus(data.employmentStatus);
+
+        // Parse languages (stored as comma-separated string)
+        if (data.languages) {
+          const langs = data.languages.split(',').map((l: string) => l.trim()).filter(Boolean);
+          setLanguageSelection(langs);
+        }
+
+        // Set resume name display if they have an existing resume
+        if (data.resumeFileName) {
+          setResumeName(data.resumeFileName);
+        }
+
+        // Set uncontrolled input values via DOM after a brief delay to ensure form is mounted
+        requestAnimationFrame(() => {
+          const form = formRef.current;
+          if (!form) return;
+
+          const setInputValue = (name: string, value: string) => {
+            const input = form.querySelector(`[name="${name}"]`) as HTMLInputElement | null;
+            if (input && value) input.value = value;
+          };
+
+          setInputValue('first-name', data.firstName);
+          setInputValue('middle-name', data.middleName);
+          setInputValue('family-name', data.familyName);
+          setInputValue('email', data.email);
+          setInputValue('phone', data.phone);
+          setInputValue('languages-other', data.languagesOther);
+          setInputValue('industry-other', data.industryOther);
+        });
+
+        setPrefillLoading(false);
+      } catch (err) {
+        console.error('Error fetching prefill data:', err);
+        setPrefillError('Failed to load your existing data');
+        setPrefillLoading(false);
+      }
+    };
+
+    fetchPrefillData();
+  }, [hasUpdateRequest, updateToken, updateAppId]);
 
   const handleFieldChange = (field: string) => () => clearError(field);
   const handleLinkedInChange = () => {
@@ -771,18 +846,56 @@ function ApplicantPageContent() {
           </div>
 
           {showUpdateBanner && (
-            <div className="update-request-banner" role="alert">
+            <div className={`update-request-banner${prefillError ? ' update-request-banner--error' : ''}`} role="alert">
               <div className="update-request-banner__content">
-                <strong>
-                  {language === 'fr'
-                    ? 'Un référent a demandé une mise à jour de votre candidature.'
-                    : 'A referrer requested an update for your application.'}
-                </strong>
-                <p>
-                  {language === 'fr'
-                    ? 'Veuillez mettre à jour vos informations et soumettre à nouveau le formulaire.'
-                    : 'Please update your information and resubmit the form below.'}
-                </p>
+                {prefillLoading ? (
+                  <>
+                    <strong>
+                      {language === 'fr'
+                        ? 'Chargement de vos informations...'
+                        : 'Loading your information...'}
+                    </strong>
+                    <p>
+                      {language === 'fr'
+                        ? 'Veuillez patienter pendant que nous récupérons vos données.'
+                        : 'Please wait while we fetch your existing data.'}
+                    </p>
+                  </>
+                ) : prefillError ? (
+                  <>
+                    <strong>
+                      {language === 'fr'
+                        ? 'Impossible de charger vos informations'
+                        : 'Could not load your information'}
+                    </strong>
+                    <p>
+                      {prefillError}. {language === 'fr'
+                        ? 'Vous pouvez toujours remplir le formulaire manuellement.'
+                        : 'You can still fill out the form manually.'}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <strong>
+                      {updatePurpose === 'cv'
+                        ? (language === 'fr'
+                            ? 'Un référent a demandé une mise à jour de votre CV.'
+                            : 'A referrer requested an updated CV.')
+                        : (language === 'fr'
+                            ? 'Un référent a demandé des informations supplémentaires.'
+                            : 'A referrer requested additional information.')}
+                    </strong>
+                    <p>
+                      {updatePurpose === 'cv'
+                        ? (language === 'fr'
+                            ? 'Vos informations existantes ont été pré-remplies. Veuillez téléverser un nouveau CV et soumettre le formulaire.'
+                            : 'Your existing information has been pre-filled. Please upload a new CV and resubmit the form.')
+                        : (language === 'fr'
+                            ? 'Vos informations existantes ont été pré-remplies. Veuillez mettre à jour vos informations et soumettre le formulaire.'
+                            : 'Your existing information has been pre-filled. Please update your information and resubmit the form.')}
+                    </p>
+                  </>
+                )}
               </div>
               <button
                 type="button"

@@ -7,6 +7,7 @@ import {
   applicantRegistrationConfirmation,
   applicantIneligibleNotification,
   applicantProfileUpdateConfirmation,
+  applicantUpdatedToReferrer,
 } from "@/lib/emailTemplates";
 import {
   APPLICANT_SECRET_HASH_HEADER,
@@ -19,11 +20,13 @@ import {
   getApplicantByEmail,
   findExistingApplicant,
   getApplicationById,
+  getReferrerByIrref,
   isIrain,
   updateApplicationAdmin,
   updateRowById,
   upsertApplicantRow,
 } from "@/lib/sheets";
+import { appendActionHistoryEntry, type ActionLogEntry } from "@/lib/actionHistory";
 import { jobOpeningsUrl } from "@/lib/urls";
 import { escapeHtml, normalizeHttpUrl } from "@/lib/validation";
 import {
@@ -371,13 +374,59 @@ export async function POST(request: Request) {
 
           // Validate: hash matches and not expired
           if (storedHash && storedHash === providedHash && !isExpired(storedExpiry)) {
-            // Clear the update request fields
+            // Build action history entry for the CV update
+            const actionEntry: ActionLogEntry = {
+              action: "CV_UPDATED",
+              timestamp: new Date().toISOString(),
+              performedBy: "applicant",
+            };
+            const updatedActionHistory = appendActionHistoryEntry(application.record.actionHistory, actionEntry);
+
+            // Determine the new status based on the update purpose
+            // If it was a CV update request, set status to "cv updated"
+            // If it was an info request, set status to "new"
+            const updatePurpose = application.record.updateRequestPurpose || "";
+            const newStatus = updatePurpose === "cv" ? "cv updated" : "new";
+
+            // Clear the update request fields and set status
             await updateApplicationAdmin(updateRequestApplicationId, {
               updateRequestTokenHash: "",
               updateRequestExpiresAt: "",
               updateRequestPurpose: "",
+              status: newStatus,
+              actionHistory: updatedActionHistory,
             });
             updateRequestCleared = true;
+
+            // Notify the referrer that the CV was updated
+            const referrerIrref = application.record.referrerIrref;
+            if (referrerIrref) {
+              try {
+                const referrer = await getReferrerByIrref(referrerIrref);
+                const referrerEmail = referrer?.record?.email;
+                if (referrerEmail) {
+                  const applicantFullName = [firstName, familyName].filter(Boolean).join(" ").trim() || email;
+                  const referrerNotification = applicantUpdatedToReferrer({
+                    referrerName: referrer.record.name || undefined,
+                    applicantName: applicantFullName,
+                    applicantEmail: email,
+                    position: application.record.position || undefined,
+                    applicationId: updateRequestApplicationId,
+                    updatedFields: ["their CV"],
+                    resumeUrl: resumeFileId ? `https://drive.google.com/file/d/${resumeFileId}/view` : undefined,
+                  });
+                  await sendMail({
+                    to: referrerEmail,
+                    subject: referrerNotification.subject,
+                    html: referrerNotification.html,
+                    text: referrerNotification.text,
+                  });
+                }
+              } catch (referrerErr) {
+                // Log but don't fail - referrer notification is best-effort
+                console.error("Error sending referrer notification:", referrerErr);
+              }
+            }
           }
         }
       } catch (err) {

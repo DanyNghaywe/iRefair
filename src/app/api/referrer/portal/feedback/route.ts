@@ -301,6 +301,9 @@ export async function POST(request: NextRequest) {
     patch.rescheduleTokenExpiresAt = '';
   }
 
+  // Track if we're cancelling a meeting due to CV update request
+  let meetingWasCancelled = false;
+
   if (action === 'REQUEST_CV_UPDATE' || action === 'REQUEST_INFO' || (action === 'CV_MISMATCH' && body.includeUpdateLink)) {
     opaqueToken = createOpaqueToken();
     updateToken = opaqueToken;
@@ -311,6 +314,17 @@ export async function POST(request: NextRequest) {
     patch.updateRequestTokenHash = updateHash;
     patch.updateRequestExpiresAt = updateExpiry;
     patch.updateRequestPurpose = purpose;
+
+    // If requesting CV update while meeting is scheduled, cancel the meeting
+    if (action === 'REQUEST_CV_UPDATE' && currentStatus === 'meeting scheduled') {
+      patch.meetingDate = '';
+      patch.meetingTime = '';
+      patch.meetingTimezone = '';
+      patch.meetingUrl = '';
+      patch.rescheduleTokenHash = '';
+      patch.rescheduleTokenExpiresAt = '';
+      meetingWasCancelled = true;
+    }
   }
 
   // Set new status
@@ -403,6 +417,7 @@ export async function POST(request: NextRequest) {
             feedback: notes,
             updateToken: updateToken || '',
             applicationId,
+            meetingWasCancelled,
           });
           break;
 
