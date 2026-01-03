@@ -533,7 +533,7 @@ function StatusBadge({ status, statusLabels }: { status: string; statusLabels: R
 
 function formatMeetingDisplay(date?: string, time?: string, timezone?: string): string {
   if (!date || !time) return "";
-  const tz = timezone ? ` (${timezone.split("/").pop()?.replace("_", " ")})` : "";
+  const tz = timezone ? ` (${timezone.split("/").pop()?.replace("_", " ")} time)` : "";
   return `${date} at ${time}${tz}`;
 }
 
