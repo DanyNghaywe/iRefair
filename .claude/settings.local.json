@@ -34,7 +34,21 @@
       "Bash(cmd //c \"cd /d c:\\\\Users\\\\Makram\\\\Documents\\\\iRefair && del /f /q nul\")",
       "Bash(python -c \"import os; os.remove\\(r''\\\\?\\\\c:\\\\Users\\\\Makram\\\\Documents\\\\iRefair\\\\nul''\\)\")",
       "Bash(python -c \"import os; os.remove\\(''\\\\\\\\?\\\\\\\\C:\\\\\\\\Users\\\\\\\\Makram\\\\\\\\Documents\\\\\\\\iRefair\\\\\\\\nul''\\)\")",
-      "Bash(python -c \"import os; p = chr\\(92\\)*2 + ''?'' + chr\\(92\\) + ''C:'' + chr\\(92\\) + ''Users'' + chr\\(92\\) + ''Makram'' + chr\\(92\\) + ''Documents'' + chr\\(92\\) + ''iRefair'' + chr\\(92\\) + ''nul''; os.remove\\(p\\)\")"
+      "Bash(python -c \"import os; p = chr\\(92\\)*2 + ''?'' + chr\\(92\\) + ''C:'' + chr\\(92\\) + ''Users'' + chr\\(92\\) + ''Makram'' + chr\\(92\\) + ''Documents'' + chr\\(92\\) + ''iRefair'' + chr\\(92\\) + ''nul''; os.remove\\(p\\)\")",
+      "Bash(ls:*)",
+      "Bash(tail:*)",
+      "Bash(tree:*)",
+      "Bash(find:*)",
+      "Bash(npx next lint:*)",
+      "Bash(npx eslint:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd delete referrer functionality for approved/denied referrers\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git show:*)",
+      "Bash(git restore:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nImprove referrer portal text contrast and fix applicant name display\n\n- Fix text contrast issues by using solid colors instead of rgba values\n- Update status badges to use high-contrast solid backgrounds\n- Rename column header from Candidate to Applicant\n- Fix applicant name not displaying by matching API field names\n- Remove App ID from applicant column\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(timeout 20 npm run dev)",
+      "Bash(timeout 15 npm run dev)",
+      "Bash(cd:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nImprove meeting date display in referrer portal\n\n- Remove boxy styling from meeting info, make it more compact\n- Add \"time\" suffix to timezone for clarity \\(e.g., \"Toronto time\"\\)\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")"
     ]
   }
 }
