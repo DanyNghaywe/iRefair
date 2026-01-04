@@ -152,6 +152,7 @@ const translations: Record<
       "cv update requested": "CV Update Requested",
       "cv updated": "CV Updated",
       "info requested": "Info Requested",
+      "info updated": "Info Updated",
     },
     actionLabels: {
       SCHEDULE_MEETING: "Schedule Meeting",
@@ -305,6 +306,7 @@ const translations: Record<
       "cv update requested": "Mise à jour CV demandée",
       "cv updated": "CV mis à jour",
       "info requested": "Informations demandées",
+      "info updated": "Informations mises à jour",
     },
     actionLabels: {
       SCHEDULE_MEETING: "Planifier une réunion",

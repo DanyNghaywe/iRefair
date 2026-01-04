@@ -384,10 +384,8 @@ export async function POST(request: Request) {
             const updatedActionHistory = appendActionHistoryEntry(application.record.actionHistory, actionEntry);
 
             // Determine the new status based on the update purpose
-            // If it was a CV update request, set status to "cv updated"
-            // If it was an info request, set status to "new"
             const updatePurpose = application.record.updateRequestPurpose || "";
-            const newStatus = updatePurpose === "cv" ? "cv updated" : "new";
+            const newStatus = updatePurpose === "cv" ? "cv updated" : "info updated";
 
             // Clear the update request fields and set status
             await updateApplicationAdmin(updateRequestApplicationId, {
