@@ -47,7 +47,8 @@ export async function sendMail({ to, subject, html, text, cc, replyTo }: MailInp
   try {
     const transporter = getTransporter();
     const messageIdDomain = fromEmail.split('@')[1] || 'localhost';
-    const messageId = `<${randomUUID()}@${messageIdDomain}>`;
+    const uniqueId = randomUUID();
+    const messageId = `<${uniqueId}@${messageIdDomain}>`;
     const info = await transporter.sendMail({
       from,
       to,
@@ -57,6 +58,14 @@ export async function sendMail({ to, subject, html, text, cc, replyTo }: MailInp
       html,
       text,
       messageId,
+      // Prevent email clients (especially Gmail) from threading unrelated emails together.
+      // Each email gets a unique X-Entity-Ref-ID, and we explicitly clear References/In-Reply-To
+      // to ensure emails are treated as standalone messages, not part of a conversation.
+      headers: {
+        'X-Entity-Ref-ID': uniqueId,
+        'References': '',
+        'In-Reply-To': '',
+      },
     });
     return info;
   } catch (error) {
