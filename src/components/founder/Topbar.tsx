@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import Link from "next/link";
 
 type Props = {
   title: string;
@@ -9,12 +10,19 @@ type Props = {
   searchPlaceholder?: string;
   onSearchChange?: (value: string) => void;
   actions?: React.ReactNode;
+  backHref?: string;
+  backLabel?: string;
 };
 
-export function Topbar({ title, subtitle, searchValue, searchPlaceholder, onSearchChange, actions }: Props) {
+export function Topbar({ title, subtitle, searchValue, searchPlaceholder, onSearchChange, actions, backHref, backLabel }: Props) {
   return (
     <div className="founder-topbar">
       <div className="founder-topbar__titles">
+        {backHref && (
+          <Link href={backHref} className="founder-topbar__back">
+            ← {backLabel || "Back"}
+          </Link>
+        )}
         <h1>{title}</h1>
         {subtitle ? <p>{subtitle}</p> : null}
       </div>
