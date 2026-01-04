@@ -4,6 +4,7 @@ import { rateLimit, rateLimitHeaders, RATE_LIMITS } from '@/lib/rateLimit';
 import { appendReferrerRow, generateIRREF, getReferrerByEmail, addPendingUpdate } from '@/lib/sheets';
 import { escapeHtml, normalizeHttpUrl } from '@/lib/validation';
 import { referrerRegistrationConfirmation, referrerAlreadyExistsEmail } from '@/lib/emailTemplates';
+import { buildReferrerPortalLink, ensureReferrerPortalTokenVersion } from '@/lib/referrerPortalLink';
 
 type ReferrerPayload = {
   name?: string;
@@ -103,11 +104,16 @@ export async function POST(request: Request) {
         linkedin,
       });
 
+      // Generate portal link for existing referrer
+      const portalTokenVersion = await ensureReferrerPortalTokenVersion(existingReferrer.record.irref);
+      const portalUrl = buildReferrerPortalLink(existingReferrer.record.irref, portalTokenVersion);
+
       // Send email informing them they already have an iRREF
       const emailTemplate = referrerAlreadyExistsEmail({
         name: fallbackName,
         iRref: existingReferrer.record.irref,
         locale,
+        portalUrl,
       });
 
       await sendMail({
@@ -138,6 +144,10 @@ export async function POST(request: Request) {
       linkedin,
     });
 
+    // Generate portal link for new referrer
+    const portalTokenVersion = await ensureReferrerPortalTokenVersion(iRref);
+    const portalUrl = buildReferrerPortalLink(iRref, portalTokenVersion);
+
     const emailTemplate = referrerRegistrationConfirmation({
       name: fallbackName,
       iRref,
@@ -149,6 +159,7 @@ export async function POST(request: Request) {
       type: referralType || workType,
       slots: monthlySlots,
       locale,
+      portalUrl,
     });
 
     await sendMail({

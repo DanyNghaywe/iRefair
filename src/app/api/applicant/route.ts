@@ -9,6 +9,7 @@ import {
   applicantProfileUpdateConfirmation,
   applicantUpdatedToReferrer,
 } from "@/lib/emailTemplates";
+import { buildReferrerPortalLink, ensureReferrerPortalTokenVersion } from "@/lib/referrerPortalLink";
 import {
   APPLICANT_SECRET_HASH_HEADER,
   APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
@@ -405,6 +406,10 @@ export async function POST(request: Request) {
                 const referrer = await getReferrerByIrref(referrerIrref);
                 const referrerEmail = referrer?.record?.email;
                 if (referrerEmail) {
+                  // Generate portal link for referrer
+                  const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrerIrref);
+                  const portalUrl = buildReferrerPortalLink(referrerIrref, portalTokenVersion);
+
                   const applicantFullName = [firstName, familyName].filter(Boolean).join(" ").trim() || email;
                   const referrerNotification = applicantUpdatedToReferrer({
                     referrerName: referrer.record.name || undefined,
@@ -414,6 +419,7 @@ export async function POST(request: Request) {
                     applicationId: updateRequestApplicationId,
                     updatedFields: ["their CV"],
                     resumeUrl: resumeFileId ? `https://drive.google.com/file/d/${resumeFileId}/view` : undefined,
+                    portalUrl,
                   });
                   await sendMail({
                     to: referrerEmail,

@@ -68,15 +68,17 @@ const emailWrapper = (content: string, preheader?: string, customHeader?: string
 </html>`;
 
 // Reusable button component (matching referrer template style)
+// Text is wrapped in a span to prevent Outlook from overriding visited link colors
 const button = (text: string, url: string, variant: 'primary' | 'secondary' | 'outline' | 'danger' = 'primary') => {
   const styles = {
-    primary: `background:${colors.primary};color:#ffffff;border:1px solid ${colors.primary};box-shadow:0 8px 18px rgba(47,95,179,0.16);`,
-    secondary: `background:${colors.ink};color:#ffffff;border:1px solid ${colors.ink};box-shadow:0 8px 18px rgba(15,35,70,0.12);`,
-    outline: `background:transparent;color:${colors.ink};border:2px solid ${colors.line};`,
-    danger: `background:transparent;color:${colors.error};border:2px solid ${colors.error};`,
+    primary: { bg: colors.primary, color: '#ffffff', border: `1px solid ${colors.primary}`, shadow: '0 8px 18px rgba(47,95,179,0.16)' },
+    secondary: { bg: colors.ink, color: '#ffffff', border: `1px solid ${colors.ink}`, shadow: '0 8px 18px rgba(15,35,70,0.12)' },
+    outline: { bg: 'transparent', color: colors.ink, border: `2px solid ${colors.line}`, shadow: 'none' },
+    danger: { bg: 'transparent', color: colors.error, border: `2px solid ${colors.error}`, shadow: 'none' },
   };
+  const s = styles[variant];
 
-  return `<a href="${escapeHtml(url)}" target="_blank" rel="noreferrer" style="display:inline-block;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;${styles[variant]}">${escapeHtml(text)}</a>`;
+  return `<a href="${escapeHtml(url)}" target="_blank" rel="noreferrer" style="display:inline-block;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;background:${s.bg};border:${s.border};box-shadow:${s.shadow};"><span style="color:${s.color};text-decoration:none;">${escapeHtml(text)}</span></a>`;
 };
 
 // Reusable info row (matching referrer template style)
@@ -632,6 +634,7 @@ type ReferrerRegistrationParams = {
   type: string;
   slots: string;
   locale?: 'en' | 'fr';
+  portalUrl?: string;
 };
 
 export function referrerRegistrationConfirmation(params: ReferrerRegistrationParams): TemplateResult {
@@ -646,6 +649,7 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
     type,
     slots,
     locale = 'en',
+    portalUrl,
   } = params;
 
   const subject = t(
@@ -715,6 +719,14 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
   );
   const replyText = t('Reply to this email', 'Répondre à cet e-mail', locale);
 
+  const portalCtaText = t(
+    'Access your referrer portal',
+    'Accéder à votre portail de recommandateur',
+    locale
+  );
+  const portalCtaButton = t('Open portal', 'Ouvrir le portail', locale);
+  const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
+
   const meetLink = process.env.FOUNDER_MEET_LINK || '';
   const normalizedMeetLink = meetLink ? normalizeHttpUrl(meetLink) : null;
 
@@ -753,12 +765,21 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
   ]);
 
   const cta = `
+    ${normalizedPortalUrl ? `
+      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#3b4251;text-align:center;">
+        ${escapeHtml(portalCtaText)}
+      </p>
+      <div style="text-align:center;margin:0 0 16px 0;">
+        ${button(portalCtaButton, normalizedPortalUrl, 'primary')}
+      </div>
+      ${divider}
+    ` : ''}
     ${normalizedMeetLink ? `
       <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#3b4251;text-align:center;">
         ${escapeHtml(ctaText1)}
       </p>
       <div style="text-align:center;margin:0 0 16px 0;">
-        ${button(ctaButton1, normalizedMeetLink, 'primary')}
+        ${button(ctaButton1, normalizedMeetLink, 'outline')}
       </div>
     ` : ''}
     <p style="margin:0 0 8px 0;font-size:14px;line-height:1.7;color:#3b4251;text-align:center;">
@@ -820,7 +841,7 @@ ${snapshotTitle}
 - ${typeLabel}: ${type}
 - ${slotsLabel}: ${slots}
 
-${normalizedMeetLink ? `${ctaText1}\n${ctaButton1}: ${normalizedMeetLink}\n\n` : ''}${ctaText2}
+${normalizedPortalUrl ? `${portalCtaText}\n${portalCtaButton}: ${normalizedPortalUrl}\n\n` : ''}${normalizedMeetLink ? `${ctaText1}\n${ctaButton1}: ${normalizedMeetLink}\n\n` : ''}${ctaText2}
 ${replyText}: info@andbeyondca.com
 
 - ${t('The iRefair team', 'L\'équipe iRefair', locale)}`;
@@ -832,10 +853,11 @@ type ReferrerAlreadyExistsParams = {
   name: string;
   iRref: string;
   locale?: 'en' | 'fr';
+  portalUrl?: string;
 };
 
 export function referrerAlreadyExistsEmail(params: ReferrerAlreadyExistsParams): TemplateResult {
-  const { name, iRref, locale = 'en' } = params;
+  const { name, iRref, locale = 'en', portalUrl } = params;
 
   const subject = t(
     'Your iRREF is already registered - iRefair',
@@ -868,6 +890,14 @@ export function referrerAlreadyExistsEmail(params: ReferrerAlreadyExistsParams):
   const contactLabel = t('Contact Admin', 'Contacter l\'administrateur', locale);
   const contactEmail = 'info@andbeyondca.com';
 
+  const portalCtaText = t(
+    'Access your referrer portal',
+    'Accéder à votre portail de recommandateur',
+    locale
+  );
+  const portalCtaButton = t('Open portal', 'Ouvrir le portail', locale);
+  const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
+
   const content = `
     <h1 style="margin:0 0 14px 0;font-size:22px;line-height:1.5;font-weight:700;color:#1f2a37;">
       ${greeting}
@@ -881,11 +911,20 @@ export function referrerAlreadyExistsEmail(params: ReferrerAlreadyExistsParams):
     <p style="margin:0 0 20px 0;font-size:14px;line-height:1.7;color:#3b4251;">
       ${escapeHtml(mainText3)}
     </p>
+    ${normalizedPortalUrl ? `
+      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#3b4251;text-align:center;">
+        ${escapeHtml(portalCtaText)}
+      </p>
+      <div style="text-align:center;margin:0 0 20px 0;">
+        ${button(portalCtaButton, normalizedPortalUrl, 'primary')}
+      </div>
+      ${divider}
+    ` : ''}
     <div style="text-align:center;margin:0 0 20px 0;">
       <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#3b4251;">
         ${escapeHtml(contactLabel)}:
       </p>
-      <a href="mailto:${contactEmail}" style="display:inline-block;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;background:#2f5fb3;color:#ffffff;border:1px solid #2f5fb3;box-shadow:0 8px 18px rgba(47,95,179,0.16);">${contactEmail}</a>
+      <a href="mailto:${contactEmail}" style="display:inline-block;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;background:transparent;color:#1f2a37;border:2px solid #e6e9f0;">${contactEmail}</a>
     </div>
   `;
 
@@ -915,7 +954,7 @@ ${mainText3}
 
 ${iRrefLabel}: ${iRref}
 
-${contactLabel}: ${contactEmail}
+${normalizedPortalUrl ? `${portalCtaText}\n${portalCtaButton}: ${normalizedPortalUrl}\n\n` : ''}${contactLabel}: ${contactEmail}
 
 - ${t('The iRefair team', 'L\'équipe iRefair', locale)}`;
 
@@ -1034,13 +1073,14 @@ ${jobOpeningsButton}: ${openingsUrl}
 // EXISTING TEMPLATES (from original emailTemplates.ts)
 // ============================================================================
 
-export function meetFounderInvite(referrerName: string, irref: string, link?: string): TemplateResult {
+export function meetFounderInvite(referrerName: string, irref: string, link?: string, portalUrl?: string): TemplateResult {
   const subject = "Invitation: Meet the Founder at iRefair";
   const normalizedLink = link ? normalizeHttpUrl(link) : null;
   const joinLink = normalizedLink || "Schedule link not provided yet - we will follow up with a calendar invitation.";
   const greeting = referrerName ? `Hi ${referrerName},` : "Hi there,";
   const greetingHtml = referrerName ? `Hi ${escapeHtml(referrerName)},` : "Hi there,";
   const safeIrref = escapeHtml(irref);
+  const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
 
   const text = `${greeting}
 
@@ -1049,7 +1089,7 @@ Thank you for being part of the iRefair community (iRREF ${irref}). I'd like to 
 Meet link: ${joinLink}
 
 If the link is unavailable, reply with your availability and we will send you a calendar invite.
-
+${normalizedPortalUrl ? `\nAccess your referrer portal: ${normalizedPortalUrl}\n` : ''}
 - Founder, iRefair`;
 
   const content = `
@@ -1079,6 +1119,14 @@ If the link is unavailable, reply with your availability and we will send you a 
         Schedule link not provided yet - reply with your availability and we'll send you a calendar invite.
       </p>
     `}
+
+    ${normalizedPortalUrl ? `
+      ${divider}
+      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 15px; text-align: center;">Access your referrer portal</p>
+      <p style="margin: 0 0 16px 0; text-align: center;">
+        ${button('Open portal', normalizedPortalUrl, 'outline')}
+      </p>
+    ` : ''}
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
       Best regards,<br>
@@ -2140,6 +2188,7 @@ type RescheduleRequestParams = {
   originalDateTime?: string;
   reason?: string;
   applicationId: string;
+  portalUrl?: string;
 };
 
 export function rescheduleRequestToReferrer(params: RescheduleRequestParams): TemplateResult {
@@ -2152,6 +2201,7 @@ export function rescheduleRequestToReferrer(params: RescheduleRequestParams): Te
     originalDateTime,
     reason,
     applicationId,
+    portalUrl,
   } = params;
 
   const greeting = referrerName ? `Hi ${referrerName},` : 'Hi,';
@@ -2162,6 +2212,7 @@ export function rescheduleRequestToReferrer(params: RescheduleRequestParams): Te
   const safeOriginalDateTime = originalDateTime ? escapeHtml(originalDateTime) : '';
   const safeReason = reason ? escapeHtml(reason) : '';
   const safeApplicationId = escapeHtml(applicationId);
+  const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
 
   const subject = `Reschedule request: ${applicantName || 'Applicant'} for ${position || 'meeting'}`;
 
@@ -2171,7 +2222,7 @@ ${applicantName || 'The applicant'} has requested to reschedule their meeting fo
 
 Application ID: ${applicationId}${applicantEmail ? `\nApplicant email: ${applicantEmail}` : ''}
 
-Please log in to your portal to reschedule the meeting.
+${normalizedPortalUrl ? `Open your portal to reschedule the meeting: ${normalizedPortalUrl}` : 'Please log in to your portal to reschedule the meeting.'}
 
 - The iRefair Team`;
 
@@ -2199,9 +2250,18 @@ Please log in to your portal to reschedule the meeting.
       </div>
     ` : ''}
 
-    <p style="margin: 16px 0 0 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Please log in to your portal to reschedule the meeting.
-    </p>
+    ${normalizedPortalUrl ? `
+      <p style="margin: 16px 0 12px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6; text-align: center;">
+        Open your portal to reschedule the meeting
+      </p>
+      <p style="margin: 0 0 16px 0; text-align: center;">
+        ${button('Open portal', normalizedPortalUrl, 'primary')}
+      </p>
+    ` : `
+      <p style="margin: 16px 0 0 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+        Please log in to your portal to reschedule the meeting.
+      </p>
+    `}
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
       Thank you,<br>
@@ -2230,6 +2290,7 @@ type ApplicantUpdatedParams = {
   applicationId: string;
   updatedFields?: string[];
   resumeUrl?: string;
+  portalUrl?: string;
 };
 
 export function applicantUpdatedToReferrer(params: ApplicantUpdatedParams): TemplateResult {
@@ -2241,6 +2302,7 @@ export function applicantUpdatedToReferrer(params: ApplicantUpdatedParams): Temp
     applicationId,
     updatedFields,
     resumeUrl,
+    portalUrl,
   } = params;
 
   const greeting = referrerName ? `Hi ${referrerName},` : 'Hi,';
@@ -2250,6 +2312,7 @@ export function applicantUpdatedToReferrer(params: ApplicantUpdatedParams): Temp
   const safePosition = position ? escapeHtml(position) : 'the position';
   const safeApplicationId = escapeHtml(applicationId);
   const normalizedResumeUrl = resumeUrl ? normalizeHttpUrl(resumeUrl) : null;
+  const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
 
   const updatedFieldsList = updatedFields && updatedFields.length > 0
     ? updatedFields.map((f) => escapeHtml(f)).join(', ')
@@ -2263,7 +2326,7 @@ ${applicantName || 'The applicant'} has updated ${updatedFields && updatedFields
 
 Application ID: ${applicationId}${applicantEmail ? `\nApplicant email: ${applicantEmail}` : ''}${resumeUrl ? `\nUpdated resume: ${resumeUrl}` : ''}
 
-Please log in to your portal to review the updates.
+${normalizedPortalUrl ? `Open your portal to review the updates: ${normalizedPortalUrl}` : 'Please log in to your portal to review the updates.'}
 
 - The iRefair Team`;
 
@@ -2286,13 +2349,22 @@ Please log in to your portal to review the updates.
 
     ${normalizedResumeUrl ? `
       <p style="margin: 16px 0; text-align: center;">
-        ${button('View Updated Resume', normalizedResumeUrl, 'secondary')}
+        ${button('View Updated Resume', normalizedResumeUrl, 'outline')}
       </p>
     ` : ''}
 
-    <p style="margin: 16px 0 0 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Please log in to your portal to review the updates.
-    </p>
+    ${normalizedPortalUrl ? `
+      <p style="margin: 16px 0 12px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6; text-align: center;">
+        Open your portal to review the updates
+      </p>
+      <p style="margin: 0 0 16px 0; text-align: center;">
+        ${button('Open portal', normalizedPortalUrl, 'primary')}
+      </p>
+    ` : `
+      <p style="margin: 16px 0 0 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+        Please log in to your portal to review the updates.
+      </p>
+    `}
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
       Thank you,<br>

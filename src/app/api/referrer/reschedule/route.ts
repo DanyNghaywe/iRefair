@@ -11,6 +11,7 @@ import { appendActionHistoryEntry, type ActionLogEntry } from '@/lib/actionHisto
 import { sendMail } from '@/lib/mailer';
 import { rescheduleRequestToReferrer } from '@/lib/emailTemplates';
 import { formatMeetingDateTime } from '@/lib/timezone';
+import { buildReferrerPortalLink, ensureReferrerPortalTokenVersion } from '@/lib/referrerPortalLink';
 
 export const dynamic = 'force-dynamic';
 
@@ -300,8 +301,12 @@ export async function POST(request: NextRequest) {
   );
 
   // Send email to referrer
-  if (referrerEmail) {
+  if (referrerEmail && referrer?.record?.irref) {
     try {
+      // Generate portal link for referrer
+      const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrer.record.irref);
+      const portalUrl = buildReferrerPortalLink(referrer.record.irref, portalTokenVersion);
+
       const template = rescheduleRequestToReferrer({
         referrerName,
         applicantName,
@@ -310,6 +315,7 @@ export async function POST(request: NextRequest) {
         position,
         applicationId: application.record.id,
         originalDateTime,
+        portalUrl,
       });
 
       await sendMail({
