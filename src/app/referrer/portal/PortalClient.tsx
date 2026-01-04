@@ -209,12 +209,12 @@ const translations: Record<
       date: "Date",
       time: "Time",
       timezone: "Timezone",
-      meetingUrl: "Meeting URL (optional)",
+      meetingUrl: "Meeting URL",
       meetingUrlPlaceholder: "https://zoom.us/j/...",
       notes: "Notes (optional)",
       notesPlaceholder: "Add any notes or feedback...",
       includeUpdateLink: "Include link for candidate to update their CV",
-      missingFields: "Please fill in date, time, and timezone.",
+      missingFields: "Please fill in date, time, timezone, and meeting URL.",
     },
     empty: {
       title: "No applications assigned",
@@ -363,12 +363,12 @@ const translations: Record<
       date: "Date",
       time: "Heure",
       timezone: "Fuseau horaire",
-      meetingUrl: "URL de la réunion (optionnel)",
+      meetingUrl: "URL de la réunion",
       meetingUrlPlaceholder: "https://zoom.us/j/...",
       notes: "Notes (optionnel)",
       notesPlaceholder: "Ajoutez des notes ou commentaires...",
       includeUpdateLink: "Inclure un lien pour que le candidat mette à jour son CV",
-      missingFields: "Veuillez remplir la date, l'heure et le fuseau horaire.",
+      missingFields: "Veuillez remplir la date, l'heure, le fuseau horaire et l'URL de la réunion.",
     },
     empty: {
       title: "Aucune candidature assignée",
@@ -746,7 +746,7 @@ export default function PortalClient() {
 
     // Validation for schedule meeting
     if (modalAction === "SCHEDULE_MEETING") {
-      if (!meetingDate || !meetingTime || !meetingTimezone) {
+      if (!meetingDate || !meetingTime || !meetingTimezone || !meetingUrl.trim()) {
         toast.error(t.modal.missingFields, t.modal.missingFields);
         return;
       }
@@ -1478,13 +1478,14 @@ export default function PortalClient() {
                   </div>
                 </div>
                 <div className="portal-modal-field portal-modal-field--full">
-                  <label htmlFor="meeting-url">{t.modal.meetingUrl}</label>
+                  <label htmlFor="meeting-url">{t.modal.meetingUrl} *</label>
                   <input
                     id="meeting-url"
                     type="url"
                     value={meetingUrl}
                     onChange={(e) => setMeetingUrl(e.target.value)}
                     placeholder={t.modal.meetingUrlPlaceholder}
+                    required
                   />
                 </div>
               </div>
