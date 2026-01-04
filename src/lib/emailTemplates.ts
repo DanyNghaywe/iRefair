@@ -1394,7 +1394,6 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
 
     ${divider}
 
-    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; font-weight: 600;">Take action:</p>
     <table role="presentation" cellpadding="0" cellspacing="0">
       <tr>
         ${normalizedResumeUrl ? `<td style="padding-right: 12px;">${button('View Resume', normalizedResumeUrl, 'secondary')}</td>` : ''}
@@ -1405,7 +1404,7 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
 
     ${normalizedPortalUrl ? `
     <p style="margin: 24px 0 12px 0; color: ${colors.muted}; font-size: 14px;">
-      Or manage all your applications in your <a href="${escapeHtml(normalizedPortalUrl)}" style="color: ${colors.primary};">Referrer Portal</a>.
+      Manage all your applications in your <a href="${escapeHtml(normalizedPortalUrl)}" style="color: ${colors.primary};">Referrer Portal</a>.
     </p>
     ` : ''}
 
