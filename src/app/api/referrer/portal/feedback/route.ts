@@ -22,6 +22,8 @@ import {
   infoRequestToApplicant,
   interviewCompletedToApplicant,
   jobOfferToApplicant,
+  meetingScheduledToReferrer,
+  meetingCancelledToReferrer,
 } from '@/lib/emailTemplates';
 import { normalizeHttpUrl } from '@/lib/validation';
 import { escapeHtml } from '@/lib/validation';
@@ -301,7 +303,7 @@ export async function POST(request: NextRequest) {
     patch.rescheduleTokenExpiresAt = '';
   }
 
-  // Track if we're cancelling a meeting due to CV update request
+  // Track if we're cancelling a meeting due to a status change
   let meetingWasCancelled = false;
 
   if (action === 'REQUEST_CV_UPDATE' || action === 'REQUEST_INFO' || (action === 'CV_MISMATCH' && body.includeUpdateLink)) {
@@ -315,8 +317,8 @@ export async function POST(request: NextRequest) {
     patch.updateRequestExpiresAt = updateExpiry;
     patch.updateRequestPurpose = purpose;
 
-    // If requesting CV update while meeting is scheduled, cancel the meeting
-    if (action === 'REQUEST_CV_UPDATE' && currentStatus === 'meeting scheduled') {
+    // If any of these actions occur while meeting is scheduled, cancel the meeting
+    if (currentStatus === 'meeting scheduled') {
       patch.meetingDate = '';
       patch.meetingTime = '';
       patch.meetingTimezone = '';
@@ -325,6 +327,20 @@ export async function POST(request: NextRequest) {
       patch.rescheduleTokenExpiresAt = '';
       meetingWasCancelled = true;
     }
+  }
+
+  // Track if meeting was cancelled due to rejection or CV mismatch (for referrer email)
+  let meetingCancelledDueToRejection = false;
+
+  // If rejecting or marking CV mismatch (without update link) while meeting is scheduled, cancel the meeting
+  if (currentStatus === 'meeting scheduled' && (action === 'REJECT' || (action === 'CV_MISMATCH' && !body.includeUpdateLink))) {
+    patch.meetingDate = '';
+    patch.meetingTime = '';
+    patch.meetingTimezone = '';
+    patch.meetingUrl = '';
+    patch.rescheduleTokenHash = '';
+    patch.rescheduleTokenExpiresAt = '';
+    meetingCancelledDueToRejection = true;
   }
 
   // Set new status
@@ -405,6 +421,7 @@ export async function POST(request: NextRequest) {
             includeUpdateLink: body.includeUpdateLink,
             updateToken,
             applicationId,
+            meetingWasCancelled,
           });
           break;
 
@@ -430,6 +447,7 @@ export async function POST(request: NextRequest) {
             requestedInfo: notes,
             updateToken: updateToken || '',
             applicationId,
+            meetingWasCancelled,
           });
           break;
 
@@ -464,6 +482,78 @@ export async function POST(request: NextRequest) {
       }
     } catch (emailError) {
       console.error('Error sending applicant email:', emailError);
+      // Continue - don't fail the action if email fails
+    }
+  }
+
+  // Send confirmation email to referrer for meeting schedule/cancel
+  if (referrerEmail) {
+    try {
+      let referrerTemplate;
+      const portalUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://irefair.com'}/referrer/portal`;
+
+      if (action === 'SCHEDULE_MEETING') {
+        referrerTemplate = meetingScheduledToReferrer({
+          referrerName,
+          applicantName,
+          companyName,
+          position,
+          meetingDate: body.meetingDate || '',
+          meetingTime: body.meetingTime || '',
+          meetingTimezone: body.meetingTimezone || '',
+          meetingUrl: patch.meetingUrl,
+          portalUrl,
+        });
+      } else if (action === 'CANCEL_MEETING') {
+        referrerTemplate = meetingCancelledToReferrer({
+          referrerName,
+          applicantName,
+          companyName,
+          position,
+          reason: notes,
+          portalUrl,
+        });
+      } else if (meetingWasCancelled) {
+        // Meeting was cancelled due to REQUEST_CV_UPDATE, REQUEST_INFO, or CV_MISMATCH with update link
+        const actionDescriptions: Record<string, string> = {
+          REQUEST_CV_UPDATE: 'requested a CV update',
+          REQUEST_INFO: 'requested additional information',
+          CV_MISMATCH: 'marked the CV as a mismatch',
+        };
+        referrerTemplate = meetingCancelledToReferrer({
+          referrerName,
+          applicantName,
+          companyName,
+          position,
+          cancelledDueToAction: actionDescriptions[action] || 'changed the application status',
+          portalUrl,
+        });
+      } else if (meetingCancelledDueToRejection) {
+        // Meeting was cancelled due to REJECT or CV_MISMATCH without update link
+        const actionDescriptions: Record<string, string> = {
+          REJECT: 'rejected the application',
+          CV_MISMATCH: 'marked the CV as a mismatch',
+        };
+        referrerTemplate = meetingCancelledToReferrer({
+          referrerName,
+          applicantName,
+          companyName,
+          position,
+          cancelledDueToAction: actionDescriptions[action] || 'changed the application status',
+          portalUrl,
+        });
+      }
+
+      if (referrerTemplate) {
+        await sendMail({
+          to: referrerEmail,
+          subject: referrerTemplate.subject,
+          text: referrerTemplate.text,
+          html: referrerTemplate.html,
+        });
+      }
+    } catch (emailError) {
+      console.error('Error sending referrer email:', emailError);
       // Continue - don't fail the action if email fails
     }
   }

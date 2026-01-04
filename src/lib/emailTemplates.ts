@@ -1783,6 +1783,7 @@ type CvMismatchParams = {
   includeUpdateLink?: boolean;
   updateToken?: string;
   applicationId?: string;
+  meetingWasCancelled?: boolean;
 };
 
 export function cvMismatchToApplicant(params: CvMismatchParams): TemplateResult {
@@ -1794,6 +1795,7 @@ export function cvMismatchToApplicant(params: CvMismatchParams): TemplateResult 
     includeUpdateLink,
     updateToken,
     applicationId,
+    meetingWasCancelled,
   } = params;
 
   const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
@@ -1808,11 +1810,15 @@ export function cvMismatchToApplicant(params: CvMismatchParams): TemplateResult 
 
   const subject = `CV feedback: ${position || 'Your application'}`;
 
+  const meetingCancelledText = meetingWasCancelled
+    ? '\n\nNote: Your previously scheduled meeting has been cancelled. Once you update your CV, the referrer will review it and schedule a new meeting with you.'
+    : '';
+
   const text = `${greeting}
 
 Thank you for applying to ${position || 'the position'} at ${companyName || 'the company'}.
 
-After reviewing your CV, we found that it doesn't quite match the requirements for this role.${feedback ? `\n\nFeedback: ${feedback}` : ''}
+After reviewing your CV, we found that it doesn't quite match the requirements for this role.${feedback ? `\n\nFeedback: ${feedback}` : ''}${meetingCancelledText}
 ${updateUrl ? `\nIf you'd like to update your CV and resubmit, you can do so here: ${updateUrl}\n\nThis link expires in 7 days.` : ''}
 
 Don't be discouraged - there are many opportunities on iRefair that may be a better fit!
@@ -1835,6 +1841,14 @@ Don't be discouraged - there are many opportunities on iRefair that may be a bet
       <div style="background: ${colors.background}; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid ${colors.primary};">
         <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">Feedback:</p>
         <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">${safeFeedback}</p>
+      </div>
+    ` : ''}
+
+    ${meetingWasCancelled ? `
+      <div style="background: #fef3c7; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid #f59e0b;">
+        <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
+          <strong>Note:</strong> Your previously scheduled meeting has been cancelled. Once you update your CV, the referrer will review it and schedule a new meeting with you.
+        </p>
       </div>
     ` : ''}
 
@@ -1979,6 +1993,7 @@ type InfoRequestParams = {
   requestedInfo?: string;
   updateToken: string;
   applicationId: string;
+  meetingWasCancelled?: boolean;
 };
 
 export function infoRequestToApplicant(params: InfoRequestParams): TemplateResult {
@@ -1989,6 +2004,7 @@ export function infoRequestToApplicant(params: InfoRequestParams): TemplateResul
     requestedInfo,
     updateToken,
     applicationId,
+    meetingWasCancelled,
   } = params;
 
   const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
@@ -2001,9 +2017,13 @@ export function infoRequestToApplicant(params: InfoRequestParams): TemplateResul
 
   const subject = `Action needed: Additional information requested`;
 
+  const meetingCancelledText = meetingWasCancelled
+    ? '\n\nNote: Your previously scheduled meeting has been cancelled. Once you provide the requested information, the referrer will review it and schedule a new meeting with you.'
+    : '';
+
   const text = `${greeting}
 
-The referrer reviewing your application for ${position || 'the position'} at ${companyName || 'the company'} has requested additional information.${requestedInfo ? `\n\nRequested: ${requestedInfo}` : ''}
+The referrer reviewing your application for ${position || 'the position'} at ${companyName || 'the company'} has requested additional information.${requestedInfo ? `\n\nRequested: ${requestedInfo}` : ''}${meetingCancelledText}
 
 Please provide the information here: ${updateUrl}
 
@@ -2024,6 +2044,14 @@ This link expires in 7 days.
       <div style="background: ${colors.background}; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid ${colors.primary};">
         <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">Requested information:</p>
         <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">${safeRequestedInfo}</p>
+      </div>
+    ` : ''}
+
+    ${meetingWasCancelled ? `
+      <div style="background: #fef3c7; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid #f59e0b;">
+        <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
+          <strong>Note:</strong> Your previously scheduled meeting has been cancelled. Once you provide the requested information, the referrer will review it and schedule a new meeting with you.
+        </p>
       </div>
     ` : ''}
 
@@ -2380,6 +2408,206 @@ ${normalizedPortalUrl ? `Open your portal to review the updates: ${normalizedPor
   `;
 
   const html = emailWrapper(content, `${applicantName || 'A applicant'} has updated their application`, customHeader);
+
+  return { subject, text, html };
+}
+
+type MeetingScheduledToReferrerParams = {
+  referrerName?: string;
+  applicantName?: string;
+  companyName?: string;
+  position?: string;
+  meetingDate: string;
+  meetingTime: string;
+  meetingTimezone: string;
+  meetingUrl?: string;
+  portalUrl?: string;
+};
+
+export function meetingScheduledToReferrer(params: MeetingScheduledToReferrerParams): TemplateResult {
+  const {
+    referrerName,
+    applicantName,
+    companyName,
+    position,
+    meetingDate,
+    meetingTime,
+    meetingTimezone,
+    meetingUrl,
+    portalUrl,
+  } = params;
+
+  const formattedDateTime = formatMeetingDateTime(meetingDate, meetingTime, meetingTimezone);
+  const greeting = referrerName ? `Hi ${referrerName},` : 'Hi,';
+  const greetingHtml = referrerName ? `Hi ${escapeHtml(referrerName)},` : 'Hi,';
+  const safeApplicantName = applicantName ? escapeHtml(applicantName) : 'The applicant';
+  const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
+  const safePosition = position ? escapeHtml(position) : 'the position';
+  const normalizedMeetingUrl = meetingUrl ? normalizeHttpUrl(meetingUrl) : null;
+  const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
+
+  const subject = `Meeting confirmed: ${applicantName || 'Applicant'} for ${position || 'Interview'}`;
+
+  const text = `${greeting}
+
+You have scheduled a meeting with ${applicantName || 'an applicant'} for ${position || 'the position'} at ${companyName || 'the company'}.
+
+Meeting Details:
+- When: ${formattedDateTime}
+- Join link: ${normalizedMeetingUrl || 'Not provided'}
+
+${normalizedPortalUrl ? `Manage this application in your portal: ${normalizedPortalUrl}` : ''}
+
+The applicant has been notified and will receive the meeting details.
+
+- The iRefair Team`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Meeting confirmed</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Your meeting has been scheduled</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      You have scheduled a meeting with <strong>${safeApplicantName}</strong> for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong>.
+    </p>
+
+    ${divider}
+
+    <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
+      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Meeting Details</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${infoRow('When', `<strong>${escapeHtml(formattedDateTime)}</strong>`)}
+        ${normalizedMeetingUrl ? infoRow('Join link', `<a href="${escapeHtml(normalizedMeetingUrl)}" style="color: ${colors.primary};">${escapeHtml(normalizedMeetingUrl)}</a>`, false) : ''}
+      </table>
+    </div>
+
+    <p style="margin: 16px 0; color: ${colors.success}; font-size: 14px; background: #ecfdf5; padding: 12px 16px; border-radius: 10px; text-align: center;">
+      ✓ The applicant has been notified and will receive the meeting details.
+    </p>
+
+    ${normalizedPortalUrl ? `
+      <p style="margin: 16px 0 12px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6; text-align: center;">
+        Manage this application in your portal
+      </p>
+      <p style="margin: 0 0 16px 0; text-align: center;">
+        ${button('Open portal', normalizedPortalUrl, 'primary')}
+      </p>
+    ` : ''}
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      Thank you,<br>
+      <strong>The iRefair Team</strong>
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">MEETING CONFIRMED</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `Meeting scheduled for ${formattedDateTime}`, customHeader);
+
+  return { subject, text, html };
+}
+
+type MeetingCancelledToReferrerParams = {
+  referrerName?: string;
+  applicantName?: string;
+  companyName?: string;
+  position?: string;
+  reason?: string;
+  cancelledDueToAction?: string;
+  portalUrl?: string;
+};
+
+export function meetingCancelledToReferrer(params: MeetingCancelledToReferrerParams): TemplateResult {
+  const {
+    referrerName,
+    applicantName,
+    companyName,
+    position,
+    reason,
+    cancelledDueToAction,
+    portalUrl,
+  } = params;
+
+  const greeting = referrerName ? `Hi ${referrerName},` : 'Hi,';
+  const greetingHtml = referrerName ? `Hi ${escapeHtml(referrerName)},` : 'Hi,';
+  const safeApplicantName = applicantName ? escapeHtml(applicantName) : 'The applicant';
+  const safePosition = position ? escapeHtml(position) : 'the position';
+  const safeReason = reason ? escapeHtml(reason) : '';
+  const safeCancelledDueToAction = cancelledDueToAction ? escapeHtml(cancelledDueToAction) : '';
+  const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
+
+  const subject = `Meeting cancelled: ${applicantName || 'Applicant'} for ${position || 'Interview'}`;
+
+  const reasonText = reason
+    ? `\n\nReason: ${reason}`
+    : cancelledDueToAction
+      ? `\n\nThis meeting was cancelled because you ${cancelledDueToAction}.`
+      : '';
+
+  const text = `${greeting}
+
+The meeting with ${applicantName || 'the applicant'} for ${position || 'the position'} has been cancelled.${reasonText}
+
+${normalizedPortalUrl ? `Manage this application in your portal: ${normalizedPortalUrl}` : ''}
+
+The applicant has been notified.
+
+- The iRefair Team`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Meeting cancelled</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Confirmation of cancellation</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      The meeting with <strong>${safeApplicantName}</strong> for <strong>${safePosition}</strong> has been cancelled.
+    </p>
+
+    ${safeReason ? `
+      <div style="background: ${colors.background}; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid ${colors.secondary};">
+        <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">Reason:</p>
+        <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">${safeReason}</p>
+      </div>
+    ` : safeCancelledDueToAction ? `
+      <div style="background: ${colors.background}; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid ${colors.primary};">
+        <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">
+          This meeting was cancelled because you <strong>${safeCancelledDueToAction}</strong>.
+        </p>
+      </div>
+    ` : ''}
+
+    <p style="margin: 16px 0; color: ${colors.muted}; font-size: 14px; background: ${colors.background}; padding: 12px 16px; border-radius: 10px; text-align: center;">
+      The applicant has been notified of this cancellation.
+    </p>
+
+    ${normalizedPortalUrl ? `
+      <p style="margin: 16px 0 12px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6; text-align: center;">
+        Manage this application in your portal
+      </p>
+      <p style="margin: 0 0 16px 0; text-align: center;">
+        ${button('Open portal', normalizedPortalUrl, 'primary')}
+      </p>
+    ` : ''}
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      Thank you,<br>
+      <strong>The iRefair Team</strong>
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">MEETING CANCELLED</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `Meeting cancelled: ${applicantName || 'Applicant'}`, customHeader);
 
   return { subject, text, html };
 }
