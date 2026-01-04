@@ -187,10 +187,15 @@ function ArchivedApplicantsContent() {
       )}
 
       <FilterBar
-        searchValue={searchInput}
-        onSearchChange={setSearchInput}
-        searchPlaceholder="Search archived applicants..."
-        filters={[]}
+        filters={[
+          {
+            type: "text",
+            key: "search",
+            placeholder: "Search archived applicants...",
+            value: searchInput,
+            onChange: setSearchInput,
+          },
+        ]}
       />
 
       {loading ? (

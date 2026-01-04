@@ -185,10 +185,15 @@ function ArchivedReferrersContent() {
       )}
 
       <FilterBar
-        searchValue={searchInput}
-        onSearchChange={setSearchInput}
-        searchPlaceholder="Search archived referrers..."
-        filters={[]}
+        filters={[
+          {
+            type: "text",
+            key: "search",
+            placeholder: "Search archived referrers...",
+            value: searchInput,
+            onChange: setSearchInput,
+          },
+        ]}
       />
 
       {loading ? (
