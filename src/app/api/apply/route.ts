@@ -208,19 +208,6 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join(' ')
       .trim();
-    const feedbackRecipient =
-      process.env.APPLICATION_FEEDBACK_EMAIL ||
-      process.env.SMTP_FROM_EMAIL ||
-      process.env.SMTP_USER ||
-      referrer.email;
-    const feedbackSubject = encodeURIComponent(
-      `Feedback: ${applicant.id || applicantId} for ${iCrn}`,
-    );
-    const approveBody = encodeURIComponent('Approved / interested. Notes: ');
-    const declineBody = encodeURIComponent('Decline / not a fit. Notes: ');
-    const feedbackApproveUrl = `mailto:${feedbackRecipient}?subject=${feedbackSubject}&body=${approveBody}`;
-    const feedbackDeclineUrl = `mailto:${feedbackRecipient}?subject=${feedbackSubject}&body=${declineBody}`;
-
     // Generate portal link for the referrer (skip for fallback referrer)
     let portalUrl: string | undefined;
     if (referrer.irref && referrer.irref !== 'fallback') {
@@ -243,8 +230,6 @@ export async function POST(request: Request) {
       position,
       resumeFileName: resumeEntry.name,
       referenceNumber,
-      feedbackApproveUrl,
-      feedbackDeclineUrl,
       portalUrl,
     });
 
