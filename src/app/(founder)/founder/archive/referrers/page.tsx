@@ -200,6 +200,7 @@ function ArchivedReferrersContent() {
         <p className="text-muted">Loading...</p>
       ) : items.length === 0 ? (
         <EmptyState
+          variant="referrers"
           title="No archived referrers"
           description="Referrers that are archived will appear here."
         />

@@ -207,6 +207,7 @@ function ArchivedApplicationsContent() {
         <p className="text-muted">Loading...</p>
       ) : items.length === 0 ? (
         <EmptyState
+          variant="applications"
           title="No archived applications"
           description="Applications that are archived will appear here."
         />

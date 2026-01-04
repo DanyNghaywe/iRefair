@@ -202,6 +202,7 @@ function ArchivedApplicantsContent() {
         <p className="text-muted">Loading...</p>
       ) : items.length === 0 ? (
         <EmptyState
+          variant="candidates"
           title="No archived applicants"
           description="Applicants that are archived will appear here."
         />
