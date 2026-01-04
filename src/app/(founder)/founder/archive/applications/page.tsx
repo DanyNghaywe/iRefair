@@ -192,16 +192,22 @@ function ArchivedApplicationsContent() {
       )}
 
       <FilterBar
-        searchValue={searchInput}
-        onSearchChange={setSearchInput}
-        searchPlaceholder="Search archived applications..."
-        filters={[]}
+        filters={[
+          {
+            type: "text",
+            key: "search",
+            placeholder: "Search archived applications...",
+            value: searchInput,
+            onChange: setSearchInput,
+          },
+        ]}
       />
 
       {loading ? (
         <p className="text-muted">Loading...</p>
       ) : items.length === 0 ? (
         <EmptyState
+          variant="applications"
           title="No archived applications"
           description="Applications that are archived will appear here."
         />

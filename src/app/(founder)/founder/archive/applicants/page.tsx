@@ -187,16 +187,22 @@ function ArchivedApplicantsContent() {
       )}
 
       <FilterBar
-        searchValue={searchInput}
-        onSearchChange={setSearchInput}
-        searchPlaceholder="Search archived applicants..."
-        filters={[]}
+        filters={[
+          {
+            type: "text",
+            key: "search",
+            placeholder: "Search archived applicants...",
+            value: searchInput,
+            onChange: setSearchInput,
+          },
+        ]}
       />
 
       {loading ? (
         <p className="text-muted">Loading...</p>
       ) : items.length === 0 ? (
         <EmptyState
+          variant="candidates"
           title="No archived applicants"
           description="Applicants that are archived will appear here."
         />

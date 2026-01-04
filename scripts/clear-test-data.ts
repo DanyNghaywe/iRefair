@@ -68,7 +68,7 @@ async function main() {
   for (const sheet of doc.data.sheets ?? []) {
     const title = sheet.properties?.title;
     const sheetId = sheet.properties?.sheetId;
-    if (title && sheetId !== undefined) {
+    if (title && sheetId != null) {
       sheetMap.set(title, sheetId);
     }
   }
