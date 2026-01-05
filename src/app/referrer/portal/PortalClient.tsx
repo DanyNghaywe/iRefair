@@ -11,6 +11,7 @@ import { useLanguage } from "@/components/LanguageProvider";
 import { Select } from "@/components/Select";
 import { TimePicker } from "@/components/TimePicker";
 import { useToast } from "@/components/Toast";
+import { getAllTimezoneOptions } from "@/lib/timezone";
 
 type Language = "en" | "fr";
 
@@ -516,21 +517,8 @@ const ACTIONS: ActionConfig[] = [
   { code: "OFFER_JOB", enabledStatuses: ["interviewed"] },
 ];
 
-const TIMEZONE_OPTIONS = [
-  { value: "America/Toronto", label: "Toronto (EST)" },
-  { value: "America/Vancouver", label: "Vancouver (PST)" },
-  { value: "America/Edmonton", label: "Edmonton (MST)" },
-  { value: "America/Winnipeg", label: "Winnipeg (CST)" },
-  { value: "America/Halifax", label: "Halifax (AST)" },
-  { value: "America/St_Johns", label: "St. John's (NST)" },
-  { value: "America/New_York", label: "New York (EST)" },
-  { value: "America/Chicago", label: "Chicago (CST)" },
-  { value: "America/Denver", label: "Denver (MST)" },
-  { value: "America/Los_Angeles", label: "Los Angeles (PST)" },
-  { value: "Europe/London", label: "London (GMT)" },
-  { value: "Europe/Paris", label: "Paris (CET)" },
-  { value: "UTC", label: "UTC" },
-];
+// Get all available IANA timezones with formatted labels
+const TIMEZONE_OPTIONS = getAllTimezoneOptions();
 
 function StatusBadge({ status, statusLabels }: { status: string; statusLabels: Record<string, string> }) {
   const normalized = status?.toLowerCase().trim() || "new";
