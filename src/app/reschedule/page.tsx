@@ -7,7 +7,11 @@ import { PublicFooter } from '@/components/PublicFooter';
 import { ActionBtn } from '@/components/ActionBtn';
 import { DatePicker } from '@/components/DatePicker';
 import { TimePicker } from '@/components/TimePicker';
+import { Select } from '@/components/Select';
 import { SuccessAnimation } from '@/components/SuccessAnimation';
+import { getAllTimezoneOptions } from '@/lib/timezone';
+
+const TIMEZONE_OPTIONS = getAllTimezoneOptions();
 
 type MeetingInfo = {
   meetingDate: string;
@@ -36,6 +40,7 @@ function ReschedulePageContent() {
 
   // Form fields
   const [reason, setReason] = useState('');
+  const [timezone, setTimezone] = useState('');
   const [proposedTimes, setProposedTimes] = useState<ProposedTime[]>([
     { date: '', time: '' },
     { date: '', time: '' },
@@ -67,6 +72,7 @@ function ReschedulePageContent() {
         }
 
         setMeetingInfo(data.meetingInfo);
+        setTimezone(data.meetingInfo.meetingTimezone || '');
         setPageState('form');
       } catch {
         setErrorMessage('Unable to validate the reschedule link. Please try again.');
@@ -101,6 +107,7 @@ function ReschedulePageContent() {
         body: JSON.stringify({
           reason: reason.trim(),
           proposedTimes: validProposedTimes,
+          proposedTimezone: timezone,
         }),
       });
 
@@ -160,7 +167,6 @@ function ReschedulePageContent() {
                   show={showSuccessAnimation}
                   variant="default"
                   size="lg"
-                  onAnimationComplete={() => setShowSuccessAnimation(false)}
                 />
               </div>
               <h1 id="reschedule-title">Reschedule Requested</h1>
@@ -222,6 +228,18 @@ function ReschedulePageContent() {
                   <p className="section-description">
                     Help the recruiter find a better time by suggesting up to 3 time slots that work for you.
                   </p>
+
+                  <div className="proposed-times-timezone">
+                    <label htmlFor="proposed-timezone">Timezone</label>
+                    <Select
+                      id="proposed-timezone"
+                      name="proposed-timezone"
+                      options={TIMEZONE_OPTIONS}
+                      value={timezone}
+                      onChange={(val) => setTimezone(val as string)}
+                      placeholder="Select timezone"
+                    />
+                  </div>
 
                   <div className="proposed-times-grid">
                     {proposedTimes.map((slot, index) => (

@@ -44,12 +44,12 @@
 }
 
 .placeholder {
-  color: #9ca3af;
+  color: var(--picker-placeholder-color, #9ca3af);
 }
 
 .icon {
   flex-shrink: 0;
-  color: #6b7280;
+  color: var(--picker-icon-color, #6b7280);
 }
 
 /* Calendar dropdown */

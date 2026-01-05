@@ -1052,6 +1052,7 @@ body:has(.board--transparent) {
 .reschedule-icon--loading .loading-indicator {
   width: 32px;
   height: 32px;
+  margin-left: 0;
 }
 
 .reschedule-icon--error {
@@ -1164,10 +1165,12 @@ body:has(.board--transparent) {
   color: rgba(255, 255, 255, 0.45);
 }
 
-.reschedule-form textarea:focus {
+.reschedule-form textarea:focus,
+.reschedule-form textarea:focus-visible {
   outline: none;
   border-color: rgba(var(--accent-primary-rgb), 0.6);
   box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.15);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .reschedule-form .field-hint {
@@ -1196,6 +1199,49 @@ body:has(.board--transparent) {
   font-size: var(--font-size-sm);
   margin: 0 0 20px 0;
   line-height: 1.5;
+}
+
+.proposed-times-timezone {
+  margin-bottom: 20px;
+}
+
+.proposed-times-timezone label {
+  display: block;
+  color: rgba(255, 255, 255, 0.7);
+  font-size: var(--font-size-xs);
+  font-weight: 500;
+  margin-bottom: 8px;
+}
+
+/* Dark theme overrides for DatePicker, TimePicker, and Select in reschedule form */
+.reschedule-form {
+  --portal-input-bg: rgba(255, 255, 255, 0.08);
+  --portal-input-border: rgba(255, 255, 255, 0.15);
+  --ink: rgba(255, 255, 255, 0.95);
+  --picker-placeholder-color: rgba(255, 255, 255, 0.45);
+  --picker-icon-color: rgba(255, 255, 255, 0.5);
+}
+
+.reschedule-form button[aria-haspopup="dialog"],
+.reschedule-form button[aria-haspopup="listbox"] {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.reschedule-form button[aria-haspopup="dialog"]:hover,
+.reschedule-form button[aria-haspopup="listbox"]:hover {
+  border-color: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.reschedule-form button[aria-haspopup="dialog"]:focus,
+.reschedule-form button[aria-haspopup="listbox"]:focus,
+.reschedule-form button[aria-haspopup="dialog"][aria-expanded="true"],
+.reschedule-form button[aria-haspopup="listbox"][aria-expanded="true"] {
+  border-color: rgba(var(--accent-primary-rgb), 0.6);
+  box-shadow: 0 0 0 3px rgba(var(--accent-primary-rgb), 0.15);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .proposed-times-grid {

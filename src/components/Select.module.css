@@ -76,7 +76,7 @@
 }
 
 .isPlaceholder {
-  color: rgba(93, 97, 116, 0.9);
+  color: var(--picker-placeholder-color, rgba(93, 97, 116, 0.9));
   font-weight: 600;
 }
 
@@ -84,7 +84,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: #4b5563;
+  color: var(--picker-icon-color, #4b5563);
   position: absolute;
   right: 12px;
   top: 50%;
