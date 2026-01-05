@@ -9,7 +9,6 @@ import { Confetti, useConfetti } from '@/components/Confetti';
 import { useLanguage } from '@/components/LanguageProvider';
 import { PublicFooter } from '@/components/PublicFooter';
 import { Select } from '@/components/Select';
-import { SuccessAnimation } from '@/components/SuccessAnimation';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 import { countryOptions } from '@/lib/countries';
 
@@ -406,7 +405,6 @@ function ApplicantPageContent() {
   const errorBannerRef = useRef<HTMLDivElement | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const confetti = useConfetti();
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const [languageSelection, setLanguageSelection] = useState<string[]>([]);
   const [countrySelection, setCountrySelection] = useState('');
   const [locatedInCanada, setLocatedInCanada] = useState('');
@@ -794,7 +792,6 @@ function ApplicantPageContent() {
 
       setStatus('ok');
       confetti.trigger();
-      setShowSuccessAnimation(true);
     } catch {
       setStatus('error');
     } finally {
@@ -1349,12 +1346,6 @@ function ApplicantPageContent() {
                 <div className="footer-status">
                   {status === 'ok' && (
                     <div className="status-banner status-banner--ok" role="status" aria-live="polite">
-                      <SuccessAnimation
-                        show={showSuccessAnimation}
-                        variant="default"
-                        size="sm"
-                        onAnimationComplete={() => setShowSuccessAnimation(false)}
-                      />
                       <span>{t.statusMessages.ok}</span>
                     </div>
                   )}

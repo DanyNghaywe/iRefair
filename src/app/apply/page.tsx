@@ -18,7 +18,6 @@ import { AppShell } from '@/components/AppShell';
 import { Confetti, useConfetti } from '@/components/Confetti';
 import { useLanguage } from '@/components/LanguageProvider';
 import { PublicFooter } from '@/components/PublicFooter';
-import { SuccessAnimation } from '@/components/SuccessAnimation';
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
@@ -494,7 +493,6 @@ export default function ApplyPage() {
   const [errorMessage, setErrorMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const confetti = useConfetti();
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const errorBannerRef = useRef<HTMLDivElement | null>(null);
@@ -657,7 +655,6 @@ export default function ApplyPage() {
 
       setStatus('ok');
       confetti.trigger();
-      setShowSuccessAnimation(true);
     } catch (error) {
       console.error('Application submission failed', error);
       setErrorMessage(t.statusMessages.networkError);
@@ -865,12 +862,6 @@ export default function ApplyPage() {
               <div className="footer-status">
                 {status === 'ok' && (
                   <div className="status-banner status-banner--ok" role="status" aria-live="polite">
-                    <SuccessAnimation
-                      show={showSuccessAnimation}
-                      variant="default"
-                      size="sm"
-                      onAnimationComplete={() => setShowSuccessAnimation(false)}
-                    />
                     <span>{t.statusMessages.ok}</span>
                   </div>
                 )}

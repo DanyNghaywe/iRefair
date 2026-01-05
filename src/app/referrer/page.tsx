@@ -8,7 +8,6 @@ import { Confetti, useConfetti } from '@/components/Confetti';
 import { useLanguage } from '@/components/LanguageProvider';
 import { PublicFooter } from '@/components/PublicFooter';
 import { Select } from '@/components/Select';
-import { SuccessAnimation } from '@/components/SuccessAnimation';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 import { countryOptions } from '@/lib/countries';
 
@@ -312,7 +311,6 @@ export default function ReferrerPage() {
   const [iRref, setIRref] = useState<string | null>(null);
   const [isExisting, setIsExisting] = useState(false);
   const confetti = useConfetti();
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
   const t = translations[language];
   const founderMeetLink = (process.env.FOUNDER_MEET_LINK || '').trim();
   const showFounderMeetCta = Boolean(founderMeetLink);
@@ -515,7 +513,6 @@ export default function ReferrerPage() {
       setIsExisting(data.isExisting === true);
       setStatus('ok');
       confetti.trigger();
-      setShowSuccessAnimation(true);
     } catch {
       setIRref(null);
       setIsExisting(false);
@@ -575,12 +572,6 @@ export default function ReferrerPage() {
                 aria-label={t.success.title}
                 style={{ marginBottom: '1.5rem' }}
               >
-                <SuccessAnimation
-                  show={showSuccessAnimation}
-                  variant="default"
-                  size="lg"
-                  onAnimationComplete={() => setShowSuccessAnimation(false)}
-                />
                 <h3 className="success-title">{t.success.title}</h3>
                 <p className="success-text">{t.success.thankYou}</p>
 
