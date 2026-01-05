@@ -147,7 +147,7 @@ const translations: Record<
       "meeting scheduled": "Meeting Scheduled",
       "needs reschedule": "Needs Reschedule",
       interviewed: "Interviewed",
-      hired: "Hired",
+      "job offered": "Job Offered",
       "not a good fit": "Not a Good Fit",
       "cv mismatch": "CV Mismatch",
       "cv update requested": "CV Update Requested",
@@ -301,7 +301,7 @@ const translations: Record<
       "meeting scheduled": "Réunion planifiée",
       "needs reschedule": "À replanifier",
       interviewed: "Entretien effectué",
-      hired: "Embauché",
+      "job offered": "Offre d'emploi",
       "not a good fit": "Profil non retenu",
       "cv mismatch": "CV inadapté",
       "cv update requested": "Mise à jour CV demandée",
@@ -498,7 +498,7 @@ const STATUS_VARIANTS: Record<string, "info" | "success" | "warning" | "error" |
   "meeting scheduled": "success",
   "needs reschedule": "warning",
   interviewed: "success",
-  hired: "success",
+  "job offered": "success",
   "not a good fit": "error",
   "cv mismatch": "warning",
   "cv update requested": "warning",
@@ -506,13 +506,13 @@ const STATUS_VARIANTS: Record<string, "info" | "success" | "warning" | "error" |
 };
 
 const ACTIONS: ActionConfig[] = [
-  { code: "SCHEDULE_MEETING", disabledStatuses: ["hired", "not a good fit", "cv mismatch", "meeting scheduled"] },
+  { code: "SCHEDULE_MEETING", disabledStatuses: ["job offered", "not a good fit", "cv mismatch", "meeting scheduled"] },
   { code: "CANCEL_MEETING", enabledStatuses: ["meeting scheduled"] },
-  { code: "REJECT", disabledStatuses: ["hired", "not a good fit", "cv mismatch"] },
+  { code: "REJECT", disabledStatuses: ["job offered", "not a good fit", "cv mismatch"] },
   { code: "RESCIND_REJECTION", enabledStatuses: ["not a good fit", "cv mismatch"] },
-  { code: "CV_MISMATCH", disabledStatuses: ["hired", "not a good fit", "cv mismatch"] },
-  { code: "REQUEST_CV_UPDATE", disabledStatuses: ["hired", "not a good fit", "cv mismatch"] },
-  { code: "REQUEST_INFO", disabledStatuses: ["hired", "not a good fit", "cv mismatch"] },
+  { code: "CV_MISMATCH", disabledStatuses: ["job offered", "not a good fit", "cv mismatch"] },
+  { code: "REQUEST_CV_UPDATE", disabledStatuses: ["job offered", "not a good fit", "cv mismatch"] },
+  { code: "REQUEST_INFO", disabledStatuses: ["job offered", "not a good fit", "cv mismatch"] },
   { code: "MARK_INTERVIEWED", enabledStatuses: ["meeting scheduled", "meeting requested"] },
   { code: "OFFER_JOB", enabledStatuses: ["interviewed"] },
 ];
@@ -806,7 +806,7 @@ export default function PortalClient() {
 
   const isActionEnabled = (action: ActionConfig, status: string): boolean => {
     const normalized = status?.toLowerCase().trim() || "new";
-    if (normalized === "hired" && action.code !== "OFFER_JOB") return false;
+    if (normalized === "job offered" && action.code !== "OFFER_JOB") return false;
     if (action.enabledStatuses) return action.enabledStatuses.includes(normalized);
     if (action.disabledStatuses) return !action.disabledStatuses.includes(normalized);
     return true;

@@ -40,7 +40,7 @@ const statusOptions = [
   "CV Update Requested",
   "Info Requested",
   "Not a Good Fit",
-  "Hired",
+  "Job Offered",
   "In Review",
   "Submitted",
   "On Hold",

@@ -67,6 +67,7 @@ export async function sendMail({ to, subject, html, text, cc, replyTo }: MailInp
         'In-Reply-To': '',
       },
     });
+    console.log('[MAILER] Email sent - Response:', info.response, 'MessageId:', info.messageId, 'To:', to);
     return info;
   } catch (error) {
     console.error('Error sending mail', error);

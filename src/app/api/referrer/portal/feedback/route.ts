@@ -89,7 +89,7 @@ function getStatusForAction(action: FeedbackAction): string {
     case 'MARK_INTERVIEWED':
       return 'interviewed';
     case 'OFFER_JOB':
-      return 'hired';
+      return 'job offered';
     default:
       return 'new';
   }
@@ -170,7 +170,13 @@ export async function POST(request: NextRequest) {
   const currentStatus = normalizeStatus(applicationRecord.status);
 
   // Load applicant
-  const applicant = await findApplicantByIdentifier(applicationRecord.applicantId).catch(() => null);
+  const applicant = await findApplicantByIdentifier(applicationRecord.applicantId).catch((err) => {
+    console.error('[OFFER_JOB] Error loading applicant:', err);
+    return null;
+  });
+  console.log('[OFFER_JOB] Looking up applicantId:', applicationRecord.applicantId);
+  console.log('[OFFER_JOB] Applicant found:', !!applicant);
+  console.log('[OFFER_JOB] Applicant email:', applicant?.record?.email || '(none)');
   const applicantName = applicant
     ? [applicant.record.firstName, applicant.record.familyName].filter(Boolean).join(' ').trim()
     : '';
@@ -181,15 +187,15 @@ export async function POST(request: NextRequest) {
   const position = applicationRecord.position || '';
 
   // Business rule validations
-  if (currentStatus === 'hired') {
+  if (currentStatus === 'job offered') {
     if (action !== 'OFFER_JOB') {
       return NextResponse.json(
-        { ok: false, error: 'This application is already marked as Hired.' },
+        { ok: false, error: 'This application already has a job offer.' },
         { status: 400 },
       );
     }
     // Idempotent OFFER_JOB - just return success
-    return NextResponse.json({ ok: true, status: 'hired' });
+    return NextResponse.json({ ok: true, status: 'job offered' });
   }
 
   if (currentStatus === 'not a good fit') {
@@ -372,7 +378,9 @@ export async function POST(request: NextRequest) {
   await updateApplicationAdmin(applicationId, patch);
 
   // Send emails
+  console.log('[OFFER_JOB] About to send email. applicantEmail:', applicantEmail || '(empty)');
   if (applicantEmail) {
+    console.log('[OFFER_JOB] Entering email block for action:', action);
     try {
       let template;
 
@@ -471,7 +479,9 @@ export async function POST(request: NextRequest) {
           break;
       }
 
+      console.log('[OFFER_JOB] Template created:', !!template, 'Subject:', template?.subject);
       if (template) {
+        console.log('[OFFER_JOB] Sending email to:', applicantEmail);
         await sendMail({
           to: applicantEmail,
           replyTo: referrerEmail || undefined,
@@ -479,11 +489,16 @@ export async function POST(request: NextRequest) {
           text: template.text,
           html: template.html,
         });
+        console.log('[OFFER_JOB] Email sent successfully');
+      } else {
+        console.log('[OFFER_JOB] No template created for action:', action);
       }
     } catch (emailError) {
-      console.error('Error sending applicant email:', emailError);
+      console.error('[OFFER_JOB] Error sending applicant email:', emailError);
       // Continue - don't fail the action if email fails
     }
+  } else {
+    console.log('[OFFER_JOB] Skipping email - no applicant email found');
   }
 
   // Send confirmation email to referrer for meeting schedule/cancel
@@ -571,8 +586,8 @@ export async function POST(request: NextRequest) {
         await sendMail({
           to: rewardRecipient,
           subject: `Referral reward triggered: ${applicationId}`,
-          text: `Applicant ${applicationRecord.applicantId} marked as hired for ${applicationRecord.iCrn} (${position}). Referrer: ${referrer.record.irref}.`,
-          html: `Applicant <strong>${safeApplicantId}</strong> marked as hired for <strong>${safeIrcrn}</strong> (${safePosition}).<br/>Referrer: <strong>${safeIrref}</strong>.`,
+          text: `Applicant ${applicationRecord.applicantId} offered job for ${applicationRecord.iCrn} (${position}). Referrer: ${referrer.record.irref}.`,
+          html: `Applicant <strong>${safeApplicantId}</strong> offered job for <strong>${safeIrcrn}</strong> (${safePosition}).<br/>Referrer: <strong>${safeIrref}</strong>.`,
         });
       } catch (rewardError) {
         console.error('Error sending reward notification:', rewardError);

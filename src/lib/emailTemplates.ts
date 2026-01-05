@@ -2154,25 +2154,24 @@ export function jobOfferToApplicant(params: JobOfferParams): TemplateResult {
   const safePosition = position ? escapeHtml(position) : 'the position';
   const safeMessage = message ? escapeHtml(message) : '';
 
-  const subject = `Congratulations! Job offer for ${position || 'your application'}`;
+  const subject = `${companyName || 'Company'} - Job Offer for ${position || 'your application'}`;
 
   const text = `${greeting}
 
-Congratulations! We're thrilled to inform you that ${companyName || 'the company'} would like to offer you the position of ${position || 'the role you applied for'}!${message ? `\n\n${message}` : ''}
+We are pleased to inform you that ${companyName || 'the company'} would like to offer you the position of ${position || 'the role you applied for'}.${message ? `\n\n${message}` : ''}
 
 The referrer or hiring team will be in touch with the formal offer details.
 
-This is a huge milestone - well done!
-
-- The iRefair Team`;
+Best regards,
+The iRefair Team`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Congratulations! 🎉</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">You got the job!</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Job Offer</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Great news about your application</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      We're thrilled to inform you that <strong>${safeCompanyName}</strong> would like to offer you the position of <strong>${safePosition}</strong>!
+      We are pleased to inform you that <strong>${safeCompanyName}</strong> would like to offer you the position of <strong>${safePosition}</strong>.
     </p>
 
     ${safeMessage ? `
@@ -2184,12 +2183,9 @@ This is a huge milestone - well done!
     <p style="margin: 16px 0 0 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
       The referrer or hiring team will be in touch with the formal offer details.
     </p>
-    <p style="margin: 16px 0 0 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      This is a huge milestone - well done!
-    </p>
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Congratulations again,<br>
+      Best regards,<br>
       <strong>The iRefair Team</strong>
     </p>
   `;
@@ -2201,7 +2197,7 @@ This is a huge milestone - well done!
     </div>
   `;
 
-  const html = emailWrapper(content, `Congratulations! You got the job!`, customHeader);
+  const html = emailWrapper(content, `Job Offer - ${safeCompanyName}`, customHeader);
 
   return { subject, text, html };
 }
