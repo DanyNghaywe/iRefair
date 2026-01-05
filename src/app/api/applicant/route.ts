@@ -169,7 +169,9 @@ export async function POST(request: Request) {
     const legacyApplicantId = shouldAssignNewIrain
       ? existingApplicant?.record.legacyApplicantId || existingId || undefined
       : undefined;
-    const isIneligible = locatedCanada.toLowerCase() === "no" && eligibleMoveCanada.toLowerCase() === "no";
+    const isIneligible =
+      (locatedCanada.toLowerCase() === "no" && eligibleMoveCanada.toLowerCase() === "no") ||
+      (locatedCanada.toLowerCase() === "yes" && authorizedCanada.toLowerCase() === "no");
     let resumeFileId: string | undefined;
     let resumeFileName: string | undefined;
 

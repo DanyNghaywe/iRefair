@@ -183,12 +183,6 @@ export function applicantRegistrationConfirmation(params: ApplicantRegistrationP
     locale
   );
 
-  const mainText2 = t(
-    "Thank you for contributing to the community and helping others find work in Canada. You can reply to this email anytime to adjust your availability or update how you want to help.",
-    "Merci de contribuer à la communauté et d'aider les autres à trouver du travail au Canada. Vous pouvez répondre à cet e-mail à tout moment pour ajuster votre disponibilité ou mettre à jour la façon dont vous souhaitez aider.",
-    locale
-  );
-
   const whatHappensTitle = t('WHAT HAPPENS NEXT', 'PROCHAINES ÉTAPES', locale);
   const step1 = t(
     "We review your details and iRAIN to understand where you can help.",
@@ -233,9 +227,6 @@ export function applicantRegistrationConfirmation(params: ApplicantRegistrationP
     </h1>
     <p style="margin:0 0 14px 0;font-size:14px;line-height:1.7;color:#3b4251;">
       ${escapeHtml(mainText1)}
-    </p>
-    <p style="margin:0 0 10px 0;font-size:14px;line-height:1.7;color:#3b4251;">
-      ${escapeHtml(mainText2)}
     </p>
     ${statusNote ? `<p style="margin:14px 0;font-size:14px;color:#1f2a37;"><strong>${escapeHtml(statusNote)}</strong></p>` : ''}
     ${applicantKeySection(applicantKey, locale)}
@@ -367,8 +358,8 @@ export function applicantIneligibleNotification(params: ApplicantIneligibleParam
 
   const futureTitle = t('IF YOUR SITUATION CHANGES', 'SI VOTRE SITUATION CHANGE', locale);
   const futureText = t(
-    "If you move to Canada or change your relocation plans, please reply to this email and we'll update your profile.",
-    "Si vous déménagez au Canada ou changez vos plans de relocalisation, veuillez répondre à cet e-mail et nous mettrons à jour votre profil.",
+    "If you move to Canada or change your relocation plans, contact us at info@andbeyondca.com and we'll update your profile.",
+    "Si vous déménagez au Canada ou changez vos plans de relocalisation, contactez-nous à info@andbeyondca.com et nous mettrons à jour votre profil.",
     locale
   );
 
@@ -675,8 +666,8 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
   );
 
   const mainText2 = t(
-    "Thank you for contributing to the community and helping others find work in Canada. You can reply to this email anytime to adjust your availability or update how you want to help.",
-    "Merci de contribuer à la communauté et d'aider les autres à trouver du travail au Canada. Vous pouvez répondre à cet e-mail à tout moment pour ajuster votre disponibilité ou mettre à jour la façon dont vous souhaitez aider.",
+    "Thank you for contributing to the community and helping others find work in Canada.",
+    "Merci de contribuer à la communauté et d'aider les autres à trouver du travail au Canada.",
     locale
   );
 
