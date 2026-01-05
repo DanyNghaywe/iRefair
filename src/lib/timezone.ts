@@ -67,6 +67,22 @@ export const COMMON_TIMEZONES: string[] = [
 ];
 
 /**
+ * Check if a string is a valid IANA timezone identifier.
+ * Uses Intl.DateTimeFormat to validate - if it doesn't throw, the timezone is valid.
+ */
+export function isValidTimezone(timezone: string): boolean {
+  if (!timezone || typeof timezone !== 'string') {
+    return false;
+  }
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: timezone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Get all available IANA timezones with formatted labels.
  * Uses Intl.supportedValuesOf for comprehensive timezone list.
  * Labels show: "City/Region (UTC±X)" format.

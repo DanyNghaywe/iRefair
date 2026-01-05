@@ -10,7 +10,7 @@ import {
 import { normalizePortalTokenVersion, verifyReferrerToken } from '@/lib/referrerPortalToken';
 import { sendMail } from '@/lib/mailer';
 import { getReferrerPortalToken } from '@/lib/referrerPortalAuth';
-import { COMMON_TIMEZONES, formatMeetingDateTime } from '@/lib/timezone';
+import { isValidTimezone, formatMeetingDateTime } from '@/lib/timezone';
 import { createOpaqueToken, hashOpaqueToken } from '@/lib/tokens';
 import { appendActionHistoryEntry, type ActionLogEntry } from '@/lib/actionHistory';
 import {
@@ -259,7 +259,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!COMMON_TIMEZONES.includes(meetingTimezone)) {
+    if (!isValidTimezone(meetingTimezone)) {
       return NextResponse.json(
         { ok: false, error: 'Invalid timezone. Please select from the provided list.' },
         { status: 400 },
