@@ -1237,7 +1237,8 @@ export default function PortalClient() {
                                         className="portal-meeting-link"
                                         onClick={(e) => e.stopPropagation()}
                                       >
-                                        {t.join}
+                                        <span className="portal-meeting-link-icon" aria-hidden="true">&#x1F517;</span>
+                                        <span className="portal-meeting-link-text">{t.join}</span>
                                       </a>
                                     )}
                                   </div>

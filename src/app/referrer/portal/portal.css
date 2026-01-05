@@ -227,7 +227,6 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 4px;
 }
 
 .portal-col-actions {
@@ -516,7 +515,6 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 6px;
   font-size: 12px;
 }
 
@@ -536,16 +534,16 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  color: var(--accent-2);
+  color: #1d4ed8;
   font-weight: 600;
   text-decoration: none;
 }
 
-.portal-meeting-link::before {
-  content: "\1F517";
+.portal-meeting-link-text {
+  text-decoration: underline;
 }
 
-.portal-meeting-link:hover {
+.portal-meeting-link:hover .portal-meeting-link-text {
   text-decoration: underline;
 }
 
