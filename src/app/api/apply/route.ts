@@ -208,6 +208,14 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join(' ')
       .trim();
+
+    // Check if applicant is ineligible based on location and work authorization
+    const locatedCanada = applicant.locatedCanada?.toLowerCase() || '';
+    const authorizedCanada = applicant.authorizedCanada?.toLowerCase() || '';
+    const eligibleMoveCanada = applicant.eligibleMoveCanada?.toLowerCase() || '';
+    const isIneligible =
+      (locatedCanada === 'no' && eligibleMoveCanada === 'no') ||
+      (locatedCanada === 'yes' && authorizedCanada === 'no');
     // Generate portal link for the referrer (skip for fallback referrer)
     let portalUrl: string | undefined;
     if (referrer.irref && referrer.irref !== 'fallback') {
@@ -271,6 +279,7 @@ export async function POST(request: Request) {
       resumeFileId,
       referrerIrref: referrer.irref,
       referrerEmail: referrer.email,
+      status: isIneligible ? 'ineligible' : undefined,
     });
 
     return NextResponse.json({

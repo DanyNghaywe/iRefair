@@ -296,8 +296,6 @@ export function applicantRegistrationConfirmation(params: ApplicantRegistrationP
 
 ${mainText1}
 
-${mainText2}
-
 ${iRainLabel}: ${iRain}
 
 ${statusNote || ''}

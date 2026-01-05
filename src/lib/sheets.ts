@@ -508,6 +508,7 @@ type ApplicationRow = {
   resumeFileId?: string;
   referrerIrref?: string;
   referrerEmail?: string;
+  status?: string;
 };
 
 let sheetsClient: ReturnType<typeof google.sheets> | null = null;
@@ -1169,7 +1170,7 @@ export async function appendApplicationRow(row: ApplicationRow) {
   setByHeader(rowValues, headerMap, 'Resume File ID', row.resumeFileId ?? '');
   setByHeader(rowValues, headerMap, 'Referrer iRREF', row.referrerIrref ?? '');
   setByHeader(rowValues, headerMap, 'Referrer Email', row.referrerEmail ?? '');
-  setByHeader(rowValues, headerMap, 'Status', '');
+  setByHeader(rowValues, headerMap, 'Status', row.status ?? '');
   setByHeader(rowValues, headerMap, 'Owner Notes', '');
 
   await appendRow(APPLICATION_SHEET_NAME, rowValues);
@@ -3179,6 +3180,95 @@ export async function findApplicationsByApplicantId(
   }
 
   return results;
+}
+
+export type EligibilityCheckResult = {
+  isIneligible: boolean;
+  affectedApplications: Array<{
+    id: string;
+    status: string;
+    hadMeetingScheduled: boolean;
+    meetingDate?: string;
+    meetingTime?: string;
+    meetingTimezone?: string;
+    referrerIrref?: string;
+    referrerEmail?: string;
+    position?: string;
+  }>;
+};
+
+/**
+ * Check if an applicant is ineligible based on their location and work authorization,
+ * and return all their active applications that would be affected.
+ */
+export async function checkApplicantEligibilityAndGetAffectedApplications(
+  applicantId: string,
+  locatedCanada: string,
+  authorizedCanada: string,
+  eligibleMoveCanada: string,
+): Promise<EligibilityCheckResult> {
+  const located = locatedCanada.toLowerCase().trim();
+  const authorized = authorizedCanada.toLowerCase().trim();
+  const eligibleMove = eligibleMoveCanada.toLowerCase().trim();
+
+  const isIneligible =
+    (located === 'no' && eligibleMove === 'no') ||
+    (located === 'yes' && authorized === 'no');
+
+  if (!isIneligible) {
+    return { isIneligible: false, affectedApplications: [] };
+  }
+
+  // Find all active applications for this applicant
+  const applications = await findApplicationsByApplicantId(applicantId, false);
+  const affectedApplications: EligibilityCheckResult['affectedApplications'] = [];
+
+  for (const app of applications) {
+    const appDetails = await getApplicationById(app.id);
+    if (!appDetails) continue;
+
+    const status = appDetails.record.status?.toLowerCase().trim() || '';
+
+    // Skip applications already marked as ineligible, rejected, or job offered
+    if (status === 'ineligible' || status === 'not a good fit' || status === 'job offered') {
+      continue;
+    }
+
+    const hadMeetingScheduled = status === 'meeting scheduled' && !!appDetails.record.meetingDate;
+
+    affectedApplications.push({
+      id: appDetails.record.id,
+      status,
+      hadMeetingScheduled,
+      meetingDate: appDetails.record.meetingDate || undefined,
+      meetingTime: appDetails.record.meetingTime || undefined,
+      meetingTimezone: appDetails.record.meetingTimezone || undefined,
+      referrerIrref: appDetails.record.referrerIrref || undefined,
+      referrerEmail: appDetails.record.referrerEmail || undefined,
+      position: appDetails.record.position || undefined,
+    });
+  }
+
+  return { isIneligible: true, affectedApplications };
+}
+
+/**
+ * Update multiple applications to ineligible status and clear any meeting info.
+ */
+export async function markApplicationsAsIneligible(
+  applicationIds: string[],
+): Promise<void> {
+  for (const id of applicationIds) {
+    await updateApplicationAdmin(id, {
+      status: 'ineligible',
+      meetingDate: '',
+      meetingTime: '',
+      meetingTimezone: '',
+      meetingUrl: '',
+      rescheduleTokenHash: '',
+      rescheduleTokenExpiresAt: '',
+    });
+  }
 }
 
 /**

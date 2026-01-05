@@ -154,6 +154,7 @@ const translations: Record<
       "cv updated": "CV Updated",
       "info requested": "Info Requested",
       "info updated": "Info Updated",
+      ineligible: "Ineligible",
     },
     actionLabels: {
       SCHEDULE_MEETING: "Schedule Meeting",
@@ -308,6 +309,7 @@ const translations: Record<
       "cv updated": "CV mis à jour",
       "info requested": "Informations demandées",
       "info updated": "Informations mises à jour",
+      ineligible: "Non admissible",
     },
     actionLabels: {
       SCHEDULE_MEETING: "Planifier une réunion",
@@ -503,16 +505,17 @@ const STATUS_VARIANTS: Record<string, "info" | "success" | "warning" | "error" |
   "cv mismatch": "warning",
   "cv update requested": "warning",
   "info requested": "warning",
+  ineligible: "error",
 };
 
 const ACTIONS: ActionConfig[] = [
-  { code: "SCHEDULE_MEETING", disabledStatuses: ["job offered", "not a good fit", "cv mismatch", "meeting scheduled"] },
+  { code: "SCHEDULE_MEETING", disabledStatuses: ["job offered", "not a good fit", "cv mismatch", "meeting scheduled", "ineligible"] },
   { code: "CANCEL_MEETING", enabledStatuses: ["meeting scheduled"] },
-  { code: "REJECT", disabledStatuses: ["job offered", "not a good fit", "cv mismatch"] },
+  { code: "REJECT", disabledStatuses: ["job offered", "not a good fit", "cv mismatch", "ineligible"] },
   { code: "RESCIND_REJECTION", enabledStatuses: ["not a good fit", "cv mismatch"] },
-  { code: "CV_MISMATCH", disabledStatuses: ["job offered", "not a good fit", "cv mismatch"] },
-  { code: "REQUEST_CV_UPDATE", disabledStatuses: ["job offered", "not a good fit", "cv mismatch"] },
-  { code: "REQUEST_INFO", disabledStatuses: ["job offered", "not a good fit", "cv mismatch"] },
+  { code: "CV_MISMATCH", disabledStatuses: ["job offered", "not a good fit", "cv mismatch", "ineligible"] },
+  { code: "REQUEST_CV_UPDATE", disabledStatuses: ["job offered", "not a good fit", "cv mismatch", "ineligible"] },
+  { code: "REQUEST_INFO", disabledStatuses: ["job offered", "not a good fit", "cv mismatch", "ineligible"] },
   { code: "MARK_INTERVIEWED", enabledStatuses: ["meeting scheduled", "meeting requested"] },
   { code: "OFFER_JOB", enabledStatuses: ["interviewed"] },
 ];
@@ -807,6 +810,7 @@ export default function PortalClient() {
   const isActionEnabled = (action: ActionConfig, status: string): boolean => {
     const normalized = status?.toLowerCase().trim() || "new";
     if (normalized === "job offered" && action.code !== "OFFER_JOB") return false;
+    if (normalized === "ineligible") return false; // No actions available for ineligible applicants
     if (action.enabledStatuses) return action.enabledStatuses.includes(normalized);
     if (action.disabledStatuses) return !action.disabledStatuses.includes(normalized);
     return true;

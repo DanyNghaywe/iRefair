@@ -13,6 +13,9 @@ import {
   getApplicantByEmail,
   getApplicantByRowIndex,
   updateRowById,
+  checkApplicantEligibilityAndGetAffectedApplications,
+  markApplicationsAsIneligible,
+  getReferrerByIrref,
 } from "@/lib/sheets";
 import { escapeHtml } from "@/lib/validation";
 import {
@@ -21,7 +24,12 @@ import {
   hashToken,
   verifyApplicantUpdateToken,
 } from "@/lib/applicantUpdateToken";
-import { applicantProfileUpdateConfirmed } from "@/lib/emailTemplates";
+import {
+  applicantProfileUpdateConfirmed,
+  meetingCancelledToApplicant,
+  meetingCancelledToReferrer,
+} from "@/lib/emailTemplates";
+import { buildReferrerPortalLink, ensureReferrerPortalTokenVersion } from "@/lib/referrerPortalLink";
 
 type EmailLanguage = "en" | "fr";
 
@@ -382,6 +390,96 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
   const locale: EmailLanguage = pending.locale === "fr" ? "fr" : "en";
   const firstName = pending.firstName || applicant.record.firstName || "there";
   const iRainValue = pending.id || applicant.record.id || "";
+
+  // Check if applicant became ineligible and update their applications
+  const locatedCanada = pending.locatedCanada || "";
+  const authorizedCanada = pending.authorizedCanada || "";
+  const eligibleMoveCanada = pending.eligibleMoveCanada || "";
+
+  const isIneligible =
+    (locatedCanada.toLowerCase() === "no" && eligibleMoveCanada.toLowerCase() === "no") ||
+    (locatedCanada.toLowerCase() === "yes" && authorizedCanada.toLowerCase() === "no");
+
+  if (isIneligible && iRainValue) {
+    try {
+      const eligibilityResult = await checkApplicantEligibilityAndGetAffectedApplications(
+        iRainValue,
+        locatedCanada,
+        authorizedCanada,
+        eligibleMoveCanada,
+      );
+
+      if (eligibilityResult.affectedApplications.length > 0) {
+        // Update all affected applications to ineligible
+        await markApplicationsAsIneligible(
+          eligibilityResult.affectedApplications.map((app) => app.id),
+        );
+
+        // Send cancellation emails for applications with scheduled meetings
+        const applicantFullName = [pending.firstName, pending.familyName].filter(Boolean).join(" ").trim() || pending.email;
+
+        for (const app of eligibilityResult.affectedApplications) {
+          if (app.hadMeetingScheduled && app.referrerEmail) {
+            try {
+              // Get referrer details for the email
+              const referrer = app.referrerIrref ? await getReferrerByIrref(app.referrerIrref) : null;
+              const referrerName = referrer?.record?.name || undefined;
+              const companyName = referrer?.record?.company || undefined;
+
+              // Generate portal link for referrer
+              let portalUrl: string | undefined;
+              if (app.referrerIrref) {
+                try {
+                  const tokenVersion = await ensureReferrerPortalTokenVersion(app.referrerIrref);
+                  portalUrl = buildReferrerPortalLink(app.referrerIrref, tokenVersion);
+                } catch {
+                  // Ignore portal link errors
+                }
+              }
+
+              // Send cancellation email to applicant
+              const applicantTemplate = meetingCancelledToApplicant({
+                applicantName: applicantFullName,
+                referrerName,
+                companyName,
+                position: app.position,
+                reason: locale === "fr"
+                  ? "Votre profil ne répond plus aux critères d'éligibilité."
+                  : "Your profile no longer meets the eligibility requirements.",
+              });
+              await sendMail({
+                to: pending.email,
+                subject: applicantTemplate.subject,
+                html: applicantTemplate.html,
+                text: applicantTemplate.text,
+              });
+
+              // Send cancellation email to referrer
+              const referrerTemplate = meetingCancelledToReferrer({
+                referrerName,
+                applicantName: applicantFullName,
+                companyName,
+                position: app.position,
+                cancelledDueToAction: "the applicant's profile no longer meets eligibility requirements",
+                portalUrl,
+              });
+              await sendMail({
+                to: app.referrerEmail,
+                subject: referrerTemplate.subject,
+                html: referrerTemplate.html,
+                text: referrerTemplate.text,
+              });
+            } catch (emailErr) {
+              console.error("Error sending meeting cancellation emails:", emailErr);
+            }
+          }
+        }
+      }
+    } catch (eligibilityErr) {
+      // Log but don't fail the update - eligibility handling is best-effort
+      console.error("Error handling eligibility update for applications:", eligibilityErr);
+    }
+  }
 
   const emailTemplate = applicantProfileUpdateConfirmed({
     firstName,
