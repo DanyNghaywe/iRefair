@@ -2206,6 +2206,11 @@ This is a huge milestone - well done!
   return { subject, text, html };
 }
 
+type ProposedTime = {
+  date: string;
+  time: string;
+};
+
 type RescheduleRequestParams = {
   referrerName?: string;
   applicantName?: string;
@@ -2214,6 +2219,7 @@ type RescheduleRequestParams = {
   position?: string;
   originalDateTime?: string;
   reason?: string;
+  proposedTimes?: ProposedTime[];
   applicationId: string;
   portalUrl?: string;
 };
@@ -2227,6 +2233,7 @@ export function rescheduleRequestToReferrer(params: RescheduleRequestParams): Te
     position,
     originalDateTime,
     reason,
+    proposedTimes,
     applicationId,
     portalUrl,
   } = params;
@@ -2241,11 +2248,17 @@ export function rescheduleRequestToReferrer(params: RescheduleRequestParams): Te
   const safeApplicationId = escapeHtml(applicationId);
   const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
 
+  // Format proposed times for display
+  const hasProposedTimes = proposedTimes && proposedTimes.length > 0;
+  const proposedTimesText = hasProposedTimes
+    ? proposedTimes.map((t, i) => `Option ${i + 1}: ${t.date} at ${t.time}`).join('\n')
+    : '';
+
   const subject = `Reschedule request: ${applicantName || 'Applicant'} for ${position || 'meeting'}`;
 
   const text = `${greeting}
 
-${applicantName || 'The applicant'} has requested to reschedule their meeting for ${position || 'the position'}.${originalDateTime ? `\n\nOriginal time: ${originalDateTime}` : ''}${reason ? `\nReason: ${reason}` : ''}
+${applicantName || 'The applicant'} has requested to reschedule their meeting for ${position || 'the position'}.${originalDateTime ? `\n\nOriginal time: ${originalDateTime}` : ''}${reason ? `\nReason: ${reason}` : ''}${hasProposedTimes ? `\n\nProposed alternative times:\n${proposedTimesText}` : ''}
 
 Application ID: ${applicationId}${applicantEmail ? `\nApplicant email: ${applicantEmail}` : ''}
 
@@ -2253,9 +2266,26 @@ ${normalizedPortalUrl ? `Open your portal to reschedule the meeting: ${normalize
 
 - The iRefair Team`;
 
+  // Build proposed times HTML
+  const proposedTimesHtml = hasProposedTimes
+    ? `
+      <div style="background: #e8f5e9; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid #4caf50;">
+        <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">Suggested alternative times:</p>
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+          ${proposedTimes.map((t, i) => `
+            <tr>
+              <td style="padding: 6px 0; color: ${colors.muted}; font-size: 13px; width: 70px;">Option ${i + 1}</td>
+              <td style="padding: 6px 0; color: ${colors.ink}; font-size: 14px; font-weight: 500;">${escapeHtml(t.date)} at ${escapeHtml(t.time)}</td>
+            </tr>
+          `).join('')}
+        </table>
+      </div>
+    `
+    : '';
+
   const content = `
     <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Reschedule request</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">A applicant needs to reschedule</p>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">An applicant needs to reschedule</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
@@ -2276,6 +2306,8 @@ ${normalizedPortalUrl ? `Open your portal to reschedule the meeting: ${normalize
         <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">${safeReason}</p>
       </div>
     ` : ''}
+
+    ${proposedTimesHtml}
 
     ${normalizedPortalUrl ? `
       <p style="margin: 16px 0 12px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6; text-align: center;">
