@@ -549,6 +549,7 @@
 
 /* Reschedule Warning */
 .portal-reschedule-warning {
+  margin-top: 2px;
   padding: 3px 8px;
   background: rgba(245, 158, 11, 0.12);
   border-radius: 12px;
