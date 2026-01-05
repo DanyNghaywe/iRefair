@@ -1222,30 +1222,32 @@ export default function PortalClient() {
                               )}
                             </td>
                             <td className="portal-col-status">
-                              <StatusBadge status={item.status} statusLabels={t.statuses} />
-                              {hasMeeting && (
-                                <div className="portal-meeting-info">
-                                  <span className="portal-meeting-date">
-                                    {formatMeetingDisplay(item.meetingDate, item.meetingTime, item.meetingTimezone)}
-                                  </span>
-                                  {item.meetingUrl && (
-                                    <a
-                                      href={item.meetingUrl}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="portal-meeting-link"
-                                      onClick={(e) => e.stopPropagation()}
-                                    >
-                                      {t.join}
-                                    </a>
-                                  )}
-                                </div>
-                              )}
-                              {needsReschedule && (
-                                <div className="portal-reschedule-warning">
-                                  {t.reschedule}
-                                </div>
-                              )}
+                              <div className="portal-status-content">
+                                <StatusBadge status={item.status} statusLabels={t.statuses} />
+                                {hasMeeting && (
+                                  <div className="portal-meeting-info">
+                                    <span className="portal-meeting-date">
+                                      {formatMeetingDisplay(item.meetingDate, item.meetingTime, item.meetingTimezone)}
+                                    </span>
+                                    {item.meetingUrl && (
+                                      <a
+                                        href={item.meetingUrl}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="portal-meeting-link"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        {t.join}
+                                      </a>
+                                    )}
+                                  </div>
+                                )}
+                                {needsReschedule && (
+                                  <div className="portal-reschedule-warning">
+                                    {t.reschedule}
+                                  </div>
+                                )}
+                              </div>
                             </td>
                             <td className="portal-col-actions" onClick={(e) => e.stopPropagation()}>
                               {hasAnyAction ? (

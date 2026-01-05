@@ -223,6 +223,13 @@
   min-width: 180px;
 }
 
+.portal-status-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+}
+
 .portal-col-actions {
   min-width: 120px;
   overflow: visible;
@@ -544,18 +551,20 @@
 
 /* Reschedule Warning */
 .portal-reschedule-warning {
-  margin-top: 8px;
-  padding: 8px 10px;
-  background: rgba(245, 158, 11, 0.08);
-  border: 1px solid rgba(245, 158, 11, 0.2);
-  border-radius: 8px;
-  font-size: 12px;
+  padding: 3px 8px;
+  background: rgba(245, 158, 11, 0.12);
+  border-radius: 12px;
+  font-size: 11px;
   font-weight: 500;
-  color: #92400e;
+  color: #b45309;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .portal-reschedule-warning::before {
-  content: "\26A0\FE0F ";
+  content: "⚠";
+  font-size: 12px;
 }
 
 /* Modal Content Styles */
