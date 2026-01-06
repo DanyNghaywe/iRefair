@@ -806,7 +806,7 @@ export default function ReferrerReviewPage() {
               </DetailSection>
             )}
 
-            <DetailSection title="Status + Approval">
+            <DetailSection title="Admin">
               <div className="field-grid field-grid--two">
                 <div className="field">
                   <label htmlFor="referrer-status">Status</label>
@@ -825,22 +825,6 @@ export default function ReferrerReviewPage() {
                       ))}
                   </select>
                 </div>
-                <div className="field">
-                  <label htmlFor="company-approval">Company Approval</label>
-                  <input
-                    id="company-approval"
-                    type="text"
-                    value={approvalLabel}
-                    readOnly
-                    tabIndex={-1}
-                    aria-readonly="true"
-                  />
-                </div>
-              </div>
-            </DetailSection>
-
-            <DetailSection title="Admin">
-              <div className="field-grid field-grid--two">
                 <div className="field">
                   <label htmlFor="referrer-type">Referrer Type</label>
                   <input
