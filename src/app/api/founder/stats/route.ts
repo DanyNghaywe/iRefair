@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
-import { APPLICATION_SHEET_NAME, APPLICANT_SHEET_NAME, MATCH_SHEET_NAME, REFERRER_SHEET_NAME, countApplicationsSince, countRowsInSheet } from '@/lib/sheets';
+import { APPLICANT_SHEET_NAME, REFERRER_SHEET_NAME, countApplicationsSince, countRowsInSheet } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,10 +14,9 @@ export async function GET(request: NextRequest) {
 
   try {
     const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-    const [applicants, referrers, matches, applications] = await Promise.all([
+    const [applicants, referrers, applications] = await Promise.all([
       countRowsInSheet(APPLICANT_SHEET_NAME),
       countRowsInSheet(REFERRER_SHEET_NAME),
-      countRowsInSheet(MATCH_SHEET_NAME),
       countApplicationsSince(since),
     ]);
 
@@ -26,7 +25,6 @@ export async function GET(request: NextRequest) {
       applicants,
       referrers,
       applications,
-      matches,
       since: since.toISOString(),
     });
   } catch (error) {

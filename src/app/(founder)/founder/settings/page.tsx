@@ -62,7 +62,7 @@ export default function SettingsPage() {
           <div>
             <div className="founder-card__title">Sheets maintenance</div>
             <p className="founder-card__meta">
-              Run bootstrap to ensure headers, admin columns, and Matches sheet exist.
+              Run bootstrap to ensure headers and admin columns exist.
             </p>
           </div>
           <ActionBtn as="button" variant="primary" onClick={runBootstrap} disabled={loading}>

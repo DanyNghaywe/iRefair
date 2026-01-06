@@ -4,7 +4,7 @@ import React from "react";
 
 import { ActionBtn } from "@/components/ActionBtn";
 
-type EmptyStateVariant = "candidates" | "referrers" | "applications" | "matches" | "portal";
+type EmptyStateVariant = "candidates" | "referrers" | "applications" | "portal";
 
 type EmptyStateProps = {
   variant: EmptyStateVariant;
@@ -117,48 +117,6 @@ function ApplicationsIllustration() {
   );
 }
 
-function MatchesIllustration() {
-  return (
-    <svg
-      width="80"
-      height="80"
-      viewBox="0 0 80 80"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      aria-hidden="true"
-      className="empty-state__illustration"
-    >
-      <circle cx="40" cy="40" r="38" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.15" />
-      <circle cx="40" cy="40" r="28" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.1" />
-      <circle cx="28" cy="40" r="10" stroke="currentColor" strokeWidth="2" strokeOpacity="0.4" />
-      <circle cx="52" cy="40" r="10" stroke="currentColor" strokeWidth="2" strokeOpacity="0.4" />
-      <path
-        d="M38 40h4"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeOpacity="0.5"
-        strokeLinecap="round"
-      />
-      <path
-        d="M36 36l4 4-4 4"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeOpacity="0.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M44 36l-4 4 4 4"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeOpacity="0.3"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 function PortalIllustration() {
   return (
     <svg
@@ -206,7 +164,6 @@ const illustrations: Record<EmptyStateVariant, () => React.ReactElement> = {
   candidates: CandidatesIllustration,
   referrers: ReferrersIllustration,
   applications: ApplicationsIllustration,
-  matches: MatchesIllustration,
   portal: PortalIllustration,
 };
 

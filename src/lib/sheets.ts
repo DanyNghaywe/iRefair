@@ -59,18 +59,6 @@ export const REFERRER_HEADERS = [
 ];
 export const REFERRER_PORTAL_TOKEN_VERSION_HEADER = 'Portal Token Version';
 export const REFERRER_PENDING_UPDATES_HEADER = 'Pending Updates';
-export const MATCH_SHEET_NAME = 'Matches';
-export const MATCH_HEADERS = [
-  'Match ID',
-  'Created At',
-  'Applicant iRAIN',
-  'Referrer iRREF',
-  'Company iRCRN',
-  'Position / Context',
-  'Stage',
-  'Notes',
-  'Intro Sent At',
-];
 export const ADMIN_TRACKING_COLUMNS = ['Status', 'Owner Notes', 'Tags', 'Last Contacted At', 'Next Action At'];
 const REFERRER_SECURITY_COLUMNS = [REFERRER_PORTAL_TOKEN_VERSION_HEADER, REFERRER_PENDING_UPDATES_HEADER];
 export const APPLICATION_ADMIN_COLUMNS = [
@@ -1685,13 +1673,6 @@ type ApplicationListItem = {
   archivedBy: string;
 };
 
-type MatchListParams = {
-  search?: string;
-  stage?: string;
-  limit?: number;
-  offset?: number;
-};
-
 const DEFAULT_LIMIT = 50;
 
 function headerIndex(headers: string[], name: string) {
@@ -2406,64 +2387,6 @@ export async function findApplicationByRescheduleTokenHash(tokenHash: string) {
   return null;
 }
 
-export async function listMatches(params: MatchListParams) {
-  await ensureHeaders(MATCH_SHEET_NAME, MATCH_HEADERS);
-
-  // Use cached headers + single data fetch
-  const { headers, rows } = await getSheetDataWithHeaders(MATCH_SHEET_NAME);
-  if (!headers.length) return { total: 0, items: [] as unknown[] };
-
-  const headerMap = buildHeaderMap(headers);
-  const searchTerm = normalizeSearch(params.search);
-  const stageFilter = normalizeSearch(params.stage);
-
-  const items = rows
-    .map((row) => {
-      const missingFields: string[] = [];
-      if (!getHeaderValue(headerMap, row, 'Applicant iRAIN')) missingFields.push('Applicant iRAIN');
-      if (!getHeaderValue(headerMap, row, 'Referrer iRREF')) missingFields.push('Referrer iRREF');
-      if (!getHeaderValue(headerMap, row, 'Company iRCRN')) missingFields.push('Company iRCRN');
-
-      return {
-        matchId: getHeaderValue(headerMap, row, 'Match ID'),
-        createdAt: getHeaderValue(headerMap, row, 'Created At'),
-        applicantIrain: getHeaderValue(headerMap, row, 'Applicant iRAIN'),
-        referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
-        companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
-        positionContext: getHeaderValue(headerMap, row, 'Position / Context'),
-        stage: getHeaderValue(headerMap, row, 'Stage'),
-        notes: getHeaderValue(headerMap, row, 'Notes'),
-        introSentAt: getHeaderValue(headerMap, row, 'Intro Sent At'),
-        missingFields,
-      };
-    })
-    .filter((record) => {
-      if (searchTerm) {
-        const haystack = [
-          record.matchId,
-          record.applicantIrain,
-          record.referrerIrref,
-          record.companyIrcrn,
-          record.positionContext,
-          record.stage,
-          record.notes,
-        ]
-          .filter(Boolean)
-          .map((value) => value.toLowerCase());
-        const matches = haystack.some((value) => value.includes(searchTerm));
-        if (!matches) return false;
-      }
-
-      if (stageFilter && record.stage.toLowerCase() !== stageFilter) return false;
-      return true;
-    });
-
-  return {
-    total: items.length,
-    items: paginate(items, params.offset, params.limit),
-  };
-}
-
 type AdminPatch = {
   status?: string;
   ownerNotes?: string;
@@ -2685,22 +2608,6 @@ export async function updateApplicationAdmin(id: string, patch: ApplicationAdmin
     'Update Request Token Hash': patch.updateRequestTokenHash,
     'Update Request Expires At': patch.updateRequestExpiresAt,
     'Update Request Purpose': patch.updateRequestPurpose,
-  });
-}
-
-type MatchPatch = {
-  stage?: string;
-  notes?: string;
-  introSentAt?: string;
-};
-
-export async function updateMatch(matchId: string, patch: MatchPatch) {
-  await ensureHeaders(MATCH_SHEET_NAME, MATCH_HEADERS);
-
-  return updateRowById(MATCH_SHEET_NAME, 'Match ID', matchId, {
-    Stage: patch.stage,
-    Notes: patch.notes,
-    'Intro Sent At': patch.introSentAt,
   });
 }
 
@@ -3662,46 +3569,4 @@ export async function permanentlyDeleteApplication(
     console.error('Error permanently deleting application', error);
     return { success: false, reason: 'error' };
   }
-}
-
-export async function getMatchById(matchId: string) {
-  await ensureHeaders(MATCH_SHEET_NAME, MATCH_HEADERS);
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-
-  const headerRow = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${MATCH_SHEET_NAME}!1:1`,
-  });
-  const headers = headerRow.data.values?.[0] ?? [];
-  const headerMap = buildHeaderMap(headers);
-  const lastCol = toColumnLetter(headers.length - 1);
-  const rows = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${MATCH_SHEET_NAME}!A:${lastCol}`,
-    majorDimension: 'ROWS',
-  });
-
-  const values = rows.data.values ?? [];
-  for (let i = 1; i < values.length; i++) {
-    const row = values[i] ?? [];
-    const value = cellValue(row, 0).toLowerCase();
-    if (value === matchId.trim().toLowerCase()) {
-      return {
-        rowIndex: i + 1,
-        record: {
-          matchId: getHeaderValue(headerMap, row, 'Match ID'),
-          createdAt: getHeaderValue(headerMap, row, 'Created At'),
-          applicantIrain: getHeaderValue(headerMap, row, 'Applicant iRAIN'),
-          referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
-          companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
-          positionContext: getHeaderValue(headerMap, row, 'Position / Context'),
-          stage: getHeaderValue(headerMap, row, 'Stage'),
-          notes: getHeaderValue(headerMap, row, 'Notes'),
-          introSentAt: getHeaderValue(headerMap, row, 'Intro Sent At'),
-        },
-      };
-    }
-  }
-  return null;
 }

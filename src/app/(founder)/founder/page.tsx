@@ -10,7 +10,6 @@ type Stats = {
   applicants: number | null;
   referrers: number | null;
   applications: number | null;
-  matches: number | null;
 };
 
 export default function FounderDashboard() {
@@ -18,7 +17,6 @@ export default function FounderDashboard() {
     applicants: null,
     referrers: null,
     applications: null,
-    matches: null,
   });
 
   useEffect(() => {
@@ -31,7 +29,6 @@ export default function FounderDashboard() {
             applicants: data.applicants ?? null,
             referrers: data.referrers ?? null,
             applications: data.applications ?? null,
-            matches: data.matches ?? null,
           });
         }
       } catch (error) {
@@ -45,7 +42,6 @@ export default function FounderDashboard() {
     { title: "Active applicants", value: stats.applicants, hint: "Realtime from Sheets" },
     { title: "Referrers", value: stats.referrers, hint: "Latest sync" },
     { title: "Applications", value: stats.applications, hint: "Past 7 days" },
-    { title: "Matches", value: stats.matches, hint: "Ready to review" },
   ];
 
   return (

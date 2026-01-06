@@ -12,7 +12,6 @@ const navItems = [
   { href: "/founder/applicants", label: "Applicants" },
   { href: "/founder/referrers", label: "Referrers" },
   { href: "/founder/applications", label: "Applications" },
-  { href: "/founder/matches", label: "Matches" },
   { href: "/founder/calendar", label: "Calendar" },
   { href: "/founder/archive", label: "Archive" },
   { href: "/founder/settings", label: "Settings" },
