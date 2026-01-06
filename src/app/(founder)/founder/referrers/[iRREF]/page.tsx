@@ -810,20 +810,16 @@ export default function ReferrerReviewPage() {
               <div className="field-grid field-grid--two">
                 <div className="field">
                   <label htmlFor="referrer-status">Status</label>
-                  <select
+                  <Select
                     id="referrer-status"
+                    name="referrer-status"
+                    options={statusOptions
+                      .filter((opt) => opt)
+                      .map((opt) => ({ value: opt.toLowerCase(), label: opt }))}
+                    placeholder="Unassigned"
                     value={status}
-                    onChange={(event) => setStatus(event.target.value)}
-                  >
-                    <option value="">Unassigned</option>
-                    {statusOptions
-                      .filter((value) => value)
-                      .map((value) => (
-                        <option key={value} value={value.toLowerCase()}>
-                          {value}
-                        </option>
-                      ))}
-                  </select>
+                    onChange={(value) => setStatus(Array.isArray(value) ? value[0] : value)}
+                  />
                 </div>
                 <div className="field">
                   <label htmlFor="referrer-type">Referrer Type</label>
