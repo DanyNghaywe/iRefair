@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { downloadFileFromDrive } from '@/lib/drive';
 import { normalizePortalTokenVersion, verifyReferrerToken } from '@/lib/referrerPortalToken';
 import { getReferrerPortalToken } from '@/lib/referrerPortalAuth';
-import { getApplicationById, getReferrerByIrref, findApplicantByIdentifier } from '@/lib/sheets';
+import { getApplicationById, getReferrerByIrref } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -55,22 +55,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   }
 
-  // Prefer applicant's latest CV over application-snapshot CV
-  let resumeFileId: string | undefined;
-  let resumeFileName: string | undefined;
-
-  // Try to get applicant's latest resume first
-  const applicant = await findApplicantByIdentifier(application.record.applicantId).catch(() => null);
-  if (applicant?.record?.resumeFileId?.trim()) {
-    resumeFileId = applicant.record.resumeFileId.trim();
-    resumeFileName = applicant.record.resumeFileName;
-  }
-
-  // Fall back to application-snapshot resume
-  if (!resumeFileId && application.record.resumeFileId?.trim()) {
-    resumeFileId = application.record.resumeFileId.trim();
-    resumeFileName = application.record.resumeFileName;
-  }
+  // Use ONLY application-specific CV (from /apply submission)
+  const resumeFileId = application.record.resumeFileId?.trim();
+  const resumeFileName = application.record.resumeFileName;
 
   if (!resumeFileId) {
     return NextResponse.json({ ok: false, error: 'Resume not available.' }, { status: 404 });

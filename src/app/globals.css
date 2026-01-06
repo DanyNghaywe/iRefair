@@ -1450,6 +1450,197 @@ body:has(.board--transparent) {
   color: #fef3c7;
 }
 
+/* ==========================================================================
+   Update CV Page
+   ========================================================================== */
+
+.update-cv-card {
+  max-width: 560px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.update-cv-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 0;
+}
+
+.update-cv-loading h1 {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: var(--font-size-xl);
+}
+
+.update-cv-loading .lead {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.update-cv-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 40px 0;
+}
+
+.update-cv-result h1 {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: var(--font-size-h2);
+  margin: 0;
+}
+
+.update-cv-result .lead {
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 400px;
+  line-height: 1.6;
+}
+
+.update-cv-hint {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: var(--font-size-sm);
+  margin-top: 8px;
+}
+
+.update-cv-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 8px;
+}
+
+.update-cv-icon--loading {
+  background: rgba(var(--accent-primary-rgb), 0.15);
+}
+
+.update-cv-icon--loading .loading-indicator {
+  width: 32px;
+  height: 32px;
+  margin-left: 0;
+}
+
+.update-cv-icon--error {
+  background: rgba(231, 93, 107, 0.15);
+  color: var(--error);
+}
+
+.update-cv-icon--success {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10b981;
+}
+
+.update-cv-icon--document {
+  background: rgba(var(--accent-primary-rgb), 0.15);
+  color: var(--accent-primary);
+}
+
+.update-cv-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.update-cv-header h1 {
+  color: rgba(255, 255, 255, 0.95);
+  font-size: var(--font-size-h2);
+  margin: 0;
+}
+
+.update-cv-header .lead {
+  color: rgba(255, 255, 255, 0.8);
+  max-width: 420px;
+  line-height: 1.6;
+  font-size: var(--font-size-md);
+}
+
+.update-cv-context {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.update-cv-context h2 {
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.7);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin: 0 0 16px 0;
+}
+
+.context-details {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.context-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.context-label {
+  font-size: var(--font-size-xs);
+  color: rgba(255, 255, 255, 0.6);
+  font-weight: 500;
+}
+
+.context-value {
+  font-size: var(--font-size-md);
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 500;
+}
+
+.update-cv-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  text-align: left;
+}
+
+.update-cv-form .field label {
+  color: rgba(255, 255, 255, 0.9);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+  margin-bottom: 8px;
+  display: block;
+}
+
+.update-cv-form .field-hint {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: var(--font-size-xs);
+  margin-top: 6px;
+}
+
+.update-cv-form .status-banner {
+  margin: 0;
+}
+
+.form-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .update-cv-icon--loading .loading-indicator {
+    animation: none;
+  }
+}
+
 .referral-form {
   margin-top: 12px;
   display: flex;

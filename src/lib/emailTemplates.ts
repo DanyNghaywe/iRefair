@@ -1764,7 +1764,7 @@ export function cvMismatchToApplicant(params: CvMismatchParams): TemplateResult 
   const safeFeedback = feedback ? escapeHtml(feedback) : '';
 
   const updateUrl = includeUpdateLink && updateToken && applicationId
-    ? `${BASE_URL}/applicant?updateToken=${encodeURIComponent(updateToken)}&appId=${encodeURIComponent(applicationId)}`
+    ? `${BASE_URL}/update-cv?token=${encodeURIComponent(updateToken)}&appId=${encodeURIComponent(applicationId)}`
     : null;
 
   const subject = `CV feedback: ${position || 'Your application'}`;
@@ -1874,7 +1874,7 @@ export function cvUpdateRequestToApplicant(params: CvUpdateRequestParams): Templ
   const safePosition = position ? escapeHtml(position) : 'the position';
   const safeFeedback = feedback ? escapeHtml(feedback) : '';
 
-  const updateUrl = `${BASE_URL}/applicant?updateToken=${encodeURIComponent(updateToken)}&appId=${encodeURIComponent(applicationId)}`;
+  const updateUrl = `${BASE_URL}/update-cv?token=${encodeURIComponent(updateToken)}&appId=${encodeURIComponent(applicationId)}`;
 
   const subject = `Action needed: Update your CV`;
 

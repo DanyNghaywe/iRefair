@@ -2438,6 +2438,8 @@ type ApplicationAdminPatch = {
   updateRequestTokenHash?: string;
   updateRequestExpiresAt?: string;
   updateRequestPurpose?: string;
+  resumeFileId?: string;
+  resumeFileName?: string;
 };
 
 export async function updateRowById(
@@ -2608,6 +2610,8 @@ export async function updateApplicationAdmin(id: string, patch: ApplicationAdmin
     'Update Request Token Hash': patch.updateRequestTokenHash,
     'Update Request Expires At': patch.updateRequestExpiresAt,
     'Update Request Purpose': patch.updateRequestPurpose,
+    'Resume File ID': patch.resumeFileId,
+    'Resume File Name': patch.resumeFileName,
   });
 }
 
