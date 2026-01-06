@@ -842,6 +842,16 @@ export default function ReferrerReviewPage() {
             <DetailSection title="Admin">
               <div className="field-grid field-grid--two">
                 <div className="field">
+                  <label htmlFor="referrer-type">Referrer Type</label>
+                  <input
+                    id="referrer-type"
+                    type="text"
+                    value={tags}
+                    onChange={(event) => setTags(event.target.value)}
+                    placeholder="e.g. HR Manager, Recruiter, Agency"
+                  />
+                </div>
+                <div className="field">
                   <label htmlFor="referrer-last-contacted">Last Contact Date</label>
                   <input
                     id="referrer-last-contacted"
