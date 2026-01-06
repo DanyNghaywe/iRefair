@@ -172,31 +172,31 @@ export function applicantRegistrationConfirmation(params: ApplicantRegistrationP
   );
 
   const greeting = `${t('Hi', 'Bonjour', locale)} ${escapeHtml(firstName)},`;
-  const thankYou = t('thank you for registering.', 'merci de vous être inscrit.', locale);
+  const thankYou = t("we've got your details.", 'nous avons bien reçu vos informations.', locale);
 
   const eyebrowText = t('REFERRAL REQUEST RECEIVED', 'DEMANDE DE RECOMMANDATION REÇUE', locale);
   const iRainLabel = t('iRAIN', 'iRAIN', locale);
 
   const mainText1 = t(
-    "We've received your referral request. We'll review your profile and reach out when we have a referrer who matches the teams and roles you're targeting.",
-    "Nous avons reçu votre demande de recommandation. Nous examinerons votre profil et vous contacterons lorsque nous aurons un recommandateur qui correspond aux équipes et aux rôles que vous ciblez.",
+    "Thanks for submitting your referral request to iRefair. We'll review your profile and start looking for referrers who can help with roles that match your experience and preferences.",
+    "Merci d'avoir soumis votre demande de recommandation à iRefair. Nous examinerons votre profil et commencerons à chercher des recommandateurs qui peuvent vous aider avec des postes correspondant à votre expérience et vos préférences.",
     locale
   );
 
   const whatHappensTitle = t('WHAT HAPPENS NEXT', 'PROCHAINES ÉTAPES', locale);
   const step1 = t(
-    "We review your details and iRAIN to understand where you can help.",
-    "Nous examinons vos détails et votre iRAIN pour comprendre où vous pouvez aider.",
+    "We review your profile for clarity and completeness.",
+    "Nous examinons votre profil pour sa clarté et son exhaustivité.",
     locale
   );
   const step2 = t(
-    "We keep you on our radar for teams, industries, and regions that match your snapshot.",
-    "Nous vous gardons sur notre radar pour les équipes, les industries et les régions qui correspondent à votre profil.",
+    "We look for referrers whose teams and roles match what you're targeting.",
+    "Nous recherchons des recommandateurs dont les équipes et les postes correspondent à ce que vous ciblez.",
     locale
   );
   const step3 = t(
-    "When there is a fit, we'll reach out before sharing any applicant details.",
-    "Quand il y a une correspondance, nous vous contacterons avant de partager les détails du candidat.",
+    "When there's a potential match, we'll contact you before any intro is made.",
+    "Lorsqu'il y a une correspondance potentielle, nous vous contacterons avant toute mise en relation.",
     locale
   );
 
@@ -641,47 +641,47 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
   } = params;
 
   const subject = t(
-    'Referral offer received - iRefair',
-    'Offre de recommandation reçue - iRefair',
+    `Thanks for offering referrals (${iRref} saved) - iRefair`,
+    `Merci d'offrir des recommandations (${iRref} enregistré) - iRefair`,
     locale
   );
 
   const greeting = `${t('Hi', 'Bonjour', locale)} ${escapeHtml(name)},`;
   const thankYou = t(
-    'thank you for offering to refer applicants.',
-    'merci d\'offrir de recommander des candidats.',
+    'thank you for offering referrals.',
+    'merci d\'offrir des recommandations.',
     locale
   );
 
-  const eyebrowText = t('REFERRAL OFFER RECEIVED', 'OFFRE DE RECOMMANDATION REÇUE', locale);
+  const eyebrowText = t('THANKS FOR OFFERING REFERRALS', 'MERCI D\'OFFRIR DES RECOMMANDATIONS', locale);
   const iRrefLabel = t('iRREF', 'iRREF', locale);
 
   const mainText1 = t(
-    "We appreciate your willingness to refer applicants. We'll reach out when we have someone who might be a good fit for your company.",
-    "Nous apprécions votre volonté de recommander des candidats. Nous vous contacterons lorsque nous aurons quelqu'un qui pourrait convenir à votre entreprise.",
+    "We appreciate your willingness to refer candidates. We'll reach out when we have someone who matches the teams and roles you cover.",
+    "Nous apprécions votre volonté de recommander des candidats. Nous vous contacterons lorsque nous aurons quelqu'un qui correspond aux équipes et aux rôles que vous couvrez.",
     locale
   );
 
   const mainText2 = t(
-    "Thank you for contributing to the community and helping others find work in Canada.",
-    "Merci de contribuer à la communauté et d'aider les autres à trouver du travail au Canada.",
+    "Thank you for contributing to the community and helping others find work in Canada. You can reply to this email anytime to adjust your availability or update how you want to help.",
+    "Merci de contribuer à la communauté et d'aider les autres à trouver du travail au Canada. Vous pouvez répondre à cet e-mail à tout moment pour ajuster votre disponibilité ou mettre à jour la façon dont vous souhaitez aider.",
     locale
   );
 
   const whatHappensTitle = t('WHAT HAPPENS NEXT', 'PROCHAINES ÉTAPES', locale);
   const step1 = t(
-    "We review your company and industry to understand where you can help.",
-    "Nous examinons votre entreprise et votre secteur pour comprendre où vous pouvez aider.",
+    "We review your details and iRREF to understand where you can help.",
+    "Nous examinons vos détails et votre iRREF pour comprendre où vous pouvez aider.",
     locale
   );
   const step2 = t(
-    "Once approved, you'll receive access to your referrer portal.",
-    "Une fois approuvé, vous recevrez accès à votre portail de recommandateur.",
+    "We keep you on our radar for teams, industries, and regions that match your snapshot.",
+    "Nous vous gardons sur notre radar pour les équipes, industries et régions qui correspondent à votre profil.",
     locale
   );
   const step3 = t(
-    "Through the portal, you can view and connect with applicants who match your snapshot.",
-    "Via le portail, vous pourrez voir et vous connecter avec les candidats qui correspondent à votre profil.",
+    "When there is a fit, we'll reach out before sharing any candidate details.",
+    "Lorsqu'il y a une correspondance, nous vous contacterons avant de partager les détails d'un candidat.",
     locale
   );
 
@@ -689,23 +689,28 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
   const companyLabel = t('Company', 'Entreprise', locale);
   const careersLabel = t('Careers Portal', 'Portail de carrières', locale);
   const industryLabel = t('Industry', 'Industrie', locale);
-  const rolesLabel = t('Roles', 'Rôles', locale);
-  const regionsLabel = t('Regions', 'Régions', locale);
-  const typeLabel = t('Type', 'Type', locale);
-  const slotsLabel = t('Slots', 'Emplacements', locale);
+  const typeLabel = t('Referral type', 'Type de recommandation', locale);
+
+  const notProvided = t('Not provided', 'Non fourni', locale);
 
   const ctaText1 = t(
-    'Want to meet with the founder?',
-    'Vous souhaitez rencontrer le fondateur?',
+    'Want to learn how we work or discuss how you can best support candidates?',
+    'Vous voulez savoir comment nous travaillons ou discuter de la meilleure façon de soutenir les candidats?',
     locale
   );
-  const ctaButton1 = t('Schedule a call', 'Planifier un appel', locale);
-  const ctaText2 = t(
-    'Need to update your details?',
-    'Besoin de mettre à jour vos détails?',
+  const ctaButton1 = t('Meet the founder', 'Rencontrer le fondateur', locale);
+  const replyText = t('Reply to update your availability/details', 'Répondre pour mettre à jour votre disponibilité/détails', locale);
+
+  const footerText1 = t(
+    "You're receiving this because you offered to refer candidates on iRefair.",
+    "Vous recevez ceci parce que vous avez offert de recommander des candidats sur iRefair.",
     locale
   );
-  const replyText = t('Reply to this email', 'Répondre à cet e-mail', locale);
+  const footerText2 = t(
+    "If this wasn't you, you can safely ignore this message.",
+    "Si ce n'était pas vous, vous pouvez ignorer ce message en toute sécurité.",
+    locale
+  );
 
   const meetLink = process.env.FOUNDER_MEET_LINK || '';
   const normalizedMeetLink = meetLink ? normalizeHttpUrl(meetLink) : null;
@@ -731,17 +736,15 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
     </ol>
   `;
 
-  const viewCareersPortalText = t('View Careers Portal', 'Voir le portail de carrières', locale);
-
   const careersPortalValue = careersPortal
-    ? button(viewCareersPortalText, normalizeHttpUrl(careersPortal) || careersPortal, 'outline')
-    : escapeHtml(t('Not provided', 'Non fourni', locale));
+    ? `<a href="${normalizeHttpUrl(careersPortal) || escapeHtml(careersPortal)}" style="color:#2f5fb3;text-decoration:underline;">${escapeHtml(careersPortal)}</a>`
+    : escapeHtml(notProvided);
 
   const snapshot = snapshotCard(snapshotTitle, [
-    [companyLabel, escapeHtml(company)],
+    [companyLabel, escapeHtml(company || notProvided)],
     [careersLabel, careersPortalValue],
-    [industryLabel, escapeHtml(industry)],
-    [typeLabel, escapeHtml(type)],
+    [industryLabel, escapeHtml(industry || notProvided)],
+    [typeLabel, escapeHtml(type || notProvided)],
   ]);
 
   const cta = `
@@ -753,17 +756,21 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
         ${button(ctaButton1, normalizedMeetLink, 'primary')}
       </div>
     ` : ''}
-    <p style="margin:0 0 8px 0;font-size:14px;line-height:1.7;color:#3b4251;text-align:center;">
-      ${escapeHtml(ctaText2)}
-    </p>
     <div style="text-align:center;margin:0 0 4px 0;font-size:13px;">
       <a href="mailto:info@andbeyondca.com" style="color:#2f5fb3;text-decoration:underline;font-weight:600;">${escapeHtml(replyText)}</a>
     </div>
   `;
 
+  const footer = `
+    <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e6e9f0;font-size:12px;line-height:1.6;color:#5c6675;">
+      <p style="margin:0 0 8px 0;">${escapeHtml(footerText1)}</p>
+      <p style="margin:0;">${escapeHtml(footerText2)}</p>
+    </div>
+  `;
+
   const preheader = t(
-    'Thank you for offering to refer applicants. Your iRREF is saved; we will reach out when we have a match.',
-    'Merci d\'offrir de recommander des candidats. Votre iRREF est enregistré; nous vous contacterons lorsque nous aurons une correspondance.',
+    'Thank you for offering referrals. Your iRREF is saved; we will reach out when we have a match.',
+    'Merci d\'offrir des recommandations. Votre iRREF est enregistré; nous vous contacterons lorsque nous aurons une correspondance.',
     locale
   );
 
@@ -786,6 +793,7 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
     <div style="padding:16px 0 4px 0;">
       ${cta}
     </div>
+    ${footer}
   `;
 
   const html = emailWrapper(fullContent, preheader, customHeader);
@@ -796,26 +804,21 @@ ${mainText1}
 
 ${mainText2}
 
-${iRrefLabel}: ${iRref}
-
 ${whatHappensTitle}
 1) ${step1}
 2) ${step2}
 3) ${step3}
 
 ${snapshotTitle}
-- ${companyLabel}: ${company}
-- ${careersLabel}: ${careersPortal || t('Not provided', 'Non fourni', locale)}
-- ${industryLabel}: ${industry}
-- ${rolesLabel}: ${roles}
-- ${regionsLabel}: ${regions}
-- ${typeLabel}: ${type}
-- ${slotsLabel}: ${slots}
+- ${companyLabel}: ${company || notProvided}
+- ${careersLabel}: ${careersPortal || notProvided}
+- ${industryLabel}: ${industry || notProvided}
+- ${typeLabel}: ${type || notProvided}
 
-${normalizedMeetLink ? `${ctaText1}\n${ctaButton1}: ${normalizedMeetLink}\n\n` : ''}${ctaText2}
-${replyText}: info@andbeyondca.com
+${normalizedMeetLink ? `${ctaText1}\n${ctaButton1}: ${normalizedMeetLink}\n\n` : ''}${replyText}
 
-- ${t('The iRefair team', 'L\'équipe iRefair', locale)}`;
+${footerText1}
+${footerText2}`;
 
   return { subject, html, text };
 }
