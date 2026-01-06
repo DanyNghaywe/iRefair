@@ -249,6 +249,8 @@ export default function ReferrerReviewPage() {
   const [notFound, setNotFound] = useState(false);
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState("");
+  const [lastContactedAt, setLastContactedAt] = useState("");
+  const [nextActionAt, setNextActionAt] = useState("");
   const [status, setStatus] = useState("");
   const [editDetails, setEditDetails] = useState(initialEdit);
   const [name, setName] = useState("");
@@ -372,6 +374,8 @@ export default function ReferrerReviewPage() {
     if (!referrer) return;
     setNotes(referrer.ownerNotes || "");
     setTags(referrer.tags || "");
+    setLastContactedAt(referrer.lastContactedAt || "");
+    setNextActionAt(referrer.nextActionAt || "");
     setStatus((referrer.status || "").toLowerCase());
     setName(referrer.name || "");
     setEmail(referrer.email || "");
@@ -415,11 +419,11 @@ export default function ReferrerReviewPage() {
       return;
     }
     const timer = setTimeout(() => {
-      patchReferrer({ ownerNotes: notes, tags, status });
+      patchReferrer({ ownerNotes: notes, tags, status, lastContactedAt, nextActionAt });
     }, 600);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notes, tags, status, referrer?.irref]);
+  }, [notes, tags, status, lastContactedAt, nextActionAt, referrer?.irref]);
 
   const handleStartEdit = () => {
     originalDetailsRef.current = {
@@ -832,6 +836,41 @@ export default function ReferrerReviewPage() {
                     aria-readonly="true"
                   />
                 </div>
+              </div>
+            </DetailSection>
+
+            <DetailSection title="Admin">
+              <div className="field-grid field-grid--two">
+                <div className="field">
+                  <label htmlFor="referrer-last-contacted">Last Contact Date</label>
+                  <input
+                    id="referrer-last-contacted"
+                    type="text"
+                    value={lastContactedAt}
+                    onChange={(event) => setLastContactedAt(event.target.value)}
+                    placeholder="e.g. 2025-01-15"
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="referrer-next-action">Next Follow-up</label>
+                  <input
+                    id="referrer-next-action"
+                    type="text"
+                    value={nextActionAt}
+                    onChange={(event) => setNextActionAt(event.target.value)}
+                    placeholder="e.g. 2025-01-20 or Call Monday"
+                  />
+                </div>
+              </div>
+              <div className="field" style={{ marginTop: "var(--gap)" }}>
+                <label htmlFor="referrer-notes">Internal Notes</label>
+                <textarea
+                  id="referrer-notes"
+                  rows={4}
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  placeholder="Add notes about this referrer..."
+                />
               </div>
             </DetailSection>
 

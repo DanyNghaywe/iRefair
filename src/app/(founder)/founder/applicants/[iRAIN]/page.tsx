@@ -1028,64 +1028,6 @@ export default function CandidateReviewPage() {
               </div>
             </DetailSection>
 
-            <DetailSection title="Admin">
-              <div className="field-grid field-grid--two">
-                <div className="field">
-                  <label htmlFor="candidate-status">Status</label>
-                  <Select
-                    id="candidate-status"
-                    name="candidate-status"
-                    options={statusOptions
-                      .filter((opt) => opt)
-                      .map((opt) => ({ value: opt.toLowerCase(), label: opt }))}
-                    placeholder="Unassigned"
-                    value={status}
-                    onChange={(value) => setStatus(Array.isArray(value) ? value[0] : value)}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="candidate-tags">Skills / Interests</label>
-                  <input
-                    id="candidate-tags"
-                    type="text"
-                    value={tags}
-                    onChange={(event) => setTags(event.target.value)}
-                    placeholder="e.g. iPhone repair, soldering, retail"
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="candidate-last-contacted">Last Contact Date</label>
-                  <input
-                    id="candidate-last-contacted"
-                    type="text"
-                    value={lastContactedAt}
-                    onChange={(event) => setLastContactedAt(event.target.value)}
-                    placeholder="e.g. 2025-01-15"
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="candidate-next-action">Next Follow-up</label>
-                  <input
-                    id="candidate-next-action"
-                    type="text"
-                    value={nextActionAt}
-                    onChange={(event) => setNextActionAt(event.target.value)}
-                    placeholder="e.g. 2025-01-20 or Call Monday"
-                  />
-                </div>
-              </div>
-              <div className="field" style={{ marginTop: "var(--gap)" }}>
-                <label htmlFor="candidate-notes">Internal Notes</label>
-                <textarea
-                  id="candidate-notes"
-                  rows={4}
-                  value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
-                  placeholder="Add interview notes, availability, concerns..."
-                />
-              </div>
-            </DetailSection>
-
             <DetailSection title="Data quality">
               {candidate.missingFields.length ? (
                 <div className="founder-pill">{missingFieldsLabel}</div>
