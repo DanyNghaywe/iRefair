@@ -144,10 +144,6 @@ export async function POST(request: Request) {
       linkedin,
     });
 
-    // Generate portal link for new referrer
-    const portalTokenVersion = await ensureReferrerPortalTokenVersion(iRref);
-    const portalUrl = buildReferrerPortalLink(iRref, portalTokenVersion);
-
     const emailTemplate = referrerRegistrationConfirmation({
       name: fallbackName,
       iRref,
@@ -159,7 +155,6 @@ export async function POST(request: Request) {
       type: referralType || workType,
       slots: monthlySlots,
       locale,
-      portalUrl,
     });
 
     await sendMail({

@@ -638,7 +638,6 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
     type,
     slots,
     locale = 'en',
-    portalUrl,
   } = params;
 
   const subject = t(
@@ -676,13 +675,13 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
     locale
   );
   const step2 = t(
-    "We keep you on our radar for applicants who match your snapshot.",
-    "Nous vous gardons sur notre radar pour les candidats qui correspondent à votre profil.",
+    "Once approved, you'll receive access to your referrer portal.",
+    "Une fois approuvé, vous recevrez accès à votre portail de recommandateur.",
     locale
   );
   const step3 = t(
-    "When there is a fit, we'll reach out before sharing any applicant details.",
-    "Quand il y a une correspondance, nous vous contacterons avant de partager les détails du candidat.",
+    "Through the portal, you can view and connect with applicants who match your snapshot.",
+    "Via le portail, vous pourrez voir et vous connecter avec les candidats qui correspondent à votre profil.",
     locale
   );
 
@@ -707,14 +706,6 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
     locale
   );
   const replyText = t('Reply to this email', 'Répondre à cet e-mail', locale);
-
-  const portalCtaText = t(
-    'Access your referrer portal',
-    'Accéder à votre portail de recommandateur',
-    locale
-  );
-  const portalCtaButton = t('Open portal', 'Ouvrir le portail', locale);
-  const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
 
   const meetLink = process.env.FOUNDER_MEET_LINK || '';
   const normalizedMeetLink = meetLink ? normalizeHttpUrl(meetLink) : null;
@@ -754,21 +745,12 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
   ]);
 
   const cta = `
-    ${normalizedPortalUrl ? `
-      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#3b4251;text-align:center;">
-        ${escapeHtml(portalCtaText)}
-      </p>
-      <div style="text-align:center;margin:0 0 16px 0;">
-        ${button(portalCtaButton, normalizedPortalUrl, 'primary')}
-      </div>
-      ${divider}
-    ` : ''}
     ${normalizedMeetLink ? `
       <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#3b4251;text-align:center;">
         ${escapeHtml(ctaText1)}
       </p>
       <div style="text-align:center;margin:0 0 16px 0;">
-        ${button(ctaButton1, normalizedMeetLink, 'outline')}
+        ${button(ctaButton1, normalizedMeetLink, 'primary')}
       </div>
     ` : ''}
     <p style="margin:0 0 8px 0;font-size:14px;line-height:1.7;color:#3b4251;text-align:center;">
@@ -830,7 +812,7 @@ ${snapshotTitle}
 - ${typeLabel}: ${type}
 - ${slotsLabel}: ${slots}
 
-${normalizedPortalUrl ? `${portalCtaText}\n${portalCtaButton}: ${normalizedPortalUrl}\n\n` : ''}${normalizedMeetLink ? `${ctaText1}\n${ctaButton1}: ${normalizedMeetLink}\n\n` : ''}${ctaText2}
+${normalizedMeetLink ? `${ctaText1}\n${ctaButton1}: ${normalizedMeetLink}\n\n` : ''}${ctaText2}
 ${replyText}: info@andbeyondca.com
 
 - ${t('The iRefair team', 'L\'équipe iRefair', locale)}`;
