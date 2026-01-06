@@ -703,6 +703,12 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
     locale
   );
 
+  const replyText = t(
+    "Feel free to reply to this email if you have any questions.",
+    "N'hésitez pas à répondre à cet e-mail si vous avez des questions.",
+    locale
+  );
+
   const meetLink = process.env.FOUNDER_MEET_LINK || '';
   const normalizedMeetLink = meetLink ? normalizeHttpUrl(meetLink) : null;
 
