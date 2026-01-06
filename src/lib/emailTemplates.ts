@@ -212,11 +212,6 @@ export function applicantRegistrationConfirmation(params: ApplicantRegistrationP
     locale
   );
   const ctaButton = t('View live openings', 'Voir les offres en direct', locale);
-  const replyText = t(
-    'Reply to update your availability/details',
-    'Répondre pour mettre à jour votre disponibilité/détails',
-    locale
-  );
 
   // Use the imported jobOpeningsUrl - normalize it for email safety
   const openingsUrl = normalizeHttpUrl(jobOpeningsUrl) || 'https://irefair.com/hiring-companies';
@@ -254,9 +249,6 @@ export function applicantRegistrationConfirmation(params: ApplicantRegistrationP
     </p>
     <div style="text-align:center;margin:0 0 12px 0;">
       ${button(ctaButton, openingsUrl, 'primary')}
-    </div>
-    <div style="text-align:center;margin:0 0 4px 0;font-size:13px;">
-      <a href="mailto:info@andbeyondca.com" style="color:#2f5fb3;text-decoration:underline;font-weight:600;">${escapeHtml(replyText)}</a>
     </div>
   `;
 
@@ -699,7 +691,6 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
     locale
   );
   const ctaButton1 = t('Meet the founder', 'Rencontrer le fondateur', locale);
-  const replyText = t('Reply to update your availability/details', 'Répondre pour mettre à jour votre disponibilité/détails', locale);
 
   const footerText1 = t(
     "You're receiving this because you offered to refer candidates on iRefair.",
@@ -747,19 +738,14 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
     [typeLabel, escapeHtml(type || notProvided)],
   ]);
 
-  const cta = `
-    ${normalizedMeetLink ? `
-      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#3b4251;text-align:center;">
-        ${escapeHtml(ctaText1)}
-      </p>
-      <div style="text-align:center;margin:0 0 16px 0;">
-        ${button(ctaButton1, normalizedMeetLink, 'primary')}
-      </div>
-    ` : ''}
-    <div style="text-align:center;margin:0 0 4px 0;font-size:13px;">
-      <a href="mailto:info@andbeyondca.com" style="color:#2f5fb3;text-decoration:underline;font-weight:600;">${escapeHtml(replyText)}</a>
+  const cta = normalizedMeetLink ? `
+    <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#3b4251;text-align:center;">
+      ${escapeHtml(ctaText1)}
+    </p>
+    <div style="text-align:center;margin:0 0 16px 0;">
+      ${button(ctaButton1, normalizedMeetLink, 'primary')}
     </div>
-  `;
+  ` : '';
 
   const footer = `
     <div style="margin-top:20px;padding-top:16px;border-top:1px solid #e6e9f0;font-size:12px;line-height:1.6;color:#5c6675;">
