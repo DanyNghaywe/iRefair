@@ -3089,6 +3089,66 @@ export async function cleanupExpiredPendingApplicants(): Promise<{ deleted: numb
   return { deleted, errors };
 }
 
+/**
+ * Clear expired pending update payloads for existing applicants.
+ * Unlike new registrations (which are deleted entirely), existing applicants
+ * just have their pending update columns cleared when the token expires.
+ * Returns the number of cleared records.
+ */
+export async function cleanupExpiredPendingUpdates(): Promise<{ cleared: number; errors: number }> {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME);
+  if (!headers.length) return { cleared: 0, errors: 0 };
+
+  const headerMap = buildHeaderMap(headers);
+  const now = Date.now();
+
+  // Find all existing applicants with expired pending updates
+  const expiredIrains: string[] = [];
+  for (const row of rows) {
+    // Skip new registrations (handled by cleanupExpiredPendingApplicants)
+    const registrationStatus = getHeaderValue(headerMap, row, APPLICANT_REGISTRATION_STATUS_HEADER);
+    if (registrationStatus === 'Pending Confirmation') continue;
+
+    // Check if there's a pending update payload
+    const pendingPayload = getHeaderValue(headerMap, row, APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER);
+    if (!pendingPayload) continue;
+
+    // Check if the token has expired
+    const expiresAtRaw = getHeaderValue(headerMap, row, APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER);
+    if (!expiresAtRaw) continue;
+
+    const expiresAt = Date.parse(expiresAtRaw);
+    if (Number.isNaN(expiresAt)) continue;
+
+    if (expiresAt < now) {
+      const irain = getHeaderValue(headerMap, row, 'iRAIN');
+      if (irain) {
+        expiredIrains.push(irain);
+      }
+    }
+  }
+
+  // Clear pending update columns for each expired record
+  let cleared = 0;
+  let errors = 0;
+  for (const irain of expiredIrains) {
+    const result = await updateRowById(APPLICANT_SHEET_NAME, 'iRAIN', irain, {
+      [APPLICANT_UPDATE_TOKEN_HASH_HEADER]: '',
+      [APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER]: '',
+      [APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER]: '',
+    });
+    if (result.updated) {
+      cleared++;
+    } else {
+      errors++;
+    }
+  }
+
+  return { cleared, errors };
+}
+
 // ============================================================================
 // Archive Functions
 // ============================================================================

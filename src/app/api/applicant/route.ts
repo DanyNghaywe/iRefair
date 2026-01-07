@@ -4,46 +4,31 @@ import { uploadFileToDrive } from "@/lib/drive";
 import { sendMail } from "@/lib/mailer";
 import { rateLimit, rateLimitHeaders, RATE_LIMITS } from "@/lib/rateLimit";
 import {
-  applicantRegistrationConfirmation,
-  applicantIneligibleNotification,
   applicantProfileUpdateConfirmation,
   newApplicantRegistrationConfirmation,
-  applicantUpdatedToReferrer,
-  meetingCancelledToApplicant,
-  meetingCancelledToReferrer,
 } from "@/lib/emailTemplates";
-import { buildReferrerPortalLink, ensureReferrerPortalTokenVersion } from "@/lib/referrerPortalLink";
 import {
-  APPLICANT_SECRET_HASH_HEADER,
   APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
   APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
   APPLICANT_UPDATE_TOKEN_HASH_HEADER,
   APPLICANT_REGISTRATION_STATUS_HEADER,
   APPLICANT_SHEET_NAME,
   cleanupExpiredPendingApplicants,
+  cleanupExpiredPendingUpdates,
   ensureColumns,
   generateIRAIN,
   getApplicantByEmail,
   findExistingApplicant,
-  getApplicationById,
-  getReferrerByIrref,
   isIrain,
-  updateApplicationAdmin,
   updateRowById,
   upsertApplicantRow,
-  checkApplicantEligibilityAndGetAffectedApplications,
-  markApplicationsAsIneligible,
 } from "@/lib/sheets";
-import { appendActionHistoryEntry, type ActionLogEntry } from "@/lib/actionHistory";
 import { jobOpeningsUrl } from "@/lib/urls";
 import { escapeHtml, normalizeHttpUrl } from "@/lib/validation";
 import {
-  createApplicantSecret,
   createApplicantUpdateToken,
-  hashApplicantSecret,
   hashToken,
 } from "@/lib/applicantUpdateToken";
-import { hashOpaqueToken, isExpired } from "@/lib/tokens";
 
 type EmailLanguage = "en" | "fr";
 
@@ -111,9 +96,12 @@ export async function POST(request: Request) {
     );
   }
 
-  // Cleanup expired pending registrations in the background
+  // Cleanup expired pending registrations and updates in the background
   cleanupExpiredPendingApplicants().catch((err) => {
     console.error("Error cleaning up expired pending applicants:", err);
+  });
+  cleanupExpiredPendingUpdates().catch((err) => {
+    console.error("Error cleaning up expired pending updates:", err);
   });
 
   try {
@@ -424,10 +412,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, needsEmailConfirm: true });
     }
 
-    // For existing applicants with matching email, proceed with direct update
-
-    const upsertResult = await upsertApplicantRow({
-      id: iRain,
+    // For existing applicants with matching email, also require confirmation before updating
+    // This ensures the person submitting the form owns the email address
+    const exp = Math.floor(Date.now() / 1000) + UPDATE_TOKEN_TTL_SECONDS;
+    const token = createApplicantUpdateToken({
+      email: existingApplicant.record.email,
+      rowIndex: existingApplicant.rowIndex,
+      exp,
+    });
+    const tokenHash = hashToken(token);
+    const pendingPayload: PendingApplicantUpdatePayload = {
       firstName,
       middleName,
       familyName,
@@ -443,220 +437,41 @@ export async function POST(request: Request) {
       industryType,
       industryOther,
       employmentStatus,
-    });
-    const applicantSecret = createApplicantSecret();
-    const applicantSecretHash = hashApplicantSecret(applicantSecret);
-    const applicantRowUpdates: Record<string, string | undefined> = {
-      [APPLICANT_SECRET_HASH_HEADER]: applicantSecretHash,
+      resumeFileId,
+      resumeFileName,
+      locale,
     };
-    const requiredColumns = [APPLICANT_SECRET_HASH_HEADER];
-    if (resumeFileId || resumeFileName) {
-      applicantRowUpdates["Resume File Name"] = resumeFileName;
-      applicantRowUpdates["Resume File ID"] = resumeFileId;
-      applicantRowUpdates["Resume URL"] = "";
-      requiredColumns.push("Resume File Name", "Resume File ID", "Resume URL");
+
+    if (shouldAssignNewIrain) {
+      pendingPayload.id = iRain;
+      if (legacyApplicantId) {
+        pendingPayload.legacyApplicantId = legacyApplicantId;
+      }
     }
-    await ensureColumns(APPLICANT_SHEET_NAME, requiredColumns);
-    const updateResult = await updateRowById(APPLICANT_SHEET_NAME, "iRAIN", upsertResult.id, applicantRowUpdates);
+
+    await ensureColumns(APPLICANT_SHEET_NAME, [
+      APPLICANT_UPDATE_TOKEN_HASH_HEADER,
+      APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
+      APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
+    ]);
+
+    const updateResult = await updateRowById(APPLICANT_SHEET_NAME, "Email", existingApplicant.record.email, {
+      [APPLICANT_UPDATE_TOKEN_HASH_HEADER]: tokenHash,
+      [APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER]: new Date(exp * 1000).toISOString(),
+      [APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER]: JSON.stringify(pendingPayload),
+    });
     if (!updateResult.updated) {
-      return NextResponse.json({ ok: false, error: "Failed to save applicant profile." }, { status: 500 });
+      return NextResponse.json({ ok: false, error: "Failed to start update confirmation." }, { status: 500 });
     }
 
-    // Handle update-request token validation and clearing (from referrer portal flow)
-    let updateRequestCleared = false;
-    if (updateRequestToken && updateRequestApplicationId) {
-      try {
-        const application = await getApplicationById(updateRequestApplicationId);
-        if (application?.record) {
-          const storedHash = application.record.updateRequestTokenHash || "";
-          const storedExpiry = application.record.updateRequestExpiresAt || "";
-          const providedHash = hashOpaqueToken(updateRequestToken);
+    const confirmUrl = new URL("/api/applicant/confirm-update", appBaseUrl);
+    confirmUrl.searchParams.set("token", token);
 
-          // Validate: hash matches and not expired
-          if (storedHash && storedHash === providedHash && !isExpired(storedExpiry)) {
-            // Build action history entry for the CV update
-            const actionEntry: ActionLogEntry = {
-              action: "CV_UPDATED",
-              timestamp: new Date().toISOString(),
-              performedBy: "applicant",
-            };
-            const updatedActionHistory = appendActionHistoryEntry(application.record.actionHistory, actionEntry);
-
-            // Determine the new status based on the update purpose
-            const updatePurpose = application.record.updateRequestPurpose || "";
-            const newStatus = updatePurpose === "cv" ? "cv updated" : "info updated";
-
-            // Clear the update request fields and set status
-            await updateApplicationAdmin(updateRequestApplicationId, {
-              updateRequestTokenHash: "",
-              updateRequestExpiresAt: "",
-              updateRequestPurpose: "",
-              status: newStatus,
-              actionHistory: updatedActionHistory,
-            });
-            updateRequestCleared = true;
-
-            // Notify the referrer that the CV was updated
-            const referrerIrref = application.record.referrerIrref;
-            if (referrerIrref) {
-              try {
-                const referrer = await getReferrerByIrref(referrerIrref);
-                const referrerEmail = referrer?.record?.email;
-                if (referrerEmail) {
-                  // Generate portal link for referrer
-                  const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrerIrref);
-                  const portalUrl = buildReferrerPortalLink(referrerIrref, portalTokenVersion);
-
-                  const applicantFullName = [firstName, familyName].filter(Boolean).join(" ").trim() || email;
-                  const referrerNotification = applicantUpdatedToReferrer({
-                    referrerName: referrer.record.name || undefined,
-                    applicantName: applicantFullName,
-                    applicantEmail: email,
-                    position: application.record.position || undefined,
-                    applicationId: updateRequestApplicationId,
-                    updatedFields: ["their CV"],
-                    resumeUrl: resumeFileId ? `https://drive.google.com/file/d/${resumeFileId}/view` : undefined,
-                    portalUrl,
-                  });
-                  await sendMail({
-                    to: referrerEmail,
-                    subject: referrerNotification.subject,
-                    html: referrerNotification.html,
-                    text: referrerNotification.text,
-                  });
-                }
-              } catch (referrerErr) {
-                // Log but don't fail - referrer notification is best-effort
-                console.error("Error sending referrer notification:", referrerErr);
-              }
-            }
-          }
-        }
-      } catch (err) {
-        // Log but don't fail the submission - token clearing is best-effort
-        console.error("Error clearing update request token:", err);
-      }
-    }
-
-    const finalIRain = upsertResult.id;
-
-    // Override wasUpdated based on our 2-of-3 detection
-    // This is true if we found an existing applicant with matching email (not requiring confirmation)
-    const wasUpdated = isExistingApplicant && emailMatchesExisting;
-
-    // If applicant became ineligible during an update, update their existing applications
-    if (wasUpdated && isIneligible) {
-      try {
-        const eligibilityResult = await checkApplicantEligibilityAndGetAffectedApplications(
-          finalIRain,
-          locatedCanada,
-          authorizedCanada,
-          eligibleMoveCanada,
-        );
-
-        if (eligibilityResult.affectedApplications.length > 0) {
-          // Update all affected applications to ineligible
-          await markApplicationsAsIneligible(
-            eligibilityResult.affectedApplications.map((app) => app.id),
-          );
-
-          // Send cancellation emails for applications with scheduled meetings
-          const applicantFullName = [firstName, familyName].filter(Boolean).join(" ").trim() || email;
-
-          for (const app of eligibilityResult.affectedApplications) {
-            if (app.hadMeetingScheduled && app.referrerEmail) {
-              try {
-                // Get referrer details for the email
-                const referrer = app.referrerIrref ? await getReferrerByIrref(app.referrerIrref) : null;
-                const referrerName = referrer?.record?.name || undefined;
-                const companyName = referrer?.record?.company || undefined;
-
-                // Generate portal link for referrer
-                let portalUrl: string | undefined;
-                if (app.referrerIrref) {
-                  try {
-                    const tokenVersion = await ensureReferrerPortalTokenVersion(app.referrerIrref);
-                    portalUrl = buildReferrerPortalLink(app.referrerIrref, tokenVersion);
-                  } catch {
-                    // Ignore portal link errors
-                  }
-                }
-
-                // Send cancellation email to applicant
-                const applicantTemplate = meetingCancelledToApplicant({
-                  applicantName: applicantFullName,
-                  referrerName,
-                  companyName,
-                  position: app.position,
-                  reason: locale === "fr"
-                    ? "Votre profil ne répond plus aux critères d'éligibilité."
-                    : "Your profile no longer meets the eligibility requirements.",
-                });
-                await sendMail({
-                  to: email,
-                  subject: applicantTemplate.subject,
-                  html: applicantTemplate.html,
-                  text: applicantTemplate.text,
-                });
-
-                // Send cancellation email to referrer
-                const referrerTemplate = meetingCancelledToReferrer({
-                  referrerName,
-                  applicantName: applicantFullName,
-                  companyName,
-                  position: app.position,
-                  cancelledDueToAction: "the applicant's profile no longer meets eligibility requirements",
-                  portalUrl,
-                });
-                await sendMail({
-                  to: app.referrerEmail,
-                  subject: referrerTemplate.subject,
-                  html: referrerTemplate.html,
-                  text: referrerTemplate.text,
-                });
-              } catch (emailErr) {
-                console.error("Error sending meeting cancellation emails:", emailErr);
-              }
-            }
-          }
-        }
-      } catch (eligibilityErr) {
-        // Log but don't fail the update - eligibility handling is best-effort
-        console.error("Error handling eligibility update for applications:", eligibilityErr);
-      }
-    }
-
-    const shouldIncludeStatusNote = upsertResult.wasUpdated && !isIneligible;
-    const statusNote = shouldIncludeStatusNote
-      ? locale === "fr"
-        ? "Nous avons mis a jour votre demande avec les dernieres informations fournies."
-        : "We updated your referral request with the latest details you shared."
-      : undefined;
-
-    // Determine which template to use and generate email
-    let emailTemplate;
-
-    if (isIneligible) {
-      emailTemplate = applicantIneligibleNotification({
-        firstName,
-        iRain: finalIRain,
-        applicantKey: applicantSecret,
-        locale,
-      });
-    } else {
-      emailTemplate = applicantRegistrationConfirmation({
-        firstName,
-        iRain: finalIRain,
-        location: locationSnapshot,
-        authorization: authorizationSnapshot,
-        industry: industrySnapshot,
-        languages: languagesSnapshot,
-        applicantKey: applicantSecret,
-        isUpdate: wasUpdated || undefined,
-        statusNote,
-        locale,
-      });
-    }
+    const emailTemplate = applicantProfileUpdateConfirmation({
+      firstName,
+      confirmUrl: confirmUrl.toString(),
+      locale,
+    });
 
     await sendMail({
       to: email,
@@ -665,7 +480,7 @@ export async function POST(request: Request) {
       text: emailTemplate.text,
     });
 
-    return NextResponse.json({ ok: true, updated: wasUpdated, iRain: finalIRain });
+    return NextResponse.json({ ok: true, needsEmailConfirm: true });
   } catch (error) {
     console.error("Candidate email API error", error);
     return NextResponse.json({ ok: false, error: "Failed to send email" }, { status: 500 });
