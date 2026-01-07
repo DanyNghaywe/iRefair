@@ -66,7 +66,7 @@ const successPageHtml = `<!DOCTYPE html>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-      background: #ffffff;
+      background: #f7f4ff;
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -90,10 +90,11 @@ const successPageHtml = `<!DOCTYPE html>
       vertical-align: middle;
     }
     .card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid #e2e6f1;
       border-radius: 16px;
       padding: 40px 32px;
+      box-shadow: 0 24px 70px rgba(35, 46, 89, 0.16);
     }
     .icon {
       width: 64px;
@@ -149,7 +150,7 @@ const errorPageHtml = `<!DOCTYPE html>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
-      background: #ffffff;
+      background: #f7f4ff;
       min-height: 100vh;
       display: flex;
       align-items: center;
@@ -173,10 +174,11 @@ const errorPageHtml = `<!DOCTYPE html>
       vertical-align: middle;
     }
     .card {
-      background: #ffffff;
-      border: 1px solid #e2e8f0;
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid #e2e6f1;
       border-radius: 16px;
       padding: 40px 32px;
+      box-shadow: 0 24px 70px rgba(35, 46, 89, 0.16);
     }
     .icon {
       width: 64px;
