@@ -460,6 +460,11 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     return errorResponse("We couldn't find your profile. Please contact support if this persists.", 404, isGetRequest);
   }
 
+  // Block archived applicants from confirming profile updates
+  if (applicant.record.archived?.toLowerCase() === 'true') {
+    return errorResponse("This applicant profile has been archived and can no longer be updated.", 403, isGetRequest);
+  }
+
   if (!safeCompareHash(storedTokenHash, tokenHash)) {
     return errorResponse("This confirmation link is no longer valid. Please submit a new update request.", 403, isGetRequest);
   }

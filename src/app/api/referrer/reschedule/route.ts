@@ -88,6 +88,25 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  // Check if application is archived
+  if (application.record.archived?.toLowerCase() === 'true') {
+    return NextResponse.json(
+      { success: false, error: 'This application has been archived and can no longer be rescheduled.' },
+      { status: 403 },
+    );
+  }
+
+  // Check if the applicant is archived
+  if (application.record.applicantId) {
+    const applicantRecord = await findApplicantByIdentifier(application.record.applicantId).catch(() => null);
+    if (applicantRecord?.record.archived?.toLowerCase() === 'true') {
+      return NextResponse.json(
+        { success: false, error: 'This applicant profile has been archived and can no longer reschedule meetings.' },
+        { status: 403 },
+      );
+    }
+  }
+
   // Check expiry
   if (isExpired(application.record.rescheduleTokenExpiresAt)) {
     return NextResponse.json(

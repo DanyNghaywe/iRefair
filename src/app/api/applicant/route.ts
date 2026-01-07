@@ -149,6 +149,15 @@ export async function POST(request: Request) {
 
     // Check for existing applicant using 2-of-3 matching (name, email, phone)
     const existingApplicant = await findExistingApplicant(firstName, familyName, email, phone);
+
+    // Block archived applicants from registering or updating their profile
+    if (existingApplicant?.record.archived?.toLowerCase() === 'true') {
+      return NextResponse.json(
+        { ok: false, error: 'This applicant profile has been archived and can no longer be updated.' },
+        { status: 403 },
+      );
+    }
+
     const isExistingApplicant = existingApplicant !== null;
     const existingId = existingApplicant?.record.id || "";
     const shouldAssignNewIrain = Boolean(existingApplicant) && !isIrain(existingId);

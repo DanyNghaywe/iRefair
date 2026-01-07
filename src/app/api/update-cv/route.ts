@@ -57,6 +57,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: false, error: 'Application not found' }, { status: 404 });
     }
 
+    // Check if application is archived
+    if (application.record.archived?.toLowerCase() === 'true') {
+      return NextResponse.json(
+        { ok: false, error: 'This application has been archived and can no longer be updated.' },
+        { status: 403 },
+      );
+    }
+
+    // Check if the applicant is archived
+    if (application.record.applicantId) {
+      const applicant = await findApplicantByIdentifier(application.record.applicantId).catch(() => null);
+      if (applicant?.record.archived?.toLowerCase() === 'true') {
+        return NextResponse.json(
+          { ok: false, error: 'This applicant profile has been archived and can no longer update their CV.' },
+          { status: 403 },
+        );
+      }
+    }
+
     // Validate token
     const storedHash = application.record.updateRequestTokenHash || '';
     const storedExpiry = application.record.updateRequestExpiresAt || '';

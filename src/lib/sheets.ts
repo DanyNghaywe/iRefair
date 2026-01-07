@@ -2398,6 +2398,7 @@ export async function findApplicationByRescheduleTokenHash(tokenHash: string) {
           updateRequestTokenHash: getHeaderValue(headerMap, row, 'Update Request Token Hash'),
           updateRequestExpiresAt: getHeaderValue(headerMap, row, 'Update Request Expires At'),
           updateRequestPurpose: getHeaderValue(headerMap, row, 'Update Request Purpose'),
+          archived: getHeaderValue(headerMap, row, 'Archived'),
         },
       };
     }

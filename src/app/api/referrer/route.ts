@@ -91,6 +91,14 @@ export async function POST(request: Request) {
     // Check if referrer already exists with this email
     const existingReferrer = await getReferrerByEmail(email);
     if (existingReferrer) {
+      // Block archived referrers from re-registering or updating
+      if (existingReferrer.record.archived?.toLowerCase() === 'true') {
+        return NextResponse.json(
+          { ok: false, error: 'This referrer account has been archived and can no longer be used.' },
+          { status: 403 },
+        );
+      }
+
       // Store the submitted data as a pending update
       await addPendingUpdate(existingReferrer.record.irref, {
         name,
