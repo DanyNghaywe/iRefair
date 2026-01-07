@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
-import { listApplicants } from '@/lib/sheets';
+import { cleanupExpiredPendingApplicants, listApplicants } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -11,6 +11,11 @@ export async function GET(request: NextRequest) {
   } catch {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
+
+  // Cleanup expired pending registrations in the background
+  cleanupExpiredPendingApplicants().catch((err) => {
+    console.error('Error cleaning up expired pending applicants:', err);
+  });
 
   const { searchParams } = new URL(request.url);
   const search = searchParams.get('search') ?? undefined;

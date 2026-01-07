@@ -20,6 +20,7 @@ import {
   APPLICANT_UPDATE_TOKEN_HASH_HEADER,
   APPLICANT_REGISTRATION_STATUS_HEADER,
   APPLICANT_SHEET_NAME,
+  cleanupExpiredPendingApplicants,
   ensureColumns,
   generateIRAIN,
   getApplicantByEmail,
@@ -109,6 +110,11 @@ export async function POST(request: Request) {
       { status: 429, headers: rateLimitHeaders(rate) },
     );
   }
+
+  // Cleanup expired pending registrations in the background
+  cleanupExpiredPendingApplicants().catch((err) => {
+    console.error("Error cleaning up expired pending applicants:", err);
+  });
 
   try {
     const form = await request.formData();
@@ -260,6 +266,14 @@ export async function POST(request: Request) {
     // If email is different (name+phone match only), require confirmation for security
     const emailMatchesExisting = existingApplicant &&
       existingApplicant.record.email.trim().toLowerCase() === email.trim().toLowerCase();
+
+    // If existing applicant with matching email is still pending confirmation, prompt them to confirm
+    if (existingApplicant && emailMatchesExisting) {
+      const registrationStatus = existingApplicant.record.registrationStatus?.trim() || "";
+      if (registrationStatus === "Pending Confirmation") {
+        return NextResponse.json({ ok: true, needsEmailConfirm: true });
+      }
+    }
 
     if (existingApplicant && !emailMatchesExisting) {
       // Email is different, require confirmation before updating

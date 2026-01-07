@@ -1789,6 +1789,7 @@ export async function listApplicants(params: ApplicantListParams) {
         employmentStatus: getHeaderValue(headerMap, row, 'Employment Status'),
         legacyApplicantId: getHeaderValue(headerMap, row, LEGACY_APPLICANT_ID_HEADER),
         status: getHeaderValue(headerMap, row, 'Status'),
+        registrationStatus: getHeaderValue(headerMap, row, APPLICANT_REGISTRATION_STATUS_HEADER),
         ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
         tags: getHeaderValue(headerMap, row, 'Tags'),
         lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
@@ -3037,6 +3038,55 @@ export async function deleteApplicantByIrain(
     console.error('Error deleting applicant row', error);
     return { success: false, reason: 'error' };
   }
+}
+
+/**
+ * Delete all applicants with "Pending Confirmation" status whose confirmation token has expired.
+ * Returns the number of deleted records.
+ */
+export async function cleanupExpiredPendingApplicants(): Promise<{ deleted: number; errors: number }> {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME);
+  if (!headers.length) return { deleted: 0, errors: 0 };
+
+  const headerMap = buildHeaderMap(headers);
+  const now = Date.now();
+
+  // Find all expired pending registrations
+  const expiredIrains: string[] = [];
+  for (const row of rows) {
+    const registrationStatus = getHeaderValue(headerMap, row, APPLICANT_REGISTRATION_STATUS_HEADER);
+    if (registrationStatus !== 'Pending Confirmation') continue;
+
+    const expiresAtRaw = getHeaderValue(headerMap, row, APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER);
+    if (!expiresAtRaw) continue;
+
+    // Parse expiry timestamp
+    const expiresAt = Date.parse(expiresAtRaw);
+    if (Number.isNaN(expiresAt)) continue;
+
+    if (expiresAt < now) {
+      const irain = getHeaderValue(headerMap, row, 'iRAIN');
+      if (irain) {
+        expiredIrains.push(irain);
+      }
+    }
+  }
+
+  // Delete each expired applicant (in reverse order to avoid row index issues)
+  let deleted = 0;
+  let errors = 0;
+  for (const irain of expiredIrains) {
+    const result = await deleteApplicantByIrain(irain);
+    if (result.success) {
+      deleted++;
+    } else {
+      errors++;
+    }
+  }
+
+  return { deleted, errors };
 }
 
 // ============================================================================

@@ -8,6 +8,7 @@ import {
   APPLICANT_UPDATE_TOKEN_HASH_HEADER,
   APPLICANT_REGISTRATION_STATUS_HEADER,
   APPLICANT_SHEET_NAME,
+  deleteApplicantByIrain,
   ensureColumns,
   getApplicantByEmail,
   updateRowById,
@@ -293,6 +294,10 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
   // Check token expiry
   const storedExpiry = parseExpiry(applicant.record.updateTokenExpiresAt);
   if (!storedExpiry || storedExpiry < Date.now()) {
+    // Delete the expired pending registration
+    if (applicant.record.id) {
+      await deleteApplicantByIrain(applicant.record.id);
+    }
     return errorResponse("This confirmation link has expired. Please register again.", 403, isGetRequest);
   }
 

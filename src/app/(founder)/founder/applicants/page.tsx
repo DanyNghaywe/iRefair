@@ -30,6 +30,7 @@ type CandidateRecord = {
   employmentStatus: string;
   legacyCandidateId: string;
   status: string;
+  registrationStatus: string;
   ownerNotes: string;
   tags: string;
   lastContactedAt: string;
@@ -137,7 +138,20 @@ function CandidatesPageContent() {
           <Badge tone={row.eligibility.eligible ? "success" : "danger"}>{row.eligibility.reason}</Badge>
         ),
       },
-      { key: "status", label: "Status", width: "140px", nowrap: true, sortable: true },
+      {
+        key: "status",
+        label: "Status",
+        width: "180px",
+        nowrap: true,
+        sortable: true,
+        render: (row: CandidateRecord) => {
+          if (row.status) return row.status;
+          if (row.registrationStatus) {
+            return <Badge tone="warning">{row.registrationStatus}</Badge>;
+          }
+          return "-";
+        },
+      },
       { key: "province", label: "Province", width: "140px", nowrap: true, sortable: true },
       {
         key: "quickEdit",
