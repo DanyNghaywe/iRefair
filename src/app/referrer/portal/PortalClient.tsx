@@ -523,6 +523,8 @@ const ACTIONS: ActionConfig[] = [
 // Get all available IANA timezones with formatted labels
 const TIMEZONE_OPTIONS = getAllTimezoneOptions();
 
+const PAGE_SIZE = 10;
+
 function StatusBadge({ status, statusLabels }: { status: string; statusLabels: Record<string, string> }) {
   const normalized = status?.toLowerCase().trim() || "new";
   const variant = STATUS_VARIANTS[normalized] || "neutral";
@@ -576,6 +578,9 @@ export default function PortalClient() {
   type SortDirection = "asc" | "desc";
   const [sortColumn, setSortColumn] = useState<SortColumn>("candidate");
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
 
   const handleSort = useCallback((column: SortColumn) => {
     if (sortColumn === column) {
@@ -835,6 +840,20 @@ export default function PortalClient() {
     });
   }, [data, sortColumn, sortDirection]);
 
+  // Pagination calculations
+  const totalPages = Math.ceil(sortedItems.length / PAGE_SIZE);
+  const validPage = Math.min(Math.max(1, currentPage), Math.max(1, totalPages));
+
+  const paginatedItems = useMemo(() => {
+    const startIndex = (validPage - 1) * PAGE_SIZE;
+    return sortedItems.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [sortedItems, validPage]);
+
+  // Reset to page 1 when data changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [data?.items?.length]);
+
   const header = (
     <section className="card page-card portal-card" aria-labelledby="portal-title">
       <div className="language-toggle" role="group" aria-label={t.languageLabel}>
@@ -1053,6 +1072,11 @@ export default function PortalClient() {
           </div>
           <div className="portal-table-meta">
             <span className="portal-count-pill">{data.total} {t.table.totalLabel}</span>
+            {totalPages > 1 && (
+              <span className="portal-page-info">
+                {language === "fr" ? "Page" : "Page"} {validPage} / {totalPages}
+              </span>
+            )}
           </div>
         </div>
         <div className="portal-table-wrapper">
@@ -1121,7 +1145,7 @@ export default function PortalClient() {
                   </tr>
                 </thead>
                 <tbody>
-                  {sortedItems.length === 0 ? (
+                  {paginatedItems.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="portal-table-empty">
                         <EmptyState
@@ -1132,7 +1156,7 @@ export default function PortalClient() {
                       </td>
                     </tr>
                   ) : (
-                    sortedItems.map((item) => {
+                    paginatedItems.map((item) => {
                       const normalizedStatus = item.status?.toLowerCase().trim() || "new";
                       const hasMeeting = normalizedStatus === "meeting scheduled" && item.meetingDate;
                       const needsReschedule = normalizedStatus === "needs reschedule";
@@ -1399,6 +1423,49 @@ export default function PortalClient() {
             </div>
           </div>
         </div>
+        {totalPages > 1 && (
+          <div className="portal-pagination">
+            <button
+              type="button"
+              className="portal-pagination-btn"
+              onClick={() => setCurrentPage(1)}
+              disabled={validPage === 1}
+              aria-label={language === "fr" ? "Aller à la première page" : "Go to first page"}
+            >
+              &laquo;
+            </button>
+            <button
+              type="button"
+              className="portal-pagination-btn"
+              onClick={() => setCurrentPage(Math.max(1, validPage - 1))}
+              disabled={validPage === 1}
+              aria-label={language === "fr" ? "Page précédente" : "Go to previous page"}
+            >
+              &lsaquo;
+            </button>
+            <span className="portal-pagination-info">
+              {language === "fr" ? "Page" : "Page"} {validPage} {language === "fr" ? "sur" : "of"} {totalPages}
+            </span>
+            <button
+              type="button"
+              className="portal-pagination-btn"
+              onClick={() => setCurrentPage(Math.min(totalPages, validPage + 1))}
+              disabled={validPage === totalPages}
+              aria-label={language === "fr" ? "Page suivante" : "Go to next page"}
+            >
+              &rsaquo;
+            </button>
+            <button
+              type="button"
+              className="portal-pagination-btn"
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={validPage === totalPages}
+              aria-label={language === "fr" ? "Aller à la dernière page" : "Go to last page"}
+            >
+              &raquo;
+            </button>
+          </div>
+        )}
       </section>
 
       {/* Confirmation Modal */}

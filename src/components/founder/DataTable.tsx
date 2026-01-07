@@ -25,6 +25,14 @@ type Props<T> = {
   tableClassName?: string;
   /** Enable responsive card layout on mobile */
   responsiveCards?: boolean;
+  /** Rows per page for pagination. If not set, pagination is disabled. */
+  pageSize?: number;
+  /** Total items from server (enables server-side pagination when provided with onPageChange) */
+  totalItems?: number;
+  /** Current page for server-side pagination (1-indexed) */
+  currentPage?: number;
+  /** Callback when page changes (enables server-side pagination when provided with totalItems) */
+  onPageChange?: (page: number) => void;
 };
 
 type SortState = {
@@ -41,8 +49,18 @@ export function DataTable<T>({
   rowAriaLabel,
   tableClassName,
   responsiveCards = true,
+  pageSize,
+  totalItems,
+  currentPage: controlledPage,
+  onPageChange,
 }: Props<T>) {
   const [sort, setSort] = useState<SortState>({ key: null, direction: "asc" });
+  const [internalPage, setInternalPage] = useState(1);
+
+  // Determine if we're in server-side pagination mode
+  const isServerSide = totalItems !== undefined && onPageChange !== undefined;
+  const currentPage = isServerSide ? (controlledPage ?? 1) : internalPage;
+  const setCurrentPage = isServerSide ? onPageChange : setInternalPage;
 
   const shouldIgnoreRowClick = (target: EventTarget | null) => {
     const element = target instanceof Element ? target : target instanceof Node ? target.parentElement : null;
@@ -72,6 +90,27 @@ export function DataTable<T>({
     });
     return copy;
   }, [data, sort]);
+
+  // Pagination calculations
+  const itemCount = isServerSide ? totalItems : sorted.length;
+  const totalPages = pageSize ? Math.ceil(itemCount / pageSize) : 1;
+  const validPage = Math.min(Math.max(1, currentPage), Math.max(1, totalPages));
+
+  // Reset page when data changes (only for client-side pagination)
+  React.useEffect(() => {
+    if (!isServerSide) {
+      setInternalPage(1);
+    }
+  }, [data.length, isServerSide]);
+
+  // For server-side pagination, data is already paginated from the server
+  // For client-side pagination, we slice the sorted data
+  const paginatedData = useMemo(() => {
+    if (isServerSide) return sorted; // Data is already paginated from server
+    if (!pageSize) return sorted;
+    const startIndex = (validPage - 1) * pageSize;
+    return sorted.slice(startIndex, startIndex + pageSize);
+  }, [sorted, pageSize, validPage, isServerSide]);
 
   const handleSort = (column: Column<T>) => {
     if (!column.sortable) return;
@@ -144,14 +183,14 @@ export function DataTable<T>({
           <tbody>
             {loading ? (
               renderSkeletonRows()
-            ) : sorted.length === 0 ? (
+            ) : itemCount === 0 ? (
               <tr>
                 <td colSpan={columns.length} className={styles.empty}>
                   {emptyState || "No records found."}
                 </td>
               </tr>
             ) : (
-              sorted.map((row, rowIndex) => (
+              paginatedData.map((row, rowIndex) => (
                 <tr
                   key={rowIndex}
                   className={onRowClick ? styles.clickable : undefined}
@@ -177,6 +216,49 @@ export function DataTable<T>({
           </tbody>
         </table>
       </div>
+      {pageSize && totalPages > 1 && !loading && (
+        <div className={styles.pagination}>
+          <button
+            type="button"
+            className={styles.paginationBtn}
+            onClick={() => setCurrentPage(1)}
+            disabled={validPage === 1}
+            aria-label="Go to first page"
+          >
+            &laquo;
+          </button>
+          <button
+            type="button"
+            className={styles.paginationBtn}
+            onClick={() => setCurrentPage(Math.max(1, validPage - 1))}
+            disabled={validPage === 1}
+            aria-label="Go to previous page"
+          >
+            &lsaquo;
+          </button>
+          <span className={styles.paginationInfo}>
+            Page {validPage} of {totalPages}
+          </span>
+          <button
+            type="button"
+            className={styles.paginationBtn}
+            onClick={() => setCurrentPage(Math.min(totalPages, validPage + 1))}
+            disabled={validPage === totalPages}
+            aria-label="Go to next page"
+          >
+            &rsaquo;
+          </button>
+          <button
+            type="button"
+            className={styles.paginationBtn}
+            onClick={() => setCurrentPage(totalPages)}
+            disabled={validPage === totalPages}
+            aria-label="Go to last page"
+          >
+            &raquo;
+          </button>
+        </div>
+      )}
     </div>
   );
 }

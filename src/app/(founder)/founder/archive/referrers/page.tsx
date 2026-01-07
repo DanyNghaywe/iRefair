@@ -18,6 +18,8 @@ type ArchivedReferrer = {
   archivedBy: string;
 };
 
+const PAGE_SIZE = 10;
+
 function ArchivedReferrersContent() {
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
@@ -29,17 +31,23 @@ function ArchivedReferrersContent() {
   const [search, setSearch] = useState(initialSearch);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(searchInput.trim()), 300);
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // Reset to page 1 when search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
+
   const fetchData = async () => {
     setLoading(true);
     const params = new URLSearchParams();
-    params.set("limit", "50");
-    params.set("offset", "0");
+    params.set("limit", String(PAGE_SIZE));
+    params.set("offset", String((currentPage - 1) * PAGE_SIZE));
     if (search) params.set("search", search);
 
     const response = await fetch(`/api/founder/archive/referrers?${params.toString()}`, { cache: "no-store" });
@@ -54,7 +62,7 @@ function ArchivedReferrersContent() {
   useEffect(() => {
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search]);
+  }, [search, currentPage]);
 
   const handleRestore = async (irref: string) => {
     setActionLoading(irref);
@@ -196,17 +204,22 @@ function ArchivedReferrersContent() {
         ]}
       />
 
-      {loading ? (
-        <p className="text-muted">Loading...</p>
-      ) : items.length === 0 ? (
-        <EmptyState
-          variant="referrers"
-          title="No archived referrers"
-          description="Referrers that are archived will appear here."
-        />
-      ) : (
-        <OpsDataTable columns={columns} data={items} />
-      )}
+      <OpsDataTable
+        columns={columns}
+        data={items}
+        loading={loading}
+        emptyState={
+          <EmptyState
+            variant="referrers"
+            title="No archived referrers"
+            description="Referrers that are archived will appear here."
+          />
+        }
+        pageSize={PAGE_SIZE}
+        totalItems={total}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
+      />
     </div>
   );
 }

@@ -52,6 +52,7 @@ async function buildItems(referrerIrref: string) {
       };
     }),
   );
+
   return { total: apps.total, items };
 }
 

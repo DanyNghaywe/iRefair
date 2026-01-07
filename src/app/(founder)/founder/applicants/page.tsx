@@ -51,6 +51,8 @@ function PencilIcon() {
   );
 }
 
+const PAGE_SIZE = 10;
+
 function CandidatesPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -63,17 +65,23 @@ function CandidatesPageContent() {
   const [search, setSearch] = useState(initialSearch);
   const [statusFilter, setStatusFilter] = useState("");
   const [eligibleFilter, setEligibleFilter] = useState<"all" | "eligible" | "ineligible">("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(searchInput.trim()), 300);
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, eligibleFilter]);
+
   const fetchCandidates = async () => {
     setLoading(true);
     const params = new URLSearchParams();
-    params.set("limit", "50");
-    params.set("offset", "0");
+    params.set("limit", String(PAGE_SIZE));
+    params.set("offset", String((currentPage - 1) * PAGE_SIZE));
     if (search) params.set("search", search);
     if (statusFilter) params.set("status", statusFilter);
     if (eligibleFilter === "eligible") params.set("eligible", "true");
@@ -91,7 +99,7 @@ function CandidatesPageContent() {
   useEffect(() => {
     fetchCandidates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, statusFilter, eligibleFilter]);
+  }, [search, statusFilter, eligibleFilter, currentPage]);
 
   const handleRowClick = (row: CandidateRecord) => {
     router.push(`/founder/applicants/${encodeURIComponent(row.irain)}`);
@@ -218,6 +226,10 @@ function CandidatesPageContent() {
         }
         onRowClick={handleRowClick}
         tableClassName="candidates-table"
+        pageSize={PAGE_SIZE}
+        totalItems={total}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
       />
     </div>
   );

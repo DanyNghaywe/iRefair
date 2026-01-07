@@ -47,6 +47,8 @@ const statusOptions = [
   "Closed",
 ];
 
+const PAGE_SIZE = 10;
+
 export default function ApplicationsPage() {
   const router = useRouter();
   const [items, setItems] = useState<ApplicationRecord[]>([]);
@@ -56,17 +58,23 @@ export default function ApplicationsPage() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [ircrnFilter, setIrcrnFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(searchInput.trim()), 300);
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, ircrnFilter]);
+
   const fetchApplications = async () => {
     setLoading(true);
     const params = new URLSearchParams();
-    params.set("limit", "50");
-    params.set("offset", "0");
+    params.set("limit", String(PAGE_SIZE));
+    params.set("offset", String((currentPage - 1) * PAGE_SIZE));
     if (search) params.set("search", search);
     if (statusFilter) params.set("status", statusFilter);
     if (ircrnFilter) params.set("ircrn", ircrnFilter);
@@ -83,7 +91,7 @@ export default function ApplicationsPage() {
   useEffect(() => {
     fetchApplications();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, statusFilter, ircrnFilter]);
+  }, [search, statusFilter, ircrnFilter, currentPage]);
 
   const handleRowClick = useCallback(
     (row: ApplicationRecord) => {
@@ -168,6 +176,10 @@ export default function ApplicationsPage() {
           />
         }
         onRowClick={handleRowClick}
+        pageSize={PAGE_SIZE}
+        totalItems={total}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
       />
     </div>
   );
