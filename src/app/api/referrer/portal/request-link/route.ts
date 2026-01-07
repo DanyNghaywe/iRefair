@@ -73,6 +73,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ ok: true });
     }
 
+    // SECURITY: Silently skip archived referrers (same as non-existent email handling)
+    if (referrer.record.archived?.toLowerCase() === 'true') {
+      console.log(`Portal link requested for archived referrer: ${referrer.record.irref} (${email})`);
+      return NextResponse.json({ ok: true });
+    }
+
     const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrer.record.irref);
     const portalLink = buildReferrerPortalLink(referrer.record.irref, portalTokenVersion);
 

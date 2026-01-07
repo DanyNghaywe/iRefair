@@ -121,6 +121,12 @@ export async function POST(request: Request) {
     if (!keyMatches) {
       return NextResponse.json({ ok: false, error: 'Invalid applicant credentials.' }, { status: 401 });
     }
+    if (applicantRecord.record.archived?.toLowerCase() === 'true') {
+      return NextResponse.json(
+        { ok: false, error: 'This applicant profile has been archived and can no longer submit applications.' },
+        { status: 403 },
+      );
+    }
     if (strictMode && !isIrain(applicantRecord.record.id)) {
       return NextResponse.json(
         { ok: false, error: 'Applicant record is missing a valid iRAIN. Please update the applicant record.' },

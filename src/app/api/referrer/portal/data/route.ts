@@ -77,6 +77,12 @@ export async function GET(request: NextRequest) {
   if (payload.v !== expectedVersion) {
     return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
   }
+  if (referrer.record.archived?.toLowerCase() === 'true') {
+    return NextResponse.json(
+      { ok: false, error: 'This referrer account has been archived and portal access is no longer available.' },
+      { status: 403 },
+    );
+  }
 
   const data = await buildItems(payload.irref);
   return NextResponse.json({

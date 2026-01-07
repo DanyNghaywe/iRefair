@@ -471,6 +471,7 @@ type ApplicantRow = {
   resumeFileName?: string;
   resumeFileId?: string;
   resumeUrl?: string;
+  archived?: string;
 };
 
 type ReferrerRow = {
@@ -650,6 +651,7 @@ function buildApplicantRecordFromHeaderMap(
     resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name') || undefined,
     resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID') || undefined,
     resumeUrl: getHeaderValue(headerMap, row, 'Resume URL') || undefined,
+    archived: getHeaderValue(headerMap, row, 'Archived') || undefined,
   };
 }
 
@@ -2033,6 +2035,7 @@ type ReferrerLookupResult = {
   phone?: string;
   company?: string;
   companyIrcrn?: string;
+  archived?: string;
 };
 
 type ReferrerLookupErrorCode =
@@ -2088,6 +2091,7 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
     phone: getHeaderValue(headerMap, row, 'Phone'),
     company: getHeaderValue(headerMap, row, 'Company'),
     companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
+    archived: getHeaderValue(headerMap, row, 'Archived'),
   });
 
   const isApproved = (row: (string | number | null | undefined)[]) => {
@@ -2095,10 +2099,14 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
     return approval === '' || approval === 'approved';
   };
 
+  const isArchived = (row: (string | number | null | undefined)[]) => {
+    return getHeaderValue(headerMap, row, 'Archived').toLowerCase() === 'true';
+  };
+
   for (const row of rows) {
     const rowIrcrn = getHeaderValue(headerMap, row, 'Company iRCRN').toLowerCase();
     if (rowIrcrn && rowIrcrn === normalizedIrcrn) {
-      if (!isApproved(row)) continue;
+      if (!isApproved(row) || isArchived(row)) continue;
       const record = pickRecord(row);
       if (record.email) return record;
     }
@@ -2108,7 +2116,7 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
     for (const row of rows) {
       const rowCompany = getHeaderValue(headerMap, row, 'Company').toLowerCase();
       if (rowCompany && rowCompany === companyNameLower) {
-        if (!isApproved(row)) continue;
+        if (!isApproved(row) || isArchived(row)) continue;
         const record = pickRecord(row);
         if (record.email) return record;
       }
@@ -2158,6 +2166,7 @@ export async function findReferrerByIrcrnStrict(ircrn: string): Promise<Referrer
     phone: getHeaderValue(headerMap, row, 'Phone'),
     company: getHeaderValue(headerMap, row, 'Company'),
     companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
+    archived: getHeaderValue(headerMap, row, 'Archived'),
   });
 
   const isApproved = (row: (string | number | null | undefined)[]) => {
@@ -2165,10 +2174,14 @@ export async function findReferrerByIrcrnStrict(ircrn: string): Promise<Referrer
     return approval === '' || approval === 'approved';
   };
 
+  const isArchived = (row: (string | number | null | undefined)[]) => {
+    return getHeaderValue(headerMap, row, 'Archived').toLowerCase() === 'true';
+  };
+
   const matches = rows
     .filter((row) => {
       const rowIrcrn = getHeaderValue(headerMap, row, 'Company iRCRN').toLowerCase();
-      return rowIrcrn && rowIrcrn === normalizedIrcrn && isApproved(row);
+      return rowIrcrn && rowIrcrn === normalizedIrcrn && isApproved(row) && !isArchived(row);
     })
     .map((row) => pickRecord(row));
 
@@ -2821,6 +2834,7 @@ export async function getReferrerByEmail(email: string) {
           tags: getHeaderValue(headerMap, row, 'Tags'),
           lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
           nextActionAt: getHeaderValue(headerMap, row, 'Next Action At'),
+          archived: getHeaderValue(headerMap, row, 'Archived'),
         },
       };
     }
