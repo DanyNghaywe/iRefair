@@ -422,6 +422,107 @@ ${t('View openings', 'Voir les offres', locale)}: ${openingsUrl}
   return { subject, html, text };
 }
 
+type NewApplicantRegistrationConfirmationParams = {
+  firstName: string;
+  confirmUrl: string;
+  locale?: 'en' | 'fr';
+};
+
+export function newApplicantRegistrationConfirmation(params: NewApplicantRegistrationConfirmationParams): TemplateResult {
+  const { firstName, confirmUrl, locale = 'en' } = params;
+
+  const subject = t(
+    'Confirm your registration - iRefair',
+    'Confirmez votre inscription - iRefair',
+    locale
+  );
+
+  const greeting = `${t('Hi', 'Bonjour', locale)} ${escapeHtml(firstName)},`;
+
+  const mainText1 = t(
+    "Thanks for signing up with iRefair! To complete your registration and activate your profile, please confirm your email address by clicking the button below.",
+    "Merci de vous être inscrit(e) sur iRefair! Pour finaliser votre inscription et activer votre profil, veuillez confirmer votre adresse e-mail en cliquant sur le bouton ci-dessous.",
+    locale
+  );
+
+  const securityNote = t(
+    "This helps us verify your email and keep your account secure.",
+    "Cela nous aide à vérifier votre e-mail et à sécuriser votre compte.",
+    locale
+  );
+
+  const expiryNote = t(
+    "This confirmation link will expire in 24 hours.",
+    "Ce lien de confirmation expirera dans 24 heures.",
+    locale
+  );
+
+  const ignoreText = t(
+    "If you didn't sign up for iRefair, you can safely ignore this email.",
+    "Si vous ne vous êtes pas inscrit(e) sur iRefair, vous pouvez ignorer cet e-mail en toute sécurité.",
+    locale
+  );
+
+  const ctaButton = t('Confirm my registration', 'Confirmer mon inscription', locale);
+
+  const normalizedConfirmUrl = normalizeHttpUrl(confirmUrl) || confirmUrl;
+
+  const content = `
+    <h1 style="margin:0 0 14px 0;font-size:22px;line-height:1.5;font-weight:700;color:#1f2a37;">
+      ${greeting}
+    </h1>
+    <p style="margin:0 0 14px 0;font-size:14px;line-height:1.7;color:#3b4251;">
+      ${escapeHtml(mainText1)}
+    </p>
+    <p style="margin:0 0 20px 0;font-size:13px;line-height:1.6;color:#5c6675;">
+      ${escapeHtml(securityNote)}
+    </p>
+    <div style="text-align:center;margin:24px 0;">
+      ${button(ctaButton, normalizedConfirmUrl, 'primary')}
+    </div>
+    <p style="margin:16px 0 0 0;font-size:13px;text-align:center;color:#5c6675;">
+      ${escapeHtml(expiryNote)}
+    </p>
+    ${divider}
+    <p style="margin:16px 0 0 0;font-size:13px;line-height:1.6;color:#68707f;">
+      ${escapeHtml(ignoreText)}
+    </p>
+  `;
+
+  const preheader = t(
+    'Please confirm your email to complete your iRefair registration.',
+    'Veuillez confirmer votre e-mail pour finaliser votre inscription iRefair.',
+    locale
+  );
+
+  const eyebrowText = t('REGISTRATION CONFIRMATION', 'CONFIRMATION D\'INSCRIPTION', locale);
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${escapeHtml(eyebrowText)}</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, preheader, customHeader);
+
+  const text = `${greeting}
+
+${mainText1}
+
+${securityNote}
+
+${ctaButton}: ${normalizedConfirmUrl}
+
+${expiryNote}
+
+${ignoreText}
+
+- ${t('The iRefair team', 'L\'équipe iRefair', locale)}`;
+
+  return { subject, html, text };
+}
+
 type ApplicantProfileUpdateConfirmationParams = {
   firstName: string;
   confirmUrl: string;

@@ -7,6 +7,7 @@ import {
   applicantRegistrationConfirmation,
   applicantIneligibleNotification,
   applicantProfileUpdateConfirmation,
+  newApplicantRegistrationConfirmation,
   applicantUpdatedToReferrer,
   meetingCancelledToApplicant,
   meetingCancelledToReferrer,
@@ -17,6 +18,7 @@ import {
   APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
   APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
   APPLICANT_UPDATE_TOKEN_HASH_HEADER,
+  APPLICANT_REGISTRATION_STATUS_HEADER,
   APPLICANT_SHEET_NAME,
   ensureColumns,
   generateIRAIN,
@@ -330,8 +332,85 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, needsEmailConfirm: true });
     }
 
-    // For new applicants OR existing applicants with matching email,
-    // proceed with direct update/insert
+    // For NEW applicants, require email confirmation before creating the profile
+    if (!existingApplicant) {
+      // Insert the applicant row with "Pending Confirmation" status
+      const upsertResult = await upsertApplicantRow({
+        id: iRain,
+        firstName,
+        middleName,
+        familyName,
+        email,
+        phone,
+        locatedCanada,
+        province,
+        authorizedCanada,
+        eligibleMoveCanada,
+        countryOfOrigin,
+        languages: languagesSnapshot,
+        languagesOther,
+        industryType,
+        industryOther,
+        employmentStatus,
+      });
+
+      // Create confirmation token (use rowIndex 0 as placeholder for new applicants - we'll look up by email)
+      const exp = Math.floor(Date.now() / 1000) + UPDATE_TOKEN_TTL_SECONDS;
+      const token = createApplicantUpdateToken({
+        email,
+        rowIndex: 0, // Not used for new applicants - lookup by email instead
+        exp,
+      });
+      const tokenHash = hashToken(token);
+
+      // Store token and set pending status
+      const requiredColumns = [
+        APPLICANT_UPDATE_TOKEN_HASH_HEADER,
+        APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
+        APPLICANT_REGISTRATION_STATUS_HEADER,
+      ];
+      if (resumeFileId || resumeFileName) {
+        requiredColumns.push("Resume File Name", "Resume File ID", "Resume URL");
+      }
+      await ensureColumns(APPLICANT_SHEET_NAME, requiredColumns);
+
+      const applicantRowUpdates: Record<string, string | undefined> = {
+        [APPLICANT_UPDATE_TOKEN_HASH_HEADER]: tokenHash,
+        [APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER]: new Date(exp * 1000).toISOString(),
+        [APPLICANT_REGISTRATION_STATUS_HEADER]: "Pending Confirmation",
+      };
+      if (resumeFileId || resumeFileName) {
+        applicantRowUpdates["Resume File Name"] = resumeFileName;
+        applicantRowUpdates["Resume File ID"] = resumeFileId;
+        applicantRowUpdates["Resume URL"] = "";
+      }
+
+      const updateResult = await updateRowById(APPLICANT_SHEET_NAME, "iRAIN", upsertResult.id, applicantRowUpdates);
+      if (!updateResult.updated) {
+        return NextResponse.json({ ok: false, error: "Failed to save applicant profile." }, { status: 500 });
+      }
+
+      // Send registration confirmation email
+      const confirmUrl = new URL("/api/applicant/confirm-registration", appBaseUrl);
+      confirmUrl.searchParams.set("token", token);
+
+      const emailTemplate = newApplicantRegistrationConfirmation({
+        firstName,
+        confirmUrl: confirmUrl.toString(),
+        locale,
+      });
+
+      await sendMail({
+        to: email,
+        subject: emailTemplate.subject,
+        html: emailTemplate.html,
+        text: emailTemplate.text,
+      });
+
+      return NextResponse.json({ ok: true, needsEmailConfirm: true });
+    }
+
+    // For existing applicants with matching email, proceed with direct update
 
     const upsertResult = await upsertApplicantRow({
       id: iRain,

@@ -10,12 +10,14 @@ export const APPLICANT_SECRET_HASH_HEADER = 'Applicant Secret Hash';
 export const APPLICANT_UPDATE_TOKEN_HASH_HEADER = 'Update Token Hash';
 export const APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER = 'Update Token Expires At';
 export const APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER = 'Update Pending Payload';
+export const APPLICANT_REGISTRATION_STATUS_HEADER = 'Registration Status';
 
 const APPLICANT_SECURITY_COLUMNS = [
   APPLICANT_SECRET_HASH_HEADER,
   APPLICANT_UPDATE_TOKEN_HASH_HEADER,
   APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
   APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
+  APPLICANT_REGISTRATION_STATUS_HEADER,
 ];
 
 export const APPLICANT_HEADERS = [
@@ -465,6 +467,7 @@ type ApplicantRow = {
   updateTokenHash?: string;
   updateTokenExpiresAt?: string;
   updatePendingPayload?: string;
+  registrationStatus?: string;
   resumeFileName?: string;
   resumeFileId?: string;
   resumeUrl?: string;
@@ -643,6 +646,7 @@ function buildApplicantRecordFromHeaderMap(
     updateTokenHash: getHeaderValue(headerMap, row, APPLICANT_UPDATE_TOKEN_HASH_HEADER),
     updateTokenExpiresAt: getHeaderValue(headerMap, row, APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER),
     updatePendingPayload: getHeaderValue(headerMap, row, APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER),
+    registrationStatus: getHeaderValue(headerMap, row, APPLICANT_REGISTRATION_STATUS_HEADER) || undefined,
     resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name') || undefined,
     resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID') || undefined,
     resumeUrl: getHeaderValue(headerMap, row, 'Resume URL') || undefined,
