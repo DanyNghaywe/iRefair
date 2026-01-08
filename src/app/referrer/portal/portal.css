@@ -510,6 +510,15 @@
   cursor: not-allowed;
 }
 
+/* Backdrop and cancel button - hidden on desktop */
+.portal-dropdown-backdrop {
+  display: none;
+}
+
+.portal-dropdown-cancel {
+  display: none;
+}
+
 /* Meeting Info */
 .portal-meeting-info {
   display: flex;
@@ -867,6 +876,16 @@
     justify-content: center;
   }
 
+  /* Backdrop for mobile dropdown */
+  .portal-dropdown-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.5);
+    z-index: 9999;
+    animation: fadeIn 0.15s ease-out;
+  }
+
   /* Full-width dropdown menu on mobile */
   .portal-dropdown-menu--fixed {
     position: fixed;
@@ -878,20 +897,11 @@
     max-width: 100%;
     max-height: 70vh;
     border-radius: 20px 20px 0 0;
-    padding: 8px 8px 24px;
+    padding: 20px 8px 24px;
     padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
     box-shadow: 0 -10px 40px rgba(15, 23, 42, 0.25);
     animation: slideUp 0.2s ease-out;
     z-index: 10000;
-  }
-
-  .portal-dropdown-menu--fixed::before {
-    content: "";
-    position: fixed;
-    inset: 0;
-    background: rgba(15, 23, 42, 0.4);
-    z-index: -1;
-    animation: fadeIn 0.15s ease-out;
   }
 
   @keyframes slideUp {
@@ -920,8 +930,18 @@
     border-radius: 10px;
   }
 
+  /* Cancel button styling */
+  .portal-dropdown-cancel {
+    display: block;
+    margin-top: 8px;
+    border-top: 1px solid rgba(15, 23, 42, 0.1);
+    padding-top: 14px;
+    color: #64748b;
+    font-weight: 500;
+  }
+
   /* Add handle indicator to dropdown */
-  .portal-dropdown-menu--fixed::after {
+  .portal-dropdown-menu--fixed::before {
     content: "";
     position: absolute;
     top: 8px;
