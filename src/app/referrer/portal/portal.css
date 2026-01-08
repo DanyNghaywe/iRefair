@@ -718,35 +718,305 @@
   line-height: 1.4;
 }
 
-/* Responsive */
+/* Responsive - Mobile card layout */
 @media (max-width: 720px) {
+  .portal-header {
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .portal-header__copy {
+    max-width: 100%;
+  }
+
   .portal-meta {
-    grid-template-columns: 1fr;
+    grid-template-columns: 1fr 1fr;
+    min-width: 100%;
+    gap: 12px;
+  }
+
+  .portal-table-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
+  .portal-table-meta {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .portal-table-wrapper {
+    border-radius: 12px;
+    padding: 4px;
   }
 
   .portal-table-wrapper::after {
+    display: none;
+  }
+
+  /* Card layout for table */
+  .portal-table table {
+    display: block;
+    min-width: 0;
+  }
+
+  .portal-table thead {
+    display: none;
+  }
+
+  .portal-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    padding: 8px;
+  }
+
+  .portal-table tbody tr {
+    display: block;
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .portal-table tbody tr:nth-child(even) td {
+    background: transparent;
+  }
+
+  .portal-table tbody tr:hover td {
+    background: transparent;
+  }
+
+  .portal-table td {
+    display: block;
+    padding: 8px 0;
+    border-bottom: none;
+  }
+
+  .portal-table td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* Hide empty label for candidate column */
+  .portal-table td.portal-col-candidate::before {
+    display: none;
+  }
+
+  /* Candidate cell styling */
+  .portal-col-candidate {
+    padding-bottom: 12px !important;
+    margin-bottom: 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1) !important;
+  }
+
+  .portal-cell-expand-wrapper {
+    gap: 12px;
+  }
+
+  .portal-expand-icon {
+    margin-top: 4px;
+  }
+
+  .portal-cell-title {
+    font-size: 15px;
+  }
+
+  /* Status and meeting info */
+  .portal-col-status {
+    padding-top: 12px !important;
+  }
+
+  .portal-status-content {
+    gap: 8px;
+  }
+
+  .portal-meeting-info {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  /* Actions column */
+  .portal-col-actions {
+    padding-top: 12px !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    margin-top: 8px;
+  }
+
+  .portal-col-actions::before {
+    display: none;
+  }
+
+  .portal-dropdown {
+    width: 100%;
+  }
+
+  .portal-dropdown-trigger {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* Full-width dropdown menu on mobile */
+  .portal-dropdown-menu--fixed {
+    position: fixed;
+    top: auto !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0;
+    width: 100%;
+    max-width: 100%;
+    max-height: 70vh;
+    border-radius: 20px 20px 0 0;
+    padding: 8px 8px 24px;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -10px 40px rgba(15, 23, 42, 0.25);
+    animation: slideUp 0.2s ease-out;
+    z-index: 10000;
+  }
+
+  .portal-dropdown-menu--fixed::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    z-index: -1;
+    animation: fadeIn 0.15s ease-out;
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(100%);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .portal-dropdown-item {
+    padding: 14px 16px;
+    font-size: 15px;
+    border-radius: 10px;
+  }
+
+  /* Add handle indicator to dropdown */
+  .portal-dropdown-menu--fixed::after {
     content: "";
     position: absolute;
-    top: 0;
-    right: 0;
-    width: 24px;
-    height: 100%;
-    background: linear-gradient(90deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.85));
-    pointer-events: none;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    background: rgba(15, 23, 42, 0.2);
+    border-radius: 2px;
   }
 
-  .portal-table table {
-    min-width: 760px;
+  /* Expanded row content - connect to parent card */
+  .portal-row-expanded {
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    margin-bottom: 0 !important;
+    border-bottom: none !important;
   }
 
-  .portal-dropdown-menu {
-    right: auto;
-    left: 0;
-    min-width: 160px;
+  .portal-expanded-row {
+    margin-top: 0 !important;
+    padding: 0 !important;
+    border-top-left-radius: 0 !important;
+    border-top-right-radius: 0 !important;
+    border-top: none !important;
+    background: linear-gradient(150deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.04)) !important;
   }
 
+  .portal-expanded-row td {
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  .portal-expanded-row td::before {
+    display: none;
+  }
+
+  .portal-expanded-content {
+    padding: 0 16px 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .portal-detail-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .portal-detail-label {
+    font-size: 10px;
+  }
+
+  .portal-detail-value {
+    font-size: 13px;
+  }
+
+  /* Action history on mobile */
+  .portal-history {
+    margin-top: 12px;
+    padding-top: 12px;
+  }
+
+  .portal-timeline-item {
+    font-size: 12px;
+  }
+
+  /* Empty state */
+  .portal-table-empty {
+    display: block !important;
+    padding: 32px 16px;
+    background: transparent !important;
+  }
+
+  .portal-table-empty::before {
+    display: none;
+  }
+
+  /* Modal fields */
   .portal-modal-fields {
     grid-template-columns: 1fr;
+  }
+
+  /* Pagination */
+  .portal-pagination {
+    padding: 12px 8px;
+    gap: 4px;
+  }
+
+  .portal-pagination-btn {
+    width: 40px;
+    height: 40px;
+  }
+
+  .portal-pagination-info {
+    padding: 0 8px;
+    font-size: 13px;
   }
 }
 
@@ -1014,4 +1284,67 @@
   font-weight: 500;
   color: #ffffffb3;
   padding: 0 12px;
+}
+
+/* Very small screens - extra compact layout */
+@media (max-width: 400px) {
+  .portal-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .portal-table tbody {
+    padding: 6px;
+    gap: 10px;
+  }
+
+  .portal-table tbody tr {
+    padding: 12px;
+  }
+
+  .portal-cell-title {
+    font-size: 14px;
+  }
+
+  .portal-cell-sub {
+    font-size: 11px;
+  }
+
+  .portal-badge {
+    font-size: 11px;
+    padding: 3px 8px;
+  }
+
+  .portal-pagination-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .portal-pagination-info {
+    font-size: 12px;
+    padding: 0 4px;
+  }
+}
+
+/* Landscape mobile improvements */
+@media (max-width: 720px) and (orientation: landscape) {
+  .portal-dropdown-menu--fixed {
+    max-height: 60vh;
+  }
+}
+
+/* Safe area insets for notched devices */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  @media (max-width: 720px) {
+    .portal-pagination {
+      padding-bottom: calc(12px + env(safe-area-inset-bottom));
+    }
+
+    .portal-table-card {
+      padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    }
+  }
 }

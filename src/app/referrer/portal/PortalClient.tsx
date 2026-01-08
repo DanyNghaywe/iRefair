@@ -1236,11 +1236,11 @@ export default function PortalClient() {
                                 </div>
                               </div>
                             </td>
-                            <td className="portal-col-position">
+                            <td className="portal-col-position" data-label={t.table.position}>
                               <div className="portal-cell-title">{item.position}</div>
                               <div className="portal-cell-sub">{t.table.iRCRN}: {item.iCrn || "-"}</div>
                             </td>
-                            <td className="portal-col-cv" onClick={(e) => e.stopPropagation()}>
+                            <td className="portal-col-cv" data-label={t.table.cv} onClick={(e) => e.stopPropagation()}>
                               {item.resumeDownloadUrl ? (
                                 <a href={item.resumeDownloadUrl} target="_blank" rel="noreferrer" className="portal-link">
                                   {t.table.downloadCv}
@@ -1249,7 +1249,7 @@ export default function PortalClient() {
                                 <span className="portal-muted">{t.table.noCv}</span>
                               )}
                             </td>
-                            <td className="portal-col-status">
+                            <td className="portal-col-status" data-label={t.table.status}>
                               <div className="portal-status-content">
                                 <StatusBadge status={item.status} statusLabels={t.statuses} />
                                 {hasMeeting && (
