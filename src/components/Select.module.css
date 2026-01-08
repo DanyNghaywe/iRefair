@@ -17,16 +17,20 @@
   inset: auto;
   opacity: 1;
   pointer-events: auto;
-  appearance: auto;
+  appearance: none;
+  -webkit-appearance: none;
   background: rgba(255, 255, 255, 0.32);
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   border: 1px solid rgba(255, 255, 255, 0.24);
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
   border-radius: 14px;
-  padding: 12px 14px;
+  padding: 12px 42px 12px 14px;
   color: var(--ink);
   min-height: 44px;
+  font-size: var(--font-size-body);
+  cursor: pointer;
+  width: 100%;
 }
 
 .isNative .trigger,

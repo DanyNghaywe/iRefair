@@ -383,6 +383,11 @@ export function Select({
             </option>
           ))}
         </select>
+        <span className={styles.chevron} aria-hidden="true">
+          <svg width="14" height="10" viewBox="0 0 14 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M2 3l5 4 5-4" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+        </span>
       </div>
     );
   }
