@@ -1305,31 +1305,51 @@ export default function PortalClient() {
                                     </svg>
                                   </ActionBtn>
                                   {openDropdown === item.id && dropdownPosition && (
-                                    <div
-                                      className="portal-dropdown-menu portal-dropdown-menu--fixed"
-                                      role="menu"
-                                      style={{
-                                        top: dropdownPosition.top,
-                                        bottom: dropdownPosition.bottom,
-                                        left: dropdownPosition.left,
-                                      }}
-                                    >
-                                      {ACTIONS.map((action) => {
-                                        const enabled = isActionEnabled(action, item.status);
-                                        if (!enabled) return null;
-                                        return (
-                                          <button
-                                            key={action.code}
-                                            type="button"
-                                            className="portal-dropdown-item"
-                                            onClick={() => openModal(item, action.code)}
-                                            role="menuitem"
-                                          >
-                                            {t.actionLabels[action.code]}
-                                          </button>
-                                        );
-                                      })}
-                                    </div>
+                                    <>
+                                      <div
+                                        className="portal-dropdown-backdrop"
+                                        onClick={() => {
+                                          setOpenDropdown(null);
+                                          setDropdownPosition(null);
+                                        }}
+                                      />
+                                      <div
+                                        className="portal-dropdown-menu portal-dropdown-menu--fixed"
+                                        role="menu"
+                                        style={{
+                                          top: dropdownPosition.top,
+                                          bottom: dropdownPosition.bottom,
+                                          left: dropdownPosition.left,
+                                        }}
+                                      >
+                                        {ACTIONS.map((action) => {
+                                          const enabled = isActionEnabled(action, item.status);
+                                          if (!enabled) return null;
+                                          return (
+                                            <button
+                                              key={action.code}
+                                              type="button"
+                                              className="portal-dropdown-item"
+                                              onClick={() => openModal(item, action.code)}
+                                              role="menuitem"
+                                            >
+                                              {t.actionLabels[action.code]}
+                                            </button>
+                                          );
+                                        })}
+                                        <button
+                                          type="button"
+                                          className="portal-dropdown-item portal-dropdown-cancel"
+                                          onClick={() => {
+                                            setOpenDropdown(null);
+                                            setDropdownPosition(null);
+                                          }}
+                                          role="menuitem"
+                                        >
+                                          {t.modal.cancel}
+                                        </button>
+                                      </div>
+                                    </>
                                   )}
                                 </div>
                               ) : (
