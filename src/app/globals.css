@@ -5834,8 +5834,57 @@ section.founder-auth input:focus-visible {
     min-height: 102px;
   }
 
+  .hiring-table-scroll {
+    overflow-x: visible;
+  }
+
   .hiring-table {
-    min-width: 640px;
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .hiring-table thead {
+    display: none;
+  }
+
+  .hiring-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .hiring-table tr {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 16px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 14px;
+  }
+
+  .hiring-table td {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+
+  .hiring-table td::before {
+    content: attr(data-label);
+    font-size: var(--font-size-xs);
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .hiring-table tr:nth-child(odd) td,
+  .hiring-table tr:nth-child(even) td {
+    background: transparent;
   }
 
   .hiring-followup {
@@ -5860,11 +5909,7 @@ section.founder-auth input:focus-visible {
   /* .select-trigger, .select-option, .btn responsive styles moved to CSS modules */
 
   .hiring-table-wrapper::after {
-    content: "";
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-    background: linear-gradient(90deg, rgba(10, 17, 31, 0.24), transparent 16%, transparent 84%, rgba(10, 17, 31, 0.24));
+    display: none;
   }
 
 }
