@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { ActionBtn } from "@/components/ActionBtn";
 import { CenteredModal } from "@/components/CenteredModal";
@@ -1304,53 +1305,55 @@ export default function PortalClient() {
                                       <polyline points="6 9 12 15 18 9" />
                                     </svg>
                                   </ActionBtn>
-                                  {openDropdown === item.id && dropdownPosition && (
-                                    <>
-                                      <div
-                                        className="portal-dropdown-backdrop"
-                                        onClick={() => {
-                                          setOpenDropdown(null);
-                                          setDropdownPosition(null);
-                                        }}
-                                      />
-                                      <div
-                                        className="portal-dropdown-menu portal-dropdown-menu--fixed"
-                                        role="menu"
-                                        style={{
-                                          top: dropdownPosition.top,
-                                          bottom: dropdownPosition.bottom,
-                                          left: dropdownPosition.left,
-                                        }}
-                                      >
-                                        {ACTIONS.map((action) => {
-                                          const enabled = isActionEnabled(action, item.status);
-                                          if (!enabled) return null;
-                                          return (
-                                            <button
-                                              key={action.code}
-                                              type="button"
-                                              className="portal-dropdown-item"
-                                              onClick={() => openModal(item, action.code)}
-                                              role="menuitem"
-                                            >
-                                              {t.actionLabels[action.code]}
-                                            </button>
-                                          );
-                                        })}
-                                        <button
-                                          type="button"
-                                          className="portal-dropdown-item portal-dropdown-cancel"
+                                  {openDropdown === item.id && dropdownPosition && typeof document !== "undefined" &&
+                                    createPortal(
+                                      <>
+                                        <div
+                                          className="portal-dropdown-backdrop"
                                           onClick={() => {
                                             setOpenDropdown(null);
                                             setDropdownPosition(null);
                                           }}
-                                          role="menuitem"
+                                        />
+                                        <div
+                                          className="portal-dropdown-menu portal-dropdown-menu--fixed"
+                                          role="menu"
+                                          style={{
+                                            top: dropdownPosition.top,
+                                            bottom: dropdownPosition.bottom,
+                                            left: dropdownPosition.left,
+                                          }}
                                         >
-                                          {t.modal.cancel}
-                                        </button>
-                                      </div>
-                                    </>
-                                  )}
+                                          {ACTIONS.map((action) => {
+                                            const enabled = isActionEnabled(action, item.status);
+                                            if (!enabled) return null;
+                                            return (
+                                              <button
+                                                key={action.code}
+                                                type="button"
+                                                className="portal-dropdown-item"
+                                                onClick={() => openModal(item, action.code)}
+                                                role="menuitem"
+                                              >
+                                                {t.actionLabels[action.code]}
+                                              </button>
+                                            );
+                                          })}
+                                          <button
+                                            type="button"
+                                            className="portal-dropdown-item portal-dropdown-cancel"
+                                            onClick={() => {
+                                              setOpenDropdown(null);
+                                              setDropdownPosition(null);
+                                            }}
+                                            role="menuitem"
+                                          >
+                                            {t.modal.cancel}
+                                          </button>
+                                        </div>
+                                      </>,
+                                      document.body
+                                    )}
                                 </div>
                               ) : (
                                 <span className="portal-muted">—</span>
