@@ -20,7 +20,7 @@ import {
   hashToken,
   verifyApplicantUpdateToken,
 } from "@/lib/applicantUpdateToken";
-import { applicantRegistrationConfirmation } from "@/lib/emailTemplates";
+import { applicantRegistrationConfirmation, applicantIneligibleNotification } from "@/lib/emailTemplates";
 
 type EmailLanguage = "en" | "fr";
 
@@ -180,6 +180,166 @@ const successPageHtml = `<!DOCTYPE html>
       <div class="irain">iRAIN: {{iRain}}</div>
     </div>
     <p class="footer">You'll receive a confirmation email shortly with your credentials.</p>
+  </div>
+</body>
+</html>`;
+
+const ineligiblePageHtml = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile Created - iRefair</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Manrope', ui-sans-serif, system-ui, -apple-system, sans-serif;
+      background-color: #0f343c;
+      background-image: radial-gradient(ellipse at 50% 30%, rgba(223, 243, 248, 0.6) 0%, rgba(19, 80, 88, 0.58) 42%, #0f343c 100%);
+      background-repeat: no-repeat;
+      background-attachment: fixed;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 36px 28px;
+      position: relative;
+      overflow: hidden;
+    }
+    .background-hero {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background: radial-gradient(ellipse at 50% 32%, rgba(223, 243, 248, 0.54) 0%, rgba(19, 80, 88, 0.62) 44%, #0b2b32 100%);
+      opacity: 0.88;
+    }
+    .particles {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      overflow: hidden;
+    }
+    .particle {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background: rgba(122, 215, 227, 0.55);
+      animation: float 20s infinite ease-in-out;
+    }
+    .particle:nth-child(1) { left: 10%; top: 20%; animation-delay: 0s; animation-duration: 25s; }
+    .particle:nth-child(2) { left: 20%; top: 80%; animation-delay: -5s; animation-duration: 20s; }
+    .particle:nth-child(3) { left: 30%; top: 40%; animation-delay: -10s; animation-duration: 28s; }
+    .particle:nth-child(4) { left: 40%; top: 60%; animation-delay: -3s; animation-duration: 22s; }
+    .particle:nth-child(5) { left: 50%; top: 30%; animation-delay: -7s; animation-duration: 26s; }
+    .particle:nth-child(6) { left: 60%; top: 70%; animation-delay: -12s; animation-duration: 24s; }
+    .particle:nth-child(7) { left: 70%; top: 50%; animation-delay: -2s; animation-duration: 21s; }
+    .particle:nth-child(8) { left: 80%; top: 25%; animation-delay: -8s; animation-duration: 27s; }
+    .particle:nth-child(9) { left: 90%; top: 85%; animation-delay: -15s; animation-duration: 23s; }
+    .particle:nth-child(10) { left: 15%; top: 55%; animation-delay: -6s; animation-duration: 19s; }
+    .particle:nth-child(11) { left: 85%; top: 45%; animation-delay: -9s; animation-duration: 30s; }
+    .particle:nth-child(12) { left: 45%; top: 15%; animation-delay: -4s; animation-duration: 18s; }
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0); opacity: 0.55; }
+      25% { transform: translate(30px, -40px); opacity: 0.7; }
+      50% { transform: translate(-20px, 20px); opacity: 0.4; }
+      75% { transform: translate(40px, 30px); opacity: 0.6; }
+    }
+    .container {
+      position: relative;
+      z-index: 10;
+      max-width: 480px;
+      text-align: center;
+    }
+    .logo {
+      font-size: 28px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 32px;
+      letter-spacing: -0.01em;
+    }
+    .dot {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      background: #3d8bfd;
+      border-radius: 50%;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    .card {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04));
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 20px;
+      padding: 40px 32px;
+      box-shadow: 0 24px 70px rgba(15, 23, 42, 0.25);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+    .icon {
+      width: 64px;
+      height: 64px;
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 24px;
+    }
+    .icon svg { width: 32px; height: 32px; color: #f59e0b; }
+    h1 { font-size: 24px; font-weight: 700; color: #ffffff; margin-bottom: 12px; }
+    p { font-size: 15px; color: rgba(255, 255, 255, 0.7); line-height: 1.6; margin-bottom: 24px; }
+    .irain {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 8px 16px;
+      font-size: 14px;
+      color: #ffffff;
+      font-weight: 600;
+    }
+    .footer { margin-top: 24px; font-size: 13px; color: rgba(255, 255, 255, 0.5); }
+    @media (max-width: 600px) {
+      body { padding: 20px 14px; }
+      .card { padding: 32px 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="background-hero"></div>
+  <div class="particles">
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+    <div class="particle"></div>
+  </div>
+  <div class="container">
+    <div class="logo"><span class="dot"></span>iRefair</div>
+    <div class="card">
+      <div class="icon">
+        <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+        </svg>
+      </div>
+      <h1>Profile Created</h1>
+      <p>Your iRefair profile has been created. However, based on the information you provided, we're unable to match you with referrers at this time.</p>
+      <div class="irain">iRAIN: {{iRain}}</div>
+    </div>
+    <p class="footer">Check your email for more details about your eligibility status.</p>
   </div>
 </body>
 </html>`;
@@ -433,11 +593,19 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
   // Check if already confirmed
   const registrationStatus = applicant.record.registrationStatus?.trim() || "";
   if (registrationStatus !== "Pending Confirmation") {
-    // Already confirmed - show success page anyway
+    // Already confirmed - show appropriate page based on eligibility
     const iRainValue = applicant.record.id || "";
     if (isGetRequest) {
-      const successHtml = successPageHtml.replace("{{iRain}}", escapeHtml(iRainValue));
-      return new NextResponse(successHtml, {
+      // Check eligibility for already confirmed applicants
+      const locatedCanada = applicant.record.locatedCanada || "";
+      const authorizedCanada = applicant.record.authorizedCanada || "";
+      const eligibleMoveCanada = applicant.record.eligibleMoveCanada || "";
+      const wasIneligible =
+        (locatedCanada.toLowerCase() === "no" && eligibleMoveCanada.toLowerCase() === "no") ||
+        (locatedCanada.toLowerCase() === "yes" && authorizedCanada.toLowerCase() === "no");
+      const pageHtml = wasIneligible ? ineligiblePageHtml : successPageHtml;
+      const resultHtml = pageHtml.replace("{{iRain}}", escapeHtml(iRainValue));
+      return new NextResponse(resultHtml, {
         status: 200,
         headers: { "Content-Type": "text/html; charset=utf-8" },
       });
@@ -521,17 +689,33 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
 
   const languagesSnapshot = applicant.record.languages || notProvided;
 
-  // Send welcome email with iRAIN and applicant key
-  const emailTemplate = applicantRegistrationConfirmation({
-    firstName,
-    iRain: iRainValue,
-    location: locationSnapshot,
-    authorization: authorizationSnapshot,
-    industry: industrySnapshot,
-    languages: languagesSnapshot,
-    applicantKey: applicantSecret,
-    locale,
-  });
+  // Check eligibility based on stored applicant data
+  const locatedCanada = applicant.record.locatedCanada || "";
+  const authorizedCanada = applicant.record.authorizedCanada || "";
+  const eligibleMoveCanada = applicant.record.eligibleMoveCanada || "";
+
+  const isIneligible =
+    (locatedCanada.toLowerCase() === "no" && eligibleMoveCanada.toLowerCase() === "no") ||
+    (locatedCanada.toLowerCase() === "yes" && authorizedCanada.toLowerCase() === "no");
+
+  // Send appropriate email based on eligibility
+  const emailTemplate = isIneligible
+    ? applicantIneligibleNotification({
+        firstName,
+        iRain: iRainValue,
+        applicantKey: applicantSecret,
+        locale,
+      })
+    : applicantRegistrationConfirmation({
+        firstName,
+        iRain: iRainValue,
+        location: locationSnapshot,
+        authorization: authorizationSnapshot,
+        industry: industrySnapshot,
+        languages: languagesSnapshot,
+        applicantKey: applicantSecret,
+        locale,
+      });
 
   await sendMail({
     to: payload.email,
@@ -541,8 +725,9 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
   });
 
   if (isGetRequest) {
-    const successHtml = successPageHtml.replace("{{iRain}}", escapeHtml(iRainValue));
-    return new NextResponse(successHtml, {
+    const pageHtml = isIneligible ? ineligiblePageHtml : successPageHtml;
+    const resultHtml = pageHtml.replace("{{iRain}}", escapeHtml(iRainValue));
+    return new NextResponse(resultHtml, {
       status: 200,
       headers: { "Content-Type": "text/html; charset=utf-8" },
     });
