@@ -580,6 +580,19 @@ function ApplicantPageContent() {
 
   const toSingleValue = (value: string | string[]) => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
 
+  const renderConsentPoint = (point: string) => {
+    const email = 'info@andbeyondca.com';
+    if (!point.includes(email)) return point;
+    const parts = point.split(email);
+    return (
+      <>
+        {parts[0]}
+        <a href={`mailto:${email}`}>{email}</a>
+        {parts.slice(1).join(email)}
+      </>
+    );
+  };
+
   const getFormValues = (formData: FormData) => {
     const valueOf = (key: string) => ((formData.get(key) as string | null)?.trim() || '');
     return {
@@ -1327,7 +1340,7 @@ function ApplicantPageContent() {
                   <p>{t.consentIntro}</p>
                   <ul className="consent-list">
                     {t.consentPoints.map((item, index) => (
-                      <li key={index}>{item}</li>
+                      <li key={index}>{renderConsentPoint(item)}</li>
                     ))}
                   </ul>
                   <div className="consent-checkbox consent-legal">
