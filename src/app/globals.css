@@ -2411,6 +2411,8 @@ button.disclaimer,
   background: none;
   border: none;
   box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   padding: 0;
   width: auto;
   gap: 0;
