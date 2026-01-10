@@ -98,6 +98,10 @@
   color: var(--error);
 }
 
+.portal-state-card--error .portal-state__message {
+  color: #1e293b;
+}
+
 .portal-table-card {
   display: flex;
   flex-direction: column;
@@ -727,8 +731,8 @@
   line-height: 1.4;
 }
 
-/* Responsive - Mobile card layout */
-@media (max-width: 720px) {
+/* Responsive - Mobile and tablet portrait card layout */
+@media (max-width: 900px) {
   .portal-header {
     flex-direction: column;
     gap: 20px;
@@ -1348,8 +1352,8 @@
   }
 }
 
-/* Landscape mobile improvements */
-@media (max-width: 720px) and (orientation: landscape) {
+/* Landscape mobile/tablet improvements */
+@media (max-width: 900px) and (orientation: landscape) {
   .portal-dropdown-menu--fixed {
     max-height: 60vh;
   }
@@ -1357,7 +1361,7 @@
 
 /* Safe area insets for notched devices */
 @supports (padding-bottom: env(safe-area-inset-bottom)) {
-  @media (max-width: 720px) {
+  @media (max-width: 900px) {
     .portal-pagination {
       padding-bottom: calc(12px + env(safe-area-inset-bottom));
     }
