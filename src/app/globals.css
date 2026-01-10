@@ -502,7 +502,8 @@ h3 {
   height: 100vh;
   max-height: 100vh;
   min-height: 0;
-  padding: 0;
+  padding: 0 20px 20px;
+  overflow-y: auto;
 }
 
 /* Prevent body scroll on landing page while allowing dropdown overflow */
@@ -2410,6 +2411,8 @@ button.disclaimer,
   background: none;
   border: none;
   box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   padding: 0;
   width: auto;
   gap: 0;
