@@ -40,7 +40,7 @@ export async function sendMail({ to, subject, html, text, cc, replyTo }: MailInp
       from,
       to,
       cc,
-      reply_to: replyTo,
+      replyTo,
       subject,
       html,
       text,
