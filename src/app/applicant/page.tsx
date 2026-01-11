@@ -587,13 +587,14 @@ function ApplicantPageContent() {
     const email = 'irefair.andbeyondconsulting@gmail.com';
     const linkTextEn = 'contacting us via email';
     const linkTextFr = 'nous contactant par courriel';
+    const linkStyle = { color: '#063770', textDecoration: 'underline', fontWeight: 600 };
 
     if (point.includes(linkTextEn)) {
       const parts = point.split(linkTextEn);
       return (
         <>
           {parts[0]}
-          <a href={`mailto:${email}`}>{linkTextEn}</a>
+          <a href={`mailto:${email}`} style={linkStyle}>{linkTextEn}</a>
           {parts.slice(1).join(linkTextEn)}
         </>
       );
@@ -604,7 +605,7 @@ function ApplicantPageContent() {
       return (
         <>
           {parts[0]}
-          <a href={`mailto:${email}`}>{linkTextFr}</a>
+          <a href={`mailto:${email}`} style={linkStyle}>{linkTextFr}</a>
           {parts.slice(1).join(linkTextFr)}
         </>
       );
