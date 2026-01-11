@@ -18,7 +18,7 @@ import { AppShell } from '@/components/AppShell';
 import { Confetti, useConfetti } from '@/components/Confetti';
 import { useLanguage } from '@/components/LanguageProvider';
 import { PublicFooter } from '@/components/PublicFooter';
-import { SuccessAnimation } from '@/components/SuccessAnimation';
+import { SubmissionSuccessModal } from '@/components/SubmissionSuccessModal';
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
@@ -38,6 +38,7 @@ const translations: Record<
     title: string;
     lead: string;
     applyText: string;
+    findIrcrn: string;
     moreInfo: string;
     moreInfoLink: string;
     labels: {
@@ -86,6 +87,7 @@ const translations: Record<
     title: 'iRefair - Apply Now',
     lead: 'iRefair is a free initiative created to support Lebanese and Arab newcomers in Canada by connecting them with professionals who can refer them for jobs.',
     applyText: 'Use this form to apply to the company you wish to join. You will need your iRefair iRAIN and the iRefair Company Reference Number (iRCRN).',
+    findIrcrn: 'Find iRCRN codes',
     moreInfo: 'For more info, visit',
     moreInfoLink: '&BeyondCA',
     labels: {
@@ -133,6 +135,7 @@ const translations: Record<
     title: 'iRefair - Postuler maintenant',
     lead: "iRefair est une initiative gratuite créée pour soutenir les nouveaux arrivants libanais et arabes au Canada en les mettant en contact avec des professionnels qui peuvent les recommander pour des emplois.",
     applyText: "Utilisez ce formulaire pour postuler à l'entreprise que vous souhaitez rejoindre. Vous aurez besoin de votre iRAIN iRefair et du numéro de référence de l'entreprise iRefair (iRCRN).",
+    findIrcrn: 'Trouver les codes iRCRN',
     moreInfo: 'Pour plus d\'informations, visitez',
     moreInfoLink: '&BeyondCA',
     labels: {
@@ -490,8 +493,8 @@ export default function ApplyPage() {
   const [status, setStatus] = useState<Status>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const confetti = useConfetti();
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
 
   const formRef = useRef<HTMLFormElement | null>(null);
   const errorBannerRef = useRef<HTMLDivElement | null>(null);
@@ -653,9 +656,8 @@ export default function ApplyPage() {
       }
 
       setStatus('ok');
+      setShowSuccessModal(true);
       confetti.trigger();
-      setShowSuccessAnimation(true);
-      resetForm(true);
     } catch (error) {
       console.error('Application submission failed', error);
       setErrorMessage(t.statusMessages.networkError);
@@ -692,7 +694,6 @@ export default function ApplyPage() {
               <p className="eyebrow">{t.eyebrow}</p>
               <h2 id="apply-title">{t.title}</h2>
               <p className="lead">{t.lead}</p>
-              <p className="apply-text">{t.applyText}</p>
               <p className="apply-link-row">
                 {t.moreInfo}{' '}
                 <Link href="https://andbeyondca.com/impact/" target="_blank" rel="noreferrer">
@@ -864,12 +865,6 @@ export default function ApplyPage() {
               <div className="footer-status">
                 {status === 'ok' && (
                   <div className="status-banner status-banner--ok" role="status" aria-live="polite">
-                    <SuccessAnimation
-                      show={showSuccessAnimation}
-                      variant="default"
-                      size="sm"
-                      onAnimationComplete={() => setShowSuccessAnimation(false)}
-                    />
                     <span>{t.statusMessages.ok}</span>
                   </div>
                 )}
@@ -903,10 +898,23 @@ export default function ApplyPage() {
               </div>
             </div>
           </form>
+          <div className="apply-bottom-info">
+            <p>
+              {t.applyText}{' '}
+              <Link href="/hiring-companies" className="hiring-link hiring-link--cta">
+                {t.findIrcrn}
+              </Link>
+            </p>
+          </div>
         </section>
       </main>
       <PublicFooter />
       <Confetti active={confetti.active} onComplete={confetti.reset} />
+      <SubmissionSuccessModal
+        open={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        locale={language}
+      />
     </AppShell>
   );
 }

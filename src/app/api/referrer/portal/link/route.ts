@@ -32,6 +32,12 @@ export async function POST(request: NextRequest) {
   if (!referrer) {
     return NextResponse.json({ ok: false, error: 'Referrer not found' }, { status: 404 });
   }
+  if (referrer.record.archived?.toLowerCase() === 'true') {
+    return NextResponse.json(
+      { ok: false, error: 'This referrer has been archived. Restore the referrer before generating a portal link.' },
+      { status: 403 },
+    );
+  }
 
   let portalLink: string;
   try {

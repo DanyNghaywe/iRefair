@@ -6,8 +6,6 @@ import {
   APPLICATION_SHEET_NAME,
   APPLICANT_HEADERS,
   APPLICANT_SHEET_NAME,
-  MATCH_HEADERS,
-  MATCH_SHEET_NAME,
   REFERRER_HEADERS,
   REFERRER_SHEET_NAME,
   formatSheet,
@@ -27,7 +25,6 @@ export async function GET(request: NextRequest) {
       formatSheet(APPLICANT_SHEET_NAME, APPLICANT_HEADERS),
       formatSheet(REFERRER_SHEET_NAME, REFERRER_HEADERS),
       formatSheet(APPLICATION_SHEET_NAME, APPLICATION_HEADERS),
-      formatSheet(MATCH_SHEET_NAME, MATCH_HEADERS),
     ]);
     return NextResponse.json({ ok: true });
   } catch (error) {

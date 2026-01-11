@@ -10,7 +10,7 @@ import {
 import { normalizePortalTokenVersion, verifyReferrerToken } from '@/lib/referrerPortalToken';
 import { sendMail } from '@/lib/mailer';
 import { getReferrerPortalToken } from '@/lib/referrerPortalAuth';
-import { COMMON_TIMEZONES, formatMeetingDateTime } from '@/lib/timezone';
+import { isValidTimezone, formatMeetingDateTime } from '@/lib/timezone';
 import { createOpaqueToken, hashOpaqueToken } from '@/lib/tokens';
 import { appendActionHistoryEntry, type ActionLogEntry } from '@/lib/actionHistory';
 import {
@@ -22,7 +22,8 @@ import {
   infoRequestToApplicant,
   interviewCompletedToApplicant,
   jobOfferToApplicant,
-  buildReferrerEmailCc,
+  meetingScheduledToReferrer,
+  meetingCancelledToReferrer,
 } from '@/lib/emailTemplates';
 import { normalizeHttpUrl } from '@/lib/validation';
 import { escapeHtml } from '@/lib/validation';
@@ -33,6 +34,7 @@ type FeedbackAction =
   | 'SCHEDULE_MEETING'
   | 'CANCEL_MEETING'
   | 'REJECT'
+  | 'RESCIND_REJECTION'
   | 'CV_MISMATCH'
   | 'REQUEST_CV_UPDATE'
   | 'REQUEST_INFO'
@@ -43,6 +45,7 @@ const VALID_ACTIONS: FeedbackAction[] = [
   'SCHEDULE_MEETING',
   'CANCEL_MEETING',
   'REJECT',
+  'RESCIND_REJECTION',
   'CV_MISMATCH',
   'REQUEST_CV_UPDATE',
   'REQUEST_INFO',
@@ -75,6 +78,8 @@ function getStatusForAction(action: FeedbackAction): string {
       return 'new';
     case 'REJECT':
       return 'not a good fit';
+    case 'RESCIND_REJECTION':
+      return 'new';
     case 'CV_MISMATCH':
       return 'cv mismatch';
     case 'REQUEST_CV_UPDATE':
@@ -84,7 +89,7 @@ function getStatusForAction(action: FeedbackAction): string {
     case 'MARK_INTERVIEWED':
       return 'interviewed';
     case 'OFFER_JOB':
-      return 'hired';
+      return 'job offered';
     default:
       return 'new';
   }
@@ -145,6 +150,12 @@ export async function POST(request: NextRequest) {
   if (payload.v !== expectedVersion) {
     return NextResponse.json({ ok: false, error: 'Session expired. Please refresh your portal link.' }, { status: 403 });
   }
+  if (referrer.record.archived?.toLowerCase() === 'true') {
+    return NextResponse.json(
+      { ok: false, error: 'This referrer account has been archived and portal access is no longer available.' },
+      { status: 403 },
+    );
+  }
 
   // Load application
   const application = await getApplicationById(applicationId);
@@ -165,7 +176,13 @@ export async function POST(request: NextRequest) {
   const currentStatus = normalizeStatus(applicationRecord.status);
 
   // Load applicant
-  const applicant = await findApplicantByIdentifier(applicationRecord.applicantId).catch(() => null);
+  const applicant = await findApplicantByIdentifier(applicationRecord.applicantId).catch((err) => {
+    console.error('[OFFER_JOB] Error loading applicant:', err);
+    return null;
+  });
+  console.log('[OFFER_JOB] Looking up applicantId:', applicationRecord.applicantId);
+  console.log('[OFFER_JOB] Applicant found:', !!applicant);
+  console.log('[OFFER_JOB] Applicant email:', applicant?.record?.email || '(none)');
   const applicantName = applicant
     ? [applicant.record.firstName, applicant.record.familyName].filter(Boolean).join(' ').trim()
     : '';
@@ -176,15 +193,40 @@ export async function POST(request: NextRequest) {
   const position = applicationRecord.position || '';
 
   // Business rule validations
-  if (currentStatus === 'hired') {
+  if (currentStatus === 'job offered') {
     if (action !== 'OFFER_JOB') {
       return NextResponse.json(
-        { ok: false, error: 'This application is already marked as Hired.' },
+        { ok: false, error: 'This application already has a job offer.' },
         { status: 400 },
       );
     }
     // Idempotent OFFER_JOB - just return success
-    return NextResponse.json({ ok: true, status: 'hired' });
+    return NextResponse.json({ ok: true, status: 'job offered' });
+  }
+
+  if (currentStatus === 'not a good fit') {
+    if (action !== 'RESCIND_REJECTION') {
+      return NextResponse.json(
+        { ok: false, error: 'This application has already been rejected.' },
+        { status: 400 },
+      );
+    }
+  }
+
+  if (currentStatus === 'cv mismatch') {
+    if (action !== 'RESCIND_REJECTION') {
+      return NextResponse.json(
+        { ok: false, error: 'This application has been marked as CV mismatch.' },
+        { status: 400 },
+      );
+    }
+  }
+
+  if (action === 'RESCIND_REJECTION' && currentStatus !== 'not a good fit' && currentStatus !== 'cv mismatch') {
+    return NextResponse.json(
+      { ok: false, error: 'Can only rescind rejection when application is rejected or marked as CV mismatch.' },
+      { status: 400 },
+    );
   }
 
   if (action === 'OFFER_JOB' && currentStatus !== 'interviewed') {
@@ -229,7 +271,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!COMMON_TIMEZONES.includes(meetingTimezone)) {
+    if (!isValidTimezone(meetingTimezone)) {
       return NextResponse.json(
         { ok: false, error: 'Invalid timezone. Please select from the provided list.' },
         { status: 400 },
@@ -273,6 +315,9 @@ export async function POST(request: NextRequest) {
     patch.rescheduleTokenExpiresAt = '';
   }
 
+  // Track if we're cancelling a meeting due to a status change
+  let meetingWasCancelled = false;
+
   if (action === 'REQUEST_CV_UPDATE' || action === 'REQUEST_INFO' || (action === 'CV_MISMATCH' && body.includeUpdateLink)) {
     opaqueToken = createOpaqueToken();
     updateToken = opaqueToken;
@@ -283,6 +328,31 @@ export async function POST(request: NextRequest) {
     patch.updateRequestTokenHash = updateHash;
     patch.updateRequestExpiresAt = updateExpiry;
     patch.updateRequestPurpose = purpose;
+
+    // If any of these actions occur while meeting is scheduled, cancel the meeting
+    if (currentStatus === 'meeting scheduled') {
+      patch.meetingDate = '';
+      patch.meetingTime = '';
+      patch.meetingTimezone = '';
+      patch.meetingUrl = '';
+      patch.rescheduleTokenHash = '';
+      patch.rescheduleTokenExpiresAt = '';
+      meetingWasCancelled = true;
+    }
+  }
+
+  // Track if meeting was cancelled due to rejection or CV mismatch (for referrer email)
+  let meetingCancelledDueToRejection = false;
+
+  // If rejecting or marking CV mismatch (without update link) while meeting is scheduled, cancel the meeting
+  if (currentStatus === 'meeting scheduled' && (action === 'REJECT' || (action === 'CV_MISMATCH' && !body.includeUpdateLink))) {
+    patch.meetingDate = '';
+    patch.meetingTime = '';
+    patch.meetingTimezone = '';
+    patch.meetingUrl = '';
+    patch.rescheduleTokenHash = '';
+    patch.rescheduleTokenExpiresAt = '';
+    meetingCancelledDueToRejection = true;
   }
 
   // Set new status
@@ -314,9 +384,9 @@ export async function POST(request: NextRequest) {
   await updateApplicationAdmin(applicationId, patch);
 
   // Send emails
-  const cc = buildReferrerEmailCc(referrerEmail);
-
+  console.log('[OFFER_JOB] About to send email. applicantEmail:', applicantEmail || '(empty)');
   if (applicantEmail) {
+    console.log('[OFFER_JOB] Entering email block for action:', action);
     try {
       let template;
 
@@ -365,6 +435,7 @@ export async function POST(request: NextRequest) {
             includeUpdateLink: body.includeUpdateLink,
             updateToken,
             applicationId,
+            meetingWasCancelled,
           });
           break;
 
@@ -377,6 +448,7 @@ export async function POST(request: NextRequest) {
             feedback: notes,
             updateToken: updateToken || '',
             applicationId,
+            meetingWasCancelled,
           });
           break;
 
@@ -389,6 +461,7 @@ export async function POST(request: NextRequest) {
             requestedInfo: notes,
             updateToken: updateToken || '',
             applicationId,
+            meetingWasCancelled,
           });
           break;
 
@@ -412,18 +485,96 @@ export async function POST(request: NextRequest) {
           break;
       }
 
+      console.log('[OFFER_JOB] Template created:', !!template, 'Subject:', template?.subject);
       if (template) {
+        console.log('[OFFER_JOB] Sending email to:', applicantEmail);
         await sendMail({
           to: applicantEmail,
-          cc,
           replyTo: referrerEmail || undefined,
           subject: template.subject,
           text: template.text,
           html: template.html,
         });
+        console.log('[OFFER_JOB] Email sent successfully');
+      } else {
+        console.log('[OFFER_JOB] No template created for action:', action);
       }
     } catch (emailError) {
-      console.error('Error sending applicant email:', emailError);
+      console.error('[OFFER_JOB] Error sending applicant email:', emailError);
+      // Continue - don't fail the action if email fails
+    }
+  } else {
+    console.log('[OFFER_JOB] Skipping email - no applicant email found');
+  }
+
+  // Send confirmation email to referrer for meeting schedule/cancel
+  if (referrerEmail) {
+    try {
+      let referrerTemplate;
+      const portalUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://irefair.com'}/referrer/portal`;
+
+      if (action === 'SCHEDULE_MEETING') {
+        referrerTemplate = meetingScheduledToReferrer({
+          referrerName,
+          applicantName,
+          companyName,
+          position,
+          meetingDate: body.meetingDate || '',
+          meetingTime: body.meetingTime || '',
+          meetingTimezone: body.meetingTimezone || '',
+          meetingUrl: patch.meetingUrl,
+          portalUrl,
+        });
+      } else if (action === 'CANCEL_MEETING') {
+        referrerTemplate = meetingCancelledToReferrer({
+          referrerName,
+          applicantName,
+          companyName,
+          position,
+          reason: notes,
+          portalUrl,
+        });
+      } else if (meetingWasCancelled) {
+        // Meeting was cancelled due to REQUEST_CV_UPDATE, REQUEST_INFO, or CV_MISMATCH with update link
+        const actionDescriptions: Record<string, string> = {
+          REQUEST_CV_UPDATE: 'requested a CV update',
+          REQUEST_INFO: 'requested additional information',
+          CV_MISMATCH: 'marked the CV as a mismatch',
+        };
+        referrerTemplate = meetingCancelledToReferrer({
+          referrerName,
+          applicantName,
+          companyName,
+          position,
+          cancelledDueToAction: actionDescriptions[action] || 'changed the application status',
+          portalUrl,
+        });
+      } else if (meetingCancelledDueToRejection) {
+        // Meeting was cancelled due to REJECT or CV_MISMATCH without update link
+        const actionDescriptions: Record<string, string> = {
+          REJECT: 'rejected the application',
+          CV_MISMATCH: 'marked the CV as a mismatch',
+        };
+        referrerTemplate = meetingCancelledToReferrer({
+          referrerName,
+          applicantName,
+          companyName,
+          position,
+          cancelledDueToAction: actionDescriptions[action] || 'changed the application status',
+          portalUrl,
+        });
+      }
+
+      if (referrerTemplate) {
+        await sendMail({
+          to: referrerEmail,
+          subject: referrerTemplate.subject,
+          text: referrerTemplate.text,
+          html: referrerTemplate.html,
+        });
+      }
+    } catch (emailError) {
+      console.error('Error sending referrer email:', emailError);
       // Continue - don't fail the action if email fails
     }
   }
@@ -441,8 +592,8 @@ export async function POST(request: NextRequest) {
         await sendMail({
           to: rewardRecipient,
           subject: `Referral reward triggered: ${applicationId}`,
-          text: `Applicant ${applicationRecord.applicantId} marked as hired for ${applicationRecord.iCrn} (${position}). Referrer: ${referrer.record.irref}.`,
-          html: `Applicant <strong>${safeApplicantId}</strong> marked as hired for <strong>${safeIrcrn}</strong> (${safePosition}).<br/>Referrer: <strong>${safeIrref}</strong>.`,
+          text: `Applicant ${applicationRecord.applicantId} offered job for ${applicationRecord.iCrn} (${position}). Referrer: ${referrer.record.irref}.`,
+          html: `Applicant <strong>${safeApplicantId}</strong> offered job for <strong>${safeIrcrn}</strong> (${safePosition}).<br/>Referrer: <strong>${safeIrref}</strong>.`,
         });
       } catch (rewardError) {
         console.error('Error sending reward notification:', rewardError);

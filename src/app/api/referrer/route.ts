@@ -4,6 +4,7 @@ import { rateLimit, rateLimitHeaders, RATE_LIMITS } from '@/lib/rateLimit';
 import { appendReferrerRow, generateIRREF, getReferrerByEmail, addPendingUpdate } from '@/lib/sheets';
 import { escapeHtml, normalizeHttpUrl } from '@/lib/validation';
 import { referrerRegistrationConfirmation, referrerAlreadyExistsEmail } from '@/lib/emailTemplates';
+import { buildReferrerPortalLink, ensureReferrerPortalTokenVersion } from '@/lib/referrerPortalLink';
 
 type ReferrerPayload = {
   name?: string;
@@ -90,6 +91,14 @@ export async function POST(request: Request) {
     // Check if referrer already exists with this email
     const existingReferrer = await getReferrerByEmail(email);
     if (existingReferrer) {
+      // Block archived referrers from re-registering or updating
+      if (existingReferrer.record.archived?.toLowerCase() === 'true') {
+        return NextResponse.json(
+          { ok: false, error: 'This referrer account has been archived and can no longer be used.' },
+          { status: 403 },
+        );
+      }
+
       // Store the submitted data as a pending update
       await addPendingUpdate(existingReferrer.record.irref, {
         name,
@@ -103,11 +112,16 @@ export async function POST(request: Request) {
         linkedin,
       });
 
+      // Generate portal link for existing referrer
+      const portalTokenVersion = await ensureReferrerPortalTokenVersion(existingReferrer.record.irref);
+      const portalUrl = buildReferrerPortalLink(existingReferrer.record.irref, portalTokenVersion);
+
       // Send email informing them they already have an iRREF
       const emailTemplate = referrerAlreadyExistsEmail({
         name: fallbackName,
         iRref: existingReferrer.record.irref,
         locale,
+        portalUrl,
       });
 
       await sendMail({

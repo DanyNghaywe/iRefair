@@ -8,8 +8,6 @@ import {
   APPLICATION_SHEET_NAME,
   APPLICANT_HEADERS,
   APPLICANT_SHEET_NAME,
-  MATCH_HEADERS,
-  MATCH_SHEET_NAME,
   REFERRER_HEADERS,
   REFERRER_SHEET_NAME,
   ensureColumns,
@@ -47,11 +45,6 @@ export async function GET(request: NextRequest) {
   await trackSheet(APPLICANT_SHEET_NAME, APPLICANT_HEADERS, ADMIN_TRACKING_COLUMNS);
   await trackSheet(REFERRER_SHEET_NAME, REFERRER_HEADERS, ADMIN_TRACKING_COLUMNS);
   await trackSheet(APPLICATION_SHEET_NAME, APPLICATION_HEADERS, APPLICATION_ADMIN_COLUMNS);
-
-  const { created: matchCreated } = await ensureHeaders(MATCH_SHEET_NAME, MATCH_HEADERS);
-  if (matchCreated) {
-    createdSheets.push(MATCH_SHEET_NAME);
-  }
 
   return NextResponse.json({ ok: true, createdSheets, appendedColumns });
 }

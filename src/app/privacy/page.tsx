@@ -36,7 +36,7 @@ export default function PrivacyPage() {
             <section>
               <h3>Contact</h3>
               <p className="legal-contact">
-                Email us at <a href="mailto:info@andbeyondca.com">info@andbeyondca.com</a> for data requests or questions.
+                Email us at <a href="mailto:irefair.andbeyondconsulting@gmail.com">irefair.andbeyondconsulting@gmail.com</a> for data requests or questions.
               </p>
             </section>
           </div>

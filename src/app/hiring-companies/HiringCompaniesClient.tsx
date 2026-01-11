@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { AppShell } from '@/components/AppShell';
@@ -12,8 +13,19 @@ type Props = {
   mergedCompanies: CompanyRow[];
 };
 
+const PAGE_SIZE = 20;
+
 export function HiringCompaniesClient({ mergedCompanies }: Props) {
   const { withLanguage } = useLanguage();
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const totalPages = Math.ceil(mergedCompanies.length / PAGE_SIZE);
+  const validPage = Math.min(Math.max(1, currentPage), Math.max(1, totalPages));
+
+  const paginatedCompanies = useMemo(() => {
+    const startIndex = (validPage - 1) * PAGE_SIZE;
+    return mergedCompanies.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [mergedCompanies, validPage]);
 
   return (
     <AppShell>
@@ -55,7 +67,7 @@ export function HiringCompaniesClient({ mergedCompanies }: Props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {mergedCompanies.map((company: CompanyRow) => {
+                  {paginatedCompanies.map((company: CompanyRow) => {
                     const careersUrl = normalizeHttpUrl(company.careersUrl || '');
                     return (
                       <tr key={company.code}>
@@ -83,6 +95,49 @@ export function HiringCompaniesClient({ mergedCompanies }: Props) {
                 </tbody>
               </table>
             </div>
+            {totalPages > 1 && (
+              <div className="hiring-pagination">
+                <button
+                  type="button"
+                  className="hiring-pagination-btn"
+                  onClick={() => setCurrentPage(1)}
+                  disabled={validPage === 1}
+                  aria-label="Go to first page"
+                >
+                  &laquo;
+                </button>
+                <button
+                  type="button"
+                  className="hiring-pagination-btn"
+                  onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  disabled={validPage === 1}
+                  aria-label="Go to previous page"
+                >
+                  &lsaquo;
+                </button>
+                <span className="hiring-pagination-info">
+                  Page {validPage} of {totalPages}
+                </span>
+                <button
+                  type="button"
+                  className="hiring-pagination-btn"
+                  onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={validPage === totalPages}
+                  aria-label="Go to next page"
+                >
+                  &rsaquo;
+                </button>
+                <button
+                  type="button"
+                  className="hiring-pagination-btn"
+                  onClick={() => setCurrentPage(totalPages)}
+                  disabled={validPage === totalPages}
+                  aria-label="Go to last page"
+                >
+                  &raquo;
+                </button>
+              </div>
+            )}
             <p className="hiring-footnote">
               <strong>iRCRN:</strong> iRefair Company Reference Number
             </p>

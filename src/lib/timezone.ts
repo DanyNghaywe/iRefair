@@ -67,6 +67,74 @@ export const COMMON_TIMEZONES: string[] = [
 ];
 
 /**
+ * Check if a string is a valid IANA timezone identifier.
+ * Uses Intl.DateTimeFormat to validate - if it doesn't throw, the timezone is valid.
+ */
+export function isValidTimezone(timezone: string): boolean {
+  if (!timezone || typeof timezone !== 'string') {
+    return false;
+  }
+  try {
+    Intl.DateTimeFormat(undefined, { timeZone: timezone });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get all available IANA timezones with formatted labels.
+ * Uses Intl.supportedValuesOf for comprehensive timezone list.
+ * Labels show: "City/Region (UTC±X)" format.
+ */
+export function getAllTimezoneOptions(): { value: string; label: string }[] {
+  let timezones: string[];
+
+  try {
+    // Get all supported IANA timezones from the browser
+    timezones = Intl.supportedValuesOf('timeZone');
+  } catch {
+    // Fallback for older browsers
+    timezones = COMMON_TIMEZONES;
+  }
+
+  return timezones.map((tz) => {
+    // Get current UTC offset for this timezone
+    const now = new Date();
+    const formatter = new Intl.DateTimeFormat('en-US', {
+      timeZone: tz,
+      timeZoneName: 'shortOffset',
+    });
+
+    let offset = '';
+    try {
+      const parts = formatter.formatToParts(now);
+      const offsetPart = parts.find((p) => p.type === 'timeZoneName');
+      offset = offsetPart?.value || '';
+    } catch {
+      // If formatting fails, just use the timezone name
+    }
+
+    // Format the label: "New York (GMT-5)" or "America/New_York (GMT-5)"
+    const parts = tz.split('/');
+    const city = parts[parts.length - 1].replace(/_/g, ' ');
+    const region = parts.length > 1 ? parts[0] : '';
+
+    let label: string;
+    if (region && region !== city) {
+      label = offset ? `${city} - ${region} (${offset})` : `${city} - ${region}`;
+    } else {
+      label = offset ? `${tz} (${offset})` : tz;
+    }
+
+    return { value: tz, label };
+  }).sort((a, b) => {
+    // Sort by label for easier browsing
+    return a.label.localeCompare(b.label);
+  });
+}
+
+/**
  * Format meeting date, time, and timezone into a professional string.
  * Example output: "Friday, January 3, 2025 at 2:30 PM (Eastern Time)"
  *

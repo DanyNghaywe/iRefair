@@ -9,6 +9,7 @@ import { hashApplicantSecret } from '@/lib/applicantUpdateToken';
 import {
   appendApplicationRow,
   findApplicantByIdentifier,
+  findDuplicateApplication,
   findReferrerByIrcrn,
   findReferrerByIrcrnStrict,
   generateSubmissionId,
@@ -17,6 +18,7 @@ import {
   ReferrerLookupError,
 } from '@/lib/sheets';
 import { ensureResumeLooksLikeCv, scanBufferForViruses } from '@/lib/fileScan';
+import { ensureReferrerPortalTokenVersion, buildReferrerPortalLink } from '@/lib/referrerPortalLink';
 
 export const runtime = 'nodejs';
 
@@ -119,9 +121,31 @@ export async function POST(request: Request) {
     if (!keyMatches) {
       return NextResponse.json({ ok: false, error: 'Invalid applicant credentials.' }, { status: 401 });
     }
+    if (applicantRecord.record.archived?.toLowerCase() === 'true') {
+      return NextResponse.json(
+        { ok: false, error: 'This applicant profile has been archived and can no longer submit applications.' },
+        { status: 403 },
+      );
+    }
     if (strictMode && !isIrain(applicantRecord.record.id)) {
       return NextResponse.json(
         { ok: false, error: 'Applicant record is missing a valid iRAIN. Please update the applicant record.' },
+        { status: 409 },
+      );
+    }
+
+    // Check for duplicate application
+    const existingApplicationId = await findDuplicateApplication(
+      applicantRecord.record.id || applicantId,
+      iCrn,
+      position,
+    );
+    if (existingApplicationId) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error: `You have already applied for this position at this company (Application ID: ${existingApplicationId}).`,
+        },
         { status: 409 },
       );
     }
@@ -190,18 +214,24 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join(' ')
       .trim();
-    const feedbackRecipient =
-      process.env.APPLICATION_FEEDBACK_EMAIL ||
-      process.env.SMTP_FROM_EMAIL ||
-      process.env.SMTP_USER ||
-      referrer.email;
-    const feedbackSubject = encodeURIComponent(
-      `Feedback: ${applicant.id || applicantId} for ${iCrn}`,
-    );
-    const approveBody = encodeURIComponent('Approved / interested. Notes: ');
-    const declineBody = encodeURIComponent('Decline / not a fit. Notes: ');
-    const feedbackApproveUrl = `mailto:${feedbackRecipient}?subject=${feedbackSubject}&body=${approveBody}`;
-    const feedbackDeclineUrl = `mailto:${feedbackRecipient}?subject=${feedbackSubject}&body=${declineBody}`;
+
+    // Check if applicant is ineligible based on location and work authorization
+    const locatedCanada = applicant.locatedCanada?.toLowerCase() || '';
+    const authorizedCanada = applicant.authorizedCanada?.toLowerCase() || '';
+    const eligibleMoveCanada = applicant.eligibleMoveCanada?.toLowerCase() || '';
+    const isIneligible =
+      (locatedCanada === 'no' && eligibleMoveCanada === 'no') ||
+      (locatedCanada === 'yes' && authorizedCanada === 'no');
+    // Generate portal link for the referrer (skip for fallback referrer)
+    let portalUrl: string | undefined;
+    if (referrer.irref && referrer.irref !== 'fallback') {
+      try {
+        const tokenVersion = await ensureReferrerPortalTokenVersion(referrer.irref);
+        portalUrl = buildReferrerPortalLink(referrer.irref, tokenVersion);
+      } catch (err) {
+        console.warn('Failed to generate referrer portal link:', err);
+      }
+    }
 
     const template = applicationSubmittedToReferrer({
       referrerName: referrer.name,
@@ -210,11 +240,11 @@ export async function POST(request: Request) {
       applicantPhone: applicant.phone,
       applicantId: applicant.id || applicantId,
       iCrn,
+      companyName: referrer.company,
       position,
       resumeFileName: resumeEntry.name,
       referenceNumber,
-      feedbackApproveUrl,
-      feedbackDeclineUrl,
+      portalUrl,
     });
 
     await sendMail({
@@ -255,6 +285,7 @@ export async function POST(request: Request) {
       resumeFileId,
       referrerIrref: referrer.irref,
       referrerEmail: referrer.email,
+      status: isIneligible ? 'ineligible' : undefined,
     });
 
     return NextResponse.json({

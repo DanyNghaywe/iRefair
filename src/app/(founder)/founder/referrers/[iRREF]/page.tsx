@@ -1,14 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
+
+import Link from "next/link";
 
 import { ActionBtn } from "@/components/ActionBtn";
 import { AutosaveHint } from "@/components/founder/AutosaveHint";
+import { Badge } from "@/components/founder/Badge";
 import { DetailPageShell } from "@/components/founder/DetailPageShell";
 import { DetailSection } from "@/components/founder/DetailSection";
+import { Select } from "@/components/Select";
 import { Skeleton, SkeletonDetailGrid, SkeletonStack } from "@/components/founder/Skeleton";
 import { Topbar } from "@/components/founder/Topbar";
+import { countryOptions } from "@/lib/countries";
 
 type ReferrerRecord = {
   irref: string;
@@ -50,8 +55,33 @@ type PendingUpdate = {
   };
 };
 
+type ApplicationItem = {
+  id: string;
+  applicantId: string;
+  iCrn: string;
+  position: string;
+  status: string;
+};
+
 const statusOptions = ["", "New", "Engaged", "Active", "Paused", "Closed"];
 const LINK_PREVIEW_MAX = 42;
+
+const COMPANY_INDUSTRY_OPTIONS: string[] = [
+  "Technology",
+  "Finance",
+  "Healthcare",
+  "Education",
+  "Retail",
+  "Hospitality",
+  "Marketing / Media",
+  "Engineering / Construction",
+  "Consulting",
+  "Not for profit",
+  "Compliance / Audit",
+  "Other",
+];
+
+const WORK_TYPE_OPTIONS: string[] = ["On-site", "Remote", "Hybrid"];
 
 const fieldLabelMap: Record<string, string> = {
   companyIndustry: "Industry",
@@ -219,6 +249,8 @@ export default function ReferrerReviewPage() {
   const [notFound, setNotFound] = useState(false);
   const [notes, setNotes] = useState("");
   const [tags, setTags] = useState("");
+  const [lastContactedAt, setLastContactedAt] = useState("");
+  const [nextActionAt, setNextActionAt] = useState("");
   const [status, setStatus] = useState("");
   const [editDetails, setEditDetails] = useState(initialEdit);
   const [name, setName] = useState("");
@@ -241,9 +273,26 @@ export default function ReferrerReviewPage() {
   const [portalMessage, setPortalMessage] = useState<string | null>(null);
   const [portalError, setPortalError] = useState<string | null>(null);
   const [rejectConfirm, setRejectConfirm] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [pendingUpdateLoading, setPendingUpdateLoading] = useState<string | null>(null);
+  const [applications, setApplications] = useState<ApplicationItem[]>([]);
+  const router = useRouter();
+  const [appsLoading, setAppsLoading] = useState(false);
   const skipAutosaveRef = useRef(true);
-  const skipDetailsAutosaveRef = useRef(true);
+
+  // Store original values when entering edit mode
+  const originalDetailsRef = useRef<{
+    name: string;
+    email: string;
+    phone: string;
+    country: string;
+    company: string;
+    companyIndustry: string;
+    careersPortal: string;
+    workType: string;
+    linkedin: string;
+  } | null>(null);
 
   // Parse pending updates from referrer
   const pendingUpdates = useMemo<PendingUpdate[]>(() => {
@@ -307,10 +356,26 @@ export default function ReferrerReviewPage() {
     fetchReferrer();
   }, [fetchReferrer]);
 
+  const fetchApplications = async (irrefValue: string) => {
+    setAppsLoading(true);
+    const params = new URLSearchParams({ referrerIrref: irrefValue, limit: "50", offset: "0" });
+    const response = await fetch(`/api/founder/applications?${params.toString()}`, { cache: "no-store" });
+    const data = await response.json();
+    if (data?.ok) setApplications(data.items ?? []);
+    setAppsLoading(false);
+  };
+
+  useEffect(() => {
+    if (!referrer?.irref) return;
+    fetchApplications(referrer.irref);
+  }, [referrer?.irref]);
+
   useEffect(() => {
     if (!referrer) return;
     setNotes(referrer.ownerNotes || "");
     setTags(referrer.tags || "");
+    setLastContactedAt(referrer.lastContactedAt || "");
+    setNextActionAt(referrer.nextActionAt || "");
     setStatus((referrer.status || "").toLowerCase());
     setName(referrer.name || "");
     setEmail(referrer.email || "");
@@ -328,7 +393,7 @@ export default function ReferrerReviewPage() {
     setPortalError(null);
     setRejectConfirm(false);
     skipAutosaveRef.current = true;
-    skipDetailsAutosaveRef.current = true;
+    originalDetailsRef.current = null;
   }, [referrer?.irref]);
 
   const updateLocal = (patch: Partial<ReferrerRecord>) => {
@@ -354,18 +419,45 @@ export default function ReferrerReviewPage() {
       return;
     }
     const timer = setTimeout(() => {
-      patchReferrer({ ownerNotes: notes, tags, status });
+      patchReferrer({ ownerNotes: notes, tags, status, lastContactedAt, nextActionAt });
     }, 600);
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [notes, tags, status, referrer?.irref]);
+  }, [notes, tags, status, lastContactedAt, nextActionAt, referrer?.irref]);
 
-  useEffect(() => {
-    if (!referrer) return;
-    if (skipDetailsAutosaveRef.current) {
-      skipDetailsAutosaveRef.current = false;
-      return;
+  const handleStartEdit = () => {
+    originalDetailsRef.current = {
+      name,
+      email,
+      phone,
+      country,
+      company,
+      companyIndustry,
+      careersPortal,
+      workType,
+      linkedin,
+    };
+    setEditDetails(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (originalDetailsRef.current) {
+      setName(originalDetailsRef.current.name);
+      setEmail(originalDetailsRef.current.email);
+      setPhone(originalDetailsRef.current.phone);
+      setCountry(originalDetailsRef.current.country);
+      setCompany(originalDetailsRef.current.company);
+      setCompanyIndustry(originalDetailsRef.current.companyIndustry);
+      setCareersPortal(originalDetailsRef.current.careersPortal);
+      setWorkType(originalDetailsRef.current.workType);
+      setLinkedin(originalDetailsRef.current.linkedin);
     }
+    originalDetailsRef.current = null;
+    setEditDetails(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!referrer) return;
     const patch: Record<string, string> = {};
     const addIfChanged = (key: string, value: string, current: string) => {
       if (value !== current) patch[key] = value;
@@ -380,25 +472,12 @@ export default function ReferrerReviewPage() {
     addIfChanged("workType", workType, referrer.workType || "");
     addIfChanged("linkedin", linkedin, referrer.linkedin || "");
 
-    if (!Object.keys(patch).length) return;
-
-    const timer = setTimeout(() => {
-      patchReferrer(patch);
-    }, 600);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    name,
-    email,
-    phone,
-    country,
-    company,
-    companyIndustry,
-    careersPortal,
-    workType,
-    linkedin,
-    referrer?.irref,
-  ]);
+    if (Object.keys(patch).length) {
+      await patchReferrer(patch);
+    }
+    originalDetailsRef.current = null;
+    setEditDetails(false);
+  };
 
   const handlePortalLink = async () => {
     if (!referrer || portalLoading) return;
@@ -545,6 +624,32 @@ export default function ReferrerReviewPage() {
       setActionError("Unable to process update.");
     } finally {
       setPendingUpdateLoading(null);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!referrer || deleteLoading) return;
+    setDeleteLoading(true);
+    setActionMessage(null);
+    setActionError(null);
+    try {
+      const response = await fetch(
+        `/api/founder/referrers/${encodeURIComponent(referrer.irref)}`,
+        { method: "DELETE" },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.ok) {
+        setActionError(data?.error || "Unable to archive referrer.");
+        setDeleteConfirm(false);
+      } else {
+        router.push("/founder/referrers");
+      }
+    } catch (error) {
+      console.error("Archive referrer failed", error);
+      setActionError("Unable to archive referrer.");
+      setDeleteConfirm(false);
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -701,36 +806,61 @@ export default function ReferrerReviewPage() {
               </DetailSection>
             )}
 
-            <DetailSection title="Status + Approval">
+            <DetailSection title="Admin">
               <div className="field-grid field-grid--two">
                 <div className="field">
                   <label htmlFor="referrer-status">Status</label>
-                  <select
+                  <Select
                     id="referrer-status"
+                    name="referrer-status"
+                    options={statusOptions
+                      .filter((opt) => opt)
+                      .map((opt) => ({ value: opt.toLowerCase(), label: opt }))}
+                    placeholder="Unassigned"
                     value={status}
-                    onChange={(event) => setStatus(event.target.value)}
-                  >
-                    <option value="">Unassigned</option>
-                    {statusOptions
-                      .filter((value) => value)
-                      .map((value) => (
-                        <option key={value} value={value.toLowerCase()}>
-                          {value}
-                        </option>
-                      ))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label htmlFor="company-approval">Company Approval</label>
-                  <input
-                    id="company-approval"
-                    type="text"
-                    value={approvalLabel}
-                    readOnly
-                    tabIndex={-1}
-                    aria-readonly="true"
+                    onChange={(value) => setStatus(Array.isArray(value) ? value[0] : value)}
                   />
                 </div>
+                <div className="field">
+                  <label htmlFor="referrer-type">Referrer Type</label>
+                  <input
+                    id="referrer-type"
+                    type="text"
+                    value={tags}
+                    onChange={(event) => setTags(event.target.value)}
+                    placeholder="e.g. HR Manager, Recruiter, Agency"
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="referrer-last-contacted">Last Contact Date</label>
+                  <input
+                    id="referrer-last-contacted"
+                    type="text"
+                    value={lastContactedAt}
+                    onChange={(event) => setLastContactedAt(event.target.value)}
+                    placeholder="e.g. 2025-01-15"
+                  />
+                </div>
+                <div className="field">
+                  <label htmlFor="referrer-next-action">Next Follow-up</label>
+                  <input
+                    id="referrer-next-action"
+                    type="text"
+                    value={nextActionAt}
+                    onChange={(event) => setNextActionAt(event.target.value)}
+                    placeholder="e.g. 2025-01-20 or Call Monday"
+                  />
+                </div>
+              </div>
+              <div className="field" style={{ marginTop: "var(--gap)" }}>
+                <label htmlFor="referrer-notes">Internal Notes</label>
+                <textarea
+                  id="referrer-notes"
+                  rows={4}
+                  value={notes}
+                  onChange={(event) => setNotes(event.target.value)}
+                  placeholder="Add notes about this referrer..."
+                />
               </div>
             </DetailSection>
 
@@ -738,47 +868,81 @@ export default function ReferrerReviewPage() {
               <div className="field-grid field-grid--two">
                 <div className="field">
                   <label htmlFor="profile-name">Name</label>
-                  <input
-                    id="profile-name"
-                    type="text"
-                    value={editDetails ? name : name || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setName(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="profile-name"
+                      type="text"
+                      value={name}
+                      onChange={(event) => setName(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="profile-name"
+                      type="text"
+                      value={name || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="profile-email">Email</label>
-                  <input
-                    id="profile-email"
-                    type="email"
-                    value={editDetails ? email : email || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setEmail(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="profile-email"
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="profile-email"
+                      type="text"
+                      value={email || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="profile-phone">Phone</label>
-                  <input
-                    id="profile-phone"
-                    type="text"
-                    value={editDetails ? phone : phone || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setPhone(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="profile-phone"
+                      type="text"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="profile-phone"
+                      type="text"
+                      value={phone || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="profile-country">Country</label>
-                  <input
-                    id="profile-country"
-                    type="text"
-                    value={editDetails ? country : country || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setCountry(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <Select
+                      id="profile-country"
+                      name="profile-country"
+                      options={countryOptions()}
+                      placeholder="Select"
+                      value={country}
+                      onChange={(value) => setCountry(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="profile-country"
+                      type="text"
+                      value={country || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="profile-irref">Referrer iRREF</label>
@@ -795,14 +959,22 @@ export default function ReferrerReviewPage() {
               <div className="field-grid field-grid--two">
                 <div className="field">
                   <label htmlFor="company-name">Company</label>
-                  <input
-                    id="company-name"
-                    type="text"
-                    value={editDetails ? company : company || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setCompany(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="company-name"
+                      type="text"
+                      value={company}
+                      onChange={(event) => setCompany(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="company-name"
+                      type="text"
+                      value={company || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="company-ircrn">Company iRCRN</label>
@@ -810,25 +982,45 @@ export default function ReferrerReviewPage() {
                 </div>
                 <div className="field">
                   <label htmlFor="company-industry">Industry</label>
-                  <input
-                    id="company-industry"
-                    type="text"
-                    value={editDetails ? companyIndustry : companyIndustry || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setCompanyIndustry(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <Select
+                      id="company-industry"
+                      name="company-industry"
+                      options={COMPANY_INDUSTRY_OPTIONS}
+                      placeholder="Select"
+                      value={companyIndustry}
+                      onChange={(value) => setCompanyIndustry(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="company-industry"
+                      type="text"
+                      value={companyIndustry || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="company-work-type">Work Type</label>
-                  <input
-                    id="company-work-type"
-                    type="text"
-                    value={editDetails ? workType : workType || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setWorkType(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <Select
+                      id="company-work-type"
+                      name="company-work-type"
+                      options={WORK_TYPE_OPTIONS}
+                      placeholder="Select"
+                      value={workType}
+                      onChange={(value) => setWorkType(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="company-work-type"
+                      type="text"
+                      value={workType || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
               </div>
             </DetailSection>
@@ -837,25 +1029,41 @@ export default function ReferrerReviewPage() {
               <div className="field-grid field-grid--two">
                 <div className="field">
                   <label htmlFor="link-careers">Careers Portal</label>
-                  <input
-                    id="link-careers"
-                    type="url"
-                    value={editDetails ? careersPortal : careersPortal || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setCareersPortal(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="link-careers"
+                      type="url"
+                      value={careersPortal}
+                      onChange={(event) => setCareersPortal(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="link-careers"
+                      type="text"
+                      value={careersPortal || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="link-linkedin">LinkedIn</label>
-                  <input
-                    id="link-linkedin"
-                    type="url"
-                    value={editDetails ? linkedin : linkedin || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setLinkedin(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="link-linkedin"
+                      type="url"
+                      value={linkedin}
+                      onChange={(event) => setLinkedin(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="link-linkedin"
+                      type="text"
+                      value={linkedin || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
               </div>
               <div className="referrer-review__link-list">
@@ -903,77 +1111,157 @@ export default function ReferrerReviewPage() {
           </>
         }
         sidebar={
-          <DetailSection title="Decision" className="referrer-review__decision">
-            <div className="field">
-              <label htmlFor="decision-status">Current status</label>
-              <input
-                id="decision-status"
-                type="text"
-                value={approvalLabel}
-                readOnly
-                tabIndex={-1}
-                aria-readonly="true"
-              />
-            </div>
-            <div className="flow-stack">
-              <ActionBtn as="button" variant="ghost" onClick={() => setEditDetails((prev) => !prev)}>
-                {editDetails ? "Done editing" : "Edit details"}
-              </ActionBtn>
-              <ActionBtn
-                as="button"
-                variant="primary"
-                onClick={() => handleApproval("approved")}
-                disabled={!referrer || approvalLoading}
-              >
-                {approvalLoading ? "Updating..." : "Approve"}
-              </ActionBtn>
-              {rejectConfirm ? (
-                <>
-                  <ActionBtn
-                    as="button"
-                    variant="ghost"
-                    onClick={() => handleApproval("denied")}
-                    disabled={!referrer || approvalLoading}
-                  >
-                    {approvalLoading ? "Updating..." : "Confirm reject"}
+          <>
+            <DetailSection title="Decision" className="referrer-review__decision">
+              <div className="field">
+                <label htmlFor="decision-status">Current status</label>
+                <input
+                  id="decision-status"
+                  type="text"
+                  value={approvalLabel}
+                  readOnly
+                  tabIndex={-1}
+                  aria-readonly="true"
+                />
+              </div>
+              <div className="flow-stack">
+                {editDetails ? (
+                  <>
+                    <ActionBtn as="button" variant="primary" onClick={handleSaveEdit} disabled={saving}>
+                      {saving ? "Saving..." : "Save"}
+                    </ActionBtn>
+                    <ActionBtn as="button" variant="ghost" onClick={handleCancelEdit} disabled={saving}>
+                      Cancel
+                    </ActionBtn>
+                  </>
+                ) : (
+                  <ActionBtn as="button" variant="ghost" onClick={handleStartEdit}>
+                    Edit details
                   </ActionBtn>
-                  <ActionBtn
-                    as="button"
-                    variant="ghost"
-                    onClick={() => setRejectConfirm(false)}
-                    disabled={approvalLoading}
-                  >
-                    Cancel
-                  </ActionBtn>
-                </>
+                )}
+                {approvalValue === "pending" && (
+                  <>
+                    <ActionBtn
+                      as="button"
+                      variant="primary"
+                      onClick={() => handleApproval("approved")}
+                      disabled={!referrer || approvalLoading}
+                    >
+                      {approvalLoading ? "Updating..." : "Approve"}
+                    </ActionBtn>
+                    {rejectConfirm ? (
+                      <>
+                        <ActionBtn
+                          as="button"
+                          variant="ghost"
+                          onClick={() => handleApproval("denied")}
+                          disabled={!referrer || approvalLoading}
+                        >
+                          {approvalLoading ? "Updating..." : "Confirm reject"}
+                        </ActionBtn>
+                        <ActionBtn
+                          as="button"
+                          variant="ghost"
+                          onClick={() => setRejectConfirm(false)}
+                          disabled={approvalLoading}
+                        >
+                          Cancel
+                        </ActionBtn>
+                      </>
+                    ) : (
+                      <ActionBtn
+                        as="button"
+                        variant="ghost"
+                        onClick={() => setRejectConfirm(true)}
+                        disabled={!referrer || approvalLoading}
+                      >
+                        Reject
+                      </ActionBtn>
+                    )}
+                  </>
+                )}
+                {approvalValue !== "pending" && (
+                  <>
+                    {deleteConfirm ? (
+                      <>
+                        <div className="status-banner status-banner--warning" role="alert" style={{ marginBottom: "8px" }}>
+                          This will also archive all related applications.
+                        </div>
+                        <ActionBtn
+                          as="button"
+                          variant="ghost"
+                          onClick={handleDelete}
+                          disabled={!referrer || deleteLoading}
+                          className="action-btn--danger"
+                        >
+                          {deleteLoading ? "Archiving..." : "Confirm archive"}
+                        </ActionBtn>
+                        <ActionBtn
+                          as="button"
+                          variant="ghost"
+                          onClick={() => setDeleteConfirm(false)}
+                          disabled={deleteLoading}
+                        >
+                          Cancel
+                        </ActionBtn>
+                      </>
+                    ) : (
+                      <ActionBtn
+                        as="button"
+                        variant="ghost"
+                        onClick={() => setDeleteConfirm(true)}
+                        disabled={!referrer || deleteLoading}
+                      >
+                        Archive referrer
+                      </ActionBtn>
+                    )}
+                  </>
+                )}
+              </div>
+              <div>
+                <AutosaveHint saving={saving} />
+                {actionMessage ? (
+                  <div className="status-banner status-banner--ok" role="status" aria-live="polite">
+                    {actionMessage}
+                  </div>
+                ) : null}
+                {actionError ? (
+                  <div className="status-banner status-banner--error" role="alert">
+                    {actionError}
+                  </div>
+                ) : null}
+              </div>
+              <ActionBtn as="link" href="/founder/referrers" variant="ghost">
+                &larr; Back to Referrers
+              </ActionBtn>
+            </DetailSection>
+
+            <DetailSection title="Applications">
+              {appsLoading ? (
+                <SkeletonStack>
+                  <Skeleton variant="text" width="100%" />
+                  <Skeleton variant="text" width="80%" />
+                </SkeletonStack>
+              ) : applications.length === 0 ? (
+                <p className="founder-card__meta">No applications yet.</p>
               ) : (
-                <ActionBtn
-                  as="button"
-                  variant="ghost"
-                  onClick={() => setRejectConfirm(true)}
-                  disabled={!referrer || approvalLoading}
-                >
-                  Reject
-                </ActionBtn>
+                <ul className="founder-list">
+                  {applications.map((app) => (
+                    <li key={app.id}>
+                      <Link href={`/founder/applications/${app.id}`} className="founder-list__link">
+                        <div className="founder-list__title">
+                          {app.position || "Application"} <Badge tone="neutral">{app.iCrn}</Badge>
+                        </div>
+                        <div className="founder-list__meta">
+                          {app.id} - {app.status || "Unassigned"}
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
               )}
-            </div>
-            <div>
-              <AutosaveHint saving={saving} />
-              {actionMessage ? (
-                <div className="status-banner status-banner--ok" role="status" aria-live="polite">
-                  {actionMessage}
-                </div>
-              ) : null}
-              {actionError ? (
-                <div className="status-banner status-banner--error" role="alert">
-                  {actionError}
-                </div>
-              ) : null}
-            </div>
-            <ActionBtn as="link" href="/founder/referrers" variant="ghost">
-              &larr; Back to Referrers
-            </ActionBtn>
-          </DetailSection>
+            </DetailSection>
+          </>
         }
       />
     </div>

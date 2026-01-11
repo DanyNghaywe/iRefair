@@ -10,12 +10,14 @@ export const APPLICANT_SECRET_HASH_HEADER = 'Applicant Secret Hash';
 export const APPLICANT_UPDATE_TOKEN_HASH_HEADER = 'Update Token Hash';
 export const APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER = 'Update Token Expires At';
 export const APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER = 'Update Pending Payload';
+export const APPLICANT_REGISTRATION_STATUS_HEADER = 'Registration Status';
 
 const APPLICANT_SECURITY_COLUMNS = [
   APPLICANT_SECRET_HASH_HEADER,
   APPLICANT_UPDATE_TOKEN_HASH_HEADER,
   APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
   APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
+  APPLICANT_REGISTRATION_STATUS_HEADER,
 ];
 
 export const APPLICANT_HEADERS = [
@@ -59,18 +61,6 @@ export const REFERRER_HEADERS = [
 ];
 export const REFERRER_PORTAL_TOKEN_VERSION_HEADER = 'Portal Token Version';
 export const REFERRER_PENDING_UPDATES_HEADER = 'Pending Updates';
-export const MATCH_SHEET_NAME = 'Matches';
-export const MATCH_HEADERS = [
-  'Match ID',
-  'Created At',
-  'Applicant iRAIN',
-  'Referrer iRREF',
-  'Company iRCRN',
-  'Position / Context',
-  'Stage',
-  'Notes',
-  'Intro Sent At',
-];
 export const ADMIN_TRACKING_COLUMNS = ['Status', 'Owner Notes', 'Tags', 'Last Contacted At', 'Next Action At'];
 const REFERRER_SECURITY_COLUMNS = [REFERRER_PORTAL_TOKEN_VERSION_HEADER, REFERRER_PENDING_UPDATES_HEADER];
 export const APPLICATION_ADMIN_COLUMNS = [
@@ -87,6 +77,8 @@ export const APPLICATION_ADMIN_COLUMNS = [
   'Update Request Expires At',
   'Update Request Purpose',
 ];
+
+export const ARCHIVE_COLUMNS = ['Archived', 'ArchivedAt', 'ArchivedBy'];
 
 const IRCRN_REGEX = /^iRCRN(\d{10})$/i;
 const IRAIN_REGEX = /^iRAIN(\d{10})$/i;
@@ -118,10 +110,10 @@ export function isIrref(value: string) {
  * - "CV needs adjustments" -> "cv update requested"
  * - "CV missing information" -> "info requested"
  * - "He interviewed" -> "interviewed"
- * - "He got the job" -> "hired"
+ * - "He got the job" -> "job offered"
  *
  * New statuses will be stored as readable lowercase values like:
- * 'new', 'meeting scheduled', 'needs reschedule', 'interviewed', 'hired', etc.
+ * 'new', 'meeting scheduled', 'needs reschedule', 'interviewed', 'job offered', etc.
  */
 export function normalizeStatus(raw?: string): string {
   if (!raw || typeof raw !== 'string') {
@@ -141,7 +133,8 @@ export function normalizeStatus(raw?: string): string {
     'cv needs adjustments': 'cv update requested',
     'cv missing information': 'info requested',
     'he interviewed': 'interviewed',
-    'he got the job': 'hired',
+    'he got the job': 'job offered',
+    'hired': 'job offered', // backward compatibility
   };
 
   const lowerTrimmed = trimmed.toLowerCase();
@@ -474,9 +467,11 @@ type ApplicantRow = {
   updateTokenHash?: string;
   updateTokenExpiresAt?: string;
   updatePendingPayload?: string;
+  registrationStatus?: string;
   resumeFileName?: string;
   resumeFileId?: string;
   resumeUrl?: string;
+  archived?: string;
 };
 
 type ReferrerRow = {
@@ -505,10 +500,70 @@ type ApplicationRow = {
   resumeFileId?: string;
   referrerIrref?: string;
   referrerEmail?: string;
+  status?: string;
 };
 
 let sheetsClient: ReturnType<typeof google.sheets> | null = null;
 const headersInitialized = new Set<string>();
+const headersCache = new Map<string, string[]>();
+
+/**
+ * Get cached headers for a sheet, or fetch them if not cached.
+ * This reduces redundant API calls when listing data.
+ */
+async function getCachedHeaders(sheetName: string): Promise<string[]> {
+  const cached = headersCache.get(sheetName);
+  if (cached) return cached;
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!1:1`,
+  });
+  const headers = (headerRow.data.values?.[0] ?? []).map((v) => String(v));
+  if (headers.length) {
+    headersCache.set(sheetName, headers);
+  }
+  return headers;
+}
+
+/**
+ * Fetch sheet data with headers in a single API call.
+ * Returns both headers and data rows, using cached headers when available.
+ */
+async function getSheetDataWithHeaders(sheetName: string): Promise<{
+  headers: string[];
+  rows: string[][];
+}> {
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  // Get headers (from cache if available) to determine column range
+  const headers = await getCachedHeaders(sheetName);
+  if (!headers.length) {
+    return { headers: [], rows: [] };
+  }
+
+  const lastCol = toColumnLetter(headers.length - 1);
+  const existing = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!A:${lastCol}`,
+    majorDimension: 'ROWS',
+  });
+
+  const allRows = existing.data.values ?? [];
+  // Update cache with fresh headers from the response
+  const freshHeaders = (allRows[0] ?? []).map((v) => String(v));
+  if (freshHeaders.length) {
+    headersCache.set(sheetName, freshHeaders);
+  }
+
+  return {
+    headers: freshHeaders.length ? freshHeaders : headers,
+    rows: allRows.slice(1),
+  };
+}
 const SHEET_BY_PREFIX: Record<SubmissionPrefix, string> = {
   CAND: APPLICANT_SHEET_NAME,
   REF: REFERRER_SHEET_NAME,
@@ -520,10 +575,23 @@ export type ApplicantLookupResult = {
   record: ApplicantRow & { timestamp: string; legacyApplicantId: string };
 };
 
+/**
+ * Unescape a value that was escaped by escapeSheetsFormula() when writing to sheets.
+ * Removes the leading single quote that was added to prevent formula injection.
+ */
+function unescapeSheetsFormula(value: string): string {
+  if (!value) return value;
+  // If value starts with ' followed by a formula character, remove the quote
+  if (/^'[=+\-@]/.test(value)) {
+    return value.slice(1);
+  }
+  return value;
+}
+
 function cellValue(row: (string | number | null | undefined)[], index: number) {
   const value = row[index];
   if (value === undefined || value === null) return '';
-  return String(value).trim();
+  return unescapeSheetsFormula(String(value).trim());
 }
 
 function buildApplicantRecordFromRow(row: (string | number | null | undefined)[]): ApplicantRow & {
@@ -579,9 +647,11 @@ function buildApplicantRecordFromHeaderMap(
     updateTokenHash: getHeaderValue(headerMap, row, APPLICANT_UPDATE_TOKEN_HASH_HEADER),
     updateTokenExpiresAt: getHeaderValue(headerMap, row, APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER),
     updatePendingPayload: getHeaderValue(headerMap, row, APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER),
+    registrationStatus: getHeaderValue(headerMap, row, APPLICANT_REGISTRATION_STATUS_HEADER) || undefined,
     resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name') || undefined,
     resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID') || undefined,
     resumeUrl: getHeaderValue(headerMap, row, 'Resume URL') || undefined,
+    archived: getHeaderValue(headerMap, row, 'Archived') || undefined,
   };
 }
 
@@ -790,6 +860,11 @@ export async function ensureHeaders(
     }
   }
   headersInitialized.add(sheetName);
+  // Cache the headers to avoid redundant fetches in list functions
+  const finalHeaders = await getCachedHeaders(sheetName);
+  if (finalHeaders.length) {
+    headersCache.set(sheetName, finalHeaders);
+  }
   await ensureAdminColumnsForSheet(sheetName);
   return { created: createdSheet };
 }
@@ -988,8 +1063,7 @@ async function fetchMaxIrrefFromSheet(spreadsheetId: string) {
 }
 
 async function findMaxIrainInSheets(spreadsheetId: string) {
-  const applicantMax = await fetchMaxIrainFromSheet(APPLICANT_SHEET_NAME, spreadsheetId);
-  return Math.max(applicantMax, getMaxIrcrnFromCompanies());
+  return await fetchMaxIrainFromSheet(APPLICANT_SHEET_NAME, spreadsheetId);
 }
 
 async function getMaxExistingIrainNumber(spreadsheetId: string) {
@@ -1089,7 +1163,7 @@ export async function appendApplicationRow(row: ApplicationRow) {
   setByHeader(rowValues, headerMap, 'Resume File ID', row.resumeFileId ?? '');
   setByHeader(rowValues, headerMap, 'Referrer iRREF', row.referrerIrref ?? '');
   setByHeader(rowValues, headerMap, 'Referrer Email', row.referrerEmail ?? '');
-  setByHeader(rowValues, headerMap, 'Status', '');
+  setByHeader(rowValues, headerMap, 'Status', row.status ?? '');
   setByHeader(rowValues, headerMap, 'Owner Notes', '');
 
   await appendRow(APPLICATION_SHEET_NAME, rowValues);
@@ -1490,15 +1564,15 @@ export async function formatSheet(sheetName: string, headers: string[]) {
 
 async function ensureAdminColumnsForSheet(sheetName: string) {
   if (sheetName === APPLICANT_SHEET_NAME) {
-    return ensureColumns(sheetName, [...ADMIN_TRACKING_COLUMNS, ...APPLICANT_SECURITY_COLUMNS]);
+    return ensureColumns(sheetName, [...ADMIN_TRACKING_COLUMNS, ...APPLICANT_SECURITY_COLUMNS, ...ARCHIVE_COLUMNS]);
   }
 
   if (sheetName === REFERRER_SHEET_NAME) {
-    return ensureColumns(sheetName, [...ADMIN_TRACKING_COLUMNS, ...REFERRER_SECURITY_COLUMNS]);
+    return ensureColumns(sheetName, [...ADMIN_TRACKING_COLUMNS, ...REFERRER_SECURITY_COLUMNS, ...ARCHIVE_COLUMNS]);
   }
 
   if (sheetName === APPLICATION_SHEET_NAME) {
-    return ensureColumns(sheetName, APPLICATION_ADMIN_COLUMNS);
+    return ensureColumns(sheetName, [...APPLICATION_ADMIN_COLUMNS, ...ARCHIVE_COLUMNS]);
   }
 
   return { appended: [], headers: [] };
@@ -1509,17 +1583,11 @@ export async function ensureColumns(
   requiredHeaders: string[],
 ): Promise<{ appended: string[]; headers: string[] }> {
   if (!requiredHeaders.length) {
-    return { appended: [], headers: [] };
+    return { appended: [], headers: headersCache.get(sheetName) ?? [] };
   }
 
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-
-  const current = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${sheetName}!1:1`,
-  });
-  const existingHeaders = (current.data.values?.[0] ?? []).map((value) => String(value));
+  // Use cached headers if available, otherwise fetch
+  const existingHeaders = await getCachedHeaders(sheetName);
   const existingSet = new Set(existingHeaders.map((header) => header.trim()));
   const missing = requiredHeaders.filter((header) => !existingSet.has(header));
 
@@ -1527,6 +1595,8 @@ export async function ensureColumns(
     return { appended: [], headers: existingHeaders };
   }
 
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
   const updatedHeaders = [...existingHeaders, ...missing];
   const headerRange = `${sheetName}!A1:${toColumnLetter(updatedHeaders.length - 1)}1`;
 
@@ -1536,6 +1606,9 @@ export async function ensureColumns(
     valueInputOption: 'RAW',
     requestBody: { majorDimension: 'ROWS', values: [updatedHeaders] },
   });
+
+  // Update the cache with new headers
+  headersCache.set(sheetName, updatedHeaders);
 
   try {
     await applyProSheetFormatting(sheetName, updatedHeaders);
@@ -1553,6 +1626,7 @@ type ApplicantListParams = {
   locatedCanada?: string;
   limit?: number;
   offset?: number;
+  includeArchived?: boolean;
 };
 
 type ReferrerListParams = {
@@ -1562,6 +1636,7 @@ type ReferrerListParams = {
   approval?: string;
   limit?: number;
   offset?: number;
+  includeArchived?: boolean;
 };
 
 type ApplicationListParams = {
@@ -1571,6 +1646,7 @@ type ApplicationListParams = {
   referrerIrref?: string;
   limit?: number;
   offset?: number;
+  includeArchived?: boolean;
 };
 
 type ApplicationListItem = {
@@ -1597,13 +1673,9 @@ type ApplicationListItem = {
   updateRequestExpiresAt: string;
   updateRequestPurpose: string;
   missingFields: string[];
-};
-
-type MatchListParams = {
-  search?: string;
-  stage?: string;
-  limit?: number;
-  offset?: number;
+  archived: string;
+  archivedAt: string;
+  archivedBy: string;
 };
 
 const DEFAULT_LIMIT = 50;
@@ -1666,24 +1738,11 @@ function normalizeSearch(value?: string) {
 export async function listApplicants(params: ApplicantListParams) {
   await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
 
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-  const headerRow = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${APPLICANT_SHEET_NAME}!1:1`,
-  });
-  const headers = headerRow.data.values?.[0] ?? [];
+  // Use cached headers + single data fetch
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME);
   if (!headers.length) return { total: 0, items: [] as unknown[] };
 
-  const lastCol = toColumnLetter(headers.length - 1);
-  const existing = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${APPLICANT_SHEET_NAME}!A:${lastCol}`,
-    majorDimension: 'ROWS',
-  });
-
   const headerMap = buildHeaderMap(headers);
-  const rows = (existing.data.values ?? []).slice(1);
   const searchTerm = normalizeSearch(params.search);
   const statusFilter = normalizeSearch(params.status);
   const locationFilter = normalizeSearch(params.locatedCanada);
@@ -1731,6 +1790,7 @@ export async function listApplicants(params: ApplicantListParams) {
         employmentStatus: getHeaderValue(headerMap, row, 'Employment Status'),
         legacyApplicantId: getHeaderValue(headerMap, row, LEGACY_APPLICANT_ID_HEADER),
         status: getHeaderValue(headerMap, row, 'Status'),
+        registrationStatus: getHeaderValue(headerMap, row, APPLICANT_REGISTRATION_STATUS_HEADER),
         ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
         tags: getHeaderValue(headerMap, row, 'Tags'),
         lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
@@ -1740,11 +1800,17 @@ export async function listApplicants(params: ApplicantListParams) {
           reason: eligibilityReason,
         },
         missingFields,
+        archived: getHeaderValue(headerMap, row, 'Archived'),
+        archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt'),
+        archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy'),
       };
 
       return record;
     })
     .filter((record) => {
+      // Filter out archived records by default
+      if (!params.includeArchived && record.archived === 'true') return false;
+
       if (searchTerm) {
         const haystack = [
           record.irain,
@@ -1784,24 +1850,11 @@ export async function listReferrers(params: ReferrerListParams) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
   await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN', 'Company Approval', REFERRER_PENDING_UPDATES_HEADER]);
 
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-  const headerRow = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${REFERRER_SHEET_NAME}!1:1`,
-  });
-  const headers = headerRow.data.values?.[0] ?? [];
+  // Use cached headers + single data fetch
+  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_SHEET_NAME);
   if (!headers.length) return { total: 0, items: [] as unknown[] };
 
-  const lastCol = toColumnLetter(headers.length - 1);
-  const existing = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${REFERRER_SHEET_NAME}!A:${lastCol}`,
-    majorDimension: 'ROWS',
-  });
-
   const headerMap = buildHeaderMap(headers);
-  const rows = (existing.data.values ?? []).slice(1);
   const searchTerm = normalizeSearch(params.search);
   const statusFilter = normalizeSearch(params.status);
   const companyFilter = normalizeSearch(params.company);
@@ -1852,9 +1905,15 @@ export async function listReferrers(params: ReferrerListParams) {
         lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
         nextActionAt: getHeaderValue(headerMap, row, 'Next Action At'),
         missingFields,
+        archived: getHeaderValue(headerMap, row, 'Archived'),
+        archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt'),
+        archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy'),
       };
     })
     .filter((record) => {
+      // Filter out archived records by default
+      if (!params.includeArchived && record.archived === 'true') return false;
+
       if (searchTerm) {
         const haystack = [
           record.irref,
@@ -1906,24 +1965,11 @@ export async function listApprovedReferrerCompanies(): Promise<CompanyRow[]> {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
   await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN', 'Company Approval']);
 
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-  const headerRow = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${REFERRER_SHEET_NAME}!1:1`,
-  });
-  const headers = headerRow.data.values?.[0] ?? [];
+  // Use cached headers + single data fetch
+  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_SHEET_NAME);
   if (!headers.length) return [];
 
-  const lastCol = toColumnLetter(headers.length - 1);
-  const existing = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${REFERRER_SHEET_NAME}!A:${lastCol}`,
-    majorDimension: 'ROWS',
-  });
-
   const headerMap = buildHeaderMap(headers);
-  const rows = (existing.data.values ?? []).slice(1);
   const items: CompanyRow[] = [];
 
   for (const row of rows) {
@@ -1988,6 +2034,7 @@ type ReferrerLookupResult = {
   phone?: string;
   company?: string;
   companyIrcrn?: string;
+  archived?: string;
 };
 
 type ReferrerLookupErrorCode =
@@ -2043,6 +2090,7 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
     phone: getHeaderValue(headerMap, row, 'Phone'),
     company: getHeaderValue(headerMap, row, 'Company'),
     companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
+    archived: getHeaderValue(headerMap, row, 'Archived'),
   });
 
   const isApproved = (row: (string | number | null | undefined)[]) => {
@@ -2050,10 +2098,14 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
     return approval === '' || approval === 'approved';
   };
 
+  const isArchived = (row: (string | number | null | undefined)[]) => {
+    return getHeaderValue(headerMap, row, 'Archived').toLowerCase() === 'true';
+  };
+
   for (const row of rows) {
     const rowIrcrn = getHeaderValue(headerMap, row, 'Company iRCRN').toLowerCase();
     if (rowIrcrn && rowIrcrn === normalizedIrcrn) {
-      if (!isApproved(row)) continue;
+      if (!isApproved(row) || isArchived(row)) continue;
       const record = pickRecord(row);
       if (record.email) return record;
     }
@@ -2063,7 +2115,7 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
     for (const row of rows) {
       const rowCompany = getHeaderValue(headerMap, row, 'Company').toLowerCase();
       if (rowCompany && rowCompany === companyNameLower) {
-        if (!isApproved(row)) continue;
+        if (!isApproved(row) || isArchived(row)) continue;
         const record = pickRecord(row);
         if (record.email) return record;
       }
@@ -2113,6 +2165,7 @@ export async function findReferrerByIrcrnStrict(ircrn: string): Promise<Referrer
     phone: getHeaderValue(headerMap, row, 'Phone'),
     company: getHeaderValue(headerMap, row, 'Company'),
     companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
+    archived: getHeaderValue(headerMap, row, 'Archived'),
   });
 
   const isApproved = (row: (string | number | null | undefined)[]) => {
@@ -2120,10 +2173,14 @@ export async function findReferrerByIrcrnStrict(ircrn: string): Promise<Referrer
     return approval === '' || approval === 'approved';
   };
 
+  const isArchived = (row: (string | number | null | undefined)[]) => {
+    return getHeaderValue(headerMap, row, 'Archived').toLowerCase() === 'true';
+  };
+
   const matches = rows
     .filter((row) => {
       const rowIrcrn = getHeaderValue(headerMap, row, 'Company iRCRN').toLowerCase();
-      return rowIrcrn && rowIrcrn === normalizedIrcrn && isApproved(row);
+      return rowIrcrn && rowIrcrn === normalizedIrcrn && isApproved(row) && !isArchived(row);
     })
     .map((row) => pickRecord(row));
 
@@ -2154,24 +2211,11 @@ export async function listApplications(
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
   await ensureColumns(APPLICATION_SHEET_NAME, ['Resume File ID']);
 
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-  const headerRow = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${APPLICATION_SHEET_NAME}!1:1`,
-  });
-  const headers = headerRow.data.values?.[0] ?? [];
+  // Use cached headers + single data fetch
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME);
   if (!headers.length) return { total: 0, items: [] };
 
-  const lastCol = toColumnLetter(headers.length - 1);
-  const existing = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${APPLICATION_SHEET_NAME}!A:${lastCol}`,
-    majorDimension: 'ROWS',
-  });
-
   const headerMap = buildHeaderMap(headers);
-  const rows = (existing.data.values ?? []).slice(1);
   const searchTerm = normalizeSearch(params.search);
   const statusFilter = normalizeSearch(params.status);
   const ircrnFilter = normalizeSearch(params.ircrn);
@@ -2208,9 +2252,15 @@ export async function listApplications(
         updateRequestExpiresAt: getHeaderValue(headerMap, row, 'Update Request Expires At'),
         updateRequestPurpose: getHeaderValue(headerMap, row, 'Update Request Purpose'),
         missingFields,
+        archived: getHeaderValue(headerMap, row, 'Archived'),
+        archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt'),
+        archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy'),
       };
     })
     .filter((record) => {
+      // Filter out archived records by default
+      if (!params.includeArchived && record.archived === 'true') return false;
+
       if (searchTerm) {
         const haystack = [
           record.id,
@@ -2288,6 +2338,9 @@ export async function getApplicationById(id: string) {
           updateRequestTokenHash: getHeaderValue(headerMap, row, 'Update Request Token Hash'),
           updateRequestExpiresAt: getHeaderValue(headerMap, row, 'Update Request Expires At'),
           updateRequestPurpose: getHeaderValue(headerMap, row, 'Update Request Purpose'),
+          archived: getHeaderValue(headerMap, row, 'Archived'),
+          archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt'),
+          archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy'),
         },
       };
     }
@@ -2344,82 +2397,12 @@ export async function findApplicationByRescheduleTokenHash(tokenHash: string) {
           updateRequestTokenHash: getHeaderValue(headerMap, row, 'Update Request Token Hash'),
           updateRequestExpiresAt: getHeaderValue(headerMap, row, 'Update Request Expires At'),
           updateRequestPurpose: getHeaderValue(headerMap, row, 'Update Request Purpose'),
+          archived: getHeaderValue(headerMap, row, 'Archived'),
         },
       };
     }
   }
   return null;
-}
-
-export async function listMatches(params: MatchListParams) {
-  await ensureHeaders(MATCH_SHEET_NAME, MATCH_HEADERS);
-
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-  const headerRow = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${MATCH_SHEET_NAME}!1:1`,
-  });
-  const headers = headerRow.data.values?.[0] ?? [];
-  if (!headers.length) return { total: 0, items: [] as unknown[] };
-
-  const lastCol = toColumnLetter(headers.length - 1);
-  const existing = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${MATCH_SHEET_NAME}!A:${lastCol}`,
-    majorDimension: 'ROWS',
-  });
-
-  const headerMap = buildHeaderMap(headers);
-  const rows = (existing.data.values ?? []).slice(1);
-  const searchTerm = normalizeSearch(params.search);
-  const stageFilter = normalizeSearch(params.stage);
-
-  const items = rows
-    .map((row) => {
-      const missingFields: string[] = [];
-      if (!getHeaderValue(headerMap, row, 'Applicant iRAIN')) missingFields.push('Applicant iRAIN');
-      if (!getHeaderValue(headerMap, row, 'Referrer iRREF')) missingFields.push('Referrer iRREF');
-      if (!getHeaderValue(headerMap, row, 'Company iRCRN')) missingFields.push('Company iRCRN');
-
-      return {
-        matchId: getHeaderValue(headerMap, row, 'Match ID'),
-        createdAt: getHeaderValue(headerMap, row, 'Created At'),
-        applicantIrain: getHeaderValue(headerMap, row, 'Applicant iRAIN'),
-        referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
-        companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
-        positionContext: getHeaderValue(headerMap, row, 'Position / Context'),
-        stage: getHeaderValue(headerMap, row, 'Stage'),
-        notes: getHeaderValue(headerMap, row, 'Notes'),
-        introSentAt: getHeaderValue(headerMap, row, 'Intro Sent At'),
-        missingFields,
-      };
-    })
-    .filter((record) => {
-      if (searchTerm) {
-        const haystack = [
-          record.matchId,
-          record.applicantIrain,
-          record.referrerIrref,
-          record.companyIrcrn,
-          record.positionContext,
-          record.stage,
-          record.notes,
-        ]
-          .filter(Boolean)
-          .map((value) => value.toLowerCase());
-        const matches = haystack.some((value) => value.includes(searchTerm));
-        if (!matches) return false;
-      }
-
-      if (stageFilter && record.stage.toLowerCase() !== stageFilter) return false;
-      return true;
-    });
-
-  return {
-    total: items.length,
-    items: paginate(items, params.offset, params.limit),
-  };
 }
 
 type AdminPatch = {
@@ -2473,6 +2456,8 @@ type ApplicationAdminPatch = {
   updateRequestTokenHash?: string;
   updateRequestExpiresAt?: string;
   updateRequestPurpose?: string;
+  resumeFileId?: string;
+  resumeFileName?: string;
 };
 
 export async function updateRowById(
@@ -2643,22 +2628,8 @@ export async function updateApplicationAdmin(id: string, patch: ApplicationAdmin
     'Update Request Token Hash': patch.updateRequestTokenHash,
     'Update Request Expires At': patch.updateRequestExpiresAt,
     'Update Request Purpose': patch.updateRequestPurpose,
-  });
-}
-
-type MatchPatch = {
-  stage?: string;
-  notes?: string;
-  introSentAt?: string;
-};
-
-export async function updateMatch(matchId: string, patch: MatchPatch) {
-  await ensureHeaders(MATCH_SHEET_NAME, MATCH_HEADERS);
-
-  return updateRowById(MATCH_SHEET_NAME, 'Match ID', matchId, {
-    Stage: patch.stage,
-    Notes: patch.notes,
-    'Intro Sent At': patch.introSentAt,
+    'Resume File ID': patch.resumeFileId,
+    'Resume File Name': patch.resumeFileName,
   });
 }
 
@@ -2741,6 +2712,12 @@ export async function getApplicantByIrain(irain: string) {
           reason: eligibilityReason,
         },
         missingFields,
+        resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name') || undefined,
+        resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID') || undefined,
+        resumeUrl: getHeaderValue(headerMap, row, 'Resume URL') || undefined,
+        archived: getHeaderValue(headerMap, row, 'Archived'),
+        archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt'),
+        archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy'),
       },
     };
   }
@@ -2795,6 +2772,9 @@ export async function getReferrerByIrref(irref: string) {
           tags: getHeaderValue(headerMap, row, 'Tags'),
           lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
           nextActionAt: getHeaderValue(headerMap, row, 'Next Action At'),
+          archived: getHeaderValue(headerMap, row, 'Archived'),
+          archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt'),
+          archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy'),
         },
       };
     }
@@ -2854,6 +2834,7 @@ export async function getReferrerByEmail(email: string) {
           tags: getHeaderValue(headerMap, row, 'Tags'),
           lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
           nextActionAt: getHeaderValue(headerMap, row, 'Next Action At'),
+          archived: getHeaderValue(headerMap, row, 'Archived'),
         },
       };
     }
@@ -2967,44 +2948,757 @@ export async function updatePendingUpdateStatus(
   return { success: result.updated, update: updatedUpdate };
 }
 
-export async function getMatchById(matchId: string) {
-  await ensureHeaders(MATCH_SHEET_NAME, MATCH_HEADERS);
+export async function deleteReferrerByIrref(
+  irref: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'error' }> {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+
+  const referrer = await getReferrerByIrref(irref);
+  if (!referrer) {
+    return { success: false, reason: 'not_found' };
+  }
+
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
 
-  const headerRow = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${MATCH_SHEET_NAME}!1:1`,
-  });
-  const headers = headerRow.data.values?.[0] ?? [];
-  const headerMap = buildHeaderMap(headers);
-  const lastCol = toColumnLetter(headers.length - 1);
-  const rows = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${MATCH_SHEET_NAME}!A:${lastCol}`,
-    majorDimension: 'ROWS',
-  });
+  // Get the sheetId for the Referrers sheet
+  const doc = await sheets.spreadsheets.get({ spreadsheetId });
+  const targetSheet = doc.data.sheets?.find(
+    (sheet) => sheet.properties?.title === REFERRER_SHEET_NAME,
+  );
+  const sheetId = targetSheet?.properties?.sheetId;
 
-  const values = rows.data.values ?? [];
-  for (let i = 1; i < values.length; i++) {
-    const row = values[i] ?? [];
-    const value = cellValue(row, 0).toLowerCase();
-    if (value === matchId.trim().toLowerCase()) {
-      return {
-        rowIndex: i + 1,
-        record: {
-          matchId: getHeaderValue(headerMap, row, 'Match ID'),
-          createdAt: getHeaderValue(headerMap, row, 'Created At'),
-          applicantIrain: getHeaderValue(headerMap, row, 'Applicant iRAIN'),
-          referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
-          companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
-          positionContext: getHeaderValue(headerMap, row, 'Position / Context'),
-          stage: getHeaderValue(headerMap, row, 'Stage'),
-          notes: getHeaderValue(headerMap, row, 'Notes'),
-          introSentAt: getHeaderValue(headerMap, row, 'Intro Sent At'),
-        },
-      };
+  if (sheetId === undefined) {
+    console.error(`Unable to find sheet "${REFERRER_SHEET_NAME}" for deletion.`);
+    return { success: false, reason: 'error' };
+  }
+
+  try {
+    // Delete the row using batchUpdate with deleteDimension
+    // rowIndex is 1-indexed, but the API uses 0-indexed startIndex
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId,
+                dimension: 'ROWS',
+                startIndex: referrer.rowIndex - 1, // Convert to 0-indexed
+                endIndex: referrer.rowIndex, // End is exclusive
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting referrer row', error);
+    return { success: false, reason: 'error' };
+  }
+}
+
+export async function deleteApplicantByIrain(
+  irain: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'error' }> {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+
+  const applicant = await getApplicantByIrain(irain);
+  if (!applicant) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  // Get the sheetId for the Applicants sheet
+  const doc = await sheets.spreadsheets.get({ spreadsheetId });
+  const targetSheet = doc.data.sheets?.find(
+    (sheet) => sheet.properties?.title === APPLICANT_SHEET_NAME,
+  );
+  const sheetId = targetSheet?.properties?.sheetId;
+
+  if (sheetId === undefined) {
+    console.error(`Unable to find sheet "${APPLICANT_SHEET_NAME}" for deletion.`);
+    return { success: false, reason: 'error' };
+  }
+
+  try {
+    // Delete the row using batchUpdate with deleteDimension
+    // rowIndex is 1-indexed, but the API uses 0-indexed startIndex
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId,
+                dimension: 'ROWS',
+                startIndex: applicant.rowIndex - 1, // Convert to 0-indexed
+                endIndex: applicant.rowIndex, // End is exclusive
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting applicant row', error);
+    return { success: false, reason: 'error' };
+  }
+}
+
+/**
+ * Delete all applicants with "Pending Confirmation" status whose confirmation token has expired.
+ * Returns the number of deleted records.
+ */
+export async function cleanupExpiredPendingApplicants(): Promise<{ deleted: number; errors: number }> {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME);
+  if (!headers.length) return { deleted: 0, errors: 0 };
+
+  const headerMap = buildHeaderMap(headers);
+  const now = Date.now();
+
+  // Find all expired pending registrations
+  const expiredIrains: string[] = [];
+  for (const row of rows) {
+    const registrationStatus = getHeaderValue(headerMap, row, APPLICANT_REGISTRATION_STATUS_HEADER);
+    if (registrationStatus !== 'Pending Confirmation') continue;
+
+    const expiresAtRaw = getHeaderValue(headerMap, row, APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER);
+    if (!expiresAtRaw) continue;
+
+    // Parse expiry timestamp
+    const expiresAt = Date.parse(expiresAtRaw);
+    if (Number.isNaN(expiresAt)) continue;
+
+    if (expiresAt < now) {
+      const irain = getHeaderValue(headerMap, row, 'iRAIN');
+      if (irain) {
+        expiredIrains.push(irain);
+      }
     }
   }
+
+  // Delete each expired applicant (in reverse order to avoid row index issues)
+  let deleted = 0;
+  let errors = 0;
+  for (const irain of expiredIrains) {
+    const result = await deleteApplicantByIrain(irain);
+    if (result.success) {
+      deleted++;
+    } else {
+      errors++;
+    }
+  }
+
+  return { deleted, errors };
+}
+
+/**
+ * Clear expired pending update payloads for existing applicants.
+ * Unlike new registrations (which are deleted entirely), existing applicants
+ * just have their pending update columns cleared when the token expires.
+ * Returns the number of cleared records.
+ */
+export async function cleanupExpiredPendingUpdates(): Promise<{ cleared: number; errors: number }> {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME);
+  if (!headers.length) return { cleared: 0, errors: 0 };
+
+  const headerMap = buildHeaderMap(headers);
+  const now = Date.now();
+
+  // Find all existing applicants with expired pending updates
+  const expiredIrains: string[] = [];
+  for (const row of rows) {
+    // Skip new registrations (handled by cleanupExpiredPendingApplicants)
+    const registrationStatus = getHeaderValue(headerMap, row, APPLICANT_REGISTRATION_STATUS_HEADER);
+    if (registrationStatus === 'Pending Confirmation') continue;
+
+    // Check if there's a pending update payload
+    const pendingPayload = getHeaderValue(headerMap, row, APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER);
+    if (!pendingPayload) continue;
+
+    // Check if the token has expired
+    const expiresAtRaw = getHeaderValue(headerMap, row, APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER);
+    if (!expiresAtRaw) continue;
+
+    const expiresAt = Date.parse(expiresAtRaw);
+    if (Number.isNaN(expiresAt)) continue;
+
+    if (expiresAt < now) {
+      const irain = getHeaderValue(headerMap, row, 'iRAIN');
+      if (irain) {
+        expiredIrains.push(irain);
+      }
+    }
+  }
+
+  // Clear pending update columns for each expired record
+  let cleared = 0;
+  let errors = 0;
+  for (const irain of expiredIrains) {
+    const result = await updateRowById(APPLICANT_SHEET_NAME, 'iRAIN', irain, {
+      [APPLICANT_UPDATE_TOKEN_HASH_HEADER]: '',
+      [APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER]: '',
+      [APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER]: '',
+    });
+    if (result.updated) {
+      cleared++;
+    } else {
+      errors++;
+    }
+  }
+
+  return { cleared, errors };
+}
+
+// ============================================================================
+// Archive Functions
+// ============================================================================
+
+/**
+ * Archive a row by setting the Archived, ArchivedAt, and ArchivedBy columns.
+ */
+async function archiveRowById(
+  sheetName: string,
+  idHeaderName: string,
+  id: string,
+  archivedBy?: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'error' }> {
+  const now = new Date().toISOString();
+  const result = await updateRowById(sheetName, idHeaderName, id, {
+    Archived: 'true',
+    ArchivedAt: now,
+    ArchivedBy: archivedBy || '',
+  });
+
+  if (!result.updated) {
+    return { success: false, reason: result.reason === 'not_found' ? 'not_found' : 'error' };
+  }
+  return { success: true };
+}
+
+/**
+ * Find all applications linked to an applicant by their Applicant ID.
+ */
+export async function findApplicationsByApplicantId(
+  applicantId: string,
+  includeArchived: boolean = false,
+): Promise<Array<{ id: string; rowIndex: number }>> {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME);
+  const headerMap = buildHeaderMap(headers);
+
+  const results: Array<{ id: string; rowIndex: number }> = [];
+  const searchId = applicantId.trim().toLowerCase();
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowApplicantId = getHeaderValue(headerMap, row, 'Applicant ID').toLowerCase();
+    const archived = getHeaderValue(headerMap, row, 'Archived');
+
+    if (rowApplicantId === searchId) {
+      if (includeArchived || archived !== 'true') {
+        results.push({
+          id: getHeaderValue(headerMap, row, 'ID'),
+          rowIndex: i + 2, // +1 for header, +1 for 1-indexed
+        });
+      }
+    }
+  }
+
+  return results;
+}
+
+export type EligibilityCheckResult = {
+  isIneligible: boolean;
+  affectedApplications: Array<{
+    id: string;
+    status: string;
+    hadMeetingScheduled: boolean;
+    meetingDate?: string;
+    meetingTime?: string;
+    meetingTimezone?: string;
+    referrerIrref?: string;
+    referrerEmail?: string;
+    position?: string;
+  }>;
+};
+
+/**
+ * Check if an applicant is ineligible based on their location and work authorization,
+ * and return all their active applications that would be affected.
+ */
+export async function checkApplicantEligibilityAndGetAffectedApplications(
+  applicantId: string,
+  locatedCanada: string,
+  authorizedCanada: string,
+  eligibleMoveCanada: string,
+): Promise<EligibilityCheckResult> {
+  const located = locatedCanada.toLowerCase().trim();
+  const authorized = authorizedCanada.toLowerCase().trim();
+  const eligibleMove = eligibleMoveCanada.toLowerCase().trim();
+
+  const isIneligible =
+    (located === 'no' && eligibleMove === 'no') ||
+    (located === 'yes' && authorized === 'no');
+
+  if (!isIneligible) {
+    return { isIneligible: false, affectedApplications: [] };
+  }
+
+  // Find all active applications for this applicant
+  const applications = await findApplicationsByApplicantId(applicantId, false);
+  const affectedApplications: EligibilityCheckResult['affectedApplications'] = [];
+
+  for (const app of applications) {
+    const appDetails = await getApplicationById(app.id);
+    if (!appDetails) continue;
+
+    const status = appDetails.record.status?.toLowerCase().trim() || '';
+
+    // Skip applications already marked as ineligible, rejected, or job offered
+    if (status === 'ineligible' || status === 'not a good fit' || status === 'job offered') {
+      continue;
+    }
+
+    const hadMeetingScheduled = status === 'meeting scheduled' && !!appDetails.record.meetingDate;
+
+    affectedApplications.push({
+      id: appDetails.record.id,
+      status,
+      hadMeetingScheduled,
+      meetingDate: appDetails.record.meetingDate || undefined,
+      meetingTime: appDetails.record.meetingTime || undefined,
+      meetingTimezone: appDetails.record.meetingTimezone || undefined,
+      referrerIrref: appDetails.record.referrerIrref || undefined,
+      referrerEmail: appDetails.record.referrerEmail || undefined,
+      position: appDetails.record.position || undefined,
+    });
+  }
+
+  return { isIneligible: true, affectedApplications };
+}
+
+/**
+ * Update multiple applications to ineligible status and clear any meeting info.
+ */
+export async function markApplicationsAsIneligible(
+  applicationIds: string[],
+): Promise<void> {
+  for (const id of applicationIds) {
+    await updateApplicationAdmin(id, {
+      status: 'ineligible',
+      meetingDate: '',
+      meetingTime: '',
+      meetingTimezone: '',
+      meetingUrl: '',
+      rescheduleTokenHash: '',
+      rescheduleTokenExpiresAt: '',
+    });
+  }
+}
+
+/**
+ * Check if a duplicate application exists for the same applicant, company, and position.
+ * Returns the existing application ID if found, null otherwise.
+ * Excludes archived applications.
+ */
+export async function findDuplicateApplication(
+  applicantId: string,
+  iCrn: string,
+  position: string,
+): Promise<string | null> {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME);
+  const headerMap = buildHeaderMap(headers);
+
+  const searchApplicantId = applicantId.trim().toLowerCase();
+  const searchIcrn = iCrn.trim().toLowerCase();
+  const searchPosition = position.trim().toLowerCase();
+
+  for (const row of rows) {
+    const rowApplicantId = getHeaderValue(headerMap, row, 'Applicant ID').toLowerCase();
+    const rowIcrn = getHeaderValue(headerMap, row, 'iRCRN').toLowerCase();
+    const rowPosition = getHeaderValue(headerMap, row, 'Position').toLowerCase();
+    const archived = getHeaderValue(headerMap, row, 'Archived');
+
+    if (
+      rowApplicantId === searchApplicantId &&
+      rowIcrn === searchIcrn &&
+      rowPosition === searchPosition &&
+      archived !== 'true'
+    ) {
+      return getHeaderValue(headerMap, row, 'ID');
+    }
+  }
+
   return null;
+}
+
+/**
+ * Find all applications linked to a referrer by their iRREF.
+ */
+export async function findApplicationsByReferrerIrref(
+  referrerIrref: string,
+  includeArchived: boolean = false,
+): Promise<Array<{ id: string; rowIndex: number }>> {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME);
+  const headerMap = buildHeaderMap(headers);
+
+  const results: Array<{ id: string; rowIndex: number }> = [];
+  const searchIrref = referrerIrref.trim().toLowerCase();
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowReferrerIrref = getHeaderValue(headerMap, row, 'Referrer iRREF').toLowerCase();
+    const archived = getHeaderValue(headerMap, row, 'Archived');
+
+    if (rowReferrerIrref === searchIrref) {
+      if (includeArchived || archived !== 'true') {
+        results.push({
+          id: getHeaderValue(headerMap, row, 'ID'),
+          rowIndex: i + 2, // +1 for header, +1 for 1-indexed
+        });
+      }
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Archive an applicant and cascade archive all their applications.
+ */
+export async function archiveApplicantByIrain(
+  irain: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'already_archived' | 'error'; archivedApplications?: number }> {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+  await ensureColumns(APPLICANT_SHEET_NAME, ARCHIVE_COLUMNS);
+  await ensureColumns(APPLICATION_SHEET_NAME, ARCHIVE_COLUMNS);
+
+  const applicant = await getApplicantByIrain(irain);
+  if (!applicant) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  // Check if already archived
+  if (applicant.record.archived === 'true') {
+    return { success: false, reason: 'already_archived' };
+  }
+
+  try {
+    // 1. Find and archive related applications (cascade)
+    const relatedApps = await findApplicationsByApplicantId(irain, false);
+    for (const app of relatedApps) {
+      await archiveRowById(APPLICATION_SHEET_NAME, 'ID', app.id, irain);
+    }
+
+    // 2. Archive the applicant
+    const result = await archiveRowById(APPLICANT_SHEET_NAME, 'iRAIN', irain);
+
+    return {
+      success: result.success,
+      reason: result.reason,
+      archivedApplications: relatedApps.length,
+    };
+  } catch (error) {
+    console.error('Error archiving applicant', error);
+    return { success: false, reason: 'error' };
+  }
+}
+
+/**
+ * Archive a referrer and cascade archive all their applications.
+ */
+export async function archiveReferrerByIrref(
+  irref: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'already_archived' | 'error'; archivedApplications?: number }> {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureColumns(REFERRER_SHEET_NAME, ARCHIVE_COLUMNS);
+  await ensureColumns(APPLICATION_SHEET_NAME, ARCHIVE_COLUMNS);
+
+  const referrer = await getReferrerByIrref(irref);
+  if (!referrer) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  // Check if already archived
+  if (referrer.record.archived === 'true') {
+    return { success: false, reason: 'already_archived' };
+  }
+
+  try {
+    // 1. Find and archive related applications (cascade)
+    const relatedApps = await findApplicationsByReferrerIrref(irref, false);
+    for (const app of relatedApps) {
+      await archiveRowById(APPLICATION_SHEET_NAME, 'ID', app.id, irref);
+    }
+
+    // 2. Archive the referrer
+    const result = await archiveRowById(REFERRER_SHEET_NAME, 'iRREF', irref);
+
+    return {
+      success: result.success,
+      reason: result.reason,
+      archivedApplications: relatedApps.length,
+    };
+  } catch (error) {
+    console.error('Error archiving referrer', error);
+    return { success: false, reason: 'error' };
+  }
+}
+
+/**
+ * List only archived applicants.
+ */
+export async function listArchivedApplicants(params: Omit<ApplicantListParams, 'includeArchived'>) {
+  const result = await listApplicants({ ...params, includeArchived: true });
+  const items = result.items as Array<{ archived?: string }>;
+  const archivedItems = items.filter((item) => item.archived === 'true');
+  return {
+    total: archivedItems.length,
+    items: archivedItems,
+  };
+}
+
+/**
+ * List only archived referrers.
+ */
+export async function listArchivedReferrers(params: Omit<ReferrerListParams, 'includeArchived'>) {
+  const result = await listReferrers({ ...params, includeArchived: true });
+  const items = result.items as Array<{ archived?: string }>;
+  const archivedItems = items.filter((item) => item.archived === 'true');
+  return {
+    total: archivedItems.length,
+    items: archivedItems,
+  };
+}
+
+/**
+ * List only archived applications.
+ */
+export async function listArchivedApplications(params: Omit<ApplicationListParams, 'includeArchived'>) {
+  const result = await listApplications({ ...params, includeArchived: true });
+  const archivedItems = result.items.filter((item) => item.archived === 'true');
+  return {
+    total: archivedItems.length,
+    items: archivedItems,
+  };
+}
+
+// ============================================================================
+// Restore Functions
+// ============================================================================
+
+/**
+ * Restore an archived applicant (does NOT cascade restore applications).
+ */
+export async function restoreApplicantByIrain(
+  irain: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+  await ensureColumns(APPLICANT_SHEET_NAME, ARCHIVE_COLUMNS);
+
+  const applicant = await getApplicantByIrain(irain);
+  if (!applicant) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  if (applicant.record.archived !== 'true') {
+    return { success: false, reason: 'not_archived' };
+  }
+
+  try {
+    const result = await updateRowById(APPLICANT_SHEET_NAME, 'iRAIN', irain, {
+      Archived: '',
+      ArchivedAt: '',
+      ArchivedBy: '',
+    });
+
+    return { success: result.updated, reason: result.reason === 'not_found' ? 'not_found' : undefined };
+  } catch (error) {
+    console.error('Error restoring applicant', error);
+    return { success: false, reason: 'error' };
+  }
+}
+
+/**
+ * Restore an archived referrer (does NOT cascade restore applications).
+ */
+export async function restoreReferrerByIrref(
+  irref: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureColumns(REFERRER_SHEET_NAME, ARCHIVE_COLUMNS);
+
+  const referrer = await getReferrerByIrref(irref);
+  if (!referrer) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  if (referrer.record.archived !== 'true') {
+    return { success: false, reason: 'not_archived' };
+  }
+
+  try {
+    const result = await updateRowById(REFERRER_SHEET_NAME, 'iRREF', irref, {
+      Archived: '',
+      ArchivedAt: '',
+      ArchivedBy: '',
+    });
+
+    return { success: result.updated, reason: result.reason === 'not_found' ? 'not_found' : undefined };
+  } catch (error) {
+    console.error('Error restoring referrer', error);
+    return { success: false, reason: 'error' };
+  }
+}
+
+/**
+ * Restore an archived application.
+ */
+export async function restoreApplicationById(
+  id: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  await ensureColumns(APPLICATION_SHEET_NAME, ARCHIVE_COLUMNS);
+
+  const application = await getApplicationById(id);
+  if (!application) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  if (application.record.archived !== 'true') {
+    return { success: false, reason: 'not_archived' };
+  }
+
+  try {
+    const result = await updateRowById(APPLICATION_SHEET_NAME, 'ID', id, {
+      Archived: '',
+      ArchivedAt: '',
+      ArchivedBy: '',
+    });
+
+    return { success: result.updated, reason: result.reason === 'not_found' ? 'not_found' : undefined };
+  } catch (error) {
+    console.error('Error restoring application', error);
+    return { success: false, reason: 'error' };
+  }
+}
+
+// ============================================================================
+// Permanent Delete Functions (for archived records only)
+// ============================================================================
+
+/**
+ * Permanently delete an archived applicant (hard delete from sheet).
+ */
+export async function permanentlyDeleteApplicant(
+  irain: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+
+  const applicant = await getApplicantByIrain(irain);
+  if (!applicant) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  if (applicant.record.archived !== 'true') {
+    return { success: false, reason: 'not_archived' };
+  }
+
+  // Use the existing hard delete function
+  return deleteApplicantByIrain(irain);
+}
+
+/**
+ * Permanently delete an archived referrer (hard delete from sheet).
+ */
+export async function permanentlyDeleteReferrer(
+  irref: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+
+  const referrer = await getReferrerByIrref(irref);
+  if (!referrer) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  if (referrer.record.archived !== 'true') {
+    return { success: false, reason: 'not_archived' };
+  }
+
+  // Use the existing hard delete function
+  return deleteReferrerByIrref(irref);
+}
+
+/**
+ * Permanently delete an archived application (hard delete from sheet).
+ */
+export async function permanentlyDeleteApplication(
+  id: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+
+  const application = await getApplicationById(id);
+  if (!application) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  if (application.record.archived !== 'true') {
+    return { success: false, reason: 'not_archived' };
+  }
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  // Get the sheetId for the Applications sheet
+  const doc = await sheets.spreadsheets.get({ spreadsheetId });
+  const targetSheet = doc.data.sheets?.find(
+    (sheet) => sheet.properties?.title === APPLICATION_SHEET_NAME,
+  );
+  const sheetId = targetSheet?.properties?.sheetId;
+
+  if (sheetId === undefined) {
+    console.error(`Unable to find sheet "${APPLICATION_SHEET_NAME}" for deletion.`);
+    return { success: false, reason: 'error' };
+  }
+
+  try {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId,
+                dimension: 'ROWS',
+                startIndex: application.rowIndex - 1,
+                endIndex: application.rowIndex,
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    return { success: true };
+  } catch (error) {
+    console.error('Error permanently deleting application', error);
+    return { success: false, reason: 'error' };
+  }
 }

@@ -9,7 +9,7 @@ import { Confetti, useConfetti } from '@/components/Confetti';
 import { useLanguage } from '@/components/LanguageProvider';
 import { PublicFooter } from '@/components/PublicFooter';
 import { Select } from '@/components/Select';
-import { SuccessAnimation } from '@/components/SuccessAnimation';
+import { SubmissionSuccessModal } from '@/components/SubmissionSuccessModal';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 import { countryOptions } from '@/lib/countries';
 
@@ -271,8 +271,8 @@ const translations: Record<
       'Any referral I make is based on my own discretion, and I am solely responsible for complying with my company’s internal referral or hiring policies.',
       'iRefair, &Beyond Consulting, IM Power SARL and inaspire and their legal founders assume no liability at all including but not limited to: hiring outcomes, internal processes, or employer decisions.',
       'My contact and employer details will be kept confidential and will not be shared without my consent.',
-      'I may request to update or delete my information at any time by contacting info@andbeyondca.com.',
-      'My participation is entirely optional, and I can opt out at any time via contacting info@andbeyondca.com.',
+      'I may request to update or delete my information at any time by contacting us via email.',
+      'My participation is entirely optional, and I can opt out at any time by contacting us via email.',
     ],
     consentAgreement: 'I have read, understood, and agree to the above terms.',
   },
@@ -386,8 +386,8 @@ const translations: Record<
       "Toute recommandation que je fais est à ma discrétion, et je suis seul responsable du respect des politiques internes de mon entreprise en matière de recommandation ou de recrutement.",
       "iRefair, &Beyond Consulting, IM Power SARL et inaspire ainsi que leurs fondateurs légaux déclinent toute responsabilité (y compris, sans s'y limiter) concernant les résultats d'embauche, les processus internes ou les décisions de l'employeur.",
       'Mes coordonnées et informations employeur resteront confidentielles et ne seront pas partagées sans mon consentement.',
-      'Je peux demander la mise à jour ou la suppression de mes informations à tout moment en contactant info@andbeyondca.com.',
-      'Ma participation est entièrement facultative, et je peux me retirer à tout moment en contactant info@andbeyondca.com.',
+      'Je peux demander la mise à jour ou la suppression de mes informations à tout moment en nous contactant par courriel.',
+      'Ma participation est entièrement facultative, et je peux me retirer à tout moment en nous contactant par courriel.',
     ],
     consentAgreement: "J'ai lu, compris et j'accepte les conditions ci-dessus.",
   },
@@ -406,7 +406,8 @@ function ApplicantPageContent() {
   const errorBannerRef = useRef<HTMLDivElement | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const confetti = useConfetti();
-  const [showSuccessAnimation, setShowSuccessAnimation] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
   const [languageSelection, setLanguageSelection] = useState<string[]>([]);
   const [countrySelection, setCountrySelection] = useState('');
   const [locatedInCanada, setLocatedInCanada] = useState('');
@@ -421,6 +422,9 @@ function ApplicantPageContent() {
   const updateAppId = searchParams.get('appId') || '';
   const hasUpdateRequest = Boolean(updateToken && updateAppId);
   const [showUpdateBanner, setShowUpdateBanner] = useState(hasUpdateRequest);
+  const [prefillLoading, setPrefillLoading] = useState(hasUpdateRequest);
+  const [prefillError, setPrefillError] = useState('');
+  const [updatePurpose, setUpdatePurpose] = useState<'cv' | 'info'>('cv');
 
   const t = translations[language];
 
@@ -465,6 +469,78 @@ function ApplicantPageContent() {
     }
   }, [status]);
 
+  // Fetch existing applicant data for prefill when update token is present
+  useEffect(() => {
+    if (!hasUpdateRequest) return;
+
+    const fetchPrefillData = async () => {
+      try {
+        const res = await fetch(`/api/applicant/data?updateToken=${encodeURIComponent(updateToken)}&appId=${encodeURIComponent(updateAppId)}`);
+        const json = await res.json();
+
+        if (!res.ok || !json?.ok) {
+          setPrefillError(json?.error || 'Failed to load your existing data');
+          setPrefillLoading(false);
+          return;
+        }
+
+        const data = json.data;
+
+        // Set the update purpose (cv or info)
+        if (json.updatePurpose) {
+          setUpdatePurpose(json.updatePurpose);
+        }
+
+        // Set controlled state values
+        if (data.countryOfOrigin) setCountrySelection(data.countryOfOrigin);
+        if (data.locatedCanada) setLocatedInCanada(data.locatedCanada);
+        if (data.province) setProvinceSelection(data.province);
+        if (data.authorizedCanada) setAuthorizedCanada(data.authorizedCanada);
+        if (data.eligibleMoveCanada) setEligibleMoveCanada(data.eligibleMoveCanada);
+        if (data.industryType) setIndustrySelection(data.industryType);
+        if (data.employmentStatus) setEmploymentStatus(data.employmentStatus);
+
+        // Parse languages (stored as comma-separated string)
+        if (data.languages) {
+          const langs = data.languages.split(',').map((l: string) => l.trim()).filter(Boolean);
+          setLanguageSelection(langs);
+        }
+
+        // Set resume name display if they have an existing resume
+        if (data.resumeFileName) {
+          setResumeName(data.resumeFileName);
+        }
+
+        // Set uncontrolled input values via DOM after a brief delay to ensure form is mounted
+        requestAnimationFrame(() => {
+          const form = formRef.current;
+          if (!form) return;
+
+          const setInputValue = (name: string, value: string) => {
+            const input = form.querySelector(`[name="${name}"]`) as HTMLInputElement | null;
+            if (input && value) input.value = value;
+          };
+
+          setInputValue('first-name', data.firstName);
+          setInputValue('middle-name', data.middleName);
+          setInputValue('family-name', data.familyName);
+          setInputValue('email', data.email);
+          setInputValue('phone', data.phone);
+          setInputValue('languages-other', data.languagesOther);
+          setInputValue('industry-other', data.industryOther);
+        });
+
+        setPrefillLoading(false);
+      } catch (err) {
+        console.error('Error fetching prefill data:', err);
+        setPrefillError('Failed to load your existing data');
+        setPrefillLoading(false);
+      }
+    };
+
+    fetchPrefillData();
+  }, [hasUpdateRequest, updateToken, updateAppId]);
+
   const handleFieldChange = (field: string) => () => clearError(field);
   const handleLinkedInChange = () => {
     linkedinInputRef.current?.setCustomValidity('');
@@ -506,6 +582,37 @@ function ApplicantPageContent() {
   };
 
   const toSingleValue = (value: string | string[]) => (Array.isArray(value) ? value[0] ?? '' : value ?? '');
+
+  const renderConsentPoint = (point: string) => {
+    const email = 'irefair.andbeyondconsulting@gmail.com';
+    const linkTextEn = 'contacting us via email';
+    const linkTextFr = 'nous contactant par courriel';
+    const linkStyle = { textDecoration: 'underline', color: 'inherit' };
+
+    if (point.includes(linkTextEn)) {
+      const parts = point.split(linkTextEn);
+      return (
+        <>
+          {parts[0]}
+          <a href={`mailto:${email}`} style={linkStyle}>{linkTextEn}</a>
+          {parts.slice(1).join(linkTextEn)}
+        </>
+      );
+    }
+
+    if (point.includes(linkTextFr)) {
+      const parts = point.split(linkTextFr);
+      return (
+        <>
+          {parts[0]}
+          <a href={`mailto:${email}`} style={linkStyle}>{linkTextFr}</a>
+          {parts.slice(1).join(linkTextFr)}
+        </>
+      );
+    }
+
+    return point;
+  };
 
   const getFormValues = (formData: FormData) => {
     const valueOf = (key: string) => ((formData.get(key) as string | null)?.trim() || '');
@@ -588,13 +695,7 @@ function ApplicantPageContent() {
       nextErrors['country-of-origin'] = 'Please select your country of origin.';
     }
 
-    if (!values.consentLegal) {
-      nextErrors['consent-legal'] = 'Please confirm your consent to proceed.';
-    }
-
-    if (!values.linkedin) {
-      nextErrors.linkedin = 'Please enter your LinkedIn profile URL.';
-    } else if (!isValidLinkedInProfileUrl(values.linkedin)) {
+    if (values.linkedin && !isValidLinkedInProfileUrl(values.linkedin)) {
       nextErrors.linkedin = 'Please enter a valid LinkedIn profile URL.';
     }
 
@@ -665,6 +766,13 @@ function ApplicantPageContent() {
       return;
     }
 
+    // Use browser native validation for consent checkbox
+    const consentCheckbox = event.currentTarget.querySelector<HTMLInputElement>('#consent-legal');
+    if (consentCheckbox && !consentCheckbox.checkValidity()) {
+      consentCheckbox.reportValidity();
+      return;
+    }
+
     setErrors({});
     setStatus('submitting');
     setSubmitting(true);
@@ -717,8 +825,9 @@ function ApplicantPageContent() {
       }
 
       setStatus('ok');
+      setSubmittedEmail(values.email);
+      setShowSuccessModal(true);
       confetti.trigger();
-      setShowSuccessAnimation(true);
     } catch {
       setStatus('error');
     } finally {
@@ -770,18 +879,56 @@ function ApplicantPageContent() {
           </div>
 
           {showUpdateBanner && (
-            <div className="update-request-banner" role="alert">
+            <div className={`update-request-banner${prefillError ? ' update-request-banner--error' : ''}`} role="alert">
               <div className="update-request-banner__content">
-                <strong>
-                  {language === 'fr'
-                    ? 'Un référent a demandé une mise à jour de votre candidature.'
-                    : 'A referrer requested an update for your application.'}
-                </strong>
-                <p>
-                  {language === 'fr'
-                    ? 'Veuillez mettre à jour vos informations et soumettre à nouveau le formulaire.'
-                    : 'Please update your information and resubmit the form below.'}
-                </p>
+                {prefillLoading ? (
+                  <>
+                    <strong>
+                      {language === 'fr'
+                        ? 'Chargement de vos informations...'
+                        : 'Loading your information...'}
+                    </strong>
+                    <p>
+                      {language === 'fr'
+                        ? 'Veuillez patienter pendant que nous récupérons vos données.'
+                        : 'Please wait while we fetch your existing data.'}
+                    </p>
+                  </>
+                ) : prefillError ? (
+                  <>
+                    <strong>
+                      {language === 'fr'
+                        ? 'Impossible de charger vos informations'
+                        : 'Could not load your information'}
+                    </strong>
+                    <p>
+                      {prefillError}. {language === 'fr'
+                        ? 'Vous pouvez toujours remplir le formulaire manuellement.'
+                        : 'You can still fill out the form manually.'}
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <strong>
+                      {updatePurpose === 'cv'
+                        ? (language === 'fr'
+                            ? 'Un référent a demandé une mise à jour de votre CV.'
+                            : 'A referrer requested an updated CV.')
+                        : (language === 'fr'
+                            ? 'Un référent a demandé des informations supplémentaires.'
+                            : 'A referrer requested additional information.')}
+                    </strong>
+                    <p>
+                      {updatePurpose === 'cv'
+                        ? (language === 'fr'
+                            ? 'Vos informations existantes ont été pré-remplies. Veuillez téléverser un nouveau CV et soumettre le formulaire.'
+                            : 'Your existing information has been pre-filled. Please upload a new CV and resubmit the form.')
+                        : (language === 'fr'
+                            ? 'Vos informations existantes ont été pré-remplies. Veuillez mettre à jour vos informations et soumettre le formulaire.'
+                            : 'Your existing information has been pre-filled. Please update your information and resubmit the form.')}
+                    </p>
+                  </>
+                )}
               </div>
               <button
                 type="button"
@@ -802,6 +949,7 @@ function ApplicantPageContent() {
               className="referral-form"
               action="#"
               method="post"
+              noValidate
               onSubmit={handleSubmit}
               onReset={() => {
                 setErrors({});
@@ -1133,7 +1281,9 @@ function ApplicantPageContent() {
                     </p>
                   </div>
                   <div className={fieldClass('field', 'linkedin')}>
-                    <label htmlFor="linkedin">{t.labels.linkedin}</label>
+                    <label htmlFor="linkedin">
+                      {t.labels.linkedin} <span className="optional">{t.optional}</span>
+                    </label>
                     <input
                       id="linkedin"
                       name="linkedin"
@@ -1141,7 +1291,6 @@ function ApplicantPageContent() {
                       inputMode="url"
                       autoComplete="url"
                       ref={linkedinInputRef}
-                      required
                       aria-invalid={Boolean(errors.linkedin)}
                       aria-describedby="linkedin-error"
                       placeholder={t.placeholders.linkedin}
@@ -1214,22 +1363,17 @@ function ApplicantPageContent() {
                   <p>{t.consentIntro}</p>
                   <ul className="consent-list">
                     {t.consentPoints.map((item, index) => (
-                      <li key={index}>{item}</li>
+                      <li key={index}>{renderConsentPoint(item)}</li>
                     ))}
                   </ul>
-                  <div className={fieldClass('consent-checkbox', 'consent-legal')}>
+                  <div className="consent-checkbox consent-legal">
                     <input
                       id="consent-legal"
                       name="consent-legal"
                       type="checkbox"
                       required
-                      aria-describedby="consent-legal-error"
-                      onChange={handleFieldChange('consent-legal')}
                     />
                     <label htmlFor="consent-legal">{t.consentAgreement}</label>
-                    <p className="field-error" id="consent-legal-error" role="alert" aria-live="polite">
-                      {errors['consent-legal']}
-                    </p>
                   </div>
                 </div>
               </section>
@@ -1238,12 +1382,6 @@ function ApplicantPageContent() {
                 <div className="footer-status">
                   {status === 'ok' && (
                     <div className="status-banner status-banner--ok" role="status" aria-live="polite">
-                      <SuccessAnimation
-                        show={showSuccessAnimation}
-                        variant="default"
-                        size="sm"
-                        onAnimationComplete={() => setShowSuccessAnimation(false)}
-                      />
                       <span>{t.statusMessages.ok}</span>
                     </div>
                   )}
@@ -1281,6 +1419,12 @@ function ApplicantPageContent() {
       </main>
       <PublicFooter />
       <Confetti active={confetti.active} onComplete={confetti.reset} />
+      <SubmissionSuccessModal
+        open={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        email={submittedEmail}
+        locale={language}
+      />
     </AppShell>
   );
 }

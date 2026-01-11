@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
 import { EmptyState } from "@/components/founder/EmptyState";
+import { FilterBar, type FilterConfig } from "@/components/founder/FilterBar";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
 
@@ -34,6 +35,8 @@ type ReferrerRecord = {
 
 const statusOptions = ["", "New", "Engaged", "Active", "Paused", "Closed"];
 
+const PAGE_SIZE = 10;
+
 function PencilIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -45,27 +48,36 @@ function PencilIcon() {
   );
 }
 
-export default function ReferrersPage() {
+function ReferrersPageContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get("search") || "";
+
   const [items, setItems] = useState<ReferrerRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const [search, setSearch] = useState(initialSearch);
   const [statusFilter, setStatusFilter] = useState("");
   const [companyFilter, setCompanyFilter] = useState("");
   const [approvalFilter, setApprovalFilter] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(searchInput.trim()), 300);
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, companyFilter, approvalFilter]);
+
   const fetchReferrers = async () => {
     setLoading(true);
     const params = new URLSearchParams();
-    params.set("limit", "50");
-    params.set("offset", "0");
+    params.set("limit", String(PAGE_SIZE));
+    params.set("offset", String((currentPage - 1) * PAGE_SIZE));
     if (search) params.set("search", search);
     if (statusFilter) params.set("status", statusFilter);
     if (companyFilter) params.set("company", companyFilter);
@@ -88,7 +100,7 @@ export default function ReferrersPage() {
   useEffect(() => {
     fetchReferrers();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, statusFilter, companyFilter, approvalFilter]);
+  }, [search, statusFilter, companyFilter, approvalFilter, currentPage]);
 
   const handleRowClick = useCallback(
     (row: ReferrerRecord) => {
@@ -203,6 +215,41 @@ export default function ReferrersPage() {
     [],
   );
 
+  const filters = useMemo<FilterConfig[]>(
+    () => [
+      {
+        type: "text",
+        key: "company",
+        placeholder: "Filter by company",
+        value: companyFilter,
+        onChange: setCompanyFilter,
+      },
+      {
+        type: "select",
+        key: "status",
+        label: "All statuses",
+        value: statusFilter,
+        options: statusOptions
+          .filter((value) => value)
+          .map((value) => ({ value: value.toLowerCase(), label: value })),
+        onChange: setStatusFilter,
+      },
+      {
+        type: "select",
+        key: "approval",
+        label: "All approvals",
+        value: approvalFilter,
+        options: [
+          { value: "pending", label: "Pending" },
+          { value: "approved", label: "Approved" },
+          { value: "denied", label: "Denied" },
+        ],
+        onChange: setApprovalFilter,
+      },
+    ],
+    [companyFilter, statusFilter, approvalFilter],
+  );
+
   return (
     <div className="founder-page">
       <Topbar
@@ -211,33 +258,9 @@ export default function ReferrersPage() {
         searchValue={searchInput}
         searchPlaceholder="Search by name, email, company..."
         onSearchChange={setSearchInput}
-        actions={
-          <div className="founder-toolbar">
-            <input
-              type="text"
-              placeholder="Filter company"
-              value={companyFilter}
-              onChange={(event) => setCompanyFilter(event.target.value)}
-            />
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-              <option value="">All statuses</option>
-              {statusOptions
-                .filter((value) => value)
-                .map((value) => (
-                  <option key={value} value={value.toLowerCase()}>
-                    {value}
-                  </option>
-                ))}
-            </select>
-            <select value={approvalFilter} onChange={(event) => setApprovalFilter(event.target.value)}>
-              <option value="">All approvals</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="denied">Denied</option>
-            </select>
-          </div>
-        }
       />
+
+      <FilterBar filters={filters} />
 
       <OpsDataTable<ReferrerRecord>
         columns={columns}
@@ -255,7 +278,19 @@ export default function ReferrersPage() {
           row.email ? `Open referrer review for ${row.email}` : `Open referrer review for ${row.irref}`
         }
         tableClassName="referrers-table"
+        pageSize={PAGE_SIZE}
+        totalItems={total}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
       />
     </div>
+  );
+}
+
+export default function ReferrersPage() {
+  return (
+    <Suspense>
+      <ReferrersPageContent />
+    </Suspense>
   );
 }

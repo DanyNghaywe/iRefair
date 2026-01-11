@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
 import { Badge } from "@/components/founder/Badge";
 import { EmptyState } from "@/components/founder/EmptyState";
+import { FilterBar, type FilterConfig } from "@/components/founder/FilterBar";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
 
@@ -29,6 +30,7 @@ type CandidateRecord = {
   employmentStatus: string;
   legacyCandidateId: string;
   status: string;
+  registrationStatus: string;
   ownerNotes: string;
   tags: string;
   lastContactedAt: string;
@@ -50,26 +52,37 @@ function PencilIcon() {
   );
 }
 
-export default function CandidatesPage() {
+const PAGE_SIZE = 10;
+
+function CandidatesPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get("search") || "";
+
   const [items, setItems] = useState<CandidateRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [searchInput, setSearchInput] = useState("");
-  const [search, setSearch] = useState("");
+  const [searchInput, setSearchInput] = useState(initialSearch);
+  const [search, setSearch] = useState(initialSearch);
   const [statusFilter, setStatusFilter] = useState("");
   const [eligibleFilter, setEligibleFilter] = useState<"all" | "eligible" | "ineligible">("all");
-  const router = useRouter();
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const timer = setTimeout(() => setSearch(searchInput.trim()), 300);
     return () => clearTimeout(timer);
   }, [searchInput]);
 
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter, eligibleFilter]);
+
   const fetchCandidates = async () => {
     setLoading(true);
     const params = new URLSearchParams();
-    params.set("limit", "50");
-    params.set("offset", "0");
+    params.set("limit", String(PAGE_SIZE));
+    params.set("offset", String((currentPage - 1) * PAGE_SIZE));
     if (search) params.set("search", search);
     if (statusFilter) params.set("status", statusFilter);
     if (eligibleFilter === "eligible") params.set("eligible", "true");
@@ -87,7 +100,7 @@ export default function CandidatesPage() {
   useEffect(() => {
     fetchCandidates();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, statusFilter, eligibleFilter]);
+  }, [search, statusFilter, eligibleFilter, currentPage]);
 
   const handleRowClick = (row: CandidateRecord) => {
     router.push(`/founder/applicants/${encodeURIComponent(row.irain)}`);
@@ -125,7 +138,20 @@ export default function CandidatesPage() {
           <Badge tone={row.eligibility.eligible ? "success" : "danger"}>{row.eligibility.reason}</Badge>
         ),
       },
-      { key: "status", label: "Status", width: "140px", nowrap: true, sortable: true },
+      {
+        key: "status",
+        label: "Status",
+        width: "180px",
+        nowrap: true,
+        sortable: true,
+        render: (row: CandidateRecord) => {
+          if (row.status) return row.status;
+          if (row.registrationStatus) {
+            return <Badge tone="warning">{row.registrationStatus}</Badge>;
+          }
+          return "-";
+        },
+      },
       { key: "province", label: "Province", width: "140px", nowrap: true, sortable: true },
       {
         key: "quickEdit",
@@ -157,6 +183,33 @@ export default function CandidatesPage() {
     [router],
   );
 
+  const filters = useMemo<FilterConfig[]>(
+    () => [
+      {
+        type: "select",
+        key: "eligibility",
+        label: "All eligibility",
+        value: eligibleFilter === "all" ? "" : eligibleFilter,
+        options: [
+          { value: "eligible", label: "Eligible" },
+          { value: "ineligible", label: "Ineligible" },
+        ],
+        onChange: (value) => setEligibleFilter(value === "" ? "all" : (value as "eligible" | "ineligible")),
+      },
+      {
+        type: "select",
+        key: "status",
+        label: "All statuses",
+        value: statusFilter,
+        options: statusOptions
+          .filter((status) => status)
+          .map((value) => ({ value: value.toLowerCase(), label: value })),
+        onChange: setStatusFilter,
+      },
+    ],
+    [eligibleFilter, statusFilter],
+  );
+
   return (
     <div className="founder-page">
       <Topbar
@@ -165,31 +218,9 @@ export default function CandidatesPage() {
         searchValue={searchInput}
         searchPlaceholder="Search by name, email, iRAIN..."
         onSearchChange={setSearchInput}
-        actions={
-          <div className="founder-toolbar">
-            <select
-              value={eligibleFilter}
-              onChange={(event) =>
-                setEligibleFilter(event.target.value as "all" | "eligible" | "ineligible")
-              }
-            >
-              <option value="all">Eligibility</option>
-              <option value="eligible">Eligible</option>
-              <option value="ineligible">Ineligible</option>
-            </select>
-            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
-              <option value="">All statuses</option>
-              {statusOptions
-                .filter((status) => status)
-                .map((value) => (
-                  <option key={value} value={value.toLowerCase()}>
-                    {value}
-                  </option>
-                ))}
-            </select>
-          </div>
-        }
       />
+
+      <FilterBar filters={filters} />
 
       {/* Candidates table reference:
           - Wrapper chain: founder-page -> OpsDataTable (adds founder-card) -> DataTable -> div.founder-table > .founder-table__container (overflow: auto scroll) > table.data-table.candidates-table.
@@ -209,7 +240,19 @@ export default function CandidatesPage() {
         }
         onRowClick={handleRowClick}
         tableClassName="candidates-table"
+        pageSize={PAGE_SIZE}
+        totalItems={total}
+        currentPage={currentPage}
+        onPageChange={setCurrentPage}
       />
     </div>
+  );
+}
+
+export default function CandidatesPage() {
+  return (
+    <Suspense>
+      <CandidatesPageContent />
+    </Suspense>
   );
 }

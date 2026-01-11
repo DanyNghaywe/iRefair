@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
-import { getReferrerByIrref, updateReferrerFields } from '@/lib/sheets';
+import { archiveReferrerByIrref, getReferrerByIrref, updateReferrerFields } from '@/lib/sheets';
 import { normalizeHttpUrl } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
@@ -160,6 +160,39 @@ export async function PATCH(
     console.error('Error updating referrer admin fields', error);
     return NextResponse.json(
       { ok: false, error: 'Unable to update referrer.' },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ irain: string }> },
+) {
+  const params = await context.params;
+
+  try {
+    requireFounder(request);
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const result = await archiveReferrerByIrref(params.irain);
+    if (!result.success) {
+      if (result.reason === 'not_found') {
+        return NextResponse.json({ ok: false, error: 'Referrer not found' }, { status: 404 });
+      }
+      if (result.reason === 'already_archived') {
+        return NextResponse.json({ ok: false, error: 'Referrer is already archived' }, { status: 400 });
+      }
+      return NextResponse.json({ ok: false, error: 'Unable to archive referrer.' }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, archivedApplications: result.archivedApplications });
+  } catch (error) {
+    console.error('Error archiving referrer', error);
+    return NextResponse.json(
+      { ok: false, error: 'Unable to archive referrer.' },
       { status: 500 },
     );
   }

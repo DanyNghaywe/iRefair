@@ -4,35 +4,31 @@ import { uploadFileToDrive } from "@/lib/drive";
 import { sendMail } from "@/lib/mailer";
 import { rateLimit, rateLimitHeaders, RATE_LIMITS } from "@/lib/rateLimit";
 import {
-  applicantRegistrationConfirmation,
-  applicantIneligibleNotification,
   applicantProfileUpdateConfirmation,
+  newApplicantRegistrationConfirmation,
 } from "@/lib/emailTemplates";
 import {
-  APPLICANT_SECRET_HASH_HEADER,
   APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
   APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
   APPLICANT_UPDATE_TOKEN_HASH_HEADER,
+  APPLICANT_REGISTRATION_STATUS_HEADER,
   APPLICANT_SHEET_NAME,
+  cleanupExpiredPendingApplicants,
+  cleanupExpiredPendingUpdates,
   ensureColumns,
   generateIRAIN,
   getApplicantByEmail,
   findExistingApplicant,
-  getApplicationById,
   isIrain,
-  updateApplicationAdmin,
   updateRowById,
   upsertApplicantRow,
 } from "@/lib/sheets";
 import { jobOpeningsUrl } from "@/lib/urls";
 import { escapeHtml, normalizeHttpUrl } from "@/lib/validation";
 import {
-  createApplicantSecret,
   createApplicantUpdateToken,
-  hashApplicantSecret,
   hashToken,
 } from "@/lib/applicantUpdateToken";
-import { hashOpaqueToken, isExpired } from "@/lib/tokens";
 
 type EmailLanguage = "en" | "fr";
 
@@ -100,6 +96,14 @@ export async function POST(request: Request) {
     );
   }
 
+  // Cleanup expired pending registrations and updates in the background
+  cleanupExpiredPendingApplicants().catch((err) => {
+    console.error("Error cleaning up expired pending applicants:", err);
+  });
+  cleanupExpiredPendingUpdates().catch((err) => {
+    console.error("Error cleaning up expired pending updates:", err);
+  });
+
   try {
     const form = await request.formData();
     const valueOf = (key: string) => sanitize(form.get(key));
@@ -145,6 +149,15 @@ export async function POST(request: Request) {
 
     // Check for existing applicant using 2-of-3 matching (name, email, phone)
     const existingApplicant = await findExistingApplicant(firstName, familyName, email, phone);
+
+    // Block archived applicants from registering or updating their profile
+    if (existingApplicant?.record.archived?.toLowerCase() === 'true') {
+      return NextResponse.json(
+        { ok: false, error: 'This applicant profile has been archived and can no longer be updated.' },
+        { status: 403 },
+      );
+    }
+
     const isExistingApplicant = existingApplicant !== null;
     const existingId = existingApplicant?.record.id || "";
     const shouldAssignNewIrain = Boolean(existingApplicant) && !isIrain(existingId);
@@ -165,7 +178,9 @@ export async function POST(request: Request) {
     const legacyApplicantId = shouldAssignNewIrain
       ? existingApplicant?.record.legacyApplicantId || existingId || undefined
       : undefined;
-    const isIneligible = locatedCanada.toLowerCase() === "no" && eligibleMoveCanada.toLowerCase() === "no";
+    const isIneligible =
+      (locatedCanada.toLowerCase() === "no" && eligibleMoveCanada.toLowerCase() === "no") ||
+      (locatedCanada.toLowerCase() === "yes" && authorizedCanada.toLowerCase() === "no");
     let resumeFileId: string | undefined;
     let resumeFileName: string | undefined;
 
@@ -249,6 +264,14 @@ export async function POST(request: Request) {
     const emailMatchesExisting = existingApplicant &&
       existingApplicant.record.email.trim().toLowerCase() === email.trim().toLowerCase();
 
+    // If existing applicant with matching email is still pending confirmation, prompt them to confirm
+    if (existingApplicant && emailMatchesExisting) {
+      const registrationStatus = existingApplicant.record.registrationStatus?.trim() || "";
+      if (registrationStatus === "Pending Confirmation") {
+        return NextResponse.json({ ok: true, needsEmailConfirm: true });
+      }
+    }
+
     if (existingApplicant && !emailMatchesExisting) {
       // Email is different, require confirmation before updating
       const exp = Math.floor(Date.now() / 1000) + UPDATE_TOKEN_TTL_SECONDS;
@@ -320,11 +343,94 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: true, needsEmailConfirm: true });
     }
 
-    // For new applicants OR existing applicants with matching email,
-    // proceed with direct update/insert
+    // For NEW applicants, require email confirmation before creating the profile
+    if (!existingApplicant) {
+      // Insert the applicant row with "Pending Confirmation" status
+      const upsertResult = await upsertApplicantRow({
+        id: iRain,
+        firstName,
+        middleName,
+        familyName,
+        email,
+        phone,
+        locatedCanada,
+        province,
+        authorizedCanada,
+        eligibleMoveCanada,
+        countryOfOrigin,
+        languages: languagesSnapshot,
+        languagesOther,
+        industryType,
+        industryOther,
+        employmentStatus,
+      });
 
-    const upsertResult = await upsertApplicantRow({
-      id: iRain,
+      // Create confirmation token (use rowIndex 0 as placeholder for new applicants - we'll look up by email)
+      const exp = Math.floor(Date.now() / 1000) + UPDATE_TOKEN_TTL_SECONDS;
+      const token = createApplicantUpdateToken({
+        email,
+        rowIndex: 0, // Not used for new applicants - lookup by email instead
+        exp,
+      });
+      const tokenHash = hashToken(token);
+
+      // Store token and set pending status
+      const requiredColumns = [
+        APPLICANT_UPDATE_TOKEN_HASH_HEADER,
+        APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
+        APPLICANT_REGISTRATION_STATUS_HEADER,
+      ];
+      if (resumeFileId || resumeFileName) {
+        requiredColumns.push("Resume File Name", "Resume File ID", "Resume URL");
+      }
+      await ensureColumns(APPLICANT_SHEET_NAME, requiredColumns);
+
+      const applicantRowUpdates: Record<string, string | undefined> = {
+        [APPLICANT_UPDATE_TOKEN_HASH_HEADER]: tokenHash,
+        [APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER]: new Date(exp * 1000).toISOString(),
+        [APPLICANT_REGISTRATION_STATUS_HEADER]: "Pending Confirmation",
+      };
+      if (resumeFileId || resumeFileName) {
+        applicantRowUpdates["Resume File Name"] = resumeFileName;
+        applicantRowUpdates["Resume File ID"] = resumeFileId;
+        applicantRowUpdates["Resume URL"] = "";
+      }
+
+      const updateResult = await updateRowById(APPLICANT_SHEET_NAME, "iRAIN", upsertResult.id, applicantRowUpdates);
+      if (!updateResult.updated) {
+        return NextResponse.json({ ok: false, error: "Failed to save applicant profile." }, { status: 500 });
+      }
+
+      // Send registration confirmation email
+      const confirmUrl = new URL("/api/applicant/confirm-registration", appBaseUrl);
+      confirmUrl.searchParams.set("token", token);
+
+      const emailTemplate = newApplicantRegistrationConfirmation({
+        firstName,
+        confirmUrl: confirmUrl.toString(),
+        locale,
+      });
+
+      await sendMail({
+        to: email,
+        subject: emailTemplate.subject,
+        html: emailTemplate.html,
+        text: emailTemplate.text,
+      });
+
+      return NextResponse.json({ ok: true, needsEmailConfirm: true });
+    }
+
+    // For existing applicants with matching email, also require confirmation before updating
+    // This ensures the person submitting the form owns the email address
+    const exp = Math.floor(Date.now() / 1000) + UPDATE_TOKEN_TTL_SECONDS;
+    const token = createApplicantUpdateToken({
+      email: existingApplicant.record.email,
+      rowIndex: existingApplicant.rowIndex,
+      exp,
+    });
+    const tokenHash = hashToken(token);
+    const pendingPayload: PendingApplicantUpdatePayload = {
       firstName,
       middleName,
       familyName,
@@ -340,89 +446,41 @@ export async function POST(request: Request) {
       industryType,
       industryOther,
       employmentStatus,
-    });
-    const applicantSecret = createApplicantSecret();
-    const applicantSecretHash = hashApplicantSecret(applicantSecret);
-    const applicantRowUpdates: Record<string, string | undefined> = {
-      [APPLICANT_SECRET_HASH_HEADER]: applicantSecretHash,
+      resumeFileId,
+      resumeFileName,
+      locale,
     };
-    const requiredColumns = [APPLICANT_SECRET_HASH_HEADER];
-    if (resumeFileId || resumeFileName) {
-      applicantRowUpdates["Resume File Name"] = resumeFileName;
-      applicantRowUpdates["Resume File ID"] = resumeFileId;
-      applicantRowUpdates["Resume URL"] = "";
-      requiredColumns.push("Resume File Name", "Resume File ID", "Resume URL");
-    }
-    await ensureColumns(APPLICANT_SHEET_NAME, requiredColumns);
-    const updateResult = await updateRowById(APPLICANT_SHEET_NAME, "iRAIN", upsertResult.id, applicantRowUpdates);
-    if (!updateResult.updated) {
-      return NextResponse.json({ ok: false, error: "Failed to save applicant profile." }, { status: 500 });
-    }
 
-    // Handle update-request token validation and clearing (from referrer portal flow)
-    let updateRequestCleared = false;
-    if (updateRequestToken && updateRequestApplicationId) {
-      try {
-        const application = await getApplicationById(updateRequestApplicationId);
-        if (application?.record) {
-          const storedHash = application.record.updateRequestTokenHash || "";
-          const storedExpiry = application.record.updateRequestExpiresAt || "";
-          const providedHash = hashOpaqueToken(updateRequestToken);
-
-          // Validate: hash matches and not expired
-          if (storedHash && storedHash === providedHash && !isExpired(storedExpiry)) {
-            // Clear the update request fields
-            await updateApplicationAdmin(updateRequestApplicationId, {
-              updateRequestTokenHash: "",
-              updateRequestExpiresAt: "",
-              updateRequestPurpose: "",
-            });
-            updateRequestCleared = true;
-          }
-        }
-      } catch (err) {
-        // Log but don't fail the submission - token clearing is best-effort
-        console.error("Error clearing update request token:", err);
+    if (shouldAssignNewIrain) {
+      pendingPayload.id = iRain;
+      if (legacyApplicantId) {
+        pendingPayload.legacyApplicantId = legacyApplicantId;
       }
     }
 
-    const finalIRain = upsertResult.id;
+    await ensureColumns(APPLICANT_SHEET_NAME, [
+      APPLICANT_UPDATE_TOKEN_HASH_HEADER,
+      APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
+      APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
+    ]);
 
-    // Override wasUpdated based on our 2-of-3 detection
-    // This is true if we found an existing applicant with matching email (not requiring confirmation)
-    const wasUpdated = isExistingApplicant && emailMatchesExisting;
-
-    const shouldIncludeStatusNote = upsertResult.wasUpdated && !isIneligible;
-    const statusNote = shouldIncludeStatusNote
-      ? locale === "fr"
-        ? "Nous avons mis a jour votre demande avec les dernieres informations fournies."
-        : "We updated your referral request with the latest details you shared."
-      : undefined;
-
-    // Determine which template to use and generate email
-    let emailTemplate;
-
-    if (isIneligible) {
-      emailTemplate = applicantIneligibleNotification({
-        firstName,
-        iRain: finalIRain,
-        applicantKey: applicantSecret,
-        locale,
-      });
-    } else {
-      emailTemplate = applicantRegistrationConfirmation({
-        firstName,
-        iRain: finalIRain,
-        location: locationSnapshot,
-        authorization: authorizationSnapshot,
-        industry: industrySnapshot,
-        languages: languagesSnapshot,
-        applicantKey: applicantSecret,
-        isUpdate: wasUpdated || undefined,
-        statusNote,
-        locale,
-      });
+    const updateResult = await updateRowById(APPLICANT_SHEET_NAME, "Email", existingApplicant.record.email, {
+      [APPLICANT_UPDATE_TOKEN_HASH_HEADER]: tokenHash,
+      [APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER]: new Date(exp * 1000).toISOString(),
+      [APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER]: JSON.stringify(pendingPayload),
+    });
+    if (!updateResult.updated) {
+      return NextResponse.json({ ok: false, error: "Failed to start update confirmation." }, { status: 500 });
     }
+
+    const confirmUrl = new URL("/api/applicant/confirm-update", appBaseUrl);
+    confirmUrl.searchParams.set("token", token);
+
+    const emailTemplate = applicantProfileUpdateConfirmation({
+      firstName,
+      confirmUrl: confirmUrl.toString(),
+      locale,
+    });
 
     await sendMail({
       to: email,
@@ -431,7 +489,7 @@ export async function POST(request: Request) {
       text: emailTemplate.text,
     });
 
-    return NextResponse.json({ ok: true, updated: wasUpdated, iRain: finalIRain });
+    return NextResponse.json({ ok: true, needsEmailConfirm: true });
   } catch (error) {
     console.error("Candidate email API error", error);
     return NextResponse.json({ ok: false, error: "Failed to send email" }, { status: 500 });

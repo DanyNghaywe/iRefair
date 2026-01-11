@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
-import { getApplicantByIrain, updateApplicantFields } from '@/lib/sheets';
+import { archiveApplicantByIrain, getApplicantByIrain, updateApplicantFields } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -109,6 +109,39 @@ export async function PATCH(
     console.error('Error updating applicant admin fields', error);
     return NextResponse.json(
       { ok: false, error: 'Unable to update applicant.' },
+      { status: 500 },
+    );
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  context: { params: Promise<{ irain: string }> },
+) {
+  const params = await context.params;
+
+  try {
+    requireFounder(request);
+  } catch {
+    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
+  }
+
+  try {
+    const result = await archiveApplicantByIrain(params.irain);
+    if (!result.success) {
+      if (result.reason === 'not_found') {
+        return NextResponse.json({ ok: false, error: 'Applicant not found' }, { status: 404 });
+      }
+      if (result.reason === 'already_archived') {
+        return NextResponse.json({ ok: false, error: 'Applicant is already archived' }, { status: 400 });
+      }
+      return NextResponse.json({ ok: false, error: 'Unable to archive applicant.' }, { status: 500 });
+    }
+    return NextResponse.json({ ok: true, archivedApplications: result.archivedApplications });
+  } catch (error) {
+    console.error('Error archiving applicant', error);
+    return NextResponse.json(
+      { ok: false, error: 'Unable to archive applicant.' },
       { status: 500 },
     );
   }

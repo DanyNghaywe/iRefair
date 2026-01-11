@@ -5,12 +5,13 @@
 }
 
 .container {
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
   width: 100%;
+  padding: 2px;
   background: linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
   border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.22);
   backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
 }
@@ -37,6 +38,8 @@
   width: 100%;
   border-collapse: collapse;
   table-layout: fixed;
+  border-radius: 18px;
+  overflow: hidden;
 }
 
 .table th,
@@ -60,7 +63,18 @@
   color: #f8fafc;
   text-transform: uppercase;
   letter-spacing: 0.05em;
+  padding: 16px;
 }
+
+.table thead th:first-child {
+  border-top-left-radius: 18px;
+}
+
+.table thead th:last-child {
+  border-top-right-radius: 18px;
+}
+
+
 
 .table tbody tr td {
   font-size: 14px;
@@ -122,6 +136,8 @@
   color: #cbd5e1;
   padding: 48px 24px;
   font-size: 15px;
+  height: 400px;
+  vertical-align: middle;
 }
 
 .headerCell {
@@ -207,4 +223,55 @@
     display: block;
     margin-bottom: 4px;
   }
+
+  .empty {
+    height: 280px;
+  }
+}
+
+/* Pagination Styles */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.paginationBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e2e8f0;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.paginationBtn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.paginationBtn:active:not(:disabled) {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.paginationBtn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.paginationInfo {
+  padding: 0 12px;
+  font-size: 14px;
+  color: #cbd5e1;
+  white-space: nowrap;
 }

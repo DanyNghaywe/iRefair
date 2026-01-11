@@ -4,6 +4,7 @@ import { requireFounder } from '@/lib/founderAuth';
 import { meetFounderInvite } from '@/lib/emailTemplates';
 import { sendMail } from '@/lib/mailer';
 import { getReferrerByIrref, updateReferrerAdmin } from '@/lib/sheets';
+import { buildReferrerPortalLink, ensureReferrerPortalTokenVersion } from '@/lib/referrerPortalLink';
 
 export const dynamic = 'force-dynamic';
 
@@ -31,7 +32,12 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
   const meetLink =
     process.env.FOUNDER_MEET_LINK ||
     'Scheduling link not configured yet. We will follow up with a calendar invitation.';
-  const template = meetFounderInvite(referrer.record.name, referrer.record.irref, meetLink);
+
+  // Generate portal link for referrer
+  const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrer.record.irref);
+  const portalUrl = buildReferrerPortalLink(referrer.record.irref, portalTokenVersion);
+
+  const template = meetFounderInvite(referrer.record.name, referrer.record.irref, meetLink, portalUrl);
 
   await sendMail({
     to: referrer.record.email,

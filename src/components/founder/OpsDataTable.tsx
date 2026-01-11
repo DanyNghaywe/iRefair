@@ -24,6 +24,14 @@ type OpsDataTableProps<T> = {
   onRowClick?: (row: T) => void;
   rowAriaLabel?: (row: T) => string;
   tableClassName?: string;
+  /** Rows per page for pagination. If not set, pagination is disabled. */
+  pageSize?: number;
+  /** Total items from server (enables server-side pagination when provided with onPageChange) */
+  totalItems?: number;
+  /** Current page for server-side pagination (1-indexed) */
+  currentPage?: number;
+  /** Callback when page changes (enables server-side pagination when provided with totalItems) */
+  onPageChange?: (page: number) => void;
 };
 
 export function OpsDataTable<T>({
@@ -34,6 +42,10 @@ export function OpsDataTable<T>({
   onRowClick,
   rowAriaLabel,
   tableClassName,
+  pageSize,
+  totalItems,
+  currentPage,
+  onPageChange,
 }: OpsDataTableProps<T>) {
   const combinedTableClassName = ["data-table", "ops-table", tableClassName].filter(Boolean).join(" ") || undefined;
 
@@ -72,6 +84,10 @@ export function OpsDataTable<T>({
           onRowClick={onRowClick}
           rowAriaLabel={rowAriaLabel}
           tableClassName={combinedTableClassName}
+          pageSize={pageSize}
+          totalItems={totalItems}
+          currentPage={currentPage}
+          onPageChange={onPageChange}
         />
       </div>
     </div>

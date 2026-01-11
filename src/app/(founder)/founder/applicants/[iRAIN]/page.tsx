@@ -1,15 +1,18 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
 import { AutosaveHint } from "@/components/founder/AutosaveHint";
 import { Badge } from "@/components/founder/Badge";
 import { DetailPageShell } from "@/components/founder/DetailPageShell";
 import { DetailSection } from "@/components/founder/DetailSection";
+import { Select } from "@/components/Select";
 import { Skeleton, SkeletonDetailGrid, SkeletonStack } from "@/components/founder/Skeleton";
 import { Topbar } from "@/components/founder/Topbar";
+import { countryOptions } from "@/lib/countries";
 
 type CandidateRecord = {
   irain: string;
@@ -37,6 +40,9 @@ type CandidateRecord = {
   nextActionAt: string;
   eligibility: { eligible: boolean; reason: string };
   missingFields: string[];
+  resumeFileName?: string;
+  resumeFileId?: string;
+  resumeUrl?: string;
 };
 
 type ApplicationRecord = {
@@ -54,6 +60,52 @@ const statusOptions = ["", "New", "Reviewed", "In Progress", "On Hold", "Closed"
 const yesNoOptions = ["", "Yes", "No"];
 const employmentOptions = ["", "Yes", "No", "Temporary Work"];
 
+const PROVINCES: string[] = [
+  "Alberta",
+  "British Columbia",
+  "Manitoba",
+  "New Brunswick",
+  "Newfoundland and Labrador",
+  "Nova Scotia",
+  "Ontario",
+  "Prince Edward Island",
+  "Quebec",
+  "Saskatchewan",
+  "Northwest Territories",
+  "Nunavut",
+  "Yukon",
+];
+
+const LANGUAGE_OPTIONS = [
+  { value: "English", label: "English" },
+  { value: "Arabic", label: "Arabic" },
+  { value: "French", label: "French" },
+  { value: "Other", label: "Other" },
+];
+
+const INDUSTRY_OPTIONS: string[] = [
+  "Information Technology (IT)",
+  "Finance / Banking / Accounting",
+  "Healthcare / Medical",
+  "Education / Academia",
+  "Engineering / Construction",
+  "Marketing / Advertising / PR",
+  "Media / Entertainment / Journalism",
+  "Legal / Law",
+  "Human Resources / Recruitment",
+  "Retail / E-commerce",
+  "Hospitality / Travel / Tourism",
+  "Logistics / Transportation",
+  "Manufacturing",
+  "Non-Profit / NGO",
+  "Real Estate",
+  "Energy / Utilities",
+  "Telecommunications",
+  "Agriculture / Food Industry",
+  "Compliance/ Audit/ Monitoring & Evaluation",
+  "Other",
+];
+
 const computeEligibility = (located: string, eligibleMove: string) => {
   const locatedYes = located.trim().toLowerCase() === "yes";
   const eligibleYes = eligibleMove.trim().toLowerCase() === "yes";
@@ -69,6 +121,7 @@ export default function CandidateReviewPage() {
   const cleanIrain = typeof irain === "string" ? irain.trim() : "";
   const searchParams = useSearchParams();
   const initialEdit = searchParams?.get("edit") === "1";
+  const router = useRouter();
 
   const [candidate, setCandidate] = useState<CandidateRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -99,10 +152,39 @@ export default function CandidateReviewPage() {
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
   const [applications, setApplications] = useState<ApplicationRecord[]>([]);
   const [appsLoading, setAppsLoading] = useState(false);
   const skipAutosaveRef = useRef(true);
-  const skipDetailsAutosaveRef = useRef(true);
+
+  // Resume upload state
+  const [resumeFileName, setResumeFileName] = useState("");
+  const [resumeFileId, setResumeFileId] = useState("");
+  const [resumeUploading, setResumeUploading] = useState(false);
+  const [resumeError, setResumeError] = useState<string | null>(null);
+  const [resumeSuccess, setResumeSuccess] = useState<string | null>(null);
+  const [pendingResumeFile, setPendingResumeFile] = useState<File | null>(null);
+  const resumeInputRef = useRef<HTMLInputElement | null>(null);
+
+  // Store original values when entering edit mode
+  const originalDetailsRef = useRef<{
+    firstName: string;
+    middleName: string;
+    familyName: string;
+    email: string;
+    phone: string;
+    locatedCanada: string;
+    province: string;
+    workAuthorization: string;
+    eligibleMoveCanada: string;
+    countryOfOrigin: string;
+    languages: string;
+    languagesOther: string;
+    industryType: string;
+    industryOther: string;
+    employmentStatus: string;
+  } | null>(null);
 
   const fullName = useMemo(
     () => [firstName, middleName, familyName].filter(Boolean).join(" ").trim(),
@@ -166,10 +248,14 @@ export default function CandidateReviewPage() {
     setStatus((candidate.status || "").toLowerCase());
     setLastContactedAt(candidate.lastContactedAt || "");
     setNextActionAt(candidate.nextActionAt || "");
+    setResumeFileName(candidate.resumeFileName || "");
+    setResumeFileId(candidate.resumeFileId || "");
     setActionMessage(null);
     setActionError(null);
+    setResumeError(null);
+    setResumeSuccess(null);
     skipAutosaveRef.current = true;
-    skipDetailsAutosaveRef.current = true;
+    originalDetailsRef.current = null;
   }, [candidate?.irain]);
 
   const fetchApplications = async (irainValue: string) => {
@@ -235,12 +321,51 @@ export default function CandidateReviewPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notes, tags, status, lastContactedAt, nextActionAt, candidate?.irain]);
 
-  useEffect(() => {
-    if (!candidate) return;
-    if (skipDetailsAutosaveRef.current) {
-      skipDetailsAutosaveRef.current = false;
-      return;
+  const handleStartEdit = () => {
+    originalDetailsRef.current = {
+      firstName,
+      middleName,
+      familyName,
+      email,
+      phone,
+      locatedCanada,
+      province,
+      workAuthorization,
+      eligibleMoveCanada,
+      countryOfOrigin,
+      languages,
+      languagesOther,
+      industryType,
+      industryOther,
+      employmentStatus,
+    };
+    setEditDetails(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (originalDetailsRef.current) {
+      setFirstName(originalDetailsRef.current.firstName);
+      setMiddleName(originalDetailsRef.current.middleName);
+      setFamilyName(originalDetailsRef.current.familyName);
+      setEmail(originalDetailsRef.current.email);
+      setPhone(originalDetailsRef.current.phone);
+      setLocatedCanada(originalDetailsRef.current.locatedCanada);
+      setProvince(originalDetailsRef.current.province);
+      setWorkAuthorization(originalDetailsRef.current.workAuthorization);
+      setEligibleMoveCanada(originalDetailsRef.current.eligibleMoveCanada);
+      setCountryOfOrigin(originalDetailsRef.current.countryOfOrigin);
+      setLanguages(originalDetailsRef.current.languages);
+      setLanguagesOther(originalDetailsRef.current.languagesOther);
+      setIndustryType(originalDetailsRef.current.industryType);
+      setIndustryOther(originalDetailsRef.current.industryOther);
+      setEmploymentStatus(originalDetailsRef.current.employmentStatus);
     }
+    originalDetailsRef.current = null;
+    setEditDetails(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!candidate) return;
     const patch: Record<string, string> = {};
     const addIfChanged = (key: string, value: string, current: string) => {
       if (value !== current) patch[key] = value;
@@ -261,31 +386,12 @@ export default function CandidateReviewPage() {
     addIfChanged("industryOther", industryOther, candidate.industryOther || "");
     addIfChanged("employmentStatus", employmentStatus, candidate.employmentStatus || "");
 
-    if (!Object.keys(patch).length) return;
-
-    const timer = setTimeout(() => {
-      patchCandidate(patch);
-    }, 600);
-    return () => clearTimeout(timer);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [
-    firstName,
-    middleName,
-    familyName,
-    email,
-    phone,
-    locatedCanada,
-    province,
-    workAuthorization,
-    eligibleMoveCanada,
-    countryOfOrigin,
-    languages,
-    languagesOther,
-    industryType,
-    industryOther,
-    employmentStatus,
-    candidate?.irain,
-  ]);
+    if (Object.keys(patch).length) {
+      await patchCandidate(patch);
+    }
+    originalDetailsRef.current = null;
+    setEditDetails(false);
+  };
 
   const handleRequestResume = async () => {
     if (!candidate) return;
@@ -317,6 +423,104 @@ export default function CandidateReviewPage() {
     if (!candidate) return;
     await patchCandidate({ status: "reviewed" });
     setStatus("reviewed");
+  };
+
+  const handleDelete = async () => {
+    if (!candidate || deleteLoading) return;
+    setDeleteLoading(true);
+    setActionMessage(null);
+    setActionError(null);
+
+    try {
+      const response = await fetch(
+        `/api/founder/applicants/${encodeURIComponent(candidate.irain)}`,
+        { method: "DELETE" },
+      );
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data?.ok) {
+        setActionError(data?.error || "Unable to archive applicant.");
+        setDeleteConfirm(false);
+      } else {
+        router.push("/founder/applicants");
+      }
+    } catch (error) {
+      console.error("Archive applicant failed", error);
+      setActionError("Unable to archive applicant.");
+      setDeleteConfirm(false);
+    } finally {
+      setDeleteLoading(false);
+    }
+  };
+
+  const handleResumeFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !candidate) return;
+
+    // Reset input so same file can be selected again
+    event.target.value = "";
+
+    // Client-side validation
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    const allowedExtensions = ["pdf", "doc", "docx"];
+    if (!extension || !allowedExtensions.includes(extension)) {
+      setResumeError("Please upload a PDF, DOC, or DOCX file.");
+      return;
+    }
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      setResumeError("File size exceeds 10MB limit.");
+      return;
+    }
+
+    setResumeError(null);
+    setResumeSuccess(null);
+    setPendingResumeFile(file);
+  };
+
+  const handleResumeUploadSubmit = async () => {
+    if (!pendingResumeFile || !candidate) return;
+
+    setResumeUploading(true);
+    setResumeError(null);
+    setResumeSuccess(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("resume", pendingResumeFile);
+
+      const response = await fetch(
+        `/api/founder/applicants/${encodeURIComponent(candidate.irain)}/resume`,
+        { method: "POST", body: formData },
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data?.ok) {
+        setResumeError(data?.error || "Unable to upload resume.");
+      } else {
+        setResumeFileName(data.resumeFileName || pendingResumeFile.name);
+        setResumeFileId(data.resumeFileId || "");
+        setResumeSuccess("Resume uploaded successfully.");
+        updateLocalCandidate({
+          resumeFileName: data.resumeFileName,
+          resumeFileId: data.resumeFileId,
+          resumeUrl: data.resumeUrl,
+        });
+        setPendingResumeFile(null);
+      }
+    } catch (error) {
+      console.error("Resume upload failed", error);
+      setResumeError("Unable to upload resume.");
+    } finally {
+      setResumeUploading(false);
+    }
+  };
+
+  const handleResumeUploadCancel = () => {
+    setPendingResumeFile(null);
+    setResumeError(null);
   };
 
   if (!cleanIrain) {
@@ -396,58 +600,98 @@ export default function CandidateReviewPage() {
               <div className="field-grid field-grid--two">
                 <div className="field">
                   <label htmlFor="candidate-first-name">First Name</label>
-                  <input
-                    id="candidate-first-name"
-                    type="text"
-                    value={editDetails ? firstName : firstName || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setFirstName(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="candidate-first-name"
+                      type="text"
+                      value={firstName}
+                      onChange={(event) => setFirstName(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-first-name"
+                      type="text"
+                      value={firstName || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-middle-name">Middle Name</label>
-                  <input
-                    id="candidate-middle-name"
-                    type="text"
-                    value={editDetails ? middleName : middleName || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setMiddleName(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="candidate-middle-name"
+                      type="text"
+                      value={middleName}
+                      onChange={(event) => setMiddleName(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-middle-name"
+                      type="text"
+                      value={middleName || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-family-name">Family Name</label>
-                  <input
-                    id="candidate-family-name"
-                    type="text"
-                    value={editDetails ? familyName : familyName || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setFamilyName(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="candidate-family-name"
+                      type="text"
+                      value={familyName}
+                      onChange={(event) => setFamilyName(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-family-name"
+                      type="text"
+                      value={familyName || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-email">Email</label>
-                  <input
-                    id="candidate-email"
-                    type="email"
-                    value={editDetails ? email : email || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setEmail(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="candidate-email"
+                      type="email"
+                      value={email}
+                      onChange={(event) => setEmail(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-email"
+                      type="text"
+                      value={email || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-phone">Phone</label>
-                  <input
-                    id="candidate-phone"
-                    type="text"
-                    value={editDetails ? phone : phone || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setPhone(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="candidate-phone"
+                      type="text"
+                      value={phone}
+                      onChange={(event) => setPhone(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-phone"
+                      type="text"
+                      value={phone || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-irain">Candidate iRAIN</label>
@@ -465,133 +709,223 @@ export default function CandidateReviewPage() {
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-located">Located in Canada</label>
-                  <select
-                    id="candidate-located"
-                    value={locatedCanada}
-                    onChange={(event) => setLocatedCanada(event.target.value)}
-                    disabled={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                  >
-                    {yesNoOptions.map((value) => (
-                      <option key={value} value={value}>
-                        {value || "Select"}
-                      </option>
-                    ))}
-                  </select>
+                  {editDetails ? (
+                    <Select
+                      id="candidate-located"
+                      name="candidate-located"
+                      options={yesNoOptions.filter(Boolean)}
+                      placeholder="Select"
+                      value={locatedCanada}
+                      onChange={(value) => setLocatedCanada(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-located"
+                      type="text"
+                      value={locatedCanada || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
-                <div className="field">
-                  <label htmlFor="candidate-province">Province</label>
-                  <input
-                    id="candidate-province"
-                    type="text"
-                    value={editDetails ? province : province || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setProvince(event.target.value)}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="candidate-work-auth">Work Authorization</label>
-                  <select
-                    id="candidate-work-auth"
-                    value={workAuthorization}
-                    onChange={(event) => setWorkAuthorization(event.target.value)}
-                    disabled={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                  >
-                    {yesNoOptions.map((value) => (
-                      <option key={value} value={value}>
-                        {value || "Select"}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="field">
-                  <label htmlFor="candidate-eligible-move">Eligible to Move (6 Months)</label>
-                  <select
-                    id="candidate-eligible-move"
-                    value={eligibleMoveCanada}
-                    onChange={(event) => setEligibleMoveCanada(event.target.value)}
-                    disabled={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                  >
-                    {yesNoOptions.map((value) => (
-                      <option key={value} value={value}>
-                        {value || "Select"}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                {locatedCanada === "Yes" && (
+                  <div className="field">
+                    <label htmlFor="candidate-province">Province</label>
+                    {editDetails ? (
+                      <Select
+                        id="candidate-province"
+                        name="candidate-province"
+                        options={PROVINCES}
+                        placeholder="Select"
+                        value={province}
+                        onChange={(value) => setProvince(Array.isArray(value) ? value[0] : value)}
+                      />
+                    ) : (
+                      <input
+                        id="candidate-province"
+                        type="text"
+                        value={province || "-"}
+                        readOnly
+                        tabIndex={-1}
+                      />
+                    )}
+                  </div>
+                )}
+                {locatedCanada === "Yes" && (
+                  <div className="field">
+                    <label htmlFor="candidate-work-auth">Work Authorization</label>
+                    {editDetails ? (
+                      <Select
+                        id="candidate-work-auth"
+                        name="candidate-work-auth"
+                        options={yesNoOptions.filter(Boolean)}
+                        placeholder="Select"
+                        value={workAuthorization}
+                        onChange={(value) => setWorkAuthorization(Array.isArray(value) ? value[0] : value)}
+                      />
+                    ) : (
+                      <input
+                        id="candidate-work-auth"
+                        type="text"
+                        value={workAuthorization || "-"}
+                        readOnly
+                        tabIndex={-1}
+                      />
+                    )}
+                  </div>
+                )}
+                {locatedCanada === "No" && (
+                  <div className="field">
+                    <label htmlFor="candidate-eligible-move">Eligible to Move (6 Months)</label>
+                    {editDetails ? (
+                      <Select
+                        id="candidate-eligible-move"
+                        name="candidate-eligible-move"
+                        options={yesNoOptions.filter(Boolean)}
+                        placeholder="Select"
+                        value={eligibleMoveCanada}
+                        onChange={(value) => setEligibleMoveCanada(Array.isArray(value) ? value[0] : value)}
+                      />
+                    ) : (
+                      <input
+                        id="candidate-eligible-move"
+                        type="text"
+                        value={eligibleMoveCanada || "-"}
+                        readOnly
+                        tabIndex={-1}
+                      />
+                    )}
+                  </div>
+                )}
                 <div className="field">
                   <label htmlFor="candidate-country">Country of Origin</label>
-                  <input
-                    id="candidate-country"
-                    type="text"
-                    value={editDetails ? countryOfOrigin : countryOfOrigin || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setCountryOfOrigin(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <Select
+                      id="candidate-country"
+                      name="candidate-country"
+                      options={countryOptions()}
+                      placeholder="Select"
+                      value={countryOfOrigin}
+                      onChange={(value) => setCountryOfOrigin(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-country"
+                      type="text"
+                      value={countryOfOrigin || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-languages">Languages</label>
-                  <input
-                    id="candidate-languages"
-                    type="text"
-                    value={editDetails ? languages : languages || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setLanguages(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <Select
+                      id="candidate-languages"
+                      name="candidate-languages"
+                      options={LANGUAGE_OPTIONS}
+                      placeholder="Select"
+                      multi
+                      values={languages ? languages.split(", ").map((l) => l.trim()).filter(Boolean) : []}
+                      onChange={(value) => {
+                        const arr = Array.isArray(value) ? value : value ? [value] : [];
+                        setLanguages(arr.join(", "));
+                      }}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-languages"
+                      type="text"
+                      value={languages || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
-                <div className="field">
-                  <label htmlFor="candidate-languages-other">Languages Other</label>
-                  <input
-                    id="candidate-languages-other"
-                    type="text"
-                    value={editDetails ? languagesOther : languagesOther || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setLanguagesOther(event.target.value)}
-                  />
-                </div>
+                {languages.includes("Other") && (
+                  <div className="field">
+                    <label htmlFor="candidate-languages-other">Languages Other</label>
+                    {editDetails ? (
+                      <input
+                        id="candidate-languages-other"
+                        type="text"
+                        value={languagesOther}
+                        onChange={(event) => setLanguagesOther(event.target.value)}
+                      />
+                    ) : (
+                      <input
+                        id="candidate-languages-other"
+                        type="text"
+                        value={languagesOther || "-"}
+                        readOnly
+                        tabIndex={-1}
+                      />
+                    )}
+                  </div>
+                )}
                 <div className="field">
                   <label htmlFor="candidate-industry-type">Industry Type</label>
-                  <input
-                    id="candidate-industry-type"
-                    type="text"
-                    value={editDetails ? industryType : industryType || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setIndustryType(event.target.value)}
-                  />
+                  {editDetails ? (
+                    <Select
+                      id="candidate-industry-type"
+                      name="candidate-industry-type"
+                      options={INDUSTRY_OPTIONS}
+                      placeholder="Select"
+                      value={industryType}
+                      onChange={(value) => setIndustryType(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-industry-type"
+                      type="text"
+                      value={industryType || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
-                <div className="field">
-                  <label htmlFor="candidate-industry-other">Industry Other</label>
-                  <input
-                    id="candidate-industry-other"
-                    type="text"
-                    value={editDetails ? industryOther : industryOther || "-"}
-                    readOnly={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                    onChange={(event) => setIndustryOther(event.target.value)}
-                  />
-                </div>
+                {industryType === "Other" && (
+                  <div className="field">
+                    <label htmlFor="candidate-industry-other">Industry Other</label>
+                    {editDetails ? (
+                      <input
+                        id="candidate-industry-other"
+                        type="text"
+                        value={industryOther}
+                        onChange={(event) => setIndustryOther(event.target.value)}
+                      />
+                    ) : (
+                      <input
+                        id="candidate-industry-other"
+                        type="text"
+                        value={industryOther || "-"}
+                        readOnly
+                        tabIndex={-1}
+                      />
+                    )}
+                  </div>
+                )}
                 <div className="field">
                   <label htmlFor="candidate-employment-status">Employment Status</label>
-                  <select
-                    id="candidate-employment-status"
-                    value={employmentStatus}
-                    onChange={(event) => setEmploymentStatus(event.target.value)}
-                    disabled={!editDetails}
-                    tabIndex={editDetails ? 0 : -1}
-                  >
-                    {employmentOptions.map((value) => (
-                      <option key={value} value={value}>
-                        {value || "Select"}
-                      </option>
-                    ))}
-                  </select>
+                  {editDetails ? (
+                    <Select
+                      id="candidate-employment-status"
+                      name="candidate-employment-status"
+                      options={employmentOptions.filter(Boolean)}
+                      placeholder="Select"
+                      value={employmentStatus}
+                      onChange={(value) => setEmploymentStatus(Array.isArray(value) ? value[0] : value)}
+                    />
+                  ) : (
+                    <input
+                      id="candidate-employment-status"
+                      type="text"
+                      value={employmentStatus || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="candidate-eligibility">Eligibility</label>
@@ -606,63 +940,91 @@ export default function CandidateReviewPage() {
               </div>
             </DetailSection>
 
-            <DetailSection title="Admin">
-              <div className="field-grid field-grid--two">
-                <div className="field">
-                  <label htmlFor="candidate-status">Status</label>
-                  <select
-                    id="candidate-status"
-                    value={status}
-                    onChange={(event) => setStatus(event.target.value)}
-                  >
-                    <option value="">Unassigned</option>
-                    {statusOptions
-                      .filter((value) => value)
-                      .map((value) => (
-                        <option key={value} value={value.toLowerCase()}>
-                          {value}
-                        </option>
-                      ))}
-                  </select>
+            <DetailSection title="Resume">
+              {resumeFileName ? (
+                <div className="field-grid">
+                  <div className="field">
+                    <label>Current Resume</label>
+                    <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-sm)" }}>
+                      <span style={{ flex: 1 }}>{resumeFileName}</span>
+                      {resumeFileId && (
+                        <ActionBtn
+                          as="link"
+                          href={`https://drive.google.com/file/d/${resumeFileId}/view`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          variant="ghost"
+                          size="sm"
+                        >
+                          View
+                        </ActionBtn>
+                      )}
+                    </div>
+                  </div>
                 </div>
-                <div className="field">
-                  <label htmlFor="candidate-tags">Tags</label>
+              ) : (
+                <p className="founder-card__meta">No resume on file.</p>
+              )}
+              <div className="field" style={{ marginTop: "var(--gap)" }}>
+                <label htmlFor="resume-upload">
+                  {resumeFileName ? "Replace Resume" : "Upload Resume"}
+                </label>
+                <div className="file-upload">
                   <input
-                    id="candidate-tags"
-                    type="text"
-                    value={tags}
-                    onChange={(event) => setTags(event.target.value)}
-                    placeholder="Comma separated tags"
+                    ref={resumeInputRef}
+                    id="resume-upload"
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    className="file-input"
+                    onChange={handleResumeFileSelect}
+                    disabled={resumeUploading}
                   />
+                  {pendingResumeFile ? (
+                    <div style={{ display: "flex", alignItems: "center", gap: "var(--gap)", flexWrap: "wrap" }}>
+                      <span style={{ fontStyle: "italic" }}>{pendingResumeFile.name}</span>
+                      <div style={{ display: "flex", gap: "0.5rem" }}>
+                        <ActionBtn
+                          as="button"
+                          variant="primary"
+                          size="sm"
+                          onClick={handleResumeUploadSubmit}
+                          disabled={resumeUploading}
+                        >
+                          {resumeUploading ? "Uploading..." : "Submit"}
+                        </ActionBtn>
+                        <ActionBtn
+                          as="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={handleResumeUploadCancel}
+                          disabled={resumeUploading}
+                        >
+                          Cancel
+                        </ActionBtn>
+                      </div>
+                    </div>
+                  ) : (
+                    <ActionBtn
+                      as="button"
+                      variant="ghost"
+                      onClick={() => resumeInputRef.current?.click()}
+                      disabled={resumeUploading}
+                    >
+                      Choose File
+                    </ActionBtn>
+                  )}
                 </div>
-                <div className="field">
-                  <label htmlFor="candidate-last-contacted">Last Contacted At</label>
-                  <input
-                    id="candidate-last-contacted"
-                    type="text"
-                    value={lastContactedAt}
-                    onChange={(event) => setLastContactedAt(event.target.value)}
-                  />
-                </div>
-                <div className="field">
-                  <label htmlFor="candidate-next-action">Next Action At</label>
-                  <input
-                    id="candidate-next-action"
-                    type="text"
-                    value={nextActionAt}
-                    onChange={(event) => setNextActionAt(event.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="field">
-                <label htmlFor="candidate-notes">Owner Notes</label>
-                <textarea
-                  id="candidate-notes"
-                  rows={4}
-                  value={notes}
-                  onChange={(event) => setNotes(event.target.value)}
-                  placeholder="Add context, outreach details, blockers..."
-                />
+                <p className="field-hint">PDF, DOC, or DOCX. Max 10MB.</p>
+                {resumeError && (
+                  <div className="status-banner status-banner--error" role="alert">
+                    {resumeError}
+                  </div>
+                )}
+                {resumeSuccess && (
+                  <div className="status-banner status-banner--ok" role="status">
+                    {resumeSuccess}
+                  </div>
+                )}
               </div>
             </DetailSection>
 
@@ -683,18 +1045,41 @@ export default function CandidateReviewPage() {
                 <input
                   id="decision-status"
                   type="text"
-                  value={status || "Unassigned"}
+                  value={
+                    status
+                      ? status
+                          .split(" ")
+                          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+                          .join(" ")
+                      : "Unassigned"
+                  }
                   readOnly
                   tabIndex={-1}
                   aria-readonly="true"
                 />
               </div>
               <div className="flow-stack">
-                <ActionBtn as="button" variant="ghost" onClick={() => setEditDetails((prev) => !prev)}>
-                  {editDetails ? "Done editing" : "Edit details"}
-                </ActionBtn>
-                <ActionBtn as="button" variant="primary" onClick={handleMarkReviewed}>
-                  Mark Reviewed
+                {editDetails ? (
+                  <>
+                    <ActionBtn as="button" variant="primary" onClick={handleSaveEdit} disabled={saving}>
+                      {saving ? "Saving..." : "Save"}
+                    </ActionBtn>
+                    <ActionBtn as="button" variant="ghost" onClick={handleCancelEdit} disabled={saving}>
+                      Cancel
+                    </ActionBtn>
+                  </>
+                ) : (
+                  <ActionBtn as="button" variant="ghost" onClick={handleStartEdit}>
+                    Edit details
+                  </ActionBtn>
+                )}
+                <ActionBtn
+                  as="button"
+                  variant={status === "reviewed" ? "ghost" : "primary"}
+                  onClick={handleMarkReviewed}
+                  disabled={status === "reviewed"}
+                >
+                  {status === "reviewed" ? "Reviewed" : "Mark Reviewed"}
                 </ActionBtn>
                 <ActionBtn
                   as="button"
@@ -704,6 +1089,37 @@ export default function CandidateReviewPage() {
                 >
                   {actionLoading ? "Sending..." : "Request updated resume"}
                 </ActionBtn>
+                {deleteConfirm ? (
+                  <>
+                    <div className="status-banner status-banner--warning" role="alert" style={{ marginBottom: "8px" }}>
+                      This will also archive all related applications.
+                    </div>
+                    <ActionBtn
+                      as="button"
+                      className="action-btn--danger"
+                      onClick={handleDelete}
+                      disabled={deleteLoading}
+                    >
+                      {deleteLoading ? "Archiving..." : "Confirm archive"}
+                    </ActionBtn>
+                    <ActionBtn
+                      as="button"
+                      variant="ghost"
+                      onClick={() => setDeleteConfirm(false)}
+                      disabled={deleteLoading}
+                    >
+                      Cancel
+                    </ActionBtn>
+                  </>
+                ) : (
+                  <ActionBtn
+                    as="button"
+                    variant="ghost"
+                    onClick={() => setDeleteConfirm(true)}
+                  >
+                    Archive applicant
+                  </ActionBtn>
+                )}
               </div>
               <div>
                 <AutosaveHint saving={saving} />
@@ -735,12 +1151,14 @@ export default function CandidateReviewPage() {
                 <ul className="founder-list">
                   {applications.map((app) => (
                     <li key={app.id}>
-                      <div className="founder-list__title">
-                        {app.position || "Application"} <Badge tone="neutral">{app.iCrn}</Badge>
-                      </div>
-                      <div className="founder-list__meta">
-                        {app.id} - {app.status || "Unassigned"}
-                      </div>
+                      <Link href={`/founder/applications/${app.id}`} className="founder-list__link">
+                        <div className="founder-list__title">
+                          {app.position || "Application"} <Badge tone="neutral">{app.iCrn}</Badge>
+                        </div>
+                        <div className="founder-list__meta">
+                          {app.id} - {app.status || "Unassigned"}
+                        </div>
+                      </Link>
                     </li>
                   ))}
                 </ul>
