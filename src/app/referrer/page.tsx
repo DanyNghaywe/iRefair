@@ -392,14 +392,13 @@ export default function ReferrerPage() {
     const email = 'irefair.andbeyondconsulting@gmail.com';
     const linkTextEn = 'contacting us via email';
     const linkTextFr = 'nous contactant par courriel';
-    const linkStyle = { textDecoration: 'underline', color: 'inherit' };
 
     if (point.includes(linkTextEn)) {
       const parts = point.split(linkTextEn);
       return (
         <>
           {parts[0]}
-          <a href={`mailto:${email}`} style={linkStyle}>{linkTextEn}</a>
+          <a href={`mailto:${email}`}>{linkTextEn}</a>
           {parts.slice(1).join(linkTextEn)}
         </>
       );
@@ -410,7 +409,7 @@ export default function ReferrerPage() {
       return (
         <>
           {parts[0]}
-          <a href={`mailto:${email}`} style={linkStyle}>{linkTextFr}</a>
+          <a href={`mailto:${email}`}>{linkTextFr}</a>
           {parts.slice(1).join(linkTextFr)}
         </>
       );
