@@ -53,7 +53,8 @@ export function verifyApplicantUpdateToken(token: string): ApplicantUpdatePayloa
     .replace(/\+/g, "-")
     .replace(/\//g, "_");
 
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
+  if (signature.length !== expectedSig.length ||
+      !crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSig))) {
     throw new Error("Invalid signature");
   }
 
