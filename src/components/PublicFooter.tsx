@@ -35,7 +35,7 @@ export function PublicFooter() {
         </div>
         <div className="public-footer__contact">
           <span className="public-footer__label">Contact</span>
-          <a href="mailto:info@andbeyondca.com">info@andbeyondca.com</a>
+          <a href="mailto:irefair.andbeyondconsulting@gmail.com">irefair.andbeyondconsulting@gmail.com</a>
         </div>
       </div>
       <p className="public-footer__meta">For questions or data requests, reach out anytime.</p>

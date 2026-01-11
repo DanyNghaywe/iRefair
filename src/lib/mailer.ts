@@ -1,7 +1,7 @@
 'use server';
 
 import { randomUUID } from 'crypto';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
 type MailInput = {
   to: string;
@@ -12,35 +12,43 @@ type MailInput = {
   replyTo?: string;
 };
 
-let cachedResend: Resend | null = null;
+let cachedTransporter: nodemailer.Transporter | null = null;
 
-function getResendClient() {
-  if (cachedResend) return cachedResend;
+function getTransporter() {
+  if (cachedTransporter) return cachedTransporter;
 
-  const apiKey = process.env.RESEND_API_KEY;
+  const user = process.env.GMAIL_USER;
+  const pass = process.env.GMAIL_APP_PASSWORD;
 
-  if (!apiKey) {
-    throw new Error('RESEND_API_KEY environment variable is not set.');
+  if (!user || !pass) {
+    throw new Error('GMAIL_USER or GMAIL_APP_PASSWORD environment variable is not set.');
   }
 
-  cachedResend = new Resend(apiKey);
-  return cachedResend;
+  cachedTransporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user,
+      pass,
+    },
+  });
+
+  return cachedTransporter;
 }
 
 export async function sendMail({ to, subject, html, text, cc, replyTo }: MailInput) {
   const fromName = process.env.SMTP_FROM_NAME || 'iRefair';
-  const fromEmail = process.env.SMTP_FROM_EMAIL || 'info@andbeyondca.com';
+  const fromEmail = process.env.GMAIL_USER || 'irefair.andbeyondconsulting@gmail.com';
   const from = `${fromName} <${fromEmail}>`;
 
   try {
-    const resend = getResendClient();
+    const transporter = getTransporter();
     const uniqueId = randomUUID();
 
-    const { data, error } = await resend.emails.send({
+    const info = await transporter.sendMail({
       from,
       to,
       cc,
-      replyTo,
+      replyTo: replyTo || fromEmail,
       subject,
       html,
       text,
@@ -49,13 +57,8 @@ export async function sendMail({ to, subject, html, text, cc, replyTo }: MailInp
       },
     });
 
-    if (error) {
-      console.error('[MAILER] Resend error:', error);
-      throw new Error(error.message);
-    }
-
-    console.log('[MAILER] Email sent - MessageId:', data?.id, 'To:', to);
-    return { messageId: data?.id, response: 'OK' };
+    console.log('[MAILER] Email sent - MessageId:', info.messageId, 'To:', to);
+    return { messageId: info.messageId, response: info.response };
   } catch (error) {
     console.error('Error sending mail', error);
     throw error;

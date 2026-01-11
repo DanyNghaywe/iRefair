@@ -533,7 +533,7 @@ const errorPageHtml = `<!DOCTYPE html>
       <p>We couldn't complete your profile update.</p>
       <div class="error-msg">{{errorMessage}}</div>
     </div>
-    <p class="footer">Need help? <a href="mailto:support@irefair.com">Contact support</a></p>
+    <p class="footer">Need help? <a href="mailto:irefair.andbeyondconsulting@gmail.com">Contact support</a></p>
   </div>
 </body>
 </html>`;

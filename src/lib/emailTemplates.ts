@@ -348,8 +348,8 @@ export function applicantIneligibleNotification(params: ApplicantIneligibleParam
 
   const futureTitle = t('IF YOUR SITUATION CHANGES', 'SI VOTRE SITUATION CHANGE', locale);
   const futureText = t(
-    "If you move to Canada or change your relocation plans, contact us at info@andbeyondca.com and we'll update your profile.",
-    "Si vous déménagez au Canada ou changez vos plans de relocalisation, contactez-nous à info@andbeyondca.com et nous mettrons à jour votre profil.",
+    "If you move to Canada or change your relocation plans, contact us at irefair.andbeyondconsulting@gmail.com and we'll update your profile.",
+    "Si vous déménagez au Canada ou changez vos plans de relocalisation, contactez-nous à irefair.andbeyondconsulting@gmail.com et nous mettrons à jour votre profil.",
     locale
   );
 
@@ -955,7 +955,7 @@ export function referrerAlreadyExistsEmail(params: ReferrerAlreadyExistsParams):
   );
 
   const contactLabel = t('Contact Admin', 'Contacter l\'administrateur', locale);
-  const contactEmail = 'info@andbeyondca.com';
+  const contactEmail = 'irefair.andbeyondconsulting@gmail.com';
 
   const portalCtaText = t(
     'Access your referrer portal',

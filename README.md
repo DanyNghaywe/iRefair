@@ -1,15 +1,12 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
-## SMTP / email setup (Hostinger)
+## SMTP / email setup (Gmail)
 
-Set these environment variables (values from your Hostinger panel):
+Set these environment variables for Gmail SMTP:
 
-- `SMTP_HOST`
-- `SMTP_PORT`
-- `SMTP_USER`
-- `SMTP_PASS`
+- `GMAIL_USER` - Your Gmail address (e.g., `irefair.andbeyondconsulting@gmail.com`)
+- `GMAIL_APP_PASSWORD` - Gmail app password (generate at https://myaccount.google.com/apppasswords)
 - `SMTP_FROM_NAME` (optional, defaults to `iRefair`)
-- `SMTP_FROM_EMAIL` (optional, defaults to `info@andbeyondca.com` or `SMTP_USER`)
 
 Emails are sent via `src/lib/mailer.ts` and the candidate confirmation API is at `src/app/api/candidate/route.ts`.
 

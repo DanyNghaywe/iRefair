@@ -35,7 +35,7 @@ export default function TermsPage() {
             <section>
               <h3>Questions</h3>
               <p className="legal-contact">
-                Email us at <a href="mailto:info@andbeyondca.com">info@andbeyondca.com</a>.
+                Email us at <a href="mailto:irefair.andbeyondconsulting@gmail.com">irefair.andbeyondconsulting@gmail.com</a>.
               </p>
             </section>
           </div>
