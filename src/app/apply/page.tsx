@@ -18,6 +18,7 @@ import { AppShell } from '@/components/AppShell';
 import { Confetti, useConfetti } from '@/components/Confetti';
 import { useLanguage } from '@/components/LanguageProvider';
 import { PublicFooter } from '@/components/PublicFooter';
+import { SubmissionSuccessModal } from '@/components/SubmissionSuccessModal';
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
@@ -492,6 +493,7 @@ export default function ApplyPage() {
   const [status, setStatus] = useState<Status>('idle');
   const [errorMessage, setErrorMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
   const confetti = useConfetti();
 
   const formRef = useRef<HTMLFormElement | null>(null);
@@ -654,6 +656,7 @@ export default function ApplyPage() {
       }
 
       setStatus('ok');
+      setShowSuccessModal(true);
       confetti.trigger();
     } catch (error) {
       console.error('Application submission failed', error);
@@ -907,6 +910,11 @@ export default function ApplyPage() {
       </main>
       <PublicFooter />
       <Confetti active={confetti.active} onComplete={confetti.reset} />
+      <SubmissionSuccessModal
+        open={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        locale={language}
+      />
     </AppShell>
   );
 }

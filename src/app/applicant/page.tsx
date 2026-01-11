@@ -9,6 +9,7 @@ import { Confetti, useConfetti } from '@/components/Confetti';
 import { useLanguage } from '@/components/LanguageProvider';
 import { PublicFooter } from '@/components/PublicFooter';
 import { Select } from '@/components/Select';
+import { SubmissionSuccessModal } from '@/components/SubmissionSuccessModal';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 import { countryOptions } from '@/lib/countries';
 
@@ -405,6 +406,8 @@ function ApplicantPageContent() {
   const errorBannerRef = useRef<HTMLDivElement | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const confetti = useConfetti();
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
   const [languageSelection, setLanguageSelection] = useState<string[]>([]);
   const [countrySelection, setCountrySelection] = useState('');
   const [locatedInCanada, setLocatedInCanada] = useState('');
@@ -804,6 +807,8 @@ function ApplicantPageContent() {
       }
 
       setStatus('ok');
+      setSubmittedEmail(values.email);
+      setShowSuccessModal(true);
       confetti.trigger();
     } catch {
       setStatus('error');
@@ -1396,6 +1401,12 @@ function ApplicantPageContent() {
       </main>
       <PublicFooter />
       <Confetti active={confetti.active} onComplete={confetti.reset} />
+      <SubmissionSuccessModal
+        open={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        email={submittedEmail}
+        locale={language}
+      />
     </AppShell>
   );
 }

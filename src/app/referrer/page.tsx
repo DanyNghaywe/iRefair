@@ -8,6 +8,7 @@ import { Confetti, useConfetti } from '@/components/Confetti';
 import { useLanguage } from '@/components/LanguageProvider';
 import { PublicFooter } from '@/components/PublicFooter';
 import { Select } from '@/components/Select';
+import { SubmissionSuccessModal } from '@/components/SubmissionSuccessModal';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 import { countryOptions } from '@/lib/countries';
 
@@ -311,6 +312,8 @@ export default function ReferrerPage() {
   const [iRref, setIRref] = useState<string | null>(null);
   const [isExisting, setIsExisting] = useState(false);
   const confetti = useConfetti();
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [submittedEmail, setSubmittedEmail] = useState('');
   const t = translations[language];
   const founderMeetLink = (process.env.FOUNDER_MEET_LINK || '').trim();
   const showFounderMeetCta = Boolean(founderMeetLink);
@@ -512,6 +515,8 @@ export default function ReferrerPage() {
       setIRref(typeof data.iRref === 'string' ? data.iRref : null);
       setIsExisting(data.isExisting === true);
       setStatus('ok');
+      setSubmittedEmail(values.email);
+      setShowSuccessModal(true);
       confetti.trigger();
     } catch {
       setIRref(null);
@@ -888,6 +893,12 @@ export default function ReferrerPage() {
       </main>
       <PublicFooter />
       <Confetti active={confetti.active} onComplete={confetti.reset} />
+      <SubmissionSuccessModal
+        open={showSuccessModal}
+        onClose={() => setShowSuccessModal(false)}
+        email={submittedEmail}
+        locale={language}
+      />
     </AppShell>
   );
 }
