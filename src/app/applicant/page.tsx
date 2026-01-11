@@ -271,8 +271,8 @@ const translations: Record<
       'Any referral I make is based on my own discretion, and I am solely responsible for complying with my company’s internal referral or hiring policies.',
       'iRefair, &Beyond Consulting, IM Power SARL and inaspire and their legal founders assume no liability at all including but not limited to: hiring outcomes, internal processes, or employer decisions.',
       'My contact and employer details will be kept confidential and will not be shared without my consent.',
-      'I may request to update or delete my information at any time by contacting irefair.andbeyondconsulting@gmail.com.',
-      'My participation is entirely optional, and I can opt out at any time via contacting irefair.andbeyondconsulting@gmail.com.',
+      'I may request to update or delete my information at any time by contacting us via email.',
+      'My participation is entirely optional, and I can opt out at any time by contacting us via email.',
     ],
     consentAgreement: 'I have read, understood, and agree to the above terms.',
   },
@@ -386,8 +386,8 @@ const translations: Record<
       "Toute recommandation que je fais est à ma discrétion, et je suis seul responsable du respect des politiques internes de mon entreprise en matière de recommandation ou de recrutement.",
       "iRefair, &Beyond Consulting, IM Power SARL et inaspire ainsi que leurs fondateurs légaux déclinent toute responsabilité (y compris, sans s'y limiter) concernant les résultats d'embauche, les processus internes ou les décisions de l'employeur.",
       'Mes coordonnées et informations employeur resteront confidentielles et ne seront pas partagées sans mon consentement.',
-      'Je peux demander la mise à jour ou la suppression de mes informations à tout moment en contactant irefair.andbeyondconsulting@gmail.com.',
-      'Ma participation est entièrement facultative, et je peux me retirer à tout moment en contactant irefair.andbeyondconsulting@gmail.com.',
+      'Je peux demander la mise à jour ou la suppression de mes informations à tout moment en nous contactant par courriel.',
+      'Ma participation est entièrement facultative, et je peux me retirer à tout moment en nous contactant par courriel.',
     ],
     consentAgreement: "J'ai lu, compris et j'accepte les conditions ci-dessus.",
   },
@@ -585,15 +585,33 @@ function ApplicantPageContent() {
 
   const renderConsentPoint = (point: string) => {
     const email = 'irefair.andbeyondconsulting@gmail.com';
-    if (!point.includes(email)) return point;
-    const parts = point.split(email);
-    return (
-      <>
-        {parts[0]}
-        <a href={`mailto:${email}`}>{email}</a>
-        {parts.slice(1).join(email)}
-      </>
-    );
+    const linkTextEn = 'contacting us via email';
+    const linkTextFr = 'nous contactant par courriel';
+    const linkStyle = { textDecoration: 'underline', color: 'inherit' };
+
+    if (point.includes(linkTextEn)) {
+      const parts = point.split(linkTextEn);
+      return (
+        <>
+          {parts[0]}
+          <a href={`mailto:${email}`} style={linkStyle}>{linkTextEn}</a>
+          {parts.slice(1).join(linkTextEn)}
+        </>
+      );
+    }
+
+    if (point.includes(linkTextFr)) {
+      const parts = point.split(linkTextFr);
+      return (
+        <>
+          {parts[0]}
+          <a href={`mailto:${email}`} style={linkStyle}>{linkTextFr}</a>
+          {parts.slice(1).join(linkTextFr)}
+        </>
+      );
+    }
+
+    return point;
   };
 
   const getFormValues = (formData: FormData) => {

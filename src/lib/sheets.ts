@@ -1063,8 +1063,7 @@ async function fetchMaxIrrefFromSheet(spreadsheetId: string) {
 }
 
 async function findMaxIrainInSheets(spreadsheetId: string) {
-  const applicantMax = await fetchMaxIrainFromSheet(APPLICANT_SHEET_NAME, spreadsheetId);
-  return Math.max(applicantMax, getMaxIrcrnFromCompanies());
+  return await fetchMaxIrainFromSheet(APPLICANT_SHEET_NAME, spreadsheetId);
 }
 
 async function getMaxExistingIrainNumber(spreadsheetId: string) {
