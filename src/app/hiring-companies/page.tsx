@@ -1,5 +1,4 @@
 import type { Metadata } from 'next';
-import { companies, type CompanyRow } from '@/lib/hiringCompanies';
 import { listApprovedReferrerCompanies } from '@/lib/sheets';
 import { HiringCompaniesClient } from './HiringCompaniesClient';
 
@@ -11,17 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function HiringCompaniesPage() {
-  const approved = await listApprovedReferrerCompanies();
-  const mergedMap = new Map<string, CompanyRow>();
-  for (const company of companies) {
-    mergedMap.set(company.code, company);
-  }
-  for (const company of approved) {
-    if (!mergedMap.has(company.code)) {
-      mergedMap.set(company.code, company);
-    }
-  }
-  const mergedCompanies = Array.from(mergedMap.values());
+  const companies = await listApprovedReferrerCompanies();
 
-  return <HiringCompaniesClient mergedCompanies={mergedCompanies} />;
+  return <HiringCompaniesClient mergedCompanies={companies} />;
 }

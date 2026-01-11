@@ -1,4 +1,4 @@
-import { companies, type CompanyRow } from '@/lib/hiringCompanies';
+import { type CompanyRow } from '@/lib/hiringCompanies';
 import { google } from 'googleapis';
 import { randomUUID } from 'crypto';
 
@@ -949,22 +949,6 @@ async function fetchExistingSubmissionIds(prefix: SubmissionPrefix) {
   }
 }
 
-function getMaxIrcrnFromCompanies() {
-  let max = 0;
-
-  for (const { code } of companies) {
-    const match = typeof code === 'string' ? IRCRN_REGEX.exec(code.trim()) : null;
-    if (!match) continue;
-
-    const parsed = Number.parseInt(match[1], 10);
-    if (!Number.isNaN(parsed) && parsed > max) {
-      max = parsed;
-    }
-  }
-
-  return max;
-}
-
 async function getMaxIrcrnFromReferrers(spreadsheetId: string) {
   const sheets = getSheetsClient();
   try {
@@ -1109,9 +1093,8 @@ export async function generateIRREF(): Promise<string> {
 
 export async function generateIRCRN(): Promise<string> {
   const spreadsheetId = getSpreadsheetIdOrThrow();
-  const maxCompanies = getMaxIrcrnFromCompanies();
   const maxReferrers = await getMaxIrcrnFromReferrers(spreadsheetId);
-  const next = Math.max(maxCompanies, maxReferrers) + 1;
+  const next = maxReferrers + 1;
   return `iRCRN${String(next).padStart(10, '0')}`;
 }
 
@@ -2080,8 +2063,6 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
 
   const headerMap = buildHeaderMap(headers);
   const rows = (existing.data.values ?? []).slice(1);
-  const companyMatch = companies.find((company) => company.code.toLowerCase() === normalizedIrcrn);
-  const companyNameLower = companyMatch?.name?.toLowerCase();
 
   const pickRecord = (row: (string | number | null | undefined)[]) => ({
     irref: getHeaderValue(headerMap, row, 'iRREF'),
@@ -2108,17 +2089,6 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
       if (!isApproved(row) || isArchived(row)) continue;
       const record = pickRecord(row);
       if (record.email) return record;
-    }
-  }
-
-  if (companyNameLower) {
-    for (const row of rows) {
-      const rowCompany = getHeaderValue(headerMap, row, 'Company').toLowerCase();
-      if (rowCompany && rowCompany === companyNameLower) {
-        if (!isApproved(row) || isArchived(row)) continue;
-        const record = pickRecord(row);
-        if (record.email) return record;
-      }
     }
   }
 
