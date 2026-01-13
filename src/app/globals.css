@@ -167,6 +167,7 @@ body {
   -webkit-font-smoothing: antialiased;
   scrollbar-width: thin;
   scrollbar-color: rgba(122, 215, 227, 0.35) transparent;
+  overflow-x: hidden; /* Prevent horizontal scroll on mobile */
 }
 
 /* Custom scrollbar for WebKit browsers */
@@ -499,9 +500,8 @@ h3 {
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  height: 100vh;
-  max-height: 100vh;
-  min-height: 0;
+  min-height: 100dvh;
+  max-height: none;
   padding: 0 20px 20px;
   overflow-y: auto;
 }
@@ -3098,11 +3098,14 @@ button.disclaimer,
 /* FOUNDER LOGIN */
 .founder-login-screen {
   position: relative;
-  min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 48px 20px 96px;
+  padding-left: calc(20px + env(safe-area-inset-left));
+  padding-right: calc(20px + env(safe-area-inset-right));
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
   overflow: hidden;
   color: #eaf7ff;
 }
@@ -4817,11 +4820,13 @@ section.founder-auth input:focus-visible {
 .ops-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  z-index: 40;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  z-index: 90;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.25s ease;
 }
 
 .ops-backdrop.is-open {
@@ -4843,7 +4848,7 @@ section.founder-auth input:focus-visible {
 
 .founder-login-card {
   position: relative;
-  width: min(420px, 92vw);
+  width: min(420px, calc(100vw - 32px - env(safe-area-inset-left) - env(safe-area-inset-right)));
   padding: 32px 30px 30px;
   border-radius: 16px;
   box-shadow: 0 22px 54px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.2);
@@ -6072,93 +6077,125 @@ section.founder-auth input:focus-visible {
 
 @media (max-width: 1023px) {
   .ops-layout {
-    display: block;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    gap: 0;
   }
 
   .ops-main {
     position: relative;
     z-index: 1;
+    width: 100%;
+    max-width: 100%;
     padding: 16px;
-    padding-top: 16px;
+    padding-top: 8px;
   }
 
   .ops-menu-button {
     position: fixed;
-    top: calc(16px + env(safe-area-inset-top));
-    left: calc(16px + env(safe-area-inset-left));
-    z-index: 60;
+    top: calc(12px + env(safe-area-inset-top));
+    left: calc(12px + env(safe-area-inset-left));
+    z-index: 80;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 6px;
-    padding: 8px 14px;
-    min-height: 40px;
-    border-radius: 10px;
-    border: 1px solid rgba(var(--accent-primary-rgb), 0.35);
+    padding: 10px 16px;
+    min-height: 44px;
+    min-width: 44px;
+    border-radius: 12px;
+    border: 1px solid rgba(var(--accent-primary-rgb), 0.3);
     background: rgba(255, 255, 255, 0.95);
     color: var(--ink);
     font-weight: 600;
     font-size: 14px;
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+    transition: opacity 0.2s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .ops-menu-button:hover {
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2);
+  }
+
+  .ops-menu-button:focus-visible {
+    outline: none;
+    box-shadow: 0 6px 16px rgba(15, 23, 42, 0.2),
+      0 0 0 3px rgba(var(--accent-primary-rgb), 0.3);
   }
 
   .ops-menu-button.is-hidden {
     opacity: 0;
     pointer-events: none;
+    transform: scale(0.9);
   }
 
-  .ops-sidebar {
-    position: fixed;
-    left: 16px;
-    top: 16px;
-    bottom: 16px;
-    width: min(300px, calc(100vw - 32px));
-    z-index: 70;
-    transform: translateX(calc(-100% - 24px));
-    opacity: 0;
-    pointer-events: none;
-    transition: transform 0.22s ease, opacity 0.22s ease;
-    box-shadow: 0 14px 36px rgba(0, 0, 0, 0.35);
-  }
-
-  .ops-sidebar.is-open {
-    transform: translateX(0);
-    opacity: 1;
-    pointer-events: auto;
+  .ops-menu-button:active {
+    transform: scale(0.96);
   }
 
   .ops-scope .founder-page {
-    padding-top: 48px;
+    padding-top: calc(60px + env(safe-area-inset-top));
     gap: 12px;
   }
 
   .ops-scope .founder-topbar {
     padding: 0;
-    gap: 8px;
+    gap: 10px;
   }
 
   .ops-scope .founder-topbar__titles h1 {
-    font-size: 18px;
+    font-size: clamp(18px, 4vw, 22px);
   }
 
   .ops-scope .founder-topbar__titles p {
-    font-size: 12px;
+    font-size: clamp(11px, 2.5vw, 13px);
     margin-top: 2px;
   }
 
   .ops-scope .founder-topbar__controls {
     margin-top: 4px;
   }
+
+  .founder-card {
+    padding: 18px;
+  }
+
+  .founder-card__value {
+    font-size: 28px;
+  }
+
+  .founder-card__title {
+    font-size: 12px;
+  }
 }
 
-@media (min-width: 640px) and (max-width: 1023px) {
+@media (min-width: 641px) and (max-width: 1023px) {
   .founder-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
   .founder-card {
     padding: 20px;
+  }
+
+  /* Tablet breakpoint for founder login */
+  .founder-login-screen {
+    padding: 32px 20px 48px;
+    padding-left: calc(20px + env(safe-area-inset-left));
+    padding-right: calc(20px + env(safe-area-inset-right));
+    padding-bottom: calc(48px + env(safe-area-inset-bottom));
+  }
+
+  .founder-login-card {
+    width: min(440px, 90vw);
+    padding: 28px 26px;
+  }
+
+  .founder-login-header h1 {
+    font-size: 28px;
   }
 }
 
@@ -6169,24 +6206,54 @@ section.founder-auth input:focus-visible {
 
   .founder-grid {
     grid-template-columns: 1fr;
-    gap: 10px;
+    gap: 12px;
   }
 
   .ops-scope .ops-main {
-    padding: 10px;
+    padding: 12px 10px;
   }
 
   .ops-scope .founder-page {
-    padding-top: 44px;
+    padding-top: calc(56px + env(safe-area-inset-top));
     gap: 10px;
   }
 
+  .ops-scope .founder-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
   .ops-scope .founder-topbar__titles h1 {
-    font-size: 16px;
+    font-size: 18px;
   }
 
   .ops-scope .founder-topbar__titles p {
-    font-size: 11px;
+    font-size: 12px;
+  }
+
+  .ops-scope .founder-topbar__controls {
+    width: 100%;
+    justify-content: flex-start;
+    margin-top: 0;
+  }
+
+  .founder-card {
+    padding: 16px;
+  }
+
+  .founder-card__value {
+    font-size: 28px;
+    margin-top: 6px;
+  }
+
+  .founder-card__title {
+    font-size: 12px;
+  }
+
+  .founder-card__meta {
+    font-size: 12px;
+    margin-top: 6px;
   }
 
   .referrer-review__notes-grid,
@@ -6196,12 +6263,15 @@ section.founder-auth input:focus-visible {
   }
 
   .founder-login-screen {
-    padding: 24px 12px;
+    padding: 20px 12px 32px;
+    padding-left: calc(12px + env(safe-area-inset-left));
+    padding-right: calc(12px + env(safe-area-inset-right));
+    padding-bottom: calc(32px + env(safe-area-inset-bottom));
   }
 
   .founder-login-card {
     padding: 26px 22px 24px;
-    width: min(460px, 100%);
+    width: min(460px, calc(100vw - 24px - env(safe-area-inset-left) - env(safe-area-inset-right)));
   }
 
   .founder-login-header h1 {
@@ -6211,6 +6281,132 @@ section.founder-auth input:focus-visible {
   .role-shell__logo {
     width: 90px;
     height: 90px;
+  }
+}
+
+/* Small mobile breakpoint */
+@media (max-width: 400px) {
+  .founder-login-screen {
+    padding: 16px 10px 24px;
+    padding-left: calc(10px + env(safe-area-inset-left));
+    padding-right: calc(10px + env(safe-area-inset-right));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .founder-login-card {
+    width: calc(100vw - 20px - env(safe-area-inset-left) - env(safe-area-inset-right));
+    padding: 22px 18px 20px;
+  }
+
+  .founder-login-header h1 {
+    font-size: 24px;
+  }
+
+  /* Dashboard cards on small mobile */
+  .founder-card {
+    padding: 14px 12px;
+  }
+
+  .founder-card__value {
+    font-size: 24px;
+    margin-top: 6px;
+  }
+
+  .founder-card__title {
+    font-size: 11px;
+  }
+
+  .founder-card__meta {
+    font-size: 11px;
+    margin-top: 6px;
+  }
+
+  .ops-scope .founder-topbar__titles h1 {
+    font-size: 16px;
+  }
+
+  .ops-scope .founder-topbar__titles p {
+    font-size: 11px;
+  }
+}
+
+/* Very small phones (360px and below) */
+@media (max-width: 360px) {
+  .ops-scope .ops-main {
+    padding: 10px 8px;
+  }
+
+  .ops-scope .founder-page {
+    padding-top: calc(52px + env(safe-area-inset-top));
+    gap: 8px;
+  }
+
+  .ops-scope .founder-topbar {
+    gap: 10px;
+  }
+
+  .ops-scope .founder-topbar__titles h1 {
+    font-size: 15px;
+  }
+
+  .ops-scope .founder-topbar__titles p {
+    font-size: 10px;
+  }
+
+  .founder-grid {
+    gap: 10px;
+  }
+
+  .founder-card {
+    padding: 12px 10px;
+  }
+
+  .founder-card__value {
+    font-size: 22px;
+  }
+
+  .founder-card__title {
+    font-size: 10px;
+  }
+
+  .founder-card__meta {
+    font-size: 10px;
+  }
+
+  .ops-menu-button {
+    padding: 8px 12px;
+    font-size: 13px;
+    min-height: 42px;
+  }
+}
+
+/* Landscape mobile - dashboard adjustments */
+@media (max-width: 900px) and (orientation: landscape) {
+  .ops-scope .founder-page {
+    padding-top: calc(56px + env(safe-area-inset-top));
+  }
+
+  .founder-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .founder-card {
+    padding: 14px;
+  }
+
+  .founder-card__value {
+    font-size: 24px;
+  }
+
+  .ops-scope .founder-topbar {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .ops-scope .founder-topbar__controls {
+    width: auto;
   }
 }
 
@@ -6773,40 +6969,7 @@ input[type="radio"] {
   }
 }
 
-/* ==========================================================================
-   Mobile Menu Animation Improvements
-   ========================================================================== */
-
-@media (max-width: 1023px) {
-  /* Slide + fade animation for sidebar */
-  .ops-sidebar {
-    transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1),
-                opacity 0.22s ease-out;
-  }
-
-  .ops-sidebar.is-open {
-    transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1),
-                opacity 0.18s ease-in;
-  }
-
-  /* Backdrop for mobile menu */
-  .ops-sidebar-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 49;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-  }
-
-  .ops-sidebar-backdrop.is-visible {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
+/* Mobile Menu Animation Improvements are handled in Sidebar.module.css */
 
 /* ==========================================================================
    Bottom Sheet Pattern for Mobile Filters

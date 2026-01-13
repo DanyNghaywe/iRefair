@@ -10,6 +10,9 @@
   align-items: center;
   justify-content: center;
   padding: clamp(20px, 4vw, 56px);
+  padding-left: calc(clamp(20px, 4vw, 56px) + env(safe-area-inset-left));
+  padding-right: calc(clamp(20px, 4vw, 56px) + env(safe-area-inset-right));
+  padding-bottom: calc(clamp(20px, 4vw, 56px) + env(safe-area-inset-bottom));
   background: radial-gradient(ellipse at 50% 30%, rgba(223, 243, 248, 0.62) 0%, rgba(19, 80, 88, 0.6) 40%, #0f343c 100%);
   color: #eaf7ff;
   overflow: hidden;
@@ -34,7 +37,7 @@
 .founder-login-shell {
   position: relative;
   z-index: 1;
-  width: min(440px, 100%);
+  width: min(440px, calc(100vw - 40px - env(safe-area-inset-left) - env(safe-area-inset-right)));
 }
 
 .founder-login-card {
@@ -110,6 +113,7 @@
   position: relative;
   display: grid;
   gap: 8px;
+  padding-top: 20px; /* Space for floating label when active */
 }
 
 .founder-login-field input {
@@ -132,7 +136,7 @@
 
 .founder-login-field label {
   position: absolute;
-  top: 12px;
+  top: 32px; /* Adjusted for padding-top */
   left: 0;
   color: rgba(234, 247, 255, 0.72);
   font-size: 0.98rem;
@@ -149,7 +153,7 @@
 
 .founder-login-field input:focus-visible ~ label,
 .founder-login-field input:not(:placeholder-shown) ~ label {
-  top: -16px;
+  top: 4px; /* Adjusted for padding-top */
   font-size: 0.82rem;
   color: #ffffff;
 }
@@ -161,11 +165,11 @@
 }
 
 .founder-login-field .field-error {
-  margin: 0;
-  min-height: 18px;
+  margin: 4px 0 0;
   color: #ffe3dc;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   font-weight: 700;
+  line-height: 1.4;
 }
 
 .founder-login-field input:disabled {
@@ -280,9 +284,58 @@
   opacity: 0.8;
 }
 
+/* Tablet breakpoint */
+@media (min-width: 641px) and (max-width: 1023px) {
+  .founder-login-root {
+    padding: 32px 20px 48px;
+    padding-left: calc(20px + env(safe-area-inset-left));
+    padding-right: calc(20px + env(safe-area-inset-right));
+    padding-bottom: calc(48px + env(safe-area-inset-bottom));
+  }
+
+  .founder-login-shell {
+    width: min(440px, 90vw);
+  }
+
+  .founder-login-card {
+    padding: 28px 26px;
+  }
+
+  .founder-login-header h2 {
+    font-size: 28px;
+  }
+
+  .founder-login-field {
+    padding-top: 18px;
+  }
+
+  .founder-login-field label {
+    top: 30px;
+    font-size: 0.95rem;
+  }
+
+  .founder-login-field input:focus-visible ~ label,
+  .founder-login-field input:not(:placeholder-shown) ~ label {
+    top: 2px;
+  }
+
+  .founder-login-btn {
+    min-height: 52px;
+    font-size: 1rem;
+  }
+}
+
+/* Mobile breakpoint */
 @media (max-width: 640px) {
   .founder-login-root {
     padding: 20px 16px 32px;
+    padding-left: calc(16px + env(safe-area-inset-left));
+    padding-right: calc(16px + env(safe-area-inset-right));
+    padding-bottom: calc(32px + env(safe-area-inset-bottom));
+  }
+
+  .founder-login-shell {
+    width: min(460px, calc(100vw - 32px - env(safe-area-inset-left) - env(safe-area-inset-right)));
   }
 
   .founder-login-card {
@@ -291,5 +344,186 @@
 
   .founder-login-header h2 {
     font-size: 24px;
+  }
+
+  .founder-login-form {
+    gap: 14px;
+    margin-top: 16px;
+  }
+
+  .founder-login-field {
+    padding-top: 18px;
+  }
+
+  .founder-login-field label {
+    top: 30px;
+    font-size: 0.9rem;
+  }
+
+  .founder-login-field input {
+    font-size: 16px; /* Prevent iOS zoom */
+    padding: 12px 0 8px;
+  }
+
+  .founder-login-field input:focus-visible ~ label,
+  .founder-login-field input:not(:placeholder-shown) ~ label {
+    top: 2px;
+    font-size: 0.78rem;
+  }
+
+  .founder-login-field .field-error {
+    font-size: 0.8125rem;
+  }
+
+  .founder-login-btn {
+    min-height: 52px; /* Better touch target */
+    font-size: 1rem;
+  }
+
+  .founder-login-btn--ghost {
+    padding: 12px 16px;
+    font-size: 0.9375rem;
+  }
+}
+
+/* Small mobile breakpoint */
+@media (max-width: 400px) {
+  .founder-login-root {
+    padding: 16px 10px 24px;
+    padding-left: calc(10px + env(safe-area-inset-left));
+    padding-right: calc(10px + env(safe-area-inset-right));
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .founder-login-shell {
+    width: calc(100vw - 20px - env(safe-area-inset-left) - env(safe-area-inset-right));
+  }
+
+  .founder-login-card {
+    padding: 20px 16px 18px;
+  }
+
+  .founder-login-header h2 {
+    font-size: 22px;
+  }
+
+  .founder-login-form {
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .founder-login-field {
+    padding-top: 16px;
+  }
+
+  .founder-login-field label {
+    top: 28px;
+    font-size: 0.875rem;
+  }
+
+  .founder-login-field input {
+    padding: 10px 0 6px;
+  }
+
+  .founder-login-field input:focus-visible ~ label,
+  .founder-login-field input:not(:placeholder-shown) ~ label {
+    top: 0;
+    font-size: 0.75rem;
+  }
+
+  .founder-login-field .field-error {
+    font-size: 0.75rem;
+  }
+
+  .founder-login-btn {
+    min-height: 48px;
+    font-size: 0.9375rem;
+  }
+}
+
+/* Very small phones (iPhone SE width, Galaxy S8, etc.) */
+@media (max-width: 360px) {
+  .founder-login-root {
+    padding: 12px 8px 20px;
+    padding-left: calc(8px + env(safe-area-inset-left));
+    padding-right: calc(8px + env(safe-area-inset-right));
+    padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  }
+
+  .founder-login-shell {
+    width: calc(100vw - 16px - env(safe-area-inset-left) - env(safe-area-inset-right));
+  }
+
+  .founder-login-card {
+    padding: 18px 14px 16px;
+  }
+
+  .founder-login-header h2 {
+    font-size: 20px;
+  }
+
+  .founder-login-lead {
+    font-size: 13px;
+  }
+
+  .founder-login-form {
+    gap: 10px;
+    margin-top: 12px;
+  }
+
+  .founder-login-field {
+    padding-top: 14px;
+  }
+
+  .founder-login-field label {
+    top: 26px;
+    font-size: 0.8125rem;
+  }
+
+  .founder-login-field input:focus-visible ~ label,
+  .founder-login-field input:not(:placeholder-shown) ~ label {
+    top: 0;
+    font-size: 0.6875rem;
+  }
+
+  .founder-login-btn {
+    min-height: 46px;
+    font-size: 0.875rem;
+  }
+}
+
+/* Landscape mobile - ensure scrollability */
+@media (max-width: 900px) and (orientation: landscape) {
+  .founder-login-root {
+    min-height: 100dvh;
+    align-items: flex-start;
+    padding-top: calc(16px + env(safe-area-inset-top));
+    overflow-y: auto;
+  }
+
+  .founder-login-shell {
+    margin: auto 0;
+    width: min(380px, calc(100vw - 40px - env(safe-area-inset-left) - env(safe-area-inset-right)));
+  }
+
+  .founder-login-card {
+    padding: 20px 24px;
+  }
+
+  .founder-login-header h2 {
+    font-size: 22px;
+  }
+
+  .founder-login-form {
+    gap: 12px;
+    margin-top: 14px;
+  }
+
+  .founder-login-field {
+    padding-top: 16px;
+  }
+
+  .founder-login-btn {
+    min-height: 46px;
   }
 }
