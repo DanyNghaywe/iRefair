@@ -506,6 +506,20 @@ h3 {
   overflow-y: auto;
 }
 
+@media (max-width: 1023px) {
+  .board--transparent {
+    height: auto;
+    min-height: 100dvh;
+    max-height: none;
+    padding: 0;
+  }
+
+  .board--wide {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
 /* Prevent body scroll on landing page while allowing dropdown overflow */
 body:has(.board--transparent) {
   overflow: hidden;
@@ -4834,6 +4848,13 @@ section.founder-auth input:focus-visible {
   pointer-events: auto;
 }
 
+@media (max-width: 1023px) {
+  .ops-backdrop {
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 999; /* Just below sidebar */
+  }
+}
+
 .ops-menu-button {
   display: none;
 }
@@ -6079,6 +6100,8 @@ section.founder-auth input:focus-visible {
   .ops-layout {
     display: flex;
     flex-direction: column;
+    min-height: 100dvh;
+    width: 100%;
     padding: 0;
     gap: 0;
   }
@@ -6086,10 +6109,11 @@ section.founder-auth input:focus-visible {
   .ops-main {
     position: relative;
     z-index: 1;
+    flex: 1;
     width: 100%;
     max-width: 100%;
     padding: 16px;
-    padding-top: 8px;
+    padding-top: 80px; /* Space for menu button */
   }
 
   .ops-menu-button {
