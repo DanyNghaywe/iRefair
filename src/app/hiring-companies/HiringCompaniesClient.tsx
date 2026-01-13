@@ -22,6 +22,7 @@ export function HiringCompaniesClient({ mergedCompanies }: Props) {
   const [warningOpen, setWarningOpen] = useState(false);
   const [selectedCompanyName, setSelectedCompanyName] = useState('');
   const [selectedCareersUrl, setSelectedCareersUrl] = useState('');
+  const [modalKey, setModalKey] = useState(0);
 
   const totalPages = Math.ceil(mergedCompanies.length / PAGE_SIZE);
   const validPage = Math.min(Math.max(1, currentPage), Math.max(1, totalPages));
@@ -34,11 +35,14 @@ export function HiringCompaniesClient({ mergedCompanies }: Props) {
   const handleOpenCareersClick = (companyName: string, careersUrl: string) => {
     setSelectedCompanyName(companyName);
     setSelectedCareersUrl(careersUrl);
+    setModalKey((k) => k + 1);
     setWarningOpen(true);
   };
 
   const handleCloseWarning = () => {
     setWarningOpen(false);
+    setSelectedCompanyName('');
+    setSelectedCareersUrl('');
   };
 
   return (
@@ -170,6 +174,7 @@ export function HiringCompaniesClient({ mergedCompanies }: Props) {
       <PublicFooter />
 
       <CareersWarningModal
+        key={modalKey}
         open={warningOpen}
         onClose={handleCloseWarning}
         companyName={selectedCompanyName}
