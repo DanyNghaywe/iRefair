@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { AppShell } from '@/components/AppShell';
+import { CareersWarningModal } from '@/components/CareersWarningModal';
 import { useLanguage } from '@/components/LanguageProvider';
 import { PublicFooter } from '@/components/PublicFooter';
 import type { CompanyRow } from '@/lib/hiringCompanies';
@@ -18,6 +19,9 @@ const PAGE_SIZE = 20;
 export function HiringCompaniesClient({ mergedCompanies }: Props) {
   const { withLanguage } = useLanguage();
   const [currentPage, setCurrentPage] = useState(1);
+  const [warningOpen, setWarningOpen] = useState(false);
+  const [selectedCompanyName, setSelectedCompanyName] = useState('');
+  const [selectedCareersUrl, setSelectedCareersUrl] = useState('');
 
   const totalPages = Math.ceil(mergedCompanies.length / PAGE_SIZE);
   const validPage = Math.min(Math.max(1, currentPage), Math.max(1, totalPages));
@@ -26,6 +30,16 @@ export function HiringCompaniesClient({ mergedCompanies }: Props) {
     const startIndex = (validPage - 1) * PAGE_SIZE;
     return mergedCompanies.slice(startIndex, startIndex + PAGE_SIZE);
   }, [mergedCompanies, validPage]);
+
+  const handleOpenCareersClick = (companyName: string, careersUrl: string) => {
+    setSelectedCompanyName(companyName);
+    setSelectedCareersUrl(careersUrl);
+    setWarningOpen(true);
+  };
+
+  const handleCloseWarning = () => {
+    setWarningOpen(false);
+  };
 
   return (
     <AppShell>
@@ -76,15 +90,14 @@ export function HiringCompaniesClient({ mergedCompanies }: Props) {
                         <td data-label="Industry">{company.industry}</td>
                         <td data-label="Careers" className="td--full">
                           {careersUrl ? (
-                            <Link
-                              href={careersUrl}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="hiring-link"
+                            <button
+                              type="button"
+                              className="hiring-link hiring-link--btn"
                               aria-label={`Open careers website for ${company.name}`}
+                              onClick={() => handleOpenCareersClick(company.name, careersUrl)}
                             >
                               Open careers website
-                            </Link>
+                            </button>
                           ) : (
                             <span className="hiring-missing">Not provided yet</span>
                           )}
@@ -155,6 +168,13 @@ export function HiringCompaniesClient({ mergedCompanies }: Props) {
         </section>
       </main>
       <PublicFooter />
+
+      <CareersWarningModal
+        open={warningOpen}
+        onClose={handleCloseWarning}
+        companyName={selectedCompanyName}
+        careersUrl={selectedCareersUrl}
+      />
     </AppShell>
   );
 }
