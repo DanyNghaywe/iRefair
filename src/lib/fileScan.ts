@@ -35,6 +35,10 @@ const KEYWORDS = [
 const EMAIL_REGEX = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
 const PHONE_REGEX = /\b(?:\+?\d{1,3}[-.\s]?)?(?:\(?\d{3}\)?[-.\s]?){2}\d{4}\b/;
 
+function isTransientVirusTotalStatus(status: number): boolean {
+  return status === 429 || status === 408 || (status >= 500 && status <= 599);
+}
+
 export async function scanBufferForViruses(
   buffer: Buffer,
   filename: string,
@@ -57,6 +61,10 @@ export async function scanBufferForViruses(
     });
 
     if (!uploadRes.ok) {
+      if (isTransientVirusTotalStatus(uploadRes.status)) {
+        console.warn(`VirusTotal upload returned ${uploadRes.status}; skipping scan`);
+        return { ok: true, skipped: true, message: `Virus scan skipped (VirusTotal ${uploadRes.status})` };
+      }
       const text = await uploadRes.text();
       return { ok: false, message: `Virus scan upload failed (${uploadRes.status}): ${text}` };
     }
@@ -78,7 +86,13 @@ export async function scanBufferForViruses(
         },
       );
 
-      if (!analysisRes.ok) continue;
+      if (!analysisRes.ok) {
+        if (isTransientVirusTotalStatus(analysisRes.status)) {
+          console.warn(`VirusTotal analysis returned ${analysisRes.status}; skipping scan`);
+          return { ok: true, skipped: true, message: `Virus scan skipped (VirusTotal ${analysisRes.status})` };
+        }
+        return { ok: false, message: `Virus scan failed (${analysisRes.status})` };
+      }
       const analysis = (await analysisRes.json()) as {
         data?: { attributes?: { status?: string; stats?: typeof stats } };
       };
@@ -100,8 +114,8 @@ export async function scanBufferForViruses(
       console.warn('VirusTotal scan timeout; skipping', error);
       return { ok: true, skipped: true, message: 'Virus scan skipped (timeout).' };
     }
-    console.error('VirusTotal scan error', error);
-    return { ok: false, message: 'Virus scan failed (service unavailable).' };
+    console.warn('VirusTotal scan error; skipping', error);
+    return { ok: true, skipped: true, message: 'Virus scan skipped (service unavailable).' };
   }
 }
 
