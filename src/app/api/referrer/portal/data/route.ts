@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { findApplicantByIdentifier, getReferrerByIrref, listApplications, normalizeStatus } from '@/lib/sheets';
+import {
+  findApplicantByIdentifier,
+  getReferrerByIrref,
+  listApplications,
+  listReferrerCompanies,
+  normalizeStatus,
+} from '@/lib/sheets';
 import { parseActionHistory } from '@/lib/actionHistory';
 import { normalizePortalTokenVersion, verifyReferrerToken } from '@/lib/referrerPortalToken';
 import { getReferrerPortalToken } from '@/lib/referrerPortalAuth';
@@ -9,6 +15,11 @@ export const dynamic = 'force-dynamic';
 
 async function buildItems(referrerIrref: string) {
   const apps = await listApplications({ referrerIrref, limit: 0 });
+
+  // Get all companies for this referrer for lookup
+  const companies = await listReferrerCompanies(referrerIrref);
+  const companyMap = new Map(companies.map((c) => [c.id, c]));
+
   const items = await Promise.all(
     apps.items.map(async (app) => {
       const applicant = app.applicantId
@@ -20,6 +31,26 @@ async function buildItems(referrerIrref: string) {
       const resumeDownloadUrl = app.resumeFileId
         ? `/api/referrer/portal/resume?applicationId=${encodeURIComponent(app.id)}`
         : '';
+
+      // Get company info - try referrerCompanyId first, then fall back to iCrn lookup
+      let companyName = '';
+      let companyId = '';
+      if (app.referrerCompanyId) {
+        const company = companyMap.get(app.referrerCompanyId);
+        if (company) {
+          companyName = company.companyName;
+          companyId = company.id;
+        }
+      }
+      // If no company found via ID, try matching by iCrn
+      if (!companyName && app.iCrn) {
+        const matchedCompany = companies.find((c) => c.companyIrcrn === app.iCrn);
+        if (matchedCompany) {
+          companyName = matchedCompany.companyName;
+          companyId = matchedCompany.id;
+        }
+      }
+
       return {
         id: app.id,
         applicantId: app.applicantId,
@@ -28,6 +59,8 @@ async function buildItems(referrerIrref: string) {
         applicantPhone: applicant?.record.phone || '',
         position: app.position,
         iCrn: app.iCrn,
+        companyId,
+        companyName,
         resumeFileName: app.resumeFileName,
         resumeDownloadUrl,
         status: normalizeStatus(app.status),
@@ -53,7 +86,16 @@ async function buildItems(referrerIrref: string) {
     }),
   );
 
-  return { total: apps.total, items };
+  // Build companies list for filter (only approved companies)
+  const approvedCompanies = companies
+    .filter((c) => c.companyApproval === 'approved')
+    .map((c) => ({
+      id: c.id,
+      name: c.companyName,
+      ircrn: c.companyIrcrn || '',
+    }));
+
+  return { total: apps.total, items, companies: approvedCompanies };
 }
 
 export async function GET(request: NextRequest) {

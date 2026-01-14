@@ -1028,6 +1028,122 @@ ${normalizedPortalUrl ? `${portalCtaText}\n${portalCtaButton}: ${normalizedPorta
   return { subject, html, text };
 }
 
+type ReferrerNewCompanyParams = {
+  name: string;
+  iRref: string;
+  newCompany: string;
+  locale?: 'en' | 'fr';
+  portalUrl?: string;
+};
+
+export function referrerNewCompanyEmail(params: ReferrerNewCompanyParams): TemplateResult {
+  const { name, iRref, newCompany, locale = 'en', portalUrl } = params;
+
+  const subject = t(
+    'New company added to your referrer account - iRefair',
+    'Nouvelle entreprise ajoutée à votre compte de recommandateur - iRefair',
+    locale
+  );
+
+  const greeting = `${t('Hi', 'Bonjour', locale)} ${escapeHtml(name)},`;
+  const eyebrowText = t('NEW COMPANY ADDED', 'NOUVELLE ENTREPRISE AJOUTÉE', locale);
+  const iRrefLabel = t('iRREF', 'iRREF', locale);
+  const companyLabel = t('New Company', 'Nouvelle entreprise', locale);
+
+  const mainText1 = t(
+    `We received your referrer form submission with a new company: ${newCompany}. This company has been added to your existing referrer account.`,
+    `Nous avons reçu votre formulaire de recommandateur avec une nouvelle entreprise: ${newCompany}. Cette entreprise a été ajoutée à votre compte de recommandateur existant.`,
+    locale
+  );
+
+  const mainText2 = t(
+    "This new company is currently pending approval. Our admin team will review and approve it shortly. Once approved, candidates can apply through this company.",
+    "Cette nouvelle entreprise est en attente d'approbation. Notre équipe d'administration l'examinera et l'approuvera sous peu. Une fois approuvée, les candidats pourront postuler via cette entreprise.",
+    locale
+  );
+
+  const mainText3 = t(
+    "If you have any questions or need immediate assistance, please don't hesitate to contact our admin team directly.",
+    "Si vous avez des questions ou si vous avez besoin d'une assistance immédiate, n'hésitez pas à contacter notre équipe d'administration directement.",
+    locale
+  );
+
+  const contactLabel = t('Contact Admin', 'Contacter l\'administrateur', locale);
+  const contactEmail = 'irefair.andbeyondconsulting@gmail.com';
+
+  const portalCtaText = t(
+    'Access your referrer portal',
+    'Accéder à votre portail de recommandateur',
+    locale
+  );
+  const portalCtaButton = t('Open portal', 'Ouvrir le portail', locale);
+  const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
+
+  const content = `
+    <h1 style="margin:0 0 14px 0;font-size:22px;line-height:1.5;font-weight:700;color:#1f2a37;">
+      ${greeting}
+    </h1>
+    <p style="margin:0 0 14px 0;font-size:14px;line-height:1.7;color:#3b4251;">
+      ${escapeHtml(mainText1)}
+    </p>
+    <p style="margin:0 0 14px 0;font-size:14px;line-height:1.7;color:#3b4251;">
+      ${escapeHtml(mainText2)}
+    </p>
+    <p style="margin:0 0 20px 0;font-size:14px;line-height:1.7;color:#3b4251;">
+      ${escapeHtml(mainText3)}
+    </p>
+    ${normalizedPortalUrl ? `
+      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#3b4251;text-align:center;">
+        ${escapeHtml(portalCtaText)}
+      </p>
+      <div style="text-align:center;margin:0 0 20px 0;">
+        ${button(portalCtaButton, normalizedPortalUrl, 'primary')}
+      </div>
+      ${divider}
+    ` : ''}
+    <div style="text-align:center;margin:0 0 20px 0;">
+      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#3b4251;">
+        ${escapeHtml(contactLabel)}:
+      </p>
+      <a href="mailto:${contactEmail}" style="display:inline-block;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;background:transparent;color:#1f2a37;border:2px solid #e6e9f0;">${contactEmail}</a>
+    </div>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${escapeHtml(eyebrowText)}</div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">${iRrefLabel}: <strong style="color:#1f2a37;">${escapeHtml(iRref)}</strong></div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:6px;">${companyLabel}: <strong style="color:#1f2a37;">${escapeHtml(newCompany)}</strong></div>
+    </div>
+  `;
+
+  const preheader = t(
+    `New company "${newCompany}" has been added to your referrer account and is pending approval.`,
+    `La nouvelle entreprise "${newCompany}" a été ajoutée à votre compte de recommandateur et est en attente d'approbation.`,
+    locale
+  );
+
+  const html = emailWrapper(content, preheader, customHeader);
+
+  const text = `${greeting}
+
+${mainText1}
+
+${mainText2}
+
+${mainText3}
+
+${iRrefLabel}: ${iRref}
+${companyLabel}: ${newCompany}
+
+${normalizedPortalUrl ? `${portalCtaText}\n${portalCtaButton}: ${normalizedPortalUrl}\n\n` : ''}${contactLabel}: ${contactEmail}
+
+- ${t('The iRefair team', 'L\'équipe iRefair', locale)}`;
+
+  return { subject, html, text };
+}
+
 type ReferrerPortalLinkParams = {
   name: string;
   iRref: string;

@@ -1,9 +1,23 @@
 import { NextResponse } from 'next/server';
 import { sendMail } from '@/lib/mailer';
 import { rateLimit, rateLimitHeaders, RATE_LIMITS } from '@/lib/rateLimit';
-import { appendReferrerRow, generateIRREF, getReferrerByEmail, addPendingUpdate } from '@/lib/sheets';
+import {
+  appendReferrerRow,
+  generateIRREF,
+  getReferrerByEmail,
+  addPendingUpdate,
+  // New multi-company functions
+  appendReferrerCompanyRow,
+  generateReferrerCompanyId,
+  findReferrerCompanyByName,
+  listReferrerCompanies,
+} from '@/lib/sheets';
 import { escapeHtml, normalizeHttpUrl } from '@/lib/validation';
-import { referrerRegistrationConfirmation, referrerAlreadyExistsEmail } from '@/lib/emailTemplates';
+import {
+  referrerRegistrationConfirmation,
+  referrerAlreadyExistsEmail,
+  referrerNewCompanyEmail,
+} from '@/lib/emailTemplates';
 import { buildReferrerPortalLink, ensureReferrerPortalTokenVersion } from '@/lib/referrerPortalLink';
 
 type ReferrerPayload = {
@@ -99,45 +113,123 @@ export async function POST(request: Request) {
         );
       }
 
-      // Store the submitted data as a pending update
-      await addPendingUpdate(existingReferrer.record.irref, {
-        name,
-        email,
-        phone,
-        country,
-        company,
-        companyIndustry: resolveIndustry(companyIndustry, companyIndustryOther, companyIndustry),
-        careersPortal,
-        workType,
-        linkedin,
-      });
+      const referrerIrref = existingReferrer.record.irref;
+      const companyIndustryResolved = resolveIndustry(companyIndustry, companyIndustryOther, companyIndustry);
 
-      // Generate portal link for existing referrer
-      const portalTokenVersion = await ensureReferrerPortalTokenVersion(existingReferrer.record.irref);
-      const portalUrl = buildReferrerPortalLink(existingReferrer.record.irref, portalTokenVersion);
+      // Check if this company already exists for the referrer
+      const existingCompany = company ? await findReferrerCompanyByName(referrerIrref, company) : null;
 
-      // Send email informing them they already have an iRREF
-      const emailTemplate = referrerAlreadyExistsEmail({
-        name: fallbackName,
-        iRref: existingReferrer.record.irref,
-        locale,
-        portalUrl,
-      });
+      if (existingCompany) {
+        // Same company name - this is an update to existing company
+        // Store as pending update on the referrer for backward compatibility
+        await addPendingUpdate(referrerIrref, {
+          name,
+          email,
+          phone,
+          country,
+          company,
+          companyIndustry: companyIndustryResolved,
+          careersPortal,
+          workType,
+          linkedin,
+        });
 
-      await sendMail({
-        to: email,
-        subject: emailTemplate.subject,
-        html: emailTemplate.html,
-        text: emailTemplate.text,
-      });
+        // Generate portal link for existing referrer
+        const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrerIrref);
+        const portalUrl = buildReferrerPortalLink(referrerIrref, portalTokenVersion);
 
-      return NextResponse.json({ ok: true, iRref: existingReferrer.record.irref, isExisting: true });
+        // Send email informing them they already have an iRREF
+        const emailTemplate = referrerAlreadyExistsEmail({
+          name: fallbackName,
+          iRref: referrerIrref,
+          locale,
+          portalUrl,
+        });
+
+        await sendMail({
+          to: email,
+          subject: emailTemplate.subject,
+          html: emailTemplate.html,
+          text: emailTemplate.text,
+        });
+
+        return NextResponse.json({ ok: true, iRref: referrerIrref, isExisting: true });
+      } else if (company) {
+        // Different company name - create a new company record (pending approval)
+        const companyId = generateReferrerCompanyId();
+        await appendReferrerCompanyRow({
+          id: companyId,
+          referrerIrref,
+          companyName: company,
+          companyApproval: 'pending',
+          companyIndustry: companyIndustryResolved,
+          careersPortal,
+          workType,
+        });
+
+        // Generate portal link for existing referrer
+        const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrerIrref);
+        const portalUrl = buildReferrerPortalLink(referrerIrref, portalTokenVersion);
+
+        // Send email about new company added (pending approval)
+        const emailTemplate = referrerNewCompanyEmail({
+          name: fallbackName,
+          iRref: referrerIrref,
+          newCompany: company,
+          locale,
+          portalUrl,
+        });
+
+        await sendMail({
+          to: email,
+          subject: emailTemplate.subject,
+          html: emailTemplate.html,
+          text: emailTemplate.text,
+        });
+
+        return NextResponse.json({
+          ok: true,
+          iRref: referrerIrref,
+          isExisting: true,
+          newCompanyAdded: true,
+          companyId,
+        });
+      } else {
+        // No company provided - just update referrer info
+        await addPendingUpdate(referrerIrref, {
+          name,
+          email,
+          phone,
+          country,
+          linkedin,
+        });
+
+        const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrerIrref);
+        const portalUrl = buildReferrerPortalLink(referrerIrref, portalTokenVersion);
+
+        const emailTemplate = referrerAlreadyExistsEmail({
+          name: fallbackName,
+          iRref: referrerIrref,
+          locale,
+          portalUrl,
+        });
+
+        await sendMail({
+          to: email,
+          subject: emailTemplate.subject,
+          html: emailTemplate.html,
+          text: emailTemplate.text,
+        });
+
+        return NextResponse.json({ ok: true, iRref: referrerIrref, isExisting: true });
+      }
     }
 
     const iRref = await generateIRREF();
 
     const companyIndustryResolved = resolveIndustry(companyIndustry, companyIndustryOther, '');
 
+    // Create the referrer row (still includes company for backward compatibility)
     await appendReferrerRow({
       iRref,
       name,
@@ -151,6 +243,21 @@ export async function POST(request: Request) {
       workType,
       linkedin,
     });
+
+    // Also create a company record in the new Referrer Companies sheet
+    let companyId: string | undefined;
+    if (company) {
+      companyId = generateReferrerCompanyId();
+      await appendReferrerCompanyRow({
+        id: companyId,
+        referrerIrref: iRref,
+        companyName: company,
+        companyApproval: 'pending',
+        companyIndustry: companyIndustryResolved,
+        careersPortal,
+        workType,
+      });
+    }
 
     const emailTemplate = referrerRegistrationConfirmation({
       name: fallbackName,
@@ -172,7 +279,7 @@ export async function POST(request: Request) {
       text: emailTemplate.text,
     });
 
-    return NextResponse.json({ ok: true, iRref });
+    return NextResponse.json({ ok: true, iRref, companyId });
   } catch (error) {
     console.error('Referrer email API error', error);
     return NextResponse.json({ ok: false, error: 'Failed to send email' }, { status: 500 });

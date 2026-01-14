@@ -28,6 +28,8 @@ const translations: Record<
       company: string;
       total: string;
       noEmail: string;
+      filterByCompany: string;
+      allCompanies: string;
     };
     table: {
       title: string;
@@ -126,6 +128,8 @@ const translations: Record<
       company: "Company",
       total: "Total",
       noEmail: "No email on file",
+      filterByCompany: "Filter by company",
+      allCompanies: "All companies",
     },
     table: {
       title: "Applications",
@@ -281,6 +285,8 @@ const translations: Record<
       company: "Entreprise",
       total: "Total",
       noEmail: "Aucun e-mail enregistré",
+      filterByCompany: "Filtrer par entreprise",
+      allCompanies: "Toutes les entreprises",
     },
     table: {
       title: "Candidatures",
@@ -436,6 +442,8 @@ type PortalItem = {
   applicantPhone: string;
   position: string;
   iCrn: string;
+  companyId?: string;
+  companyName?: string;
   resumeFileName: string;
   resumeDownloadUrl?: string;
   status: string;
@@ -471,10 +479,17 @@ type PortalItem = {
   }>;
 };
 
+type PortalCompany = {
+  id: string;
+  name: string;
+  ircrn: string;
+};
+
 type PortalResponse = {
   ok: true;
   referrer: { irref: string; name?: string; email?: string; company?: string };
   items: PortalItem[];
+  companies?: PortalCompany[];
   total: number;
 };
 
@@ -573,6 +588,9 @@ export default function PortalClient() {
 
   // Expanded rows state
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+
+  // Company filter state
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
 
   // Sorting state
   type SortColumn = "candidate" | "position" | "status";
@@ -824,7 +842,11 @@ export default function PortalClient() {
 
   const sortedItems = useMemo(() => {
     if (!data?.items) return [];
-    return [...data.items].sort((a, b) => {
+    // Filter by company first if a company is selected
+    const filteredItems = selectedCompanyId
+      ? data.items.filter((item) => item.companyId === selectedCompanyId)
+      : data.items;
+    return [...filteredItems].sort((a, b) => {
       let comparison = 0;
       switch (sortColumn) {
         case "candidate":
@@ -839,7 +861,7 @@ export default function PortalClient() {
       }
       return sortDirection === "asc" ? comparison : -comparison;
     });
-  }, [data, sortColumn, sortDirection]);
+  }, [data, sortColumn, sortDirection, selectedCompanyId]);
 
   // Pagination calculations
   const totalPages = Math.ceil(sortedItems.length / PAGE_SIZE);
@@ -850,10 +872,10 @@ export default function PortalClient() {
     return sortedItems.slice(startIndex, startIndex + PAGE_SIZE);
   }, [sortedItems, validPage]);
 
-  // Reset to page 1 when data changes
+  // Reset to page 1 when data or filter changes
   useEffect(() => {
     setCurrentPage(1);
-  }, [data?.items?.length]);
+  }, [data?.items?.length, selectedCompanyId]);
 
   const header = (
     <section className="card page-card portal-card" aria-labelledby="portal-title">
@@ -1072,6 +1094,22 @@ export default function PortalClient() {
             <p className="portal-table-sub">{sortedItems.length} {t.table.activeReferrals}</p>
           </div>
           <div className="portal-table-meta">
+            {/* Company filter - only show if there are multiple companies */}
+            {data.companies && data.companies.length > 1 && (
+              <select
+                className="portal-company-filter"
+                value={selectedCompanyId}
+                onChange={(e) => setSelectedCompanyId(e.target.value)}
+                aria-label={t.header.filterByCompany}
+              >
+                <option value="">{t.header.allCompanies}</option>
+                {data.companies.map((company) => (
+                  <option key={company.id} value={company.id}>
+                    {company.name}
+                  </option>
+                ))}
+              </select>
+            )}
             <span className="portal-count-pill">{data.total} {t.table.totalLabel}</span>
             {totalPages > 1 && (
               <span className="portal-page-info">
@@ -1240,6 +1278,9 @@ export default function PortalClient() {
                             <td className="portal-col-position" data-label={t.table.position}>
                               <div className="portal-cell-title">{item.position}</div>
                               <div className="portal-cell-sub">{t.table.iRCRN}: {item.iCrn || "-"}</div>
+                              {data.companies && data.companies.length > 1 && item.companyName && (
+                                <div className="portal-cell-sub portal-cell-company">{item.companyName}</div>
+                              )}
                             </td>
                             <td className="portal-col-cv" data-label={t.table.cv} onClick={(e) => e.stopPropagation()}>
                               {item.resumeDownloadUrl ? (

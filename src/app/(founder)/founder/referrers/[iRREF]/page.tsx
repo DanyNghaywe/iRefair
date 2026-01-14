@@ -99,6 +99,18 @@ type ApplicationItem = {
   status: string;
 };
 
+type ReferrerCompany = {
+  id: string;
+  timestamp: string;
+  companyName: string;
+  companyIrcrn: string | null;
+  companyApproval: string;
+  companyIndustry: string;
+  careersPortal: string | null;
+  workType: string;
+  archived: boolean;
+};
+
 const statusOptions = ["", "New", "Engaged", "Active", "Paused", "Closed"];
 const LINK_PREVIEW_MAX = 42;
 
@@ -317,6 +329,9 @@ export default function ReferrerReviewPage() {
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
   const router = useRouter();
   const [appsLoading, setAppsLoading] = useState(false);
+  const [companies, setCompanies] = useState<ReferrerCompany[]>([]);
+  const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [companyApprovalLoading, setCompanyApprovalLoading] = useState<string | null>(null);
   const skipAutosaveRef = useRef(true);
 
   // Store original values when entering edit mode
@@ -407,6 +422,59 @@ export default function ReferrerReviewPage() {
     if (!referrer?.irref) return;
     fetchApplications(referrer.irref);
   }, [referrer?.irref]);
+
+  const fetchCompanies = async (irrefValue: string) => {
+    setCompaniesLoading(true);
+    try {
+      const response = await fetch(`/api/founder/referrers/${encodeURIComponent(irrefValue)}/companies`, {
+        cache: "no-store",
+      });
+      const data = await response.json();
+      if (data?.ok) {
+        setCompanies(data.companies ?? []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch companies", error);
+    }
+    setCompaniesLoading(false);
+  };
+
+  useEffect(() => {
+    if (!referrer?.irref) return;
+    fetchCompanies(referrer.irref);
+  }, [referrer?.irref]);
+
+  const handleCompanyApproval = async (companyId: string, approval: "approved" | "denied") => {
+    setCompanyApprovalLoading(companyId);
+    setActionMessage(null);
+    setActionError(null);
+    try {
+      const response = await fetch(`/api/founder/referrer-companies/${encodeURIComponent(companyId)}/approval`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approval }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.ok) {
+        setActionError(data?.error || t.unableToUpdateApproval);
+      } else {
+        // Update the companies list with the new approval status
+        setCompanies((prev) =>
+          prev.map((c) =>
+            c.id === companyId
+              ? { ...c, companyApproval: approval, companyIrcrn: data.companyIrcrn || c.companyIrcrn }
+              : c,
+          ),
+        );
+        setActionMessage(approval === "approved" ? t.companyApproved : t.companyDenied);
+      }
+    } catch (error) {
+      console.error("Company approval failed", error);
+      setActionError(t.unableToUpdateApproval);
+    } finally {
+      setCompanyApprovalLoading(null);
+    }
+  };
 
   useEffect(() => {
     if (!referrer) return;
@@ -1062,6 +1130,76 @@ export default function ReferrerReviewPage() {
                 </div>
               </div>
             </DetailSection>
+
+            {/* Multi-company support: Companies from Referrer Companies sheet */}
+            {companies.length > 0 && (
+              <DetailSection title="Companies" className="referrer-review__companies">
+                {companiesLoading ? (
+                  <SkeletonDetailGrid fields={3} />
+                ) : (
+                  <div className="companies-list">
+                    {companies.map((comp) => {
+                      const isLoading = companyApprovalLoading === comp.id;
+                      const isPending = (comp.companyApproval || "pending").toLowerCase() === "pending";
+                      const isApproved = comp.companyApproval?.toLowerCase() === "approved";
+                      const isDenied = comp.companyApproval?.toLowerCase() === "denied";
+                      return (
+                        <div key={comp.id} className="company-card">
+                          <div className="company-card__header">
+                            <span className="company-card__name">{comp.companyName || "Unnamed"}</span>
+                            <Badge tone={isApproved ? "success" : isDenied ? "danger" : "neutral"}>
+                              {isApproved ? "Approved" : isDenied ? "Denied" : "Pending"}
+                            </Badge>
+                          </div>
+                          <div className="company-card__details">
+                            <div className="company-card__row">
+                              <span className="company-card__label">iRCRN:</span>
+                              <span>{comp.companyIrcrn || "-"}</span>
+                            </div>
+                            <div className="company-card__row">
+                              <span className="company-card__label">Industry:</span>
+                              <span>{comp.companyIndustry || "-"}</span>
+                            </div>
+                            <div className="company-card__row">
+                              <span className="company-card__label">Work Type:</span>
+                              <span>{comp.workType || "-"}</span>
+                            </div>
+                            {comp.careersPortal && (
+                              <div className="company-card__row">
+                                <span className="company-card__label">Careers:</span>
+                                <a href={comp.careersPortal} target="_blank" rel="noopener noreferrer">
+                                  {truncateText(comp.careersPortal, 30)}
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                          {isPending && (
+                            <div className="company-card__actions">
+                              <ActionBtn
+                                as="button"
+                                variant="primary"
+                                onClick={() => handleCompanyApproval(comp.id, "approved")}
+                                disabled={isLoading}
+                              >
+                                {isLoading ? "..." : "Approve"}
+                              </ActionBtn>
+                              <ActionBtn
+                                as="button"
+                                variant="ghost"
+                                onClick={() => handleCompanyApproval(comp.id, "denied")}
+                                disabled={isLoading}
+                              >
+                                {isLoading ? "..." : "Deny"}
+                              </ActionBtn>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </DetailSection>
+            )}
 
             <DetailSection title="Links">
               <div className="field-grid field-grid--two">
