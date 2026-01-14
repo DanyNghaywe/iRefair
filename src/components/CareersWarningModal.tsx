@@ -10,8 +10,8 @@ const translations = {
   en: {
     title: "Before you go",
     warningText: "Use the careers page only to find positions you're interested in.",
-    doNotApply: "Do not apply directly on the company's website.",
-    returnText: "Return to iRefair and use the Apply page to submit your application and receive a referral.",
+    doNotApply: "Applying directly on the company's website will NOT get you a referral.",
+    returnText: "Return to iRefair and use the Apply page to submit your application.",
     cancel: "Cancel",
     applyNow: "Apply Now",
     viewCareers: "View Careers",
@@ -19,8 +19,8 @@ const translations = {
   fr: {
     title: "Avant de partir",
     warningText: "Utilisez la page des emplois uniquement pour trouver les postes qui vous int\u00e9ressent.",
-    doNotApply: "Ne postulez pas directement sur le site de l'entreprise.",
-    returnText: "Revenez sur iRefair et utilisez la page Postuler pour soumettre votre candidature et obtenir une recommandation.",
+    doNotApply: "Postuler directement sur le site de l'entreprise ne vous donnera PAS de recommandation.",
+    returnText: "Revenez sur iRefair et utilisez la page Postuler pour soumettre votre candidature.",
     cancel: "Annuler",
     applyNow: "Postuler maintenant",
     viewCareers: "Voir les emplois",
