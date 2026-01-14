@@ -27,7 +27,7 @@
   flex-direction: column;
   max-height: calc(100vh - 32px);
   width: 100%;
-  max-width: 480px;
+  max-width: 520px;
   background: var(--panel);
   border-radius: 16px;
   box-shadow:
@@ -246,6 +246,25 @@
 @media (max-width: 768px) {
   .modal {
     max-width: 90vw;
+  }
+}
+
+/* Intermediate breakpoint for longer translations */
+@media (max-width: 560px) {
+  .footer {
+    flex-wrap: wrap;
+  }
+
+  .footerActions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  .cancelBtn,
+  .secondaryBtn,
+  .continueBtn {
+    white-space: normal;
+    text-align: center;
   }
 }
 

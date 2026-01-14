@@ -4,6 +4,28 @@ import { useCallback, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import styles from "./CareersWarningModal.module.css";
+import { useLanguage } from "./LanguageProvider";
+
+const translations = {
+  en: {
+    title: "Before you go",
+    warningText: "Use the careers page only to find positions you're interested in.",
+    doNotApply: "Do not apply directly on the company's website.",
+    returnText: "Return to iRefair and use the Apply page to submit your application and receive a referral.",
+    cancel: "Cancel",
+    applyNow: "Apply Now",
+    viewCareers: "View Careers",
+  },
+  fr: {
+    title: "Avant de partir",
+    warningText: "Utilisez la page des emplois uniquement pour trouver les postes qui vous int\u00e9ressent.",
+    doNotApply: "Ne postulez pas directement sur le site de l'entreprise.",
+    returnText: "Revenez sur iRefair et utilisez la page Postuler pour soumettre votre candidature et obtenir une recommandation.",
+    cancel: "Annuler",
+    applyNow: "Postuler maintenant",
+    viewCareers: "Voir les emplois",
+  },
+};
 
 type CareersWarningModalProps = {
   open: boolean;
@@ -47,6 +69,8 @@ export function CareersWarningModal({
   careersUrl,
 }: CareersWarningModalProps) {
   const router = useRouter();
+  const { language } = useLanguage();
+  const t = translations[language];
   const dialogRef = useRef<HTMLDivElement>(null);
   const cancelBtnRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
@@ -143,16 +167,15 @@ export function CareersWarningModal({
 
           {/* Title */}
           <h2 id="careers-warning-title" className={styles.title}>
-            Before you go
+            {t.title}
           </h2>
 
           {/* Warning Box */}
           <div className={styles.warningBox}>
             <p id="careers-warning-description" className={styles.warningText}>
-              Use the careers page only to find positions you&apos;re interested
-              in. <strong>Do not apply directly on the company&apos;s website.</strong>{" "}
-              Return to iRefair and use the Apply page to submit your
-              application and receive a referral.
+              {t.warningText}{" "}
+              <strong>{t.doNotApply}</strong>{" "}
+              {t.returnText}
             </p>
           </div>
         </div>
@@ -165,7 +188,7 @@ export function CareersWarningModal({
             className={styles.cancelBtn}
             onClick={onClose}
           >
-            Cancel
+            {t.cancel}
           </button>
           <div className={styles.footerActions}>
             <button
@@ -173,14 +196,14 @@ export function CareersWarningModal({
               className={styles.secondaryBtn}
               onClick={handleGoToApply}
             >
-              Apply Now
+              {t.applyNow}
             </button>
             <button
               type="button"
               className={styles.continueBtn}
               onClick={handleContinue}
             >
-              View Careers
+              {t.viewCareers}
             </button>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 import { ActionBtn } from "@/components/ActionBtn";
+import { useLanguage } from "@/components/LanguageProvider";
 import { AutosaveHint } from "@/components/founder/AutosaveHint";
 import { Badge } from "@/components/founder/Badge";
 import { DetailPageShell } from "@/components/founder/DetailPageShell";
@@ -14,6 +15,41 @@ import { Select } from "@/components/Select";
 import { Skeleton, SkeletonDetailGrid, SkeletonStack } from "@/components/founder/Skeleton";
 import { Topbar } from "@/components/founder/Topbar";
 import { countryOptions } from "@/lib/countries";
+
+const translations = {
+  en: {
+    inviteSent: "Invite sent.",
+    unableToSendInvite: "Unable to send invite.",
+    companyApproved: "Company approved.",
+    companyDenied: "Company denied.",
+    unableToUpdateApproval: "Unable to update approval.",
+    updateApplied: "Update applied successfully.",
+    updateDenied: "Update denied.",
+    unableToProcessUpdate: "Unable to process update.",
+    unableToArchive: "Unable to archive referrer.",
+    portalLinkGenerated: "Portal link generated.",
+    portalLinkGeneratedEmailed: "Portal link generated and emailed.",
+    unableToGeneratePortal: "Unable to generate portal link.",
+    portalTokensRotated: "Portal tokens rotated. Generate a new link to share.",
+    unableToRotateToken: "Unable to rotate portal token.",
+  },
+  fr: {
+    inviteSent: "Invitation envoy\u00e9e.",
+    unableToSendInvite: "Impossible d'envoyer l'invitation.",
+    companyApproved: "Entreprise approuv\u00e9e.",
+    companyDenied: "Entreprise refus\u00e9e.",
+    unableToUpdateApproval: "Impossible de mettre \u00e0 jour l'approbation.",
+    updateApplied: "Mise \u00e0 jour appliqu\u00e9e avec succ\u00e8s.",
+    updateDenied: "Mise \u00e0 jour refus\u00e9e.",
+    unableToProcessUpdate: "Impossible de traiter la mise \u00e0 jour.",
+    unableToArchive: "Impossible d'archiver le r\u00e9f\u00e9rent.",
+    portalLinkGenerated: "Lien du portail g\u00e9n\u00e9r\u00e9.",
+    portalLinkGeneratedEmailed: "Lien du portail g\u00e9n\u00e9r\u00e9 et envoy\u00e9 par courriel.",
+    unableToGeneratePortal: "Impossible de g\u00e9n\u00e9rer le lien du portail.",
+    portalTokensRotated: "Jetons du portail r\u00e9initialis\u00e9s. G\u00e9n\u00e9rez un nouveau lien \u00e0 partager.",
+    unableToRotateToken: "Impossible de r\u00e9initialiser le jeton du portail.",
+  },
+};
 
 type ReferrerRecord = {
   irref: string;
@@ -243,6 +279,8 @@ export default function ReferrerReviewPage() {
   const cleanIrref = typeof irref === "string" ? irref.trim() : "";
   const searchParams = useSearchParams();
   const initialEdit = searchParams?.get("edit") === "1";
+  const { language } = useLanguage();
+  const t = translations[language];
 
   const [referrer, setReferrer] = useState<ReferrerRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -500,14 +538,14 @@ export default function ReferrerReviewPage() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok || !data?.link) {
-        setPortalError(data?.error || "Unable to generate portal link.");
+        setPortalError(data?.error || t.unableToGeneratePortal);
         return;
       }
       setPortalLink(data.link);
-      setPortalMessage(referrer.email ? "Portal link generated and emailed." : "Portal link generated.");
+      setPortalMessage(referrer.email ? t.portalLinkGeneratedEmailed : t.portalLinkGenerated);
     } catch (error) {
       console.error("Generate portal link failed", error);
-      setPortalError("Unable to generate portal link.");
+      setPortalError(t.unableToGeneratePortal);
     } finally {
       setPortalLoading(false);
     }
@@ -525,14 +563,14 @@ export default function ReferrerReviewPage() {
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok) {
-        setPortalError(data?.error || "Unable to rotate portal token.");
+        setPortalError(data?.error || t.unableToRotateToken);
         return;
       }
       setPortalLink("");
-      setPortalMessage("Portal tokens rotated. Generate a new link to share.");
+      setPortalMessage(t.portalTokensRotated);
     } catch (error) {
       console.error("Rotate portal token failed", error);
-      setPortalError("Unable to rotate portal token.");
+      setPortalError(t.unableToRotateToken);
     } finally {
       setPortalRotateLoading(false);
     }
@@ -550,15 +588,15 @@ export default function ReferrerReviewPage() {
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok) {
-        setActionError(data?.error || "Unable to send invite.");
+        setActionError(data?.error || t.unableToSendInvite);
       } else {
-        setActionMessage("Invite sent.");
+        setActionMessage(t.inviteSent);
         updateLocal({ status: "meeting invited" });
         setStatus("meeting invited");
       }
     } catch (error) {
       console.error("Invite meeting failed", error);
-      setActionError("Unable to send invite.");
+      setActionError(t.unableToSendInvite);
     } finally {
       setActionLoading(false);
     }
@@ -580,18 +618,18 @@ export default function ReferrerReviewPage() {
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok) {
-        setActionError(data?.error || "Unable to update approval.");
+        setActionError(data?.error || t.unableToUpdateApproval);
       } else {
         updateLocal({
           companyApproval: data.approval,
           companyIrcrn: data.companyIrcrn || referrer.companyIrcrn,
         });
-        setActionMessage(approval === "approved" ? "Company approved." : "Company denied.");
+        setActionMessage(approval === "approved" ? t.companyApproved : t.companyDenied);
         setRejectConfirm(false);
       }
     } catch (error) {
       console.error("Update approval failed", error);
-      setActionError("Unable to update approval.");
+      setActionError(t.unableToUpdateApproval);
     } finally {
       setApprovalLoading(false);
     }
@@ -613,15 +651,15 @@ export default function ReferrerReviewPage() {
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok) {
-        setActionError(data?.error || "Unable to process update.");
+        setActionError(data?.error || t.unableToProcessUpdate);
       } else {
         // Refresh the referrer data to get updated pending updates
         await fetchReferrer();
-        setActionMessage(action === "approve" ? "Update applied successfully." : "Update denied.");
+        setActionMessage(action === "approve" ? t.updateApplied : t.updateDenied);
       }
     } catch (error) {
       console.error("Process pending update failed", error);
-      setActionError("Unable to process update.");
+      setActionError(t.unableToProcessUpdate);
     } finally {
       setPendingUpdateLoading(null);
     }
@@ -639,14 +677,14 @@ export default function ReferrerReviewPage() {
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok) {
-        setActionError(data?.error || "Unable to archive referrer.");
+        setActionError(data?.error || t.unableToArchive);
         setDeleteConfirm(false);
       } else {
         router.push("/founder/referrers");
       }
     } catch (error) {
       console.error("Archive referrer failed", error);
-      setActionError("Unable to archive referrer.");
+      setActionError(t.unableToArchive);
       setDeleteConfirm(false);
     } finally {
       setDeleteLoading(false);

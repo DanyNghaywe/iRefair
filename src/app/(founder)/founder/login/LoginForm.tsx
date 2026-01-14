@@ -5,7 +5,37 @@ import { FormEvent, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
+import { useLanguage } from "@/components/LanguageProvider";
 import { useNavigationLoader } from "@/components/NavigationLoader";
+
+const translations = {
+  en: {
+    emailRequired: "Please enter your email.",
+    emailInvalid: "Enter a valid email address.",
+    passwordRequired: "Please enter your password.",
+    signInError: "Unable to sign in. Please check your details.",
+    signInErrorGeneric: "Unable to sign in right now. Please try again.",
+    signingIn: "Signing you in...",
+    signingInBtn: "Signing in...",
+    logIn: "Log in",
+    backToHome: "Back to home",
+    emailLabel: "Email",
+    passwordLabel: "Password",
+  },
+  fr: {
+    emailRequired: "Veuillez entrer votre courriel.",
+    emailInvalid: "Entrez une adresse courriel valide.",
+    passwordRequired: "Veuillez entrer votre mot de passe.",
+    signInError: "Connexion impossible. Veuillez v\u00e9rifier vos informations.",
+    signInErrorGeneric: "Connexion impossible pour le moment. Veuillez r\u00e9essayer.",
+    signingIn: "Connexion en cours...",
+    signingInBtn: "Connexion...",
+    logIn: "Se connecter",
+    backToHome: "Retour \u00e0 l'accueil",
+    emailLabel: "Courriel",
+    passwordLabel: "Mot de passe",
+  },
+};
 
 type Status = "idle" | "submitting" | "error";
 
@@ -13,6 +43,8 @@ export default function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { startNavigation } = useNavigationLoader();
+  const { language } = useLanguage();
+  const t = translations[language];
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,13 +65,13 @@ export default function LoginForm() {
   const validate = () => {
     const nextErrors: Record<string, string> = {};
     if (!email.trim()) {
-      nextErrors.email = "Please enter your email.";
+      nextErrors.email = t.emailRequired;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      nextErrors.email = "Enter a valid email address.";
+      nextErrors.email = t.emailInvalid;
     }
 
     if (!password.trim()) {
-      nextErrors.password = "Please enter your password.";
+      nextErrors.password = t.passwordRequired;
     }
 
     return nextErrors;
@@ -70,7 +102,7 @@ export default function LoginForm() {
 
       const data = await response.json().catch(() => null);
       if (!response.ok || !data?.ok) {
-        setBannerMessage(data?.error ?? "Unable to sign in. Please check your details.");
+        setBannerMessage(data?.error ?? t.signInError);
         setStatus("error");
         return;
       }
@@ -81,7 +113,7 @@ export default function LoginForm() {
       router.refresh();
     } catch (err) {
       console.error("Founder login failed", err);
-      setBannerMessage("Unable to sign in right now. Please try again.");
+      setBannerMessage(t.signInErrorGeneric);
       setStatus("error");
     } finally {
       setStatus((prev) => (prev === "submitting" ? "idle" : prev));
@@ -92,7 +124,7 @@ export default function LoginForm() {
     <form className="founder-login-form" onSubmit={handleSubmit} noValidate>
       {status === "error" && (
       <div className="founder-login-banner" role="alert">
-          {bannerMessage || "Unable to sign in. Please check your details."}
+          {bannerMessage || t.signInError}
         </div>
       )}
 
@@ -114,7 +146,7 @@ export default function LoginForm() {
           disabled={status === "submitting"}
           required
         />
-        <label htmlFor="email">Email</label>
+        <label htmlFor="email">{t.emailLabel}</label>
         <p className="field-error" id="email-error" role="alert" aria-live="polite">
           {errors.email}
         </p>
@@ -137,7 +169,7 @@ export default function LoginForm() {
           disabled={status === "submitting"}
           required
         />
-        <label htmlFor="password">Password</label>
+        <label htmlFor="password">{t.passwordLabel}</label>
         <p className="field-error" id="password-error" role="alert" aria-live="polite">
           {errors.password}
         </p>
@@ -145,7 +177,7 @@ export default function LoginForm() {
 
       {status === "submitting" ? (
         <div className="founder-login-status" aria-live="polite" role="status">
-          <span className="founder-login-status__message">Signing you in...</span>
+          <span className="founder-login-status__message">{t.signingIn}</span>
         </div>
       ) : null}
 
@@ -158,7 +190,7 @@ export default function LoginForm() {
           className="founder-login-submit founder-login-btn"
           aria-busy={status === "submitting"}
         >
-          {status === "submitting" ? "Signing in..." : "Log in"}
+          {status === "submitting" ? t.signingInBtn : t.logIn}
         </ActionBtn>
 
         <Link
@@ -168,7 +200,7 @@ export default function LoginForm() {
             startNavigation("/");
           }}
         >
-          Back to home
+          {t.backToHome}
         </Link>
       </div>
     </form>

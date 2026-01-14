@@ -3,7 +3,13 @@
 import React, { createContext, useCallback, useContext, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 
+import { useLanguage } from "./LanguageProvider";
 import styles from "./Toast.module.css";
+
+const ariaLabels = {
+  en: { dismissNotification: "Dismiss notification", notifications: "Notifications" },
+  fr: { dismissNotification: "Fermer la notification", notifications: "Notifications" },
+};
 
 type ToastType = "success" | "error" | "warning" | "info";
 
@@ -60,7 +66,15 @@ const iconMap: Record<ToastType, React.ReactNode> = {
   ),
 };
 
-function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
+function ToastItem({
+  toast,
+  onDismiss,
+  labels,
+}: {
+  toast: Toast;
+  onDismiss: (id: string) => void;
+  labels: { dismissNotification: string; notifications: string };
+}) {
   const [exiting, setExiting] = useState(false);
   const duration = toast.duration ?? 4000;
 
@@ -112,7 +126,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
         <p className={styles.title}>{toast.title}</p>
         {toast.message && <p className={styles.message}>{toast.message}</p>}
       </div>
-      <button type="button" className={styles.closeBtn} onClick={handleClose} aria-label="Dismiss notification">
+      <button type="button" className={styles.closeBtn} onClick={handleClose} aria-label={labels.dismissNotification}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <line x1="18" y1="6" x2="6" y2="18" />
           <line x1="6" y1="6" x2="18" y2="18" />
@@ -126,6 +140,8 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [mounted, setMounted] = useState(false);
+  const { language } = useLanguage();
+  const labels = ariaLabels[language];
 
   useEffect(() => {
     setMounted(true);
@@ -174,9 +190,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       {mounted &&
         createPortal(
-          <div className={styles.container} aria-label="Notifications">
+          <div className={styles.container} aria-label={labels.notifications}>
             {toasts.map((toast) => (
-              <ToastItem key={toast.id} toast={toast} onDismiss={dismiss} />
+              <ToastItem key={toast.id} toast={toast} onDismiss={dismiss} labels={labels} />
             ))}
           </div>,
           document.body
