@@ -180,6 +180,44 @@
   border-top: 1px solid rgba(255, 255, 255, 0.12);
 }
 
+/* Language Toggle */
+.languageToggle {
+  display: flex;
+  gap: 4px;
+  padding: 0 8px;
+  margin-bottom: 12px;
+}
+
+.languageBtn {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.languageBtn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.languageBtnActive {
+  background: rgba(255, 255, 255, 0.18);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.languageBtnActive:hover {
+  background: rgba(255, 255, 255, 0.22);
+}
+
 .footerContent {
   padding: 10px 12px;
   background: rgba(255, 255, 255, 0.08);

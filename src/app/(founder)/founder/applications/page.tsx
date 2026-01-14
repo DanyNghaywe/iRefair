@@ -3,11 +3,47 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { useLanguage } from "@/components/LanguageProvider";
 import { Badge } from "@/components/founder/Badge";
 import { EmptyState } from "@/components/founder/EmptyState";
 import { FilterBar, type FilterConfig } from "@/components/founder/FilterBar";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
+
+const translations = {
+  en: {
+    title: "Applications",
+    records: "records",
+    searchPlaceholder: "Search by ID, candidate, position...",
+    filterByIrcrn: "Filter by iRCRN",
+    allStatuses: "All statuses",
+    id: "ID",
+    applicant: "Applicant",
+    referrer: "Referrer",
+    ircrn: "iRCRN",
+    position: "Position",
+    status: "Status",
+    unassigned: "Unassigned",
+    emptyTitle: "No applications yet",
+    emptyDescription: "Applications will appear here when candidates submit their resumes for positions. Try adjusting your filters or check back later.",
+  },
+  fr: {
+    title: "Candidatures",
+    records: "enregistrements",
+    searchPlaceholder: "Rechercher par ID, candidat, poste...",
+    filterByIrcrn: "Filtrer par iRCRN",
+    allStatuses: "Tous les statuts",
+    id: "ID",
+    applicant: "Candidat",
+    referrer: "Référent",
+    ircrn: "iRCRN",
+    position: "Poste",
+    status: "Statut",
+    unassigned: "Non assigné",
+    emptyTitle: "Aucune candidature",
+    emptyDescription: "Les candidatures apparaîtront ici lorsque les candidats soumettront leurs CV pour des postes. Essayez d'ajuster vos filtres ou revenez plus tard.",
+  },
+};
 
 type ApplicationRecord = {
   id: string;
@@ -51,6 +87,8 @@ const PAGE_SIZE = 10;
 
 export default function ApplicationsPage() {
   const router = useRouter();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [items, setItems] = useState<ApplicationRecord[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -106,27 +144,27 @@ export default function ApplicationsPage() {
     () => [
       {
         key: "id",
-        label: "ID",
+        label: t.id,
         sortable: true,
         nowrap: true,
         ellipsis: true,
         width: "260px",
         render: (row: ApplicationRecord) => <span title={row.id}>{row.id}</span>,
       },
-      { key: "applicantId", label: "Applicant", sortable: true, ellipsis: true, width: "180px" },
-      { key: "referrerIrref", label: "Referrer", sortable: true, ellipsis: true, width: "180px" },
-      { key: "iCrn", label: "iRCRN", sortable: true, nowrap: true, width: "180px" },
-      { key: "position", label: "Position", sortable: true, ellipsis: true, width: "220px" },
+      { key: "applicantId", label: t.applicant, sortable: true, ellipsis: true, width: "180px" },
+      { key: "referrerIrref", label: t.referrer, sortable: true, ellipsis: true, width: "180px" },
+      { key: "iCrn", label: t.ircrn, sortable: true, nowrap: true, width: "180px" },
+      { key: "position", label: t.position, sortable: true, ellipsis: true, width: "220px" },
       {
         key: "status",
-        label: "Status",
+        label: t.status,
         nowrap: true,
         width: "180px",
         align: "center",
-        render: (row: ApplicationRecord) => <Badge tone="neutral">{row.status || "Unassigned"}</Badge>,
+        render: (row: ApplicationRecord) => <Badge tone="neutral">{row.status || t.unassigned}</Badge>,
       },
     ],
-    [],
+    [t],
   );
 
   const filters = useMemo<FilterConfig[]>(
@@ -134,14 +172,14 @@ export default function ApplicationsPage() {
       {
         type: "text",
         key: "ircrn",
-        placeholder: "Filter by iRCRN",
+        placeholder: t.filterByIrcrn,
         value: ircrnFilter,
         onChange: setIrcrnFilter,
       },
       {
         type: "select",
         key: "status",
-        label: "All statuses",
+        label: t.allStatuses,
         value: statusFilter,
         options: statusOptions
           .filter((value) => value)
@@ -149,16 +187,16 @@ export default function ApplicationsPage() {
         onChange: setStatusFilter,
       },
     ],
-    [ircrnFilter, statusFilter],
+    [ircrnFilter, statusFilter, t],
   );
 
   return (
     <div className="founder-page">
       <Topbar
-        title="Applications"
-        subtitle={`${total} records`}
+        title={t.title}
+        subtitle={`${total} ${t.records}`}
         searchValue={searchInput}
-        searchPlaceholder="Search by ID, candidate, position..."
+        searchPlaceholder={t.searchPlaceholder}
         onSearchChange={setSearchInput}
       />
 
@@ -171,8 +209,8 @@ export default function ApplicationsPage() {
         emptyState={
           <EmptyState
             variant="applications"
-            title="No applications yet"
-            description="Applications will appear here when candidates submit their resumes for positions. Try adjusting your filters or check back later."
+            title={t.emptyTitle}
+            description={t.emptyDescription}
           />
         }
         onRowClick={handleRowClick}
