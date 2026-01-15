@@ -11,6 +11,7 @@ import {
   generateReferrerCompanyId,
   findReferrerCompanyByName,
   listReferrerCompanies,
+  updateReferrerCompanyFields,
 } from '@/lib/sheets';
 import { escapeHtml, normalizeHttpUrl } from '@/lib/validation';
 import {
@@ -120,19 +121,25 @@ export async function POST(request: Request) {
       const existingCompany = company ? await findReferrerCompanyByName(referrerIrref, company) : null;
 
       if (existingCompany) {
-        // Same company name - this is an update to existing company
-        // Store as pending update on the referrer for backward compatibility
-        await addPendingUpdate(referrerIrref, {
-          name,
-          email,
-          phone,
-          country,
-          company,
+        // Same company name - update the existing company record directly
+        // No need for "Pending Updates" since the company section already shows this
+        await updateReferrerCompanyFields(existingCompany.id, {
           companyIndustry: companyIndustryResolved,
           careersPortal,
           workType,
-          linkedin,
         });
+
+        // Only create a pending update for non-company profile fields if they changed
+        const profileUpdates: Record<string, string> = {};
+        const existingRecord = existingReferrer.record;
+        if (name && name !== existingRecord.name) profileUpdates.name = name;
+        if (phone && phone !== existingRecord.phone) profileUpdates.phone = phone;
+        if (country && country !== existingRecord.country) profileUpdates.country = country;
+        if (linkedin && linkedin !== existingRecord.linkedin) profileUpdates.linkedin = linkedin;
+
+        if (Object.keys(profileUpdates).length > 0) {
+          await addPendingUpdate(referrerIrref, profileUpdates);
+        }
 
         // Generate portal link for existing referrer
         const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrerIrref);
