@@ -2000,6 +2000,15 @@ export async function listReferrers(params: ReferrerListParams) {
     });
 
   const ordered = items.sort((a, b) => {
+    // Check if records are "pending" (either first-time approval or pending updates)
+    const aIsPending = (a.companyApproval === 'pending' || !a.companyApproval) || (a.pendingUpdateCount && a.pendingUpdateCount > 0);
+    const bIsPending = (b.companyApproval === 'pending' || !b.companyApproval) || (b.pendingUpdateCount && b.pendingUpdateCount > 0);
+
+    // Pending records come first
+    if (aIsPending && !bIsPending) return -1;
+    if (!aIsPending && bIsPending) return 1;
+
+    // Within same pending status, sort by timestamp (newest first)
     const aTime = a.timestamp ? Date.parse(a.timestamp) : 0;
     const bTime = b.timestamp ? Date.parse(b.timestamp) : 0;
     if (aTime !== bTime) return bTime - aTime;

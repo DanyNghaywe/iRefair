@@ -32,6 +32,7 @@ const translations = {
     quickEdit: "Quick edit",
     updates: "updates",
     update: "update",
+    newApproval: "New",
     emptyTitle: "No referrers yet",
     emptyDescription: "Referrers will appear here once they sign up through the referrer registration form. Try adjusting your filters if you expected to see results.",
   },
@@ -56,6 +57,7 @@ const translations = {
     quickEdit: "Modification rapide",
     updates: "mises à jour",
     update: "mise à jour",
+    newApproval: "Nouveau",
     emptyTitle: "Aucun référent",
     emptyDescription: "Les référents apparaîtront ici une fois inscrits via le formulaire d'inscription. Essayez d'ajuster vos filtres si vous vous attendiez à voir des résultats.",
   },
@@ -193,6 +195,11 @@ function ReferrersPageContent() {
                 {row.pendingUpdateCount} {row.pendingUpdateCount > 1 ? t.updates : t.update}
               </span>
             ) : null}
+            {(!row.companyApproval || row.companyApproval === 'pending') && (
+              <span className="pending-approval-badge" title={t.newApproval}>
+                {t.newApproval}
+              </span>
+            )}
           </div>
         ),
       },
