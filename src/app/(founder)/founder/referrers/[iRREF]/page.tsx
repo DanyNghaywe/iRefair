@@ -922,7 +922,8 @@ export default function ReferrerReviewPage() {
                   title={
                     <span className="referrer-name-cell">
                       Companies
-                      {pendingCount > 0 && (
+                      {/* Only show action-color badge when there are individual approve/deny buttons */}
+                      {pendingCount > 0 && approvalValue !== "pending" && (
                         <span className="pending-updates-badge">{pendingCount}</span>
                       )}
                     </span>
@@ -942,7 +943,11 @@ export default function ReferrerReviewPage() {
                           <div key={comp.id} className="company-card">
                             <div className="company-card__header">
                               {isPending ? (
-                                <span className="pending-updates-badge">Pending</span>
+                                approvalValue === "pending" ? (
+                                  <Badge tone="neutral">Pending</Badge>
+                                ) : (
+                                  <span className="pending-updates-badge">Pending</span>
+                                )
                               ) : (
                                 <Badge tone={isApproved ? "success" : "danger"}>
                                   {isApproved ? "Approved" : "Denied"}
@@ -980,7 +985,8 @@ export default function ReferrerReviewPage() {
                               )}
                             </div>
                           </div>
-                          {isPending && (
+                          {/* Only show individual approve/deny buttons for returning referrers (already approved/denied) */}
+                          {isPending && approvalValue !== "pending" && (
                             <div className="company-card__actions">
                               <ActionBtn
                                 as="button"
