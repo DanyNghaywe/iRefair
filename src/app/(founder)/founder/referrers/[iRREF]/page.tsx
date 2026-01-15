@@ -933,7 +933,7 @@ export default function ReferrerReviewPage() {
             )}
 
             {/* Multi-company support: Companies from Referrer Companies sheet */}
-            {companies.length > 0 && (() => {
+            {(companiesLoading || companies.length > 0) && (() => {
               const pendingCount = companies.filter(
                 (c) => (c.companyApproval || "pending").toLowerCase() === "pending"
               ).length;
