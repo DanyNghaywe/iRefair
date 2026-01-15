@@ -5824,6 +5824,10 @@ section.founder-auth input:focus-visible {
   .role-shell {
     padding: 26px 20px 80px;
   }
+
+  .role-picker--fullscreen + .public-footer {
+    margin-bottom: 16px;
+  }
 }
 
 @media (max-width: 540px) {
