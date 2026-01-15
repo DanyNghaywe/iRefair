@@ -5877,6 +5877,10 @@ section.founder-auth input:focus-visible {
     padding: 22px 20px;
   }
 
+  .board--transparent {
+    min-height: 100dvh;
+  }
+
   .card {
     padding: 20px;
   }
