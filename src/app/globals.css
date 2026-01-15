@@ -5236,13 +5236,37 @@ section.founder-auth input:focus-visible {
   color: #f8fafc;
 }
 
-.ops-scope .company-card__row a {
-  color: #60a5fa;
-  text-decoration: none;
+.ops-scope .company-card__row a,
+.ops-scope .company-card__link {
+  color: #ffffff;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.5);
+  text-underline-offset: 2px;
 }
 
-.ops-scope .company-card__row a:hover {
-  text-decoration: underline;
+.ops-scope .company-card__row a:hover,
+.ops-scope .company-card__link:hover {
+  text-decoration-color: #ffffff;
+}
+
+.ops-scope .company-card__input {
+  width: 100%;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: #f1f5f9;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 6px;
+}
+
+.ops-scope .company-card__input:focus {
+  outline: none;
+  border-color: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+.ops-scope .company-card__row .select-container {
+  width: 100%;
 }
 
 .ops-scope .company-card__actions {

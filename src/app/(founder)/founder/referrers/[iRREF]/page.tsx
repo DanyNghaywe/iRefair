@@ -307,10 +307,6 @@ export default function ReferrerReviewPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [country, setCountry] = useState("");
-  const [company, setCompany] = useState("");
-  const [companyIndustry, setCompanyIndustry] = useState("");
-  const [careersPortal, setCareersPortal] = useState("");
-  const [workType, setWorkType] = useState("");
   const [linkedin, setLinkedin] = useState("");
   const [saving, setSaving] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -332,6 +328,7 @@ export default function ReferrerReviewPage() {
   const [companies, setCompanies] = useState<ReferrerCompany[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [companyApprovalLoading, setCompanyApprovalLoading] = useState<string | null>(null);
+  const [editedCompanies, setEditedCompanies] = useState<Record<string, Partial<ReferrerCompany>>>({});
   const skipAutosaveRef = useRef(true);
 
   // Store original values when entering edit mode
@@ -340,11 +337,8 @@ export default function ReferrerReviewPage() {
     email: string;
     phone: string;
     country: string;
-    company: string;
-    companyIndustry: string;
-    careersPortal: string;
-    workType: string;
     linkedin: string;
+    companies: ReferrerCompany[];
   } | null>(null);
 
   // Parse pending updates from referrer
@@ -487,10 +481,6 @@ export default function ReferrerReviewPage() {
     setEmail(referrer.email || "");
     setPhone(referrer.phone || "");
     setCountry(referrer.country || "");
-    setCompany(referrer.company || "");
-    setCompanyIndustry(referrer.companyIndustry || "");
-    setCareersPortal(referrer.careersPortal || "");
-    setWorkType(referrer.workType || "");
     setLinkedin(referrer.linkedin || "");
     setActionMessage(null);
     setActionError(null);
@@ -537,12 +527,10 @@ export default function ReferrerReviewPage() {
       email,
       phone,
       country,
-      company,
-      companyIndustry,
-      careersPortal,
-      workType,
       linkedin,
+      companies: companies.map((c) => ({ ...c })),
     };
+    setEditedCompanies({});
     setEditDetails(true);
   };
 
@@ -552,18 +540,35 @@ export default function ReferrerReviewPage() {
       setEmail(originalDetailsRef.current.email);
       setPhone(originalDetailsRef.current.phone);
       setCountry(originalDetailsRef.current.country);
-      setCompany(originalDetailsRef.current.company);
-      setCompanyIndustry(originalDetailsRef.current.companyIndustry);
-      setCareersPortal(originalDetailsRef.current.careersPortal);
-      setWorkType(originalDetailsRef.current.workType);
       setLinkedin(originalDetailsRef.current.linkedin);
+      setCompanies(originalDetailsRef.current.companies);
     }
     originalDetailsRef.current = null;
+    setEditedCompanies({});
     setEditDetails(false);
+  };
+
+  const handleCompanyFieldChange = (companyId: string, field: keyof ReferrerCompany, value: string) => {
+    setEditedCompanies((prev) => ({
+      ...prev,
+      [companyId]: {
+        ...prev[companyId],
+        [field]: value,
+      },
+    }));
+    // Also update the companies array for display
+    setCompanies((prev) =>
+      prev.map((c) =>
+        c.id === companyId ? { ...c, [field]: value } : c
+      )
+    );
   };
 
   const handleSaveEdit = async () => {
     if (!referrer) return;
+    setSaving(true);
+
+    // Save referrer profile changes
     const patch: Record<string, string> = {};
     const addIfChanged = (key: string, value: string, current: string) => {
       if (value !== current) patch[key] = value;
@@ -572,17 +577,32 @@ export default function ReferrerReviewPage() {
     addIfChanged("email", email, referrer.email || "");
     addIfChanged("phone", phone, referrer.phone || "");
     addIfChanged("country", country, referrer.country || "");
-    addIfChanged("company", company, referrer.company || "");
-    addIfChanged("companyIndustry", companyIndustry, referrer.companyIndustry || "");
-    addIfChanged("careersPortal", careersPortal, referrer.careersPortal || "");
-    addIfChanged("workType", workType, referrer.workType || "");
     addIfChanged("linkedin", linkedin, referrer.linkedin || "");
 
     if (Object.keys(patch).length) {
       await patchReferrer(patch);
     }
+
+    // Save company changes
+    const companyUpdatePromises = Object.entries(editedCompanies).map(async ([companyId, changes]) => {
+      if (Object.keys(changes).length === 0) return;
+      try {
+        await fetch(`/api/founder/referrer-companies/${encodeURIComponent(companyId)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(changes),
+        });
+      } catch (error) {
+        console.error(`Failed to update company ${companyId}`, error);
+      }
+    });
+
+    await Promise.all(companyUpdatePromises);
+
     originalDetailsRef.current = null;
+    setEditedCompanies({});
     setEditDetails(false);
+    setSaving(false);
   };
 
   const handlePortalLink = async () => {
@@ -960,7 +980,16 @@ export default function ReferrerReviewPage() {
                           <div className="company-card__details">
                             <div className="company-card__row">
                               <span className="company-card__label">Company</span>
-                              <span>{comp.companyName || "Unnamed"}</span>
+                              {editDetails ? (
+                                <input
+                                  type="text"
+                                  value={comp.companyName || ""}
+                                  onChange={(e) => handleCompanyFieldChange(comp.id, "companyName", e.target.value)}
+                                  className="company-card__input"
+                                />
+                              ) : (
+                                <span>{comp.companyName || "Unnamed"}</span>
+                              )}
                             </div>
                             <div className="company-card__row">
                               <span className="company-card__label">iRCRN</span>
@@ -968,16 +997,46 @@ export default function ReferrerReviewPage() {
                             </div>
                             <div className="company-card__row">
                               <span className="company-card__label">Industry</span>
-                              <span>{comp.companyIndustry || "-"}</span>
+                              {editDetails ? (
+                                <Select
+                                  id={`company-industry-${comp.id}`}
+                                  name={`company-industry-${comp.id}`}
+                                  options={COMPANY_INDUSTRY_OPTIONS}
+                                  placeholder="Select"
+                                  value={comp.companyIndustry || ""}
+                                  onChange={(value) => handleCompanyFieldChange(comp.id, "companyIndustry", Array.isArray(value) ? value[0] : value)}
+                                />
+                              ) : (
+                                <span>{comp.companyIndustry || "-"}</span>
+                              )}
                             </div>
                             <div className="company-card__row">
                               <span className="company-card__label">Work Type</span>
-                              <span>{comp.workType || "-"}</span>
+                              {editDetails ? (
+                                <Select
+                                  id={`company-work-type-${comp.id}`}
+                                  name={`company-work-type-${comp.id}`}
+                                  options={WORK_TYPE_OPTIONS}
+                                  placeholder="Select"
+                                  value={comp.workType || ""}
+                                  onChange={(value) => handleCompanyFieldChange(comp.id, "workType", Array.isArray(value) ? value[0] : value)}
+                                />
+                              ) : (
+                                <span>{comp.workType || "-"}</span>
+                              )}
                             </div>
                             <div className="company-card__row">
                               <span className="company-card__label">Careers Portal</span>
-                              {comp.careersPortal ? (
-                                <a href={comp.careersPortal} target="_blank" rel="noopener noreferrer">
+                              {editDetails ? (
+                                <input
+                                  type="url"
+                                  value={comp.careersPortal || ""}
+                                  onChange={(e) => handleCompanyFieldChange(comp.id, "careersPortal", e.target.value)}
+                                  className="company-card__input"
+                                  placeholder="https://..."
+                                />
+                              ) : comp.careersPortal ? (
+                                <a href={comp.careersPortal} target="_blank" rel="noopener noreferrer" className="company-card__link">
                                   {truncateText(comp.careersPortal, 40)}
                                 </a>
                               ) : (
@@ -1166,97 +1225,9 @@ export default function ReferrerReviewPage() {
               </div>
             </DetailSection>
 
-            <DetailSection title="Company">
-              <div className="field-grid field-grid--two">
-                <div className="field">
-                  <label htmlFor="company-name">Company</label>
-                  {editDetails ? (
-                    <input
-                      id="company-name"
-                      type="text"
-                      value={company}
-                      onChange={(event) => setCompany(event.target.value)}
-                    />
-                  ) : (
-                    <input
-                      id="company-name"
-                      type="text"
-                      value={company || "-"}
-                      readOnly
-                      tabIndex={-1}
-                    />
-                  )}
-                </div>
-                <div className="field">
-                  <label htmlFor="company-ircrn">Company iRCRN</label>
-                  <input id="company-ircrn" type="text" value={referrer.companyIrcrn || "-"} readOnly tabIndex={-1} />
-                </div>
-                <div className="field">
-                  <label htmlFor="company-industry">Industry</label>
-                  {editDetails ? (
-                    <Select
-                      id="company-industry"
-                      name="company-industry"
-                      options={COMPANY_INDUSTRY_OPTIONS}
-                      placeholder="Select"
-                      value={companyIndustry}
-                      onChange={(value) => setCompanyIndustry(Array.isArray(value) ? value[0] : value)}
-                    />
-                  ) : (
-                    <input
-                      id="company-industry"
-                      type="text"
-                      value={companyIndustry || "-"}
-                      readOnly
-                      tabIndex={-1}
-                    />
-                  )}
-                </div>
-                <div className="field">
-                  <label htmlFor="company-work-type">Work Type</label>
-                  {editDetails ? (
-                    <Select
-                      id="company-work-type"
-                      name="company-work-type"
-                      options={WORK_TYPE_OPTIONS}
-                      placeholder="Select"
-                      value={workType}
-                      onChange={(value) => setWorkType(Array.isArray(value) ? value[0] : value)}
-                    />
-                  ) : (
-                    <input
-                      id="company-work-type"
-                      type="text"
-                      value={workType || "-"}
-                      readOnly
-                      tabIndex={-1}
-                    />
-                  )}
-                </div>
-              </div>
-            </DetailSection>
 
             <DetailSection title="Links">
               <div className="field-grid field-grid--two">
-                <div className="field">
-                  <label htmlFor="link-careers">Careers Portal</label>
-                  {editDetails ? (
-                    <input
-                      id="link-careers"
-                      type="url"
-                      value={careersPortal}
-                      onChange={(event) => setCareersPortal(event.target.value)}
-                    />
-                  ) : (
-                    <input
-                      id="link-careers"
-                      type="text"
-                      value={careersPortal || "-"}
-                      readOnly
-                      tabIndex={-1}
-                    />
-                  )}
-                </div>
                 <div className="field">
                   <label htmlFor="link-linkedin">LinkedIn</label>
                   {editDetails ? (
@@ -1278,7 +1249,6 @@ export default function ReferrerReviewPage() {
                 </div>
               </div>
               <div className="referrer-review__link-list">
-                <LinkRow icon={<IconLink />} label="Careers Portal" url={careersPortal} actionLabel="Open" />
                 <LinkRow icon={<IconLinkedIn />} label="LinkedIn" url={linkedin} actionLabel="View" />
                 <LinkRow
                   icon={<IconLink />}
