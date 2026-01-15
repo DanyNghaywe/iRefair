@@ -5251,18 +5251,25 @@ section.founder-auth input:focus-visible {
 
 .ops-scope .company-card__input {
   width: 100%;
-  padding: 6px 10px;
-  font-size: 13px;
-  color: #f1f5f9;
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 6px;
+  height: 48px;
+  padding: 12px 14px;
+  font-size: var(--font-size-body);
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.18);
+  border: none;
+  border-radius: 14px;
+  box-shadow: none;
 }
 
 .ops-scope .company-card__input:focus {
   outline: none;
-  border-color: rgba(255, 255, 255, 0.4);
-  background: rgba(255, 255, 255, 0.15);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.35);
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.ops-scope .company-card__input::placeholder {
+  color: rgba(226, 232, 240, 0.7);
+  font-style: italic;
 }
 
 .ops-scope .company-card__row .select-container {

@@ -328,6 +328,7 @@ export default function ReferrerReviewPage() {
   const [companies, setCompanies] = useState<ReferrerCompany[]>([]);
   const [companiesLoading, setCompaniesLoading] = useState(false);
   const [companyApprovalLoading, setCompanyApprovalLoading] = useState<string | null>(null);
+  const [justApprovedCompanyIds, setJustApprovedCompanyIds] = useState<Set<string>>(new Set());
   const [editedCompanies, setEditedCompanies] = useState<Record<string, Partial<ReferrerCompany>>>({});
   const skipAutosaveRef = useRef(true);
 
@@ -460,6 +461,10 @@ export default function ReferrerReviewPage() {
               : c,
           ),
         );
+        // Track just-approved company so we can show temporary "Approved" badge
+        if (approval === "approved") {
+          setJustApprovedCompanyIds((prev) => new Set(prev).add(companyId));
+        }
         setActionMessage(approval === "approved" ? t.companyApproved : t.companyDenied);
       }
     } catch (error) {
@@ -712,6 +717,21 @@ export default function ReferrerReviewPage() {
           companyApproval: data.approval,
           companyIrcrn: data.companyIrcrn || referrer.companyIrcrn,
         });
+        // Update all pending companies to the same approval status (API auto-approves them)
+        const pendingIds = companies
+          .filter((c) => (c.companyApproval || "pending").toLowerCase() === "pending")
+          .map((c) => c.id);
+        setCompanies((prev) =>
+          prev.map((c) =>
+            (c.companyApproval || "pending").toLowerCase() === "pending"
+              ? { ...c, companyApproval: approval }
+              : c,
+          ),
+        );
+        // Track just-approved companies so we can show temporary "Approved" badge
+        if (approval === "approved" && pendingIds.length > 0) {
+          setJustApprovedCompanyIds(new Set(pendingIds));
+        }
         setActionMessage(approval === "approved" ? t.companyApproved : t.companyDenied);
         setRejectConfirm(false);
       }
@@ -957,8 +977,8 @@ export default function ReferrerReviewPage() {
                       {companies.map((comp) => {
                         const isLoading = companyApprovalLoading === comp.id;
                         const isPending = (comp.companyApproval || "pending").toLowerCase() === "pending";
-                        const isApproved = comp.companyApproval?.toLowerCase() === "approved";
                         const isDenied = comp.companyApproval?.toLowerCase() === "denied";
+                        const justApproved = justApprovedCompanyIds.has(comp.id);
                         return (
                           <div key={comp.id} className="company-card">
                             <div className="company-card__header">
@@ -968,11 +988,11 @@ export default function ReferrerReviewPage() {
                                 ) : (
                                   <span className="pending-updates-badge">Pending</span>
                                 )
-                              ) : (
-                                <Badge tone={isApproved ? "success" : "danger"}>
-                                  {isApproved ? "Approved" : "Denied"}
-                                </Badge>
-                              )}
+                              ) : isDenied ? (
+                                <Badge tone="danger">Denied</Badge>
+                              ) : justApproved ? (
+                                <Badge tone="success">Approved</Badge>
+                              ) : null}
                               <span className="company-card__timestamp">
                                 {new Date(comp.timestamp).toLocaleString()}
                               </span>
