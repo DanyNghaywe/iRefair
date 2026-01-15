@@ -1065,7 +1065,7 @@ export default function ReferrerReviewPage() {
                             </div>
                           </div>
                           {/* Only show individual approve/deny buttons for returning referrers (already approved/denied) */}
-                          {isPending && approvalValue !== "pending" && (
+                          {isPending && approvalValue !== "pending" && !editDetails && (
                             <div className="company-card__actions">
                               <ActionBtn
                                 as="button"
