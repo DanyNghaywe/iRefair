@@ -12,6 +12,7 @@ import {
   findDuplicateApplication,
   findReferrerByIrcrn,
   findReferrerByIrcrnStrict,
+  findReferrerCompanyByIrcrnStrict,
   generateSubmissionId,
   isIrain,
   isIrcrn,
@@ -151,9 +152,22 @@ export async function POST(request: Request) {
     }
 
     let referrer = null;
+    let companyInfo: { id: string; name: string } | null = null;
+
     if (strictMode) {
       try {
-        referrer = await findReferrerByIrcrnStrict(iCrn);
+        // Use new multi-company lookup that returns both company and referrer
+        const result = await findReferrerCompanyByIrcrnStrict(iCrn);
+        referrer = {
+          irref: result.referrer.irref,
+          name: result.referrer.name,
+          email: result.referrer.email,
+          company: result.company.companyName,
+        };
+        companyInfo = {
+          id: result.company.id,
+          name: result.company.companyName,
+        };
       } catch (error) {
         if (error instanceof ReferrerLookupError) {
           return NextResponse.json({ ok: false, error: error.message }, { status: 400 });
@@ -161,15 +175,37 @@ export async function POST(request: Request) {
         throw error;
       }
     } else {
-      referrer =
-        (await findReferrerByIrcrn(iCrn)) ||
-        (process.env.APPLICATION_FALLBACK_REFERRER_EMAIL
-          ? {
-              irref: 'fallback',
-              name: process.env.APPLICATION_FALLBACK_REFERRER_NAME || 'Referrer',
-              email: process.env.APPLICATION_FALLBACK_REFERRER_EMAIL,
-            }
-          : null);
+      // Non-strict mode: try new lookup first, fall back to legacy
+      try {
+        const result = await findReferrerCompanyByIrcrnStrict(iCrn);
+        referrer = {
+          irref: result.referrer.irref,
+          name: result.referrer.name,
+          email: result.referrer.email,
+          company: result.company.companyName,
+        };
+        companyInfo = {
+          id: result.company.id,
+          name: result.company.companyName,
+        };
+      } catch {
+        // Fall back to legacy lookup
+        const legacyResult = await findReferrerByIrcrn(iCrn);
+        if (legacyResult) {
+          referrer = legacyResult;
+          // For legacy records, company ID will be synthetic
+          companyInfo = {
+            id: `legacy-${legacyResult.irref}`,
+            name: legacyResult.company || '',
+          };
+        } else if (process.env.APPLICATION_FALLBACK_REFERRER_EMAIL) {
+          referrer = {
+            irref: 'fallback',
+            name: process.env.APPLICATION_FALLBACK_REFERRER_NAME || 'Referrer',
+            email: process.env.APPLICATION_FALLBACK_REFERRER_EMAIL,
+          };
+        }
+      }
     }
 
     if (!referrer) {
@@ -285,6 +321,7 @@ export async function POST(request: Request) {
       resumeFileId,
       referrerIrref: referrer.irref,
       referrerEmail: referrer.email,
+      referrerCompanyId: companyInfo?.id,
       status: isIneligible ? 'ineligible' : undefined,
     });
 

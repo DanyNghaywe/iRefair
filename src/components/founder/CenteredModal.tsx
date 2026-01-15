@@ -5,6 +5,11 @@ import { createPortal } from "react-dom";
 
 import { ActionBtn } from "@/components/ActionBtn";
 
+const ariaLabels = {
+  en: { closeModal: "Close modal" },
+  fr: { closeModal: "Fermer la fen\u00eatre" },
+};
+
 type Props = {
   open: boolean;
   title?: string;
@@ -15,6 +20,7 @@ type Props = {
   children: React.ReactNode;
   bodyClassName?: string;
   footer?: React.ReactNode;
+  locale?: "en" | "fr";
 };
 
 const focusableSelector =
@@ -30,10 +36,12 @@ export function CenteredModal({
   children,
   bodyClassName,
   footer,
+  locale = "en",
 }: Props) {
   const panelRef = useRef<HTMLDivElement | null>(null);
   const lastActiveRef = useRef<HTMLElement | null>(null);
   const [mounted, setMounted] = useState(false);
+  const labels = ariaLabels[locale];
 
   useEffect(() => {
     setMounted(true);
@@ -83,7 +91,7 @@ export function CenteredModal({
             {subtitle ? <p className="centered-modal__subtitle">{subtitle}</p> : null}
           </div>
           <div className="centered-modal__header-actions">
-            <ActionBtn as="button" variant="ghost" onClick={onClose} aria-label="Close modal">
+            <ActionBtn as="button" variant="ghost" onClick={onClose} aria-label={labels.closeModal}>
               X
             </ActionBtn>
           </div>

@@ -4,9 +4,23 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { ActionBtn } from "@/components/ActionBtn";
+import { useLanguage } from "@/components/LanguageProvider";
+
+const translations = {
+  en: {
+    signingOut: "Signing out...",
+    logOut: "Log out",
+  },
+  fr: {
+    signingOut: "Déconnexion...",
+    logOut: "Se déconnecter",
+  },
+};
 
 export function LogoutButton() {
   const router = useRouter();
+  const { language } = useLanguage();
+  const t = translations[language];
   const [loading, setLoading] = useState(false);
 
   const handleLogout = async () => {
@@ -24,7 +38,7 @@ export function LogoutButton() {
 
   return (
     <ActionBtn as="button" variant="ghost" onClick={handleLogout} disabled={loading} aria-busy={loading}>
-      {loading ? "Signing out..." : "Log out"}
+      {loading ? t.signingOut : t.logOut}
     </ActionBtn>
   );
 }

@@ -4,11 +4,53 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
+import { useLanguage } from "@/components/LanguageProvider";
 import { Badge } from "@/components/founder/Badge";
 import { EmptyState } from "@/components/founder/EmptyState";
 import { FilterBar, type FilterConfig } from "@/components/founder/FilterBar";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
+
+const translations = {
+  en: {
+    title: "Candidates",
+    records: "records",
+    searchPlaceholder: "Search by name, email, iRAIN...",
+    allEligibility: "All eligibility",
+    eligible: "Eligible",
+    ineligible: "Ineligible",
+    allStatuses: "All statuses",
+    irain: "iRAIN",
+    name: "Name",
+    email: "Email",
+    phone: "Phone",
+    eligibility: "Eligibility",
+    status: "Status",
+    province: "Province",
+    quickEdit: "Quick edit",
+    emptyTitle: "No candidates yet",
+    emptyDescription: "Candidates will appear here once they register through the intake form. Check back soon or adjust your filters.",
+  },
+  fr: {
+    title: "Candidats",
+    records: "enregistrements",
+    searchPlaceholder: "Rechercher par nom, courriel, iRAIN...",
+    allEligibility: "Toutes les éligibilités",
+    eligible: "Éligible",
+    ineligible: "Non éligible",
+    allStatuses: "Tous les statuts",
+    irain: "iRAIN",
+    name: "Nom",
+    email: "Courriel",
+    phone: "Téléphone",
+    eligibility: "Éligibilité",
+    status: "Statut",
+    province: "Province",
+    quickEdit: "Modification rapide",
+    emptyTitle: "Aucun candidat",
+    emptyDescription: "Les candidats apparaîtront ici une fois inscrits via le formulaire d'inscription. Revenez bientôt ou ajustez vos filtres.",
+  },
+};
 
 type CandidateRecord = {
   irain: string;
@@ -58,6 +100,8 @@ function CandidatesPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
+  const { language } = useLanguage();
+  const t = translations[language];
 
   const [items, setItems] = useState<CandidateRecord[]>([]);
   const [total, setTotal] = useState(0);
@@ -110,7 +154,7 @@ function CandidatesPageContent() {
     () => [
       {
         key: "irain",
-        label: "iRAIN",
+        label: t.irain,
         sortable: true,
         width: "220px",
         nowrap: true,
@@ -119,7 +163,7 @@ function CandidatesPageContent() {
       },
       {
         key: "firstName",
-        label: "Name",
+        label: t.name,
         width: "200px",
         nowrap: true,
         ellipsis: true,
@@ -127,11 +171,11 @@ function CandidatesPageContent() {
           [row.firstName, row.middleName, row.familyName].filter(Boolean).join(" ") || "-",
         sortable: true,
       },
-      { key: "email", label: "Email", width: "320px", nowrap: true, ellipsis: true },
-      { key: "phone", label: "Phone", width: "180px", nowrap: true },
+      { key: "email", label: t.email, width: "320px", nowrap: true, ellipsis: true },
+      { key: "phone", label: t.phone, width: "180px", nowrap: true },
       {
         key: "eligibility",
-        label: "Eligibility",
+        label: t.eligibility,
         width: "180px",
         nowrap: true,
         render: (row: CandidateRecord) => (
@@ -140,7 +184,7 @@ function CandidatesPageContent() {
       },
       {
         key: "status",
-        label: "Status",
+        label: t.status,
         width: "180px",
         nowrap: true,
         sortable: true,
@@ -152,7 +196,7 @@ function CandidatesPageContent() {
           return "-";
         },
       },
-      { key: "province", label: "Province", width: "140px", nowrap: true, sortable: true },
+      { key: "province", label: t.province, width: "140px", nowrap: true, sortable: true },
       {
         key: "quickEdit",
         label: "",
@@ -168,8 +212,8 @@ function CandidatesPageContent() {
               href={href}
               variant="ghost"
               size="sm"
-              title="Quick edit"
-              aria-label="Quick edit"
+              title={t.quickEdit}
+              aria-label={t.quickEdit}
               className="founder-quick-edit-btn"
               data-no-row-click
               onClick={(event) => event.stopPropagation()}
@@ -180,7 +224,7 @@ function CandidatesPageContent() {
         },
       },
     ],
-    [router],
+    [t],
   );
 
   const filters = useMemo<FilterConfig[]>(
@@ -188,18 +232,18 @@ function CandidatesPageContent() {
       {
         type: "select",
         key: "eligibility",
-        label: "All eligibility",
+        label: t.allEligibility,
         value: eligibleFilter === "all" ? "" : eligibleFilter,
         options: [
-          { value: "eligible", label: "Eligible" },
-          { value: "ineligible", label: "Ineligible" },
+          { value: "eligible", label: t.eligible },
+          { value: "ineligible", label: t.ineligible },
         ],
         onChange: (value) => setEligibleFilter(value === "" ? "all" : (value as "eligible" | "ineligible")),
       },
       {
         type: "select",
         key: "status",
-        label: "All statuses",
+        label: t.allStatuses,
         value: statusFilter,
         options: statusOptions
           .filter((status) => status)
@@ -207,16 +251,16 @@ function CandidatesPageContent() {
         onChange: setStatusFilter,
       },
     ],
-    [eligibleFilter, statusFilter],
+    [eligibleFilter, statusFilter, t],
   );
 
   return (
     <div className="founder-page">
       <Topbar
-        title="Candidates"
-        subtitle={`${total} records`}
+        title={t.title}
+        subtitle={`${total} ${t.records}`}
         searchValue={searchInput}
-        searchPlaceholder="Search by name, email, iRAIN..."
+        searchPlaceholder={t.searchPlaceholder}
         onSearchChange={setSearchInput}
       />
 
@@ -234,8 +278,8 @@ function CandidatesPageContent() {
         emptyState={
           <EmptyState
             variant="candidates"
-            title="No candidates yet"
-            description="Candidates will appear here once they register through the intake form. Check back soon or adjust your filters."
+            title={t.emptyTitle}
+            description={t.emptyDescription}
           />
         }
         onRowClick={handleRowClick}

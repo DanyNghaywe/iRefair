@@ -74,11 +74,11 @@ export default function RootLayout({
         <a href="#main-content" className="skip-link">
           Skip to main content
         </a>
-        <ToastProvider>
-          <LanguageProvider>
+        <LanguageProvider>
+          <ToastProvider>
             <NavigationLoaderProvider>{children}</NavigationLoaderProvider>
-          </LanguageProvider>
-        </ToastProvider>
+          </ToastProvider>
+        </LanguageProvider>
         <SpeedInsights />
       </body>
     </html>

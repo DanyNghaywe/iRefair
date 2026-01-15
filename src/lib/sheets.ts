@@ -80,6 +80,24 @@ export const APPLICATION_ADMIN_COLUMNS = [
 
 export const ARCHIVE_COLUMNS = ['Archived', 'ArchivedAt', 'ArchivedBy'];
 
+// Referrer Companies sheet - stores company data separately from referrer profile
+// Allows one referrer to have multiple companies, each with separate approval
+export const REFERRER_COMPANIES_SHEET_NAME = 'Referrer Companies';
+export const REFERRER_COMPANIES_HEADERS = [
+  'ID',
+  'Timestamp',
+  'Referrer iRREF',
+  'Company Name',
+  'Company iRCRN',
+  'Company Approval',
+  'Company Industry',
+  'Careers Portal',
+  'Work Type',
+  'Archived',
+  'ArchivedAt',
+  'ArchivedBy',
+];
+
 const IRCRN_REGEX = /^iRCRN(\d{10})$/i;
 const IRAIN_REGEX = /^iRAIN(\d{10})$/i;
 const IRREF_REGEX = /^iRREF(\d{10})$/i;
@@ -442,6 +460,7 @@ export const APPLICATION_HEADERS = [
   'Resume URL',
   'Referrer iRREF',
   'Referrer Email',
+  'Referrer Company ID',
 ];
 export const APPLICATION_SHEET_NAME = 'Applications';
 
@@ -490,6 +509,52 @@ type ReferrerRow = {
   portalTokenVersion?: string;
 };
 
+// Referrer Company - links a referrer to a company (many-to-many relationship)
+export type ReferrerCompanyRow = {
+  id: string; // Unique ID for this referrer-company relationship
+  referrerIrref: string; // Foreign key to Referrers sheet
+  companyName: string;
+  companyIrcrn?: string; // Generated on approval
+  companyApproval?: 'pending' | 'approved' | 'denied' | '';
+  companyIndustry: string;
+  careersPortal?: string;
+  workType: string;
+};
+
+export type ReferrerCompanyRecord = ReferrerCompanyRow & {
+  timestamp: string;
+  archived?: string;
+  archivedAt?: string;
+  archivedBy?: string;
+};
+
+// Full referrer record type (matches what getReferrerByIrref returns)
+export type ReferrerRecord = {
+  irref: string;
+  timestamp: string;
+  name: string;
+  email: string;
+  phone: string;
+  country: string;
+  company: string;
+  companyIrcrn: string;
+  companyApproval: string;
+  companyIndustry: string;
+  careersPortal: string;
+  workType: string;
+  linkedin: string;
+  portalTokenVersion: string;
+  pendingUpdates: string;
+  status: string;
+  ownerNotes: string;
+  tags: string;
+  lastContactedAt: string;
+  nextActionAt: string;
+  archived: string;
+  archivedAt: string;
+  archivedBy: string;
+};
+
 type ApplicationRow = {
   id: string;
   applicantId: string;
@@ -500,6 +565,7 @@ type ApplicationRow = {
   resumeFileId?: string;
   referrerIrref?: string;
   referrerEmail?: string;
+  referrerCompanyId?: string;
   status?: string;
 };
 
@@ -1146,6 +1212,7 @@ export async function appendApplicationRow(row: ApplicationRow) {
   setByHeader(rowValues, headerMap, 'Resume File ID', row.resumeFileId ?? '');
   setByHeader(rowValues, headerMap, 'Referrer iRREF', row.referrerIrref ?? '');
   setByHeader(rowValues, headerMap, 'Referrer Email', row.referrerEmail ?? '');
+  setByHeader(rowValues, headerMap, 'Referrer Company ID', row.referrerCompanyId ?? '');
   setByHeader(rowValues, headerMap, 'Status', row.status ?? '');
   setByHeader(rowValues, headerMap, 'Owner Notes', '');
 
@@ -1643,6 +1710,7 @@ type ApplicationListItem = {
   resumeFileId: string;
   referrerIrref: string;
   referrerEmail: string;
+  referrerCompanyId: string;
   status: string;
   ownerNotes: string;
   meetingDate: string;
@@ -1932,6 +2000,15 @@ export async function listReferrers(params: ReferrerListParams) {
     });
 
   const ordered = items.sort((a, b) => {
+    // Check if records are "pending" (either first-time approval or pending updates)
+    const aIsPending = (a.companyApproval === 'pending' || !a.companyApproval) || (a.pendingUpdateCount && a.pendingUpdateCount > 0);
+    const bIsPending = (b.companyApproval === 'pending' || !b.companyApproval) || (b.pendingUpdateCount && b.pendingUpdateCount > 0);
+
+    // Pending records come first
+    if (aIsPending && !bIsPending) return -1;
+    if (!aIsPending && bIsPending) return 1;
+
+    // Within same pending status, sort by timestamp (newest first)
     const aTime = a.timestamp ? Date.parse(a.timestamp) : 0;
     const bTime = b.timestamp ? Date.parse(b.timestamp) : 0;
     if (aTime !== bTime) return bTime - aTime;
@@ -2209,6 +2286,7 @@ export async function listApplications(
         resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID'),
         referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
         referrerEmail: getHeaderValue(headerMap, row, 'Referrer Email'),
+        referrerCompanyId: getHeaderValue(headerMap, row, 'Referrer Company ID'),
         status: getHeaderValue(headerMap, row, 'Status'),
         ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
         meetingDate: getHeaderValue(headerMap, row, 'Meeting Date'),
@@ -3671,4 +3749,441 @@ export async function permanentlyDeleteApplication(
     console.error('Error permanently deleting application', error);
     return { success: false, reason: 'error' };
   }
+}
+
+// ============================================================================
+// Referrer Companies Functions
+// ============================================================================
+
+/**
+ * Generate a unique ID for a referrer-company relationship.
+ * Format: RCMP-{timestamp}-{random}
+ */
+export function generateReferrerCompanyId(): string {
+  const timestamp = Date.now();
+  const random = Math.random().toString(36).substring(2, 8);
+  return `RCMP-${timestamp}-${random}`;
+}
+
+/**
+ * Get the maximum iRCRN number from the Referrer Companies sheet.
+ */
+async function getMaxIrcrnFromReferrerCompanies(spreadsheetId: string): Promise<number> {
+  const sheets = getSheetsClient();
+  try {
+    const existing = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `'${REFERRER_COMPANIES_SHEET_NAME}'!1:1`,
+    });
+    const headers = existing.data.values?.[0] ?? [];
+    if (!headers.length) return 0;
+
+    const headerMap = buildHeaderMap(headers);
+    const lastCol = toColumnLetter(headers.length - 1);
+    const rows = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `'${REFERRER_COMPANIES_SHEET_NAME}'!A:${lastCol}`,
+      majorDimension: 'ROWS',
+    });
+    const values = rows.data.values ?? [];
+    let max = 0;
+    for (let i = 1; i < values.length; i++) {
+      const row = values[i] ?? [];
+      const value = getHeaderValue(headerMap, row, 'Company iRCRN');
+      const match = /^iRCRN(\d{10})$/i.exec(String(value).trim());
+      if (!match) continue;
+      const parsed = Number.parseInt(match[1], 10);
+      if (!Number.isNaN(parsed) && parsed > max) {
+        max = parsed;
+      }
+    }
+    return max;
+  } catch {
+    // Sheet might not exist yet
+    return 0;
+  }
+}
+
+/**
+ * Generate a new iRCRN, checking both legacy Referrers sheet and new Referrer Companies sheet.
+ */
+export async function generateIRCRNForCompany(): Promise<string> {
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const maxReferrers = await getMaxIrcrnFromReferrers(spreadsheetId);
+  const maxCompanies = await getMaxIrcrnFromReferrerCompanies(spreadsheetId);
+  const next = Math.max(maxReferrers, maxCompanies) + 1;
+  return `iRCRN${String(next).padStart(10, '0')}`;
+}
+
+/**
+ * Create a new referrer-company relationship.
+ */
+export async function appendReferrerCompanyRow(row: ReferrerCompanyRow): Promise<void> {
+  await ensureHeaders(REFERRER_COMPANIES_SHEET_NAME, REFERRER_COMPANIES_HEADERS);
+
+  const timestamp = new Date().toISOString();
+  await appendRow(REFERRER_COMPANIES_SHEET_NAME, [
+    row.id,
+    timestamp,
+    row.referrerIrref,
+    row.companyName,
+    row.companyIrcrn ?? '',
+    row.companyApproval ?? 'pending',
+    row.companyIndustry,
+    row.careersPortal ?? '',
+    row.workType,
+    '', // Archived
+    '', // ArchivedAt
+    '', // ArchivedBy
+  ]);
+}
+
+/**
+ * Get all companies for a referrer by their iRREF.
+ */
+export async function listReferrerCompanies(
+  referrerIrref: string,
+  includeArchived: boolean = false,
+): Promise<ReferrerCompanyRecord[]> {
+  await ensureHeaders(REFERRER_COMPANIES_SHEET_NAME, REFERRER_COMPANIES_HEADERS);
+
+  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_COMPANIES_SHEET_NAME);
+  if (!headers.length) return [];
+
+  const headerMap = buildHeaderMap(headers);
+  const normalizedIrref = referrerIrref.trim().toLowerCase();
+  const results: ReferrerCompanyRecord[] = [];
+
+  for (const row of rows) {
+    const rowIrref = getHeaderValue(headerMap, row, 'Referrer iRREF').toLowerCase();
+    if (rowIrref !== normalizedIrref) continue;
+
+    const archived = getHeaderValue(headerMap, row, 'Archived');
+    if (!includeArchived && archived === 'true') continue;
+
+    results.push({
+      id: getHeaderValue(headerMap, row, 'ID'),
+      timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
+      referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
+      companyName: getHeaderValue(headerMap, row, 'Company Name'),
+      companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN') || undefined,
+      companyApproval: getHeaderValue(headerMap, row, 'Company Approval') as ReferrerCompanyRecord['companyApproval'],
+      companyIndustry: getHeaderValue(headerMap, row, 'Company Industry'),
+      careersPortal: getHeaderValue(headerMap, row, 'Careers Portal') || undefined,
+      workType: getHeaderValue(headerMap, row, 'Work Type'),
+      archived: archived || undefined,
+      archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt') || undefined,
+      archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy') || undefined,
+    });
+  }
+
+  return results;
+}
+
+/**
+ * Get a specific referrer-company relationship by its ID.
+ */
+export async function getReferrerCompanyById(
+  id: string,
+): Promise<{ rowIndex: number; record: ReferrerCompanyRecord } | null> {
+  await ensureHeaders(REFERRER_COMPANIES_SHEET_NAME, REFERRER_COMPANIES_HEADERS);
+
+  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_COMPANIES_SHEET_NAME);
+  if (!headers.length) return null;
+
+  const headerMap = buildHeaderMap(headers);
+  const normalizedId = id.trim();
+
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    const rowId = getHeaderValue(headerMap, row, 'ID');
+    if (rowId !== normalizedId) continue;
+
+    return {
+      rowIndex: i + 2, // +1 for header, +1 for 1-indexed
+      record: {
+        id: rowId,
+        timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
+        referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
+        companyName: getHeaderValue(headerMap, row, 'Company Name'),
+        companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN') || undefined,
+        companyApproval: getHeaderValue(headerMap, row, 'Company Approval') as ReferrerCompanyRecord['companyApproval'],
+        companyIndustry: getHeaderValue(headerMap, row, 'Company Industry'),
+        careersPortal: getHeaderValue(headerMap, row, 'Careers Portal') || undefined,
+        workType: getHeaderValue(headerMap, row, 'Work Type'),
+        archived: getHeaderValue(headerMap, row, 'Archived') || undefined,
+        archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt') || undefined,
+        archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy') || undefined,
+      },
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Find a referrer company by its iRCRN.
+ * Returns both the company record and the associated referrer.
+ */
+export async function findReferrerCompanyByIrcrn(
+  ircrn: string,
+): Promise<{ company: ReferrerCompanyRecord; referrer: ReferrerRecord } | null> {
+  await ensureHeaders(REFERRER_COMPANIES_SHEET_NAME, REFERRER_COMPANIES_HEADERS);
+
+  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_COMPANIES_SHEET_NAME);
+  if (!headers.length) return null;
+
+  const headerMap = buildHeaderMap(headers);
+  const normalizedIrcrn = ircrn.trim().toLowerCase();
+
+  for (const row of rows) {
+    const rowIrcrn = getHeaderValue(headerMap, row, 'Company iRCRN').toLowerCase();
+    if (rowIrcrn !== normalizedIrcrn) continue;
+
+    const archived = getHeaderValue(headerMap, row, 'Archived');
+    if (archived === 'true') continue;
+
+    const approval = getHeaderValue(headerMap, row, 'Company Approval').toLowerCase();
+    if (approval !== 'approved' && approval !== '') continue;
+
+    const company: ReferrerCompanyRecord = {
+      id: getHeaderValue(headerMap, row, 'ID'),
+      timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
+      referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
+      companyName: getHeaderValue(headerMap, row, 'Company Name'),
+      companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN') || undefined,
+      companyApproval: approval as ReferrerCompanyRecord['companyApproval'],
+      companyIndustry: getHeaderValue(headerMap, row, 'Company Industry'),
+      careersPortal: getHeaderValue(headerMap, row, 'Careers Portal') || undefined,
+      workType: getHeaderValue(headerMap, row, 'Work Type'),
+      archived: archived || undefined,
+    };
+
+    // Fetch the associated referrer
+    const referrer = await getReferrerByIrref(company.referrerIrref);
+    if (!referrer) continue;
+    if (referrer.record.archived === 'true') continue;
+
+    return { company, referrer: referrer.record };
+  }
+
+  return null;
+}
+
+/**
+ * Strict version of findReferrerCompanyByIrcrn that throws on validation errors.
+ */
+export async function findReferrerCompanyByIrcrnStrict(ircrn: string): Promise<{
+  company: ReferrerCompanyRecord;
+  referrer: ReferrerRecord;
+}> {
+  const trimmed = ircrn.trim();
+  if (!trimmed) {
+    throw new ReferrerLookupError('missing_ircrn', 'Company reference number is required.');
+  }
+
+  if (!isIrcrn(trimmed)) {
+    throw new ReferrerLookupError('invalid_ircrn', 'Invalid company reference number format.');
+  }
+
+  // First check the new Referrer Companies sheet
+  const result = await findReferrerCompanyByIrcrn(trimmed);
+  if (result) {
+    return result;
+  }
+
+  // Fallback to legacy Referrers sheet for backward compatibility
+  const legacyResult = await findReferrerByIrcrn(trimmed);
+  if (legacyResult) {
+    // Fetch full referrer record to get all fields
+    const fullReferrer = await getReferrerByIrref(legacyResult.irref);
+    if (fullReferrer) {
+      // Convert legacy result to new format
+      return {
+        company: {
+          id: `legacy-${legacyResult.irref}`, // Synthetic ID for legacy records
+          timestamp: fullReferrer.record.timestamp || '',
+          referrerIrref: legacyResult.irref,
+          companyName: legacyResult.company || '',
+          companyIrcrn: legacyResult.companyIrcrn,
+          companyApproval: (fullReferrer.record.companyApproval || 'approved') as ReferrerCompanyRecord['companyApproval'],
+          companyIndustry: fullReferrer.record.companyIndustry || '',
+          careersPortal: fullReferrer.record.careersPortal || undefined,
+          workType: fullReferrer.record.workType || '',
+        },
+        referrer: fullReferrer.record,
+      };
+    }
+  }
+
+  throw new ReferrerLookupError('not_found', 'No approved company found with this reference number.');
+}
+
+/**
+ * Update the approval status of a company in the Referrer Companies sheet.
+ * Generates iRCRN on first approval.
+ * Note: This is different from updateReferrerCompanyApproval which operates on the legacy Referrers sheet.
+ */
+export async function updateCompanyApproval(
+  companyId: string,
+  approval: 'approved' | 'denied',
+): Promise<{
+  success: boolean;
+  reason?: string;
+  companyIrcrn?: string;
+  wasFirstApproval?: boolean;
+}> {
+  const existing = await getReferrerCompanyById(companyId);
+  if (!existing) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  const updates: Record<string, string> = {
+    'Company Approval': approval,
+  };
+
+  let generatedIrcrn: string | undefined;
+  let wasFirstApproval = false;
+
+  // Generate iRCRN on first approval if not already set
+  if (approval === 'approved' && !existing.record.companyIrcrn) {
+    generatedIrcrn = await generateIRCRNForCompany();
+    updates['Company iRCRN'] = generatedIrcrn;
+    wasFirstApproval = true;
+  }
+
+  const result = await updateRowById(REFERRER_COMPANIES_SHEET_NAME, 'ID', companyId, updates);
+
+  if (!result.updated) {
+    return { success: false, reason: 'update_failed' };
+  }
+
+  return {
+    success: true,
+    companyIrcrn: generatedIrcrn || existing.record.companyIrcrn,
+    wasFirstApproval,
+  };
+}
+
+/**
+ * Update fields of a referrer company.
+ */
+export async function updateReferrerCompanyFields(
+  companyId: string,
+  patch: Partial<Omit<ReferrerCompanyRow, 'id' | 'referrerIrref'>>,
+): Promise<{ updated: boolean; reason?: string }> {
+  const existing = await getReferrerCompanyById(companyId);
+  if (!existing) {
+    return { updated: false, reason: 'not_found' };
+  }
+
+  const updates: Record<string, string> = {};
+  if (patch.companyName !== undefined) updates['Company Name'] = patch.companyName;
+  if (patch.companyIndustry !== undefined) updates['Company Industry'] = patch.companyIndustry;
+  if (patch.careersPortal !== undefined) updates['Careers Portal'] = patch.careersPortal;
+  if (patch.workType !== undefined) updates['Work Type'] = patch.workType;
+
+  if (Object.keys(updates).length === 0) {
+    return { updated: true }; // Nothing to update
+  }
+
+  return updateRowById(REFERRER_COMPANIES_SHEET_NAME, 'ID', companyId, updates);
+}
+
+/**
+ * Archive a referrer company relationship.
+ */
+export async function archiveReferrerCompany(
+  companyId: string,
+  archivedBy?: string,
+): Promise<{ success: boolean; reason?: string }> {
+  const existing = await getReferrerCompanyById(companyId);
+  if (!existing) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  const now = new Date().toISOString();
+  const result = await updateRowById(REFERRER_COMPANIES_SHEET_NAME, 'ID', companyId, {
+    Archived: 'true',
+    ArchivedAt: now,
+    ArchivedBy: archivedBy || '',
+  });
+
+  return { success: result.updated, reason: result.reason };
+}
+
+/**
+ * List all approved companies from the Referrer Companies sheet.
+ * This is the new source for the hiring companies list.
+ */
+export async function listApprovedCompanies(): Promise<CompanyRow[]> {
+  await ensureHeaders(REFERRER_COMPANIES_SHEET_NAME, REFERRER_COMPANIES_HEADERS);
+
+  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_COMPANIES_SHEET_NAME);
+  if (!headers.length) {
+    // Fall back to legacy function if new sheet is empty
+    return listApprovedReferrerCompanies();
+  }
+
+  const headerMap = buildHeaderMap(headers);
+  const items: CompanyRow[] = [];
+
+  for (const row of rows) {
+    const approval = getHeaderValue(headerMap, row, 'Company Approval').toLowerCase();
+    if (approval !== 'approved') continue;
+
+    const archived = getHeaderValue(headerMap, row, 'Archived');
+    if (archived === 'true') continue;
+
+    const code = getHeaderValue(headerMap, row, 'Company iRCRN');
+    const name = getHeaderValue(headerMap, row, 'Company Name');
+    if (!code || !name) continue;
+
+    items.push({
+      code,
+      name,
+      industry: getHeaderValue(headerMap, row, 'Company Industry') || 'Not specified',
+      careersUrl: getHeaderValue(headerMap, row, 'Careers Portal') || undefined,
+    });
+  }
+
+  // If no items in new sheet, fall back to legacy
+  if (items.length === 0) {
+    return listApprovedReferrerCompanies();
+  }
+
+  // Deduplicate by iRCRN (in case of edge cases)
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.code)) return false;
+    seen.add(item.code);
+    return true;
+  });
+}
+
+/**
+ * Check if a referrer has at least one approved company.
+ */
+export async function hasApprovedCompany(referrerIrref: string): Promise<boolean> {
+  const companies = await listReferrerCompanies(referrerIrref);
+  return companies.some((c) => c.companyApproval === 'approved');
+}
+
+/**
+ * Find an existing company for a referrer by company name (case-insensitive).
+ */
+export async function findReferrerCompanyByName(
+  referrerIrref: string,
+  companyName: string,
+): Promise<ReferrerCompanyRecord | null> {
+  const companies = await listReferrerCompanies(referrerIrref, true); // Include archived
+  const normalizedName = companyName.trim().toLowerCase();
+
+  for (const company of companies) {
+    if (company.companyName.trim().toLowerCase() === normalizedName) {
+      return company;
+    }
+  }
+
+  return null;
 }

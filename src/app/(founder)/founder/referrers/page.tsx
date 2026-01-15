@@ -4,10 +4,64 @@ import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
+import { useLanguage } from "@/components/LanguageProvider";
 import { EmptyState } from "@/components/founder/EmptyState";
 import { FilterBar, type FilterConfig } from "@/components/founder/FilterBar";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
+
+const translations = {
+  en: {
+    title: "Referrers",
+    records: "records",
+    searchPlaceholder: "Search by name, email, company...",
+    filterByCompany: "Filter by company",
+    allStatuses: "All statuses",
+    allApprovals: "All approvals",
+    pending: "Pending",
+    approved: "Approved",
+    denied: "Denied",
+    irref: "iRREF",
+    name: "Name",
+    email: "Email",
+    company: "Company",
+    industry: "Industry",
+    approval: "Approval",
+    workType: "Work Type",
+    status: "Status",
+    quickEdit: "Quick edit",
+    updates: "updates",
+    update: "update",
+    newApproval: "New",
+    emptyTitle: "No referrers yet",
+    emptyDescription: "Referrers will appear here once they sign up through the referrer registration form. Try adjusting your filters if you expected to see results.",
+  },
+  fr: {
+    title: "Référents",
+    records: "enregistrements",
+    searchPlaceholder: "Rechercher par nom, courriel, entreprise...",
+    filterByCompany: "Filtrer par entreprise",
+    allStatuses: "Tous les statuts",
+    allApprovals: "Toutes les approbations",
+    pending: "En attente",
+    approved: "Approuvé",
+    denied: "Refusé",
+    irref: "iRREF",
+    name: "Nom",
+    email: "Courriel",
+    company: "Entreprise",
+    industry: "Industrie",
+    approval: "Approbation",
+    workType: "Type de travail",
+    status: "Statut",
+    quickEdit: "Modification rapide",
+    updates: "mises à jour",
+    update: "mise à jour",
+    newApproval: "Nouveau",
+    emptyTitle: "Aucun référent",
+    emptyDescription: "Les référents apparaîtront ici une fois inscrits via le formulaire d'inscription. Essayez d'ajuster vos filtres si vous vous attendiez à voir des résultats.",
+  },
+};
 
 type ReferrerRecord = {
   irref: string;
@@ -52,6 +106,8 @@ function ReferrersPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
+  const { language } = useLanguage();
+  const t = translations[language];
 
   const [items, setItems] = useState<ReferrerRecord[]>([]);
   const [total, setTotal] = useState(0);
@@ -115,7 +171,7 @@ function ReferrersPageContent() {
     () => [
       {
         key: "irref",
-        label: "iRREF",
+        label: t.irref,
         sortable: true,
         nowrap: true,
         ellipsis: true,
@@ -124,7 +180,7 @@ function ReferrersPageContent() {
       },
       {
         key: "name",
-        label: "Name",
+        label: t.name,
         sortable: true,
         ellipsis: true,
         width: "240px",
@@ -134,20 +190,25 @@ function ReferrersPageContent() {
             {row.pendingUpdateCount && row.pendingUpdateCount > 0 ? (
               <span
                 className="pending-updates-badge"
-                title={`${row.pendingUpdateCount} pending update${row.pendingUpdateCount > 1 ? "s" : ""}`}
+                title={`${row.pendingUpdateCount} ${row.pendingUpdateCount > 1 ? t.updates : t.update}`}
               >
-                {row.pendingUpdateCount} update{row.pendingUpdateCount > 1 ? "s" : ""}
+                {row.pendingUpdateCount} {row.pendingUpdateCount > 1 ? t.updates : t.update}
               </span>
             ) : null}
+            {(!row.companyApproval || row.companyApproval === 'pending') && (
+              <span className="pending-approval-badge" title={t.newApproval}>
+                {t.newApproval}
+              </span>
+            )}
           </div>
         ),
       },
-      { key: "email", label: "Email", ellipsis: true, width: "320px" },
-      { key: "company", label: "Company", sortable: true, ellipsis: true, width: "240px" },
-      { key: "companyIndustry", label: "Industry", sortable: true, ellipsis: true, width: "240px" },
+      { key: "email", label: t.email, ellipsis: true, width: "320px" },
+      { key: "company", label: t.company, sortable: true, ellipsis: true, width: "240px" },
+      { key: "companyIndustry", label: t.industry, sortable: true, ellipsis: true, width: "240px" },
       {
         key: "companyApproval",
-        label: "Approval",
+        label: t.approval,
         sortable: true,
         nowrap: true,
         width: "160px",
@@ -158,21 +219,21 @@ function ReferrersPageContent() {
           if (value === "approved") {
             return (
               <span className="founder-pill founder-pill--success" data-no-row-click>
-                Approved
+                {t.approved}
               </span>
             );
           }
           if (value === "denied") {
             return (
               <span className="founder-pill" data-no-row-click>
-                Denied
+                {t.denied}
               </span>
             );
           }
           if (value === "pending") {
             return (
               <span className="founder-pill founder-pill--muted" data-no-row-click>
-                Pending
+                {t.pending}
               </span>
             );
           }
@@ -183,8 +244,8 @@ function ReferrersPageContent() {
           );
         },
       },
-      { key: "workType", label: "Work Type", nowrap: true, width: "160px" },
-      { key: "status", label: "Status", sortable: true, nowrap: true, width: "140px", align: "center" },
+      { key: "workType", label: t.workType, nowrap: true, width: "160px" },
+      { key: "status", label: t.status, sortable: true, nowrap: true, width: "140px", align: "center" },
       {
         key: "quickEdit",
         label: "",
@@ -200,8 +261,8 @@ function ReferrersPageContent() {
               href={href}
               variant="ghost"
               size="sm"
-              title="Quick edit"
-              aria-label="Quick edit"
+              title={t.quickEdit}
+              aria-label={t.quickEdit}
               className="founder-quick-edit-btn"
               data-no-row-click
               onClick={(event) => event.stopPropagation()}
@@ -212,7 +273,7 @@ function ReferrersPageContent() {
         },
       },
     ],
-    [],
+    [t],
   );
 
   const filters = useMemo<FilterConfig[]>(
@@ -220,14 +281,14 @@ function ReferrersPageContent() {
       {
         type: "text",
         key: "company",
-        placeholder: "Filter by company",
+        placeholder: t.filterByCompany,
         value: companyFilter,
         onChange: setCompanyFilter,
       },
       {
         type: "select",
         key: "status",
-        label: "All statuses",
+        label: t.allStatuses,
         value: statusFilter,
         options: statusOptions
           .filter((value) => value)
@@ -237,26 +298,26 @@ function ReferrersPageContent() {
       {
         type: "select",
         key: "approval",
-        label: "All approvals",
+        label: t.allApprovals,
         value: approvalFilter,
         options: [
-          { value: "pending", label: "Pending" },
-          { value: "approved", label: "Approved" },
-          { value: "denied", label: "Denied" },
+          { value: "pending", label: t.pending },
+          { value: "approved", label: t.approved },
+          { value: "denied", label: t.denied },
         ],
         onChange: setApprovalFilter,
       },
     ],
-    [companyFilter, statusFilter, approvalFilter],
+    [companyFilter, statusFilter, approvalFilter, t],
   );
 
   return (
     <div className="founder-page">
       <Topbar
-        title="Referrers"
-        subtitle={`${total} records`}
+        title={t.title}
+        subtitle={`${total} ${t.records}`}
         searchValue={searchInput}
-        searchPlaceholder="Search by name, email, company..."
+        searchPlaceholder={t.searchPlaceholder}
         onSearchChange={setSearchInput}
       />
 
@@ -269,8 +330,8 @@ function ReferrersPageContent() {
         emptyState={
           <EmptyState
             variant="referrers"
-            title="No referrers yet"
-            description="Referrers will appear here once they sign up through the referrer registration form. Try adjusting your filters if you expected to see results."
+            title={t.emptyTitle}
+            description={t.emptyDescription}
           />
         }
         onRowClick={handleRowClick}

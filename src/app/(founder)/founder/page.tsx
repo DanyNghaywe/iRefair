@@ -2,9 +2,33 @@
 
 import React, { useEffect, useState } from "react";
 
+import { useLanguage } from "@/components/LanguageProvider";
 import { SkeletonCard } from "@/components/founder/Skeleton";
 import { Topbar } from "@/components/founder/Topbar";
 import { LogoutButton } from "./LogoutButton";
+
+const translations = {
+  en: {
+    title: "Ops Console",
+    subtitle: "Founder & Managing Director workspace",
+    activeApplicants: "Active applicants",
+    referrers: "Referrers",
+    applications: "Applications",
+    realtimeHint: "Realtime from Sheets",
+    latestSync: "Latest sync",
+    past7Days: "Past 7 days",
+  },
+  fr: {
+    title: "Console Ops",
+    subtitle: "Espace de travail du Fondateur et Directeur Général",
+    activeApplicants: "Candidats actifs",
+    referrers: "Référents",
+    applications: "Candidatures",
+    realtimeHint: "Temps réel depuis Sheets",
+    latestSync: "Dernière synchronisation",
+    past7Days: "7 derniers jours",
+  },
+};
 
 type Stats = {
   applicants: number | null;
@@ -13,6 +37,8 @@ type Stats = {
 };
 
 export default function FounderDashboard() {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [stats, setStats] = useState<Stats>({
     applicants: null,
     referrers: null,
@@ -39,16 +65,16 @@ export default function FounderDashboard() {
   }, []);
 
   const cards = [
-    { title: "Active applicants", value: stats.applicants, hint: "Realtime from Sheets" },
-    { title: "Referrers", value: stats.referrers, hint: "Latest sync" },
-    { title: "Applications", value: stats.applications, hint: "Past 7 days" },
+    { title: t.activeApplicants, value: stats.applicants, hint: t.realtimeHint },
+    { title: t.referrers, value: stats.referrers, hint: t.latestSync },
+    { title: t.applications, value: stats.applications, hint: t.past7Days },
   ];
 
   return (
     <div className="founder-page">
       <Topbar
-        title="Ops Console"
-        subtitle="Founder & Managing Director workspace"
+        title={t.title}
+        subtitle={t.subtitle}
         actions={<LogoutButton />}
       />
 

@@ -12,6 +12,8 @@ import {
   REFERRER_SHEET_NAME,
   ensureColumns,
   getReferrerByIrref,
+  listReferrerCompanies,
+  updateCompanyApproval,
   updateReferrerCompanyApproval,
   updateRowById,
 } from '@/lib/sheets';
@@ -75,6 +77,20 @@ export async function POST(
     const result = await updateReferrerCompanyApproval(irref, approval);
     if (result.reason === 'not_found') {
       return NextResponse.json({ ok: false, error: 'Referrer not found' }, { status: 404 });
+    }
+
+    // B2) Also approve/deny all companies for this referrer (for first-time signups)
+    try {
+      const companies = await listReferrerCompanies(irref);
+      const pendingCompanies = companies.filter(
+        (c) => (c.companyApproval || 'pending').toLowerCase() === 'pending'
+      );
+      for (const company of pendingCompanies) {
+        await updateCompanyApproval(company.id, approval as 'approved' | 'denied');
+      }
+    } catch (companyError) {
+      console.error('Error updating referrer companies approval:', companyError);
+      // Continue anyway - main referrer approval succeeded
     }
 
     // C) If newly approved, send portal link email

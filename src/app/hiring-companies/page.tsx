@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { listApprovedReferrerCompanies } from '@/lib/sheets';
+import { listApprovedCompanies } from '@/lib/sheets';
 import { HiringCompaniesClient } from './HiringCompaniesClient';
 
 export const dynamic = 'force-dynamic';
@@ -10,7 +10,9 @@ export const metadata: Metadata = {
 };
 
 export default async function HiringCompaniesPage() {
-  const companies = await listApprovedReferrerCompanies();
+  // listApprovedCompanies checks new Referrer Companies sheet first,
+  // falls back to legacy Referrers sheet if new sheet is empty
+  const companies = await listApprovedCompanies();
 
   return <HiringCompaniesClient mergedCompanies={companies} />;
 }

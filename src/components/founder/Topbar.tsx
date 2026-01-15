@@ -3,6 +3,19 @@
 import React from "react";
 import Link from "next/link";
 
+import { useLanguage } from "@/components/LanguageProvider";
+
+const translations = {
+  en: {
+    back: "Back",
+    search: "Search",
+  },
+  fr: {
+    back: "Retour",
+    search: "Rechercher",
+  },
+};
+
 type Props = {
   title: string;
   subtitle?: string;
@@ -15,12 +28,15 @@ type Props = {
 };
 
 export function Topbar({ title, subtitle, searchValue, searchPlaceholder, onSearchChange, actions, backHref, backLabel }: Props) {
+  const { language } = useLanguage();
+  const t = translations[language];
+
   return (
     <div className="founder-topbar">
       <div className="founder-topbar__titles">
         {backHref && (
           <Link href={backHref} className="founder-topbar__back">
-            ← {backLabel || "Back"}
+            ← {backLabel || t.back}
           </Link>
         )}
         <h1>{title}</h1>
@@ -32,7 +48,7 @@ export function Topbar({ title, subtitle, searchValue, searchPlaceholder, onSear
             <input
               type="search"
               value={searchValue}
-              placeholder={searchPlaceholder || "Search"}
+              placeholder={searchPlaceholder || t.search}
               onChange={(event) => onSearchChange(event.target.value)}
             />
           </div>

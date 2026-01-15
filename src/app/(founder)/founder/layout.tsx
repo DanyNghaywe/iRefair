@@ -4,24 +4,51 @@ import React, { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { AppShell } from "@/components/AppShell";
+import { useLanguage } from "@/components/LanguageProvider";
 import { Sidebar } from "@/components/founder/Sidebar";
 import { ActionBtn } from "@/components/ActionBtn";
 
-const navItems = [
-  { href: "/founder", label: "Dashboard" },
-  { href: "/founder/applicants", label: "Applicants" },
-  { href: "/founder/referrers", label: "Referrers" },
-  { href: "/founder/applications", label: "Applications" },
-  { href: "/founder/archive", label: "Archive" },
-  { href: "/founder/settings", label: "Settings" },
-];
+const navItemsData = [
+  { href: "/founder", labelKey: "dashboard" },
+  { href: "/founder/applicants", labelKey: "applicants" },
+  { href: "/founder/referrers", labelKey: "referrers" },
+  { href: "/founder/applications", labelKey: "applications" },
+  { href: "/founder/archive", labelKey: "archive" },
+  { href: "/founder/settings", labelKey: "settings" },
+] as const;
+
+const navLabels = {
+  en: {
+    dashboard: "Dashboard",
+    applicants: "Applicants",
+    referrers: "Referrers",
+    applications: "Applications",
+    archive: "Archive",
+    settings: "Settings",
+  },
+  fr: {
+    dashboard: "Tableau de bord",
+    applicants: "Candidats",
+    referrers: "Référents",
+    applications: "Candidatures",
+    archive: "Archives",
+    settings: "Paramètres",
+  },
+};
 
 export default function FounderLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { language } = useLanguage();
   const isLogin = pathname?.startsWith("/founder/login");
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const sidebarRef = React.useRef<HTMLDivElement | null>(null);
+
+  const navItems = navItemsData.map((item) => ({
+    href: item.href,
+    label: navLabels[language][item.labelKey],
+    iconKey: item.labelKey,
+  }));
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");

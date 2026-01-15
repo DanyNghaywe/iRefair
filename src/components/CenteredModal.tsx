@@ -4,6 +4,11 @@ import { useCallback, useEffect, useRef, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import styles from "./CenteredModal.module.css";
 
+const ariaLabels = {
+  en: { closeModal: "Close modal" },
+  fr: { closeModal: "Fermer la fen\u00eatre" },
+};
+
 type CenteredModalProps = {
   open: boolean;
   onClose: () => void;
@@ -12,6 +17,7 @@ type CenteredModalProps = {
   children: ReactNode;
   footer?: ReactNode;
   size?: "sm" | "md" | "lg";
+  locale?: "en" | "fr";
 };
 
 const FOCUSABLE_SELECTOR =
@@ -31,10 +37,12 @@ export function CenteredModal({
   children,
   footer,
   size = "md",
+  locale = "en",
 }: CenteredModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
+  const labels = ariaLabels[locale];
 
   useEffect(() => {
     if (open) {
@@ -121,7 +129,7 @@ export function CenteredModal({
             type="button"
             className={styles.closeBtn}
             onClick={onClose}
-            aria-label="Close modal"
+            aria-label={labels.closeModal}
           >
             <svg
               width="20"

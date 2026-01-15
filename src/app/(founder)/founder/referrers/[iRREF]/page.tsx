@@ -6,6 +6,7 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 
 import { ActionBtn } from "@/components/ActionBtn";
+import { useLanguage } from "@/components/LanguageProvider";
 import { AutosaveHint } from "@/components/founder/AutosaveHint";
 import { Badge } from "@/components/founder/Badge";
 import { DetailPageShell } from "@/components/founder/DetailPageShell";
@@ -14,6 +15,41 @@ import { Select } from "@/components/Select";
 import { Skeleton, SkeletonDetailGrid, SkeletonStack } from "@/components/founder/Skeleton";
 import { Topbar } from "@/components/founder/Topbar";
 import { countryOptions } from "@/lib/countries";
+
+const translations = {
+  en: {
+    inviteSent: "Invite sent.",
+    unableToSendInvite: "Unable to send invite.",
+    companyApproved: "Company approved.",
+    companyDenied: "Company denied.",
+    unableToUpdateApproval: "Unable to update approval.",
+    updateApplied: "Update applied successfully.",
+    updateDenied: "Update denied.",
+    unableToProcessUpdate: "Unable to process update.",
+    unableToArchive: "Unable to archive referrer.",
+    portalLinkGenerated: "Portal link generated.",
+    portalLinkGeneratedEmailed: "Portal link generated and emailed.",
+    unableToGeneratePortal: "Unable to generate portal link.",
+    portalTokensRotated: "Portal tokens rotated. Generate a new link to share.",
+    unableToRotateToken: "Unable to rotate portal token.",
+  },
+  fr: {
+    inviteSent: "Invitation envoy\u00e9e.",
+    unableToSendInvite: "Impossible d'envoyer l'invitation.",
+    companyApproved: "Entreprise approuv\u00e9e.",
+    companyDenied: "Entreprise refus\u00e9e.",
+    unableToUpdateApproval: "Impossible de mettre \u00e0 jour l'approbation.",
+    updateApplied: "Mise \u00e0 jour appliqu\u00e9e avec succ\u00e8s.",
+    updateDenied: "Mise \u00e0 jour refus\u00e9e.",
+    unableToProcessUpdate: "Impossible de traiter la mise \u00e0 jour.",
+    unableToArchive: "Impossible d'archiver le r\u00e9f\u00e9rent.",
+    portalLinkGenerated: "Lien du portail g\u00e9n\u00e9r\u00e9.",
+    portalLinkGeneratedEmailed: "Lien du portail g\u00e9n\u00e9r\u00e9 et envoy\u00e9 par courriel.",
+    unableToGeneratePortal: "Impossible de g\u00e9n\u00e9rer le lien du portail.",
+    portalTokensRotated: "Jetons du portail r\u00e9initialis\u00e9s. G\u00e9n\u00e9rez un nouveau lien \u00e0 partager.",
+    unableToRotateToken: "Impossible de r\u00e9initialiser le jeton du portail.",
+  },
+};
 
 type ReferrerRecord = {
   irref: string;
@@ -61,6 +97,18 @@ type ApplicationItem = {
   iCrn: string;
   position: string;
   status: string;
+};
+
+type ReferrerCompany = {
+  id: string;
+  timestamp: string;
+  companyName: string;
+  companyIrcrn: string | null;
+  companyApproval: string;
+  companyIndustry: string;
+  careersPortal: string | null;
+  workType: string;
+  archived: boolean;
 };
 
 const statusOptions = ["", "New", "Engaged", "Active", "Paused", "Closed"];
@@ -243,6 +291,8 @@ export default function ReferrerReviewPage() {
   const cleanIrref = typeof irref === "string" ? irref.trim() : "";
   const searchParams = useSearchParams();
   const initialEdit = searchParams?.get("edit") === "1";
+  const { language } = useLanguage();
+  const t = translations[language];
 
   const [referrer, setReferrer] = useState<ReferrerRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -257,10 +307,6 @@ export default function ReferrerReviewPage() {
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [country, setCountry] = useState("");
-  const [company, setCompany] = useState("");
-  const [companyIndustry, setCompanyIndustry] = useState("");
-  const [careersPortal, setCareersPortal] = useState("");
-  const [workType, setWorkType] = useState("");
   const [linkedin, setLinkedin] = useState("");
   const [saving, setSaving] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
@@ -279,6 +325,11 @@ export default function ReferrerReviewPage() {
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
   const router = useRouter();
   const [appsLoading, setAppsLoading] = useState(false);
+  const [companies, setCompanies] = useState<ReferrerCompany[]>([]);
+  const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [companyApprovalLoading, setCompanyApprovalLoading] = useState<string | null>(null);
+  const [justApprovedCompanyIds, setJustApprovedCompanyIds] = useState<Set<string>>(new Set());
+  const [editedCompanies, setEditedCompanies] = useState<Record<string, Partial<ReferrerCompany>>>({});
   const skipAutosaveRef = useRef(true);
 
   // Store original values when entering edit mode
@@ -287,11 +338,8 @@ export default function ReferrerReviewPage() {
     email: string;
     phone: string;
     country: string;
-    company: string;
-    companyIndustry: string;
-    careersPortal: string;
-    workType: string;
     linkedin: string;
+    companies: ReferrerCompany[];
   } | null>(null);
 
   // Parse pending updates from referrer
@@ -370,6 +418,63 @@ export default function ReferrerReviewPage() {
     fetchApplications(referrer.irref);
   }, [referrer?.irref]);
 
+  const fetchCompanies = async (irrefValue: string) => {
+    setCompaniesLoading(true);
+    try {
+      const response = await fetch(`/api/founder/referrers/${encodeURIComponent(irrefValue)}/companies`, {
+        cache: "no-store",
+      });
+      const data = await response.json();
+      if (data?.ok) {
+        setCompanies(data.companies ?? []);
+      }
+    } catch (error) {
+      console.error("Failed to fetch companies", error);
+    }
+    setCompaniesLoading(false);
+  };
+
+  useEffect(() => {
+    if (!referrer?.irref) return;
+    fetchCompanies(referrer.irref);
+  }, [referrer?.irref]);
+
+  const handleCompanyApproval = async (companyId: string, approval: "approved" | "denied") => {
+    setCompanyApprovalLoading(companyId);
+    setActionMessage(null);
+    setActionError(null);
+    try {
+      const response = await fetch(`/api/founder/referrer-companies/${encodeURIComponent(companyId)}/approval`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approval }),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.ok) {
+        setActionError(data?.error || t.unableToUpdateApproval);
+      } else {
+        // Update the companies list with the new approval status
+        setCompanies((prev) =>
+          prev.map((c) =>
+            c.id === companyId
+              ? { ...c, companyApproval: approval, companyIrcrn: data.companyIrcrn || c.companyIrcrn }
+              : c,
+          ),
+        );
+        // Track just-approved company so we can show temporary "Approved" badge
+        if (approval === "approved") {
+          setJustApprovedCompanyIds((prev) => new Set(prev).add(companyId));
+        }
+        setActionMessage(approval === "approved" ? t.companyApproved : t.companyDenied);
+      }
+    } catch (error) {
+      console.error("Company approval failed", error);
+      setActionError(t.unableToUpdateApproval);
+    } finally {
+      setCompanyApprovalLoading(null);
+    }
+  };
+
   useEffect(() => {
     if (!referrer) return;
     setNotes(referrer.ownerNotes || "");
@@ -381,10 +486,6 @@ export default function ReferrerReviewPage() {
     setEmail(referrer.email || "");
     setPhone(referrer.phone || "");
     setCountry(referrer.country || "");
-    setCompany(referrer.company || "");
-    setCompanyIndustry(referrer.companyIndustry || "");
-    setCareersPortal(referrer.careersPortal || "");
-    setWorkType(referrer.workType || "");
     setLinkedin(referrer.linkedin || "");
     setActionMessage(null);
     setActionError(null);
@@ -431,12 +532,10 @@ export default function ReferrerReviewPage() {
       email,
       phone,
       country,
-      company,
-      companyIndustry,
-      careersPortal,
-      workType,
       linkedin,
+      companies: companies.map((c) => ({ ...c })),
     };
+    setEditedCompanies({});
     setEditDetails(true);
   };
 
@@ -446,18 +545,35 @@ export default function ReferrerReviewPage() {
       setEmail(originalDetailsRef.current.email);
       setPhone(originalDetailsRef.current.phone);
       setCountry(originalDetailsRef.current.country);
-      setCompany(originalDetailsRef.current.company);
-      setCompanyIndustry(originalDetailsRef.current.companyIndustry);
-      setCareersPortal(originalDetailsRef.current.careersPortal);
-      setWorkType(originalDetailsRef.current.workType);
       setLinkedin(originalDetailsRef.current.linkedin);
+      setCompanies(originalDetailsRef.current.companies);
     }
     originalDetailsRef.current = null;
+    setEditedCompanies({});
     setEditDetails(false);
+  };
+
+  const handleCompanyFieldChange = (companyId: string, field: keyof ReferrerCompany, value: string) => {
+    setEditedCompanies((prev) => ({
+      ...prev,
+      [companyId]: {
+        ...prev[companyId],
+        [field]: value,
+      },
+    }));
+    // Also update the companies array for display
+    setCompanies((prev) =>
+      prev.map((c) =>
+        c.id === companyId ? { ...c, [field]: value } : c
+      )
+    );
   };
 
   const handleSaveEdit = async () => {
     if (!referrer) return;
+    setSaving(true);
+
+    // Save referrer profile changes
     const patch: Record<string, string> = {};
     const addIfChanged = (key: string, value: string, current: string) => {
       if (value !== current) patch[key] = value;
@@ -466,17 +582,32 @@ export default function ReferrerReviewPage() {
     addIfChanged("email", email, referrer.email || "");
     addIfChanged("phone", phone, referrer.phone || "");
     addIfChanged("country", country, referrer.country || "");
-    addIfChanged("company", company, referrer.company || "");
-    addIfChanged("companyIndustry", companyIndustry, referrer.companyIndustry || "");
-    addIfChanged("careersPortal", careersPortal, referrer.careersPortal || "");
-    addIfChanged("workType", workType, referrer.workType || "");
     addIfChanged("linkedin", linkedin, referrer.linkedin || "");
 
     if (Object.keys(patch).length) {
       await patchReferrer(patch);
     }
+
+    // Save company changes
+    const companyUpdatePromises = Object.entries(editedCompanies).map(async ([companyId, changes]) => {
+      if (Object.keys(changes).length === 0) return;
+      try {
+        await fetch(`/api/founder/referrer-companies/${encodeURIComponent(companyId)}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(changes),
+        });
+      } catch (error) {
+        console.error(`Failed to update company ${companyId}`, error);
+      }
+    });
+
+    await Promise.all(companyUpdatePromises);
+
     originalDetailsRef.current = null;
+    setEditedCompanies({});
     setEditDetails(false);
+    setSaving(false);
   };
 
   const handlePortalLink = async () => {
@@ -500,14 +631,14 @@ export default function ReferrerReviewPage() {
       });
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok || !data?.link) {
-        setPortalError(data?.error || "Unable to generate portal link.");
+        setPortalError(data?.error || t.unableToGeneratePortal);
         return;
       }
       setPortalLink(data.link);
-      setPortalMessage(referrer.email ? "Portal link generated and emailed." : "Portal link generated.");
+      setPortalMessage(referrer.email ? t.portalLinkGeneratedEmailed : t.portalLinkGenerated);
     } catch (error) {
       console.error("Generate portal link failed", error);
-      setPortalError("Unable to generate portal link.");
+      setPortalError(t.unableToGeneratePortal);
     } finally {
       setPortalLoading(false);
     }
@@ -525,14 +656,14 @@ export default function ReferrerReviewPage() {
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok) {
-        setPortalError(data?.error || "Unable to rotate portal token.");
+        setPortalError(data?.error || t.unableToRotateToken);
         return;
       }
       setPortalLink("");
-      setPortalMessage("Portal tokens rotated. Generate a new link to share.");
+      setPortalMessage(t.portalTokensRotated);
     } catch (error) {
       console.error("Rotate portal token failed", error);
-      setPortalError("Unable to rotate portal token.");
+      setPortalError(t.unableToRotateToken);
     } finally {
       setPortalRotateLoading(false);
     }
@@ -550,15 +681,15 @@ export default function ReferrerReviewPage() {
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok) {
-        setActionError(data?.error || "Unable to send invite.");
+        setActionError(data?.error || t.unableToSendInvite);
       } else {
-        setActionMessage("Invite sent.");
+        setActionMessage(t.inviteSent);
         updateLocal({ status: "meeting invited" });
         setStatus("meeting invited");
       }
     } catch (error) {
       console.error("Invite meeting failed", error);
-      setActionError("Unable to send invite.");
+      setActionError(t.unableToSendInvite);
     } finally {
       setActionLoading(false);
     }
@@ -580,18 +711,33 @@ export default function ReferrerReviewPage() {
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok) {
-        setActionError(data?.error || "Unable to update approval.");
+        setActionError(data?.error || t.unableToUpdateApproval);
       } else {
         updateLocal({
           companyApproval: data.approval,
           companyIrcrn: data.companyIrcrn || referrer.companyIrcrn,
         });
-        setActionMessage(approval === "approved" ? "Company approved." : "Company denied.");
+        // Update all pending companies to the same approval status (API auto-approves them)
+        const pendingIds = companies
+          .filter((c) => (c.companyApproval || "pending").toLowerCase() === "pending")
+          .map((c) => c.id);
+        setCompanies((prev) =>
+          prev.map((c) =>
+            (c.companyApproval || "pending").toLowerCase() === "pending"
+              ? { ...c, companyApproval: approval }
+              : c,
+          ),
+        );
+        // Track just-approved companies so we can show temporary "Approved" badge
+        if (approval === "approved" && pendingIds.length > 0) {
+          setJustApprovedCompanyIds(new Set(pendingIds));
+        }
+        setActionMessage(approval === "approved" ? t.companyApproved : t.companyDenied);
         setRejectConfirm(false);
       }
     } catch (error) {
       console.error("Update approval failed", error);
-      setActionError("Unable to update approval.");
+      setActionError(t.unableToUpdateApproval);
     } finally {
       setApprovalLoading(false);
     }
@@ -613,15 +759,15 @@ export default function ReferrerReviewPage() {
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok) {
-        setActionError(data?.error || "Unable to process update.");
+        setActionError(data?.error || t.unableToProcessUpdate);
       } else {
         // Refresh the referrer data to get updated pending updates
         await fetchReferrer();
-        setActionMessage(action === "approve" ? "Update applied successfully." : "Update denied.");
+        setActionMessage(action === "approve" ? t.updateApplied : t.updateDenied);
       }
     } catch (error) {
       console.error("Process pending update failed", error);
-      setActionError("Unable to process update.");
+      setActionError(t.unableToProcessUpdate);
     } finally {
       setPendingUpdateLoading(null);
     }
@@ -639,14 +785,14 @@ export default function ReferrerReviewPage() {
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok) {
-        setActionError(data?.error || "Unable to archive referrer.");
+        setActionError(data?.error || t.unableToArchive);
         setDeleteConfirm(false);
       } else {
         router.push("/founder/referrers");
       }
     } catch (error) {
       console.error("Archive referrer failed", error);
-      setActionError("Unable to archive referrer.");
+      setActionError(t.unableToArchive);
       setDeleteConfirm(false);
     } finally {
       setDeleteLoading(false);
@@ -806,6 +952,150 @@ export default function ReferrerReviewPage() {
               </DetailSection>
             )}
 
+            {/* Multi-company support: Companies from Referrer Companies sheet */}
+            {(companiesLoading || companies.length > 0) && (() => {
+              const pendingCount = companies.filter(
+                (c) => (c.companyApproval || "pending").toLowerCase() === "pending"
+              ).length;
+              return (
+                <DetailSection
+                  title={
+                    <span className="referrer-name-cell">
+                      Companies
+                      {/* Only show action-color badge when there are individual approve/deny buttons */}
+                      {pendingCount > 0 && approvalValue !== "pending" && (
+                        <span className="pending-updates-badge">{pendingCount}</span>
+                      )}
+                    </span>
+                  }
+                  className="referrer-review__companies"
+                >
+                  {companiesLoading ? (
+                    <SkeletonDetailGrid fields={3} />
+                  ) : (
+                    <div className="companies-list">
+                      {companies.map((comp) => {
+                        const isLoading = companyApprovalLoading === comp.id;
+                        const isPending = (comp.companyApproval || "pending").toLowerCase() === "pending";
+                        const isDenied = comp.companyApproval?.toLowerCase() === "denied";
+                        const justApproved = justApprovedCompanyIds.has(comp.id);
+                        return (
+                          <div key={comp.id} className="company-card">
+                            <div className="company-card__header">
+                              {isPending ? (
+                                approvalValue === "pending" ? (
+                                  <Badge tone="neutral">Pending</Badge>
+                                ) : (
+                                  <span className="pending-updates-badge">Pending</span>
+                                )
+                              ) : isDenied ? (
+                                <Badge tone="danger">Denied</Badge>
+                              ) : justApproved ? (
+                                <Badge tone="success">Approved</Badge>
+                              ) : null}
+                              <span className="company-card__timestamp">
+                                {new Date(comp.timestamp).toLocaleString()}
+                              </span>
+                            </div>
+                          <div className="company-card__details">
+                            <div className="company-card__row">
+                              <span className="company-card__label">Company</span>
+                              {editDetails ? (
+                                <input
+                                  type="text"
+                                  value={comp.companyName || ""}
+                                  onChange={(e) => handleCompanyFieldChange(comp.id, "companyName", e.target.value)}
+                                  className="company-card__input"
+                                />
+                              ) : (
+                                <span>{comp.companyName || "Unnamed"}</span>
+                              )}
+                            </div>
+                            <div className="company-card__row">
+                              <span className="company-card__label">iRCRN</span>
+                              <span>{comp.companyIrcrn || "-"}</span>
+                            </div>
+                            <div className="company-card__row">
+                              <span className="company-card__label">Industry</span>
+                              {editDetails ? (
+                                <Select
+                                  id={`company-industry-${comp.id}`}
+                                  name={`company-industry-${comp.id}`}
+                                  options={COMPANY_INDUSTRY_OPTIONS}
+                                  placeholder="Select"
+                                  value={comp.companyIndustry || ""}
+                                  onChange={(value) => handleCompanyFieldChange(comp.id, "companyIndustry", Array.isArray(value) ? value[0] : value)}
+                                />
+                              ) : (
+                                <span>{comp.companyIndustry || "-"}</span>
+                              )}
+                            </div>
+                            <div className="company-card__row">
+                              <span className="company-card__label">Work Type</span>
+                              {editDetails ? (
+                                <Select
+                                  id={`company-work-type-${comp.id}`}
+                                  name={`company-work-type-${comp.id}`}
+                                  options={WORK_TYPE_OPTIONS}
+                                  placeholder="Select"
+                                  value={comp.workType || ""}
+                                  onChange={(value) => handleCompanyFieldChange(comp.id, "workType", Array.isArray(value) ? value[0] : value)}
+                                />
+                              ) : (
+                                <span>{comp.workType || "-"}</span>
+                              )}
+                            </div>
+                            <div className="company-card__row">
+                              <span className="company-card__label">Careers Portal</span>
+                              {editDetails ? (
+                                <input
+                                  type="url"
+                                  value={comp.careersPortal || ""}
+                                  onChange={(e) => handleCompanyFieldChange(comp.id, "careersPortal", e.target.value)}
+                                  className="company-card__input"
+                                  placeholder="https://..."
+                                />
+                              ) : comp.careersPortal ? (
+                                <a href={comp.careersPortal} target="_blank" rel="noopener noreferrer" className="company-card__link">
+                                  {truncateText(comp.careersPortal, 40)}
+                                </a>
+                              ) : (
+                                <span>-</span>
+                              )}
+                            </div>
+                          </div>
+                          {/* Only show individual approve/deny buttons for returning referrers (already approved/denied) */}
+                          {isPending && approvalValue !== "pending" && !editDetails && (
+                            <div className="company-card__actions">
+                              <ActionBtn
+                                as="button"
+                                variant="primary"
+                                size="sm"
+                                onClick={() => handleCompanyApproval(comp.id, "approved")}
+                                disabled={isLoading}
+                              >
+                                {isLoading ? "..." : "Approve"}
+                              </ActionBtn>
+                              <ActionBtn
+                                as="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleCompanyApproval(comp.id, "denied")}
+                                disabled={isLoading}
+                              >
+                                {isLoading ? "..." : "Deny"}
+                              </ActionBtn>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    </div>
+                  )}
+                </DetailSection>
+              );
+            })()}
+
             <DetailSection title="Admin">
               <div className="field-grid field-grid--two">
                 <div className="field">
@@ -955,97 +1245,9 @@ export default function ReferrerReviewPage() {
               </div>
             </DetailSection>
 
-            <DetailSection title="Company">
-              <div className="field-grid field-grid--two">
-                <div className="field">
-                  <label htmlFor="company-name">Company</label>
-                  {editDetails ? (
-                    <input
-                      id="company-name"
-                      type="text"
-                      value={company}
-                      onChange={(event) => setCompany(event.target.value)}
-                    />
-                  ) : (
-                    <input
-                      id="company-name"
-                      type="text"
-                      value={company || "-"}
-                      readOnly
-                      tabIndex={-1}
-                    />
-                  )}
-                </div>
-                <div className="field">
-                  <label htmlFor="company-ircrn">Company iRCRN</label>
-                  <input id="company-ircrn" type="text" value={referrer.companyIrcrn || "-"} readOnly tabIndex={-1} />
-                </div>
-                <div className="field">
-                  <label htmlFor="company-industry">Industry</label>
-                  {editDetails ? (
-                    <Select
-                      id="company-industry"
-                      name="company-industry"
-                      options={COMPANY_INDUSTRY_OPTIONS}
-                      placeholder="Select"
-                      value={companyIndustry}
-                      onChange={(value) => setCompanyIndustry(Array.isArray(value) ? value[0] : value)}
-                    />
-                  ) : (
-                    <input
-                      id="company-industry"
-                      type="text"
-                      value={companyIndustry || "-"}
-                      readOnly
-                      tabIndex={-1}
-                    />
-                  )}
-                </div>
-                <div className="field">
-                  <label htmlFor="company-work-type">Work Type</label>
-                  {editDetails ? (
-                    <Select
-                      id="company-work-type"
-                      name="company-work-type"
-                      options={WORK_TYPE_OPTIONS}
-                      placeholder="Select"
-                      value={workType}
-                      onChange={(value) => setWorkType(Array.isArray(value) ? value[0] : value)}
-                    />
-                  ) : (
-                    <input
-                      id="company-work-type"
-                      type="text"
-                      value={workType || "-"}
-                      readOnly
-                      tabIndex={-1}
-                    />
-                  )}
-                </div>
-              </div>
-            </DetailSection>
 
             <DetailSection title="Links">
               <div className="field-grid field-grid--two">
-                <div className="field">
-                  <label htmlFor="link-careers">Careers Portal</label>
-                  {editDetails ? (
-                    <input
-                      id="link-careers"
-                      type="url"
-                      value={careersPortal}
-                      onChange={(event) => setCareersPortal(event.target.value)}
-                    />
-                  ) : (
-                    <input
-                      id="link-careers"
-                      type="text"
-                      value={careersPortal || "-"}
-                      readOnly
-                      tabIndex={-1}
-                    />
-                  )}
-                </div>
                 <div className="field">
                   <label htmlFor="link-linkedin">LinkedIn</label>
                   {editDetails ? (
@@ -1067,7 +1269,6 @@ export default function ReferrerReviewPage() {
                 </div>
               </div>
               <div className="referrer-review__link-list">
-                <LinkRow icon={<IconLink />} label="Careers Portal" url={careersPortal} actionLabel="Open" />
                 <LinkRow icon={<IconLinkedIn />} label="LinkedIn" url={linkedin} actionLabel="View" />
                 <LinkRow
                   icon={<IconLink />}
