@@ -5182,6 +5182,76 @@ section.founder-auth input:focus-visible {
   gap: 8px;
 }
 
+/* Company cards for multi-company referrers */
+.ops-scope .companies-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ops-scope .company-card {
+  border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.22));
+  border-radius: 14px;
+  padding: 16px;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.22));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.14);
+}
+
+.ops-scope .company-card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.ops-scope .company-card__timestamp {
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+.ops-scope .company-card__details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+}
+
+.ops-scope .company-card__row {
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  gap: 16px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--glass-border, rgba(255, 255, 255, 0.18));
+  color: #f1f5f9;
+}
+
+.ops-scope .company-card__row:last-child {
+  border-bottom: none;
+}
+
+.ops-scope .company-card__label {
+  font-weight: 500;
+  color: #f8fafc;
+}
+
+.ops-scope .company-card__row a {
+  color: #60a5fa;
+  text-decoration: none;
+}
+
+.ops-scope .company-card__row a:hover {
+  text-decoration: underline;
+}
+
+.ops-scope .company-card__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  justify-content: flex-end;
+}
+
 /* ==========================================================================
    13. Animations & Keyframes
    ========================================================================== */
