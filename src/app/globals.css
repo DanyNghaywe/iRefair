@@ -5820,6 +5820,13 @@ section.founder-auth input:focus-visible {
   }
 }
 
+@media (max-height: 540px) and (orientation: landscape) {
+  body:has(.role-picker--fullscreen) {
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+}
+
 @media (max-width: 720px) {
   .role-shell {
     padding: 26px 20px 80px;
