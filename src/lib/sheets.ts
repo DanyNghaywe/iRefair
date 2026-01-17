@@ -1414,6 +1414,14 @@ export async function getApplicantByRowIndex(rowIndex: number): Promise<Applican
  * - email
  * - phone
  */
+const normalizePhoneForMatch = (value: string) => {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return digits.slice(1);
+  }
+  return digits;
+};
+
 export async function findExistingApplicant(
   firstName: string,
   familyName: string,
@@ -1421,7 +1429,7 @@ export async function findExistingApplicant(
   phone: string,
 ): Promise<ApplicantLookupResult | null> {
   const normalizedEmail = email.trim().toLowerCase();
-  const normalizedPhone = phone.replace(/\D/g, ''); // Remove non-digits for comparison
+  const normalizedPhone = normalizePhoneForMatch(phone);
   const normalizedFirstName = firstName.trim().toLowerCase();
   const normalizedFamilyName = familyName.trim().toLowerCase();
 
@@ -1466,7 +1474,7 @@ export async function findExistingApplicant(
     if (!row.length) continue;
 
     const rowEmail = cellValue(row, emailIdx === -1 ? APPLICANT_EMAIL_COLUMN_INDEX : emailIdx).toLowerCase();
-    const rowPhone = cellValue(row, phoneIdx === -1 ? 6 : phoneIdx).replace(/\D/g, '');
+    const rowPhone = normalizePhoneForMatch(cellValue(row, phoneIdx === -1 ? 6 : phoneIdx));
     const rowFirstName = cellValue(row, firstNameIdx === -1 ? 2 : firstNameIdx).toLowerCase();
     const rowFamilyName = cellValue(row, familyNameIdx === -1 ? 4 : familyNameIdx).toLowerCase();
 
