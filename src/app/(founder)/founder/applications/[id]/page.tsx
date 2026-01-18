@@ -218,6 +218,7 @@ export default function ApplicationDetailPage() {
   const t = translations[language];
   const historyLocale = language === "fr" ? "fr-CA" : "en-US";
   const actionLabels = t.actionHistory.labels as Record<string, string>;
+  const statusOptions = t.statusOptions as Record<string, string>;
 
   const [application, setApplication] = useState<ApplicationRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -546,7 +547,7 @@ export default function ApplicationDetailPage() {
                   <option value="">{t.placeholders.unassigned}</option>
                   {STATUS_VALUES.map((value) => (
                     <option key={value} value={value.toLowerCase()}>
-                      {t.statusOptions[value.toLowerCase()] || value}
+                      {statusOptions[value.toLowerCase()] || value}
                     </option>
                   ))}
                 </select>
