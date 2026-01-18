@@ -401,6 +401,7 @@ function ApplicantPageContent() {
   const confetti = useConfetti();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState('');
+  const [confirmationEmailStatus, setConfirmationEmailStatus] = useState<'sent' | 'recent'>('sent');
   const [languageSelection, setLanguageSelection] = useState<string[]>([]);
   const [countrySelection, setCountrySelection] = useState('');
   const [locatedInCanada, setLocatedInCanada] = useState('');
@@ -820,6 +821,7 @@ function ApplicantPageContent() {
 
       setStatus('ok');
       setSubmittedEmail(values.email);
+      setConfirmationEmailStatus(data?.confirmationEmailStatus === 'recent' ? 'recent' : 'sent');
       setShowSuccessModal(true);
       confetti.trigger();
     } catch {
@@ -1418,6 +1420,7 @@ function ApplicantPageContent() {
         onClose={() => setShowSuccessModal(false)}
         email={submittedEmail}
         locale={language}
+        variant={confirmationEmailStatus === 'recent' ? 'confirmation-link-recent' : 'confirmation-link'}
       />
     </AppShell>
   );
