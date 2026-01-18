@@ -33,6 +33,8 @@ const translations = {
     updates: "updates",
     update: "update",
     newApproval: "New",
+    pendingCompanies: "companies",
+    pendingCompany: "company",
     emptyTitle: "No referrers yet",
     emptyDescription: "Referrers will appear here once they sign up through the referrer registration form. Try adjusting your filters if you expected to see results.",
   },
@@ -58,6 +60,8 @@ const translations = {
     updates: "mises à jour",
     update: "mise à jour",
     newApproval: "Nouveau",
+    pendingCompanies: "entreprises",
+    pendingCompany: "entreprise",
     emptyTitle: "Aucun référent",
     emptyDescription: "Les référents apparaîtront ici une fois inscrits via le formulaire d'inscription. Essayez d'ajuster vos filtres si vous vous attendiez à voir des résultats.",
   },
@@ -79,6 +83,7 @@ type ReferrerRecord = {
   linkedin: string;
   pendingUpdates?: string;
   pendingUpdateCount?: number;
+  pendingCompanyCount?: number;
   status: string;
   ownerNotes: string;
   tags: string;
@@ -195,11 +200,37 @@ function ReferrersPageContent() {
                 {row.pendingUpdateCount} {row.pendingUpdateCount > 1 ? t.updates : t.update}
               </span>
             ) : null}
-            {(!row.companyApproval || row.companyApproval === 'pending') && (
-              <span className="pending-approval-badge" title={t.newApproval}>
-                {t.newApproval}
-              </span>
-            )}
+            {(() => {
+              const isNew = !row.companyApproval || row.companyApproval === 'pending';
+              const pendingCount = row.pendingCompanyCount ?? 0;
+              const hasPendingCompanies = pendingCount > 0;
+              if (isNew && hasPendingCompanies) {
+                const companiesText = `${pendingCount} ${pendingCount > 1 ? t.pendingCompanies : t.pendingCompany}`;
+                return (
+                  <span className="pending-approval-badge" title={`${t.newApproval}, ${companiesText}`}>
+                    {t.newApproval}, {companiesText}
+                  </span>
+                );
+              }
+              if (hasPendingCompanies) {
+                return (
+                  <span
+                    className="pending-updates-badge"
+                    title={`${pendingCount} ${pendingCount > 1 ? t.pendingCompanies : t.pendingCompany}`}
+                  >
+                    {pendingCount} {pendingCount > 1 ? t.pendingCompanies : t.pendingCompany}
+                  </span>
+                );
+              }
+              if (isNew) {
+                return (
+                  <span className="pending-approval-badge" title={t.newApproval}>
+                    {t.newApproval}
+                  </span>
+                );
+              }
+              return null;
+            })()}
           </div>
         ),
       },

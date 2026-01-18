@@ -7,6 +7,7 @@ import { AppShell } from '@/components/AppShell';
 import { Confetti, useConfetti } from '@/components/Confetti';
 import { PublicFooter } from '@/components/PublicFooter';
 import { SuccessAnimation } from '@/components/SuccessAnimation';
+import { useLanguage } from '@/components/LanguageProvider';
 
 const ALLOWED_RESUME_TYPES = [
   'application/pdf',
@@ -15,6 +16,77 @@ const ALLOWED_RESUME_TYPES = [
 ];
 const ALLOWED_RESUME_EXTENSIONS = ['pdf', 'doc', 'docx'];
 const MAX_RESUME_SIZE = 10 * 1024 * 1024; // 10MB
+
+const translations = {
+  en: {
+    title: 'Update Your CV',
+    applicationFor: 'Application for',
+    at: 'at',
+    currentCv: 'Current CV',
+    uploadLabel: 'Upload new CV',
+    uploadHint: 'PDF or DOC/DOCX, max 10 MB',
+    uploadButton: 'Choose file',
+    noFile: 'No file chosen',
+    submitButton: 'Update CV',
+    submitting: 'Uploading...',
+    successTitle: 'CV Updated',
+    successMessage: 'Your CV has been successfully updated.',
+    errorTitle: 'Error',
+    missingLink: 'This update link is missing required information. Please use the link from your email.',
+    loadError: 'Unable to load application details.',
+    invalidFile: 'Please upload a PDF or DOC/DOCX file under 10MB.',
+    loading: 'Loading...',
+    loadingHint: 'Validating your update link',
+    unableToLoad: 'Unable to Load',
+    errorHint: 'If you need assistance, please contact your referrer or iRefair support.',
+    successHint: 'You can close this window.',
+    formLead: 'A referrer has requested an updated CV for your application.',
+    applicationDetails: 'Application Details',
+    position: 'Position',
+    company: 'Company',
+    uploadLabelRequired: 'Upload your updated CV *',
+    uploadHintFull: 'PDF, DOC, or DOCX (max 10MB)',
+    pleaseUploadCv: 'Please upload your updated CV.',
+    somethingWentWrong: 'Something went wrong.',
+    networkError: 'A network error occurred. Please try again.',
+    successTitleFull: 'CV Updated Successfully',
+    successMessageFull: 'Your CV has been updated and the referrer has been notified. They will review your updated CV and follow up with next steps.',
+  },
+  fr: {
+    title: 'Mettre à jour votre CV',
+    applicationFor: 'Candidature pour',
+    at: 'chez',
+    currentCv: 'CV actuel',
+    uploadLabel: 'Téléverser un nouveau CV',
+    uploadHint: 'PDF ou DOC/DOCX, max 10 Mo',
+    uploadButton: 'Choisir un fichier',
+    noFile: 'Aucun fichier choisi',
+    submitButton: 'Mettre à jour le CV',
+    submitting: 'Téléversement...',
+    successTitle: 'CV mis à jour',
+    successMessage: 'Votre CV a été mis à jour avec succès.',
+    errorTitle: 'Erreur',
+    missingLink: 'Ce lien de mise à jour manque d\'informations requises. Veuillez utiliser le lien de votre courriel.',
+    loadError: 'Impossible de charger les détails de la candidature.',
+    invalidFile: 'Veuillez téléverser un fichier PDF ou DOC/DOCX de moins de 10 Mo.',
+    loading: 'Chargement...',
+    loadingHint: 'Validation de votre lien de mise à jour',
+    unableToLoad: 'Impossible de charger',
+    errorHint: 'Si vous avez besoin d\'aide, veuillez contacter votre référent ou le support iRefair.',
+    successHint: 'Vous pouvez fermer cette fenêtre.',
+    formLead: 'Un référent a demandé un CV mis à jour pour votre candidature.',
+    applicationDetails: 'Détails de la candidature',
+    position: 'Poste',
+    company: 'Entreprise',
+    uploadLabelRequired: 'Téléversez votre CV mis à jour *',
+    uploadHintFull: 'PDF, DOC ou DOCX (max 10 Mo)',
+    pleaseUploadCv: 'Veuillez téléverser votre CV mis à jour.',
+    somethingWentWrong: 'Une erreur s\'est produite.',
+    networkError: 'Une erreur réseau s\'est produite. Veuillez réessayer.',
+    successTitleFull: 'CV mis à jour avec succès',
+    successMessageFull: 'Votre CV a été mis à jour et le référent a été notifié. Il examinera votre CV mis à jour et vous contactera pour les prochaines étapes.',
+  },
+};
 
 type ApplicationContext = {
   position: string;
@@ -28,6 +100,8 @@ function UpdateCvPageContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token') || '';
   const appId = searchParams.get('appId') || '';
+  const { language } = useLanguage();
+  const t = translations[language];
 
   const [pageState, setPageState] = useState<PageState>('loading');
   const [contextError, setContextError] = useState('');
@@ -44,7 +118,7 @@ function UpdateCvPageContent() {
 
   useEffect(() => {
     if (!token || !appId) {
-      setContextError('This update link is missing required information. Please use the link from your email.');
+      setContextError(t.missingLink);
       setPageState('error');
       return;
     }
@@ -55,7 +129,7 @@ function UpdateCvPageContent() {
         const data = await response.json();
 
         if (!response.ok || !data?.ok) {
-          setContextError(data?.error || 'Unable to load application details.');
+          setContextError(data?.error || t.loadError);
           setPageState('error');
           return;
         }
@@ -63,13 +137,13 @@ function UpdateCvPageContent() {
         setApplicationContext(data.data);
         setPageState('form');
       } catch {
-        setContextError('Unable to load application details. Please try again.');
+        setContextError(t.loadError);
         setPageState('error');
       }
     };
 
     fetchContext();
-  }, [token, appId]);
+  }, [token, appId, t.missingLink, t.loadError]);
 
   const isAllowedResume = (file: File) => {
     const extension = file.name.split('.').pop()?.toLowerCase();
@@ -93,7 +167,7 @@ function UpdateCvPageContent() {
     if (!isAllowedResume(file) || file.size > MAX_RESUME_SIZE) {
       setErrors((prev) => ({
         ...prev,
-        resume: 'Please upload a PDF or DOC/DOCX file under 10MB.',
+        resume: t.invalidFile,
       }));
       setResumeName('');
       event.target.value = '';
@@ -114,12 +188,12 @@ function UpdateCvPageContent() {
 
     const resumeFile = resumeInputRef.current?.files?.[0];
     if (!resumeFile) {
-      setErrors({ resume: 'Please upload your updated CV.' });
+      setErrors({ resume: t.pleaseUploadCv });
       return;
     }
 
     if (!isAllowedResume(resumeFile) || resumeFile.size > MAX_RESUME_SIZE) {
-      setErrors({ resume: 'Please upload a PDF or DOC/DOCX file under 10MB.' });
+      setErrors({ resume: t.invalidFile });
       return;
     }
 
@@ -140,7 +214,7 @@ function UpdateCvPageContent() {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok || !data?.ok) {
-        const message = typeof data?.error === 'string' ? data.error : 'Something went wrong.';
+        const message = typeof data?.error === 'string' ? data.error : t.somethingWentWrong;
         if (data?.field === 'resume') {
           setErrors({ resume: message });
         } else {
@@ -154,7 +228,7 @@ function UpdateCvPageContent() {
       setPageState('success');
       confetti.trigger();
     } catch {
-      setErrorMessage('A network error occurred. Please try again.');
+      setErrorMessage(t.networkError);
       setPageState('error');
     } finally {
       setSubmitting(false);
@@ -170,8 +244,8 @@ function UpdateCvPageContent() {
               <div className="update-cv-icon update-cv-icon--loading">
                 <span className="loading-indicator" aria-hidden="true" />
               </div>
-              <h1 id="update-cv-title">Loading...</h1>
-              <p className="lead">Validating your update link</p>
+              <h1 id="update-cv-title">{t.loading}</h1>
+              <p className="lead">{t.loadingHint}</p>
             </div>
           )}
 
@@ -184,11 +258,9 @@ function UpdateCvPageContent() {
                   <line x1="9" y1="9" x2="15" y2="15" />
                 </svg>
               </div>
-              <h1 id="update-cv-title">Unable to Load</h1>
+              <h1 id="update-cv-title">{t.unableToLoad}</h1>
               <p className="lead">{contextError || errorMessage}</p>
-              <p className="update-cv-hint">
-                If you need assistance, please contact your referrer or iRefair support.
-              </p>
+              <p className="update-cv-hint">{t.errorHint}</p>
             </div>
           )}
 
@@ -199,11 +271,9 @@ function UpdateCvPageContent() {
                 variant="default"
                 size="lg"
               />
-              <h1 id="update-cv-title">CV Updated Successfully</h1>
-              <p className="lead">
-                Your CV has been updated and the referrer has been notified. They will review your updated CV and follow up with next steps.
-              </p>
-              <p className="update-cv-hint">You can close this window.</p>
+              <h1 id="update-cv-title">{t.successTitleFull}</h1>
+              <p className="lead">{t.successMessageFull}</p>
+              <p className="update-cv-hint">{t.successHint}</p>
             </div>
           )}
 
@@ -219,26 +289,24 @@ function UpdateCvPageContent() {
                     <polyline points="10 9 9 9 8 9" />
                   </svg>
                 </div>
-                <h1 id="update-cv-title">Update Your CV</h1>
-                <p className="lead">
-                  A referrer has requested an updated CV for your application.
-                </p>
+                <h1 id="update-cv-title">{t.title}</h1>
+                <p className="lead">{t.formLead}</p>
               </div>
 
               <div className="update-cv-context">
-                <h2>Application Details</h2>
+                <h2>{t.applicationDetails}</h2>
                 <div className="context-details">
                   <div className="context-detail">
-                    <span className="context-label">Position</span>
+                    <span className="context-label">{t.position}</span>
                     <span className="context-value">{applicationContext.position || 'N/A'}</span>
                   </div>
                   <div className="context-detail">
-                    <span className="context-label">Company</span>
+                    <span className="context-label">{t.company}</span>
                     <span className="context-value">{applicationContext.companyName || 'N/A'}</span>
                   </div>
                   {applicationContext.currentCvName && (
                     <div className="context-detail">
-                      <span className="context-label">Current CV</span>
+                      <span className="context-label">{t.currentCv}</span>
                       <span className="context-value">{applicationContext.currentCvName}</span>
                     </div>
                   )}
@@ -247,7 +315,7 @@ function UpdateCvPageContent() {
 
               <form ref={formRef} onSubmit={handleSubmit} noValidate className="update-cv-form">
                 <div className={`field ${errors.resume ? 'has-error' : ''}`}>
-                  <label htmlFor="resume">Upload your updated CV *</label>
+                  <label htmlFor="resume">{t.uploadLabelRequired}</label>
                   <div className="file-upload">
                     <input
                       id="resume"
@@ -265,14 +333,14 @@ function UpdateCvPageContent() {
                       onClick={() => resumeInputRef.current?.click()}
                       aria-describedby="resume-hint resume-file-name resume-error"
                     >
-                      Choose file
+                      {t.uploadButton}
                     </ActionBtn>
                     <span id="resume-file-name" className="file-upload-name" aria-live="polite">
-                      {resumeName || 'No file chosen'}
+                      {resumeName || t.noFile}
                     </span>
                   </div>
                   <p className="field-hint" id="resume-hint">
-                    PDF, DOC, or DOCX (max 10MB)
+                    {t.uploadHintFull}
                   </p>
                   {errors.resume && (
                     <p className="field-error" id="resume-error" role="alert" aria-live="polite">
@@ -301,11 +369,11 @@ function UpdateCvPageContent() {
                   >
                     {submitting ? (
                       <>
-                        Uploading...
+                        {t.submitting}
                         <span className="loading-indicator" aria-hidden="true" />
                       </>
                     ) : (
-                      'Update CV'
+                      t.submitButton
                     )}
                   </ActionBtn>
                 </div>

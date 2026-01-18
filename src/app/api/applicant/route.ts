@@ -72,7 +72,7 @@ const isAllowedResume = (file: File) => {
 
 export const runtime = "nodejs";
 
-const UPDATE_TOKEN_TTL_SECONDS = 60 * 60 * 24;
+const UPDATE_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 const baseFromEnv =
   process.env.NEXT_PUBLIC_APP_URL ||
@@ -148,7 +148,11 @@ export async function POST(request: Request) {
     };
 
     // Check for existing applicant using 2-of-3 matching (name, email, phone)
-    const existingApplicant = await findExistingApplicant(firstName, familyName, email, phone);
+    let existingApplicant = await findExistingApplicant(firstName, familyName, email, phone);
+    if (!existingApplicant) {
+      // Fallback to email match to avoid treating updates as new registrations.
+      existingApplicant = await getApplicantByEmail(email);
+    }
 
     // Block archived applicants from registering or updating their profile
     if (existingApplicant?.record.archived?.toLowerCase() === 'true') {
@@ -164,12 +168,10 @@ export async function POST(request: Request) {
 
     // Use existing iRAIN if found, otherwise generate new
     let iRain: string;
-    if (isExistingApplicant && existingApplicant.record.id && isIrain(existingApplicant.record.id)) {
+    if (existingApplicant && existingApplicant.record.id && isIrain(existingApplicant.record.id)) {
       iRain = existingApplicant.record.id;
-    } else if (isExistingApplicant && existingApplicant.record.legacyApplicantId) {
+    } else if (existingApplicant && existingApplicant.record.legacyApplicantId) {
       // Has legacy ID but no iRAIN - generate new iRAIN but keep legacy reference
-      iRain = await generateIRAIN();
-    } else if (!isExistingApplicant) {
       iRain = await generateIRAIN();
     } else {
       iRain = await generateIRAIN();
@@ -279,6 +281,7 @@ export async function POST(request: Request) {
         email: existingApplicant.record.email || email,
         rowIndex: existingApplicant.rowIndex,
         exp,
+        locale,
       });
       const tokenHash = hashToken(token);
       const pendingPayload: PendingApplicantUpdatePayload = {
@@ -371,6 +374,7 @@ export async function POST(request: Request) {
         email,
         rowIndex: 0, // Not used for new applicants - lookup by email instead
         exp,
+        locale,
       });
       const tokenHash = hashToken(token);
 
@@ -428,6 +432,7 @@ export async function POST(request: Request) {
       email: existingApplicant.record.email,
       rowIndex: existingApplicant.rowIndex,
       exp,
+      locale,
     });
     const tokenHash = hashToken(token);
     const pendingPayload: PendingApplicantUpdatePayload = {

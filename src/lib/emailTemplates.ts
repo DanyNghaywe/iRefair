@@ -1,6 +1,6 @@
 import { escapeHtml, normalizeHttpUrl } from '@/lib/validation';
 import { formatMeetingDateTime } from '@/lib/timezone';
-import { jobOpeningsUrl } from '@/lib/urls';
+import { jobOpeningsUrl, applyUrl } from '@/lib/urls';
 
 type TemplateResult = {
   subject: string;
@@ -178,25 +178,44 @@ export function applicantRegistrationConfirmation(params: ApplicantRegistrationP
   const iRainLabel = t('iRAIN', 'iRAIN', locale);
 
   const mainText1 = t(
-    "Thanks for submitting your referral request to iRefair. We'll review your profile and start looking for referrers who can help with roles that match your experience and preferences.",
-    "Merci d'avoir soumis votre demande de recommandation à iRefair. Nous examinerons votre profil et commencerons à chercher des recommandateurs qui peuvent vous aider avec des postes correspondant à votre expérience et vos préférences.",
+    "You're now registered with iRefair. Your iRAIN and Applicant Key are your credentials to apply for jobs through our referral network.",
+    "Vous êtes maintenant inscrit chez iRefair. Votre iRAIN et votre clé de candidat sont vos identifiants pour postuler à des emplois via notre réseau de recommandation.",
     locale
   );
 
-  const whatHappensTitle = t('WHAT HAPPENS NEXT', 'PROCHAINES ÉTAPES', locale);
+  // Use the imported URLs - normalize them for email safety
+  const openingsUrl = normalizeHttpUrl(jobOpeningsUrl) || 'https://irefair.com/hiring-companies';
+  const applyPageUrl = normalizeHttpUrl(applyUrl) || 'https://irefair.com/apply';
+
+  const whatHappensTitle = t('HOW TO APPLY', 'COMMENT POSTULER', locale);
   const step1 = t(
-    "We review your profile for clarity and completeness.",
-    "Nous examinons votre profil pour sa clarté et son exhaustivité.",
+    "Browse our hiring companies page to find companies and their iRCRN codes.",
+    "Parcourez notre page des entreprises qui recrutent pour trouver des entreprises et leurs codes iRCRN.",
     locale
   );
   const step2 = t(
-    "We look for referrers whose teams and roles match what you're targeting.",
-    "Nous recherchons des recommandateurs dont les équipes et les postes correspondent à ce que vous ciblez.",
+    "When you find a role you're interested in, go to the Apply page.",
+    "Lorsque vous trouvez un poste qui vous intéresse, rendez-vous sur la page Postuler.",
     locale
   );
   const step3 = t(
-    "When there's a potential match, we'll contact you before any intro is made.",
-    "Lorsqu'il y a une correspondance potentielle, nous vous contacterons avant toute mise en relation.",
+    "Submit your application using your iRAIN, Applicant Key, and a tailored CV.",
+    "Soumettez votre candidature en utilisant votre iRAIN, votre clé de candidat et un CV adapté.",
+    locale
+  );
+  const step1Html = t(
+    `Browse our <a href="${openingsUrl}" style="color:${colors.primary};text-decoration:underline;">hiring companies page</a> to find companies and their iRCRN codes.`,
+    `Parcourez notre <a href="${openingsUrl}" style="color:${colors.primary};text-decoration:underline;">page des entreprises qui recrutent</a> pour trouver des entreprises et leurs codes iRCRN.`,
+    locale
+  );
+  const step2Html = t(
+    `When you find a role you're interested in, go to the <a href="${applyPageUrl}" style="color:${colors.primary};text-decoration:underline;">Apply page</a>.`,
+    `Lorsque vous trouvez un poste qui vous intéresse, rendez-vous sur la <a href="${applyPageUrl}" style="color:${colors.primary};text-decoration:underline;">page Postuler</a>.`,
+    locale
+  );
+  const step3Html = t(
+    "Submit your application using your iRAIN, Applicant Key, and a tailored CV.",
+    "Soumettez votre candidature en utilisant votre iRAIN, votre clé de candidat et un CV adapté.",
     locale
   );
 
@@ -207,14 +226,11 @@ export function applicantRegistrationConfirmation(params: ApplicantRegistrationP
   const languagesLabel = t('Languages', 'Langues', locale);
 
   const ctaText = t(
-    'Want to see companies hiring in Canada right now?',
-    'Vous voulez voir les entreprises qui embauchent au Canada en ce moment?',
+    'Ready to apply? Browse hiring companies and find your next opportunity.',
+    'Prêt à postuler? Parcourez les entreprises qui recrutent et trouvez votre prochaine opportunité.',
     locale
   );
-  const ctaButton = t('View live openings', 'Voir les offres en direct', locale);
-
-  // Use the imported jobOpeningsUrl - normalize it for email safety
-  const openingsUrl = normalizeHttpUrl(jobOpeningsUrl) || 'https://irefair.com/hiring-companies';
+  const ctaButton = t('Browse hiring companies', 'Parcourir les entreprises', locale);
 
   const content = `
     <h1 style="margin:0 0 14px 0;font-size:22px;line-height:1.5;font-weight:700;color:#1f2a37;">
@@ -230,9 +246,9 @@ export function applicantRegistrationConfirmation(params: ApplicantRegistrationP
   const whatHappensNext = `
     <div style="margin:0 0 10px 0;font-size:11px;letter-spacing:0.12em;text-transform:uppercase;color:#5c6675;font-weight:700;">${escapeHtml(whatHappensTitle)}</div>
     <ol style="margin:0;padding-left:18px;font-size:14px;line-height:1.7;color:#3b4251;">
-      <li>${escapeHtml(step1)}</li>
-      <li>${escapeHtml(step2)}</li>
-      <li>${escapeHtml(step3)}</li>
+      <li>${step1Html}</li>
+      <li>${step2Html}</li>
+      <li>${step3Html}</li>
     </ol>
   `;
 
@@ -253,8 +269,8 @@ export function applicantRegistrationConfirmation(params: ApplicantRegistrationP
   `;
 
   const preheader = t(
-    'Thank you for registering with iRefair. Your iRAIN is saved; we will reach out when we have a match.',
-    'Merci de vous être inscrit avec iRefair. Votre iRAIN est enregistré; nous vous contacterons lorsque nous aurons une correspondance.',
+    "You're registered! Use your iRAIN and Applicant Key to start applying for jobs.",
+    "Vous êtes inscrit! Utilisez votre iRAIN et votre clé de candidat pour commencer à postuler.",
     locale
   );
 
@@ -306,7 +322,7 @@ ${snapshotTitle}
 - ${languagesLabel}: ${languages}
 
 ${ctaText}
-${t('View openings', 'Voir les offres', locale)}: ${openingsUrl}
+${t('Browse companies', 'Parcourir les entreprises', locale)}: ${openingsUrl}
 
 - ${t('The iRefair team', 'L\'équipe iRefair', locale)}`;
 
@@ -1256,131 +1272,186 @@ ${jobOpeningsButton}: ${openingsUrl}
 // EXISTING TEMPLATES (from original emailTemplates.ts)
 // ============================================================================
 
-export function meetFounderInvite(referrerName: string, irref: string, link?: string, portalUrl?: string): TemplateResult {
-  const subject = "Invitation: Meet the Founder at iRefair";
+export function meetFounderInvite(referrerName: string, irref: string, link?: string, portalUrl?: string, locale: 'en' | 'fr' = 'en'): TemplateResult {
+  const subject = t(
+    'Invitation: Meet the Founder at iRefair',
+    'Invitation: Rencontrez le fondateur d\'iRefair',
+    locale
+  );
   const normalizedLink = link ? normalizeHttpUrl(link) : null;
-  const joinLink = normalizedLink || "Schedule link not provided yet - we will follow up with a calendar invitation.";
-  const greeting = referrerName ? `Hi ${referrerName},` : "Hi there,";
-  const greetingHtml = referrerName ? `Hi ${escapeHtml(referrerName)},` : "Hi there,";
+  const joinLinkText = normalizedLink || t(
+    'Schedule link not provided yet - we will follow up with a calendar invitation.',
+    'Le lien n\'est pas encore disponible - nous vous enverrons une invitation calendrier.',
+    locale
+  );
+  const greeting = referrerName
+    ? t(`Hi ${referrerName},`, `Bonjour ${referrerName},`, locale)
+    : t('Hi there,', 'Bonjour,', locale);
+  const greetingHtml = referrerName
+    ? t(`Hi ${escapeHtml(referrerName)},`, `Bonjour ${escapeHtml(referrerName)},`, locale)
+    : t('Hi there,', 'Bonjour,', locale);
   const safeIrref = escapeHtml(irref);
   const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
 
+  const mainText = t(
+    `Thank you for being part of the iRefair community (iRREF ${irref}). I'd like to invite you to a brief call to learn more about your referrals and how we can collaborate.`,
+    `Merci de faire partie de la communauté iRefair (iRREF ${irref}). J'aimerais vous inviter à un bref appel pour en savoir plus sur vos recommandations et comment nous pouvons collaborer.`,
+    locale
+  );
+
+  const meetLinkLabel = t('Meet link', 'Lien de réunion', locale);
+  const unavailableLinkText = t(
+    'If the link is unavailable, reply with your availability and we will send you a calendar invite.',
+    'Si le lien n\'est pas disponible, répondez avec vos disponibilités et nous vous enverrons une invitation calendrier.',
+    locale
+  );
+  const portalAccessText = t('Access your referrer portal', 'Accédez à votre portail de parrain', locale);
+  const signoff = t('Founder, iRefair', 'Fondateur, iRefair', locale);
+
   const text = `${greeting}
 
-Thank you for being part of the iRefair community (iRREF ${irref}). I'd like to invite you to a brief call to learn more about your referrals and how we can collaborate.
+${mainText}
 
-Meet link: ${joinLink}
+${meetLinkLabel}: ${joinLinkText}
 
-If the link is unavailable, reply with your availability and we will send you a calendar invite.
-${normalizedPortalUrl ? `\nAccess your referrer portal: ${normalizedPortalUrl}\n` : ''}
-- Founder, iRefair`;
+${unavailableLinkText}
+${normalizedPortalUrl ? `\n${portalAccessText}: ${normalizedPortalUrl}\n` : ''}
+- ${signoff}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">You're invited to meet!</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">A quick call to discuss collaboration</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('You\'re invited to meet!', 'Vous êtes invité à une rencontre!', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('A quick call to discuss collaboration', 'Un bref appel pour discuter de collaboration', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Thank you for being part of the iRefair community. I'd like to invite you to a brief call to learn more about your referrals and how we can collaborate.
+      ${t(
+        'Thank you for being part of the iRefair community. I\'d like to invite you to a brief call to learn more about your referrals and how we can collaborate.',
+        'Merci de faire partie de la communauté iRefair. J\'aimerais vous inviter à un bref appel pour en savoir plus sur vos recommandations et comment nous pouvons collaborer.',
+        locale
+      )}
     </p>
 
     ${divider}
 
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 8px;">
-      ${infoRow('Your iRREF', safeIrref)}
+      ${infoRow(t('Your iRREF', 'Votre iRREF', locale), safeIrref)}
     </table>
 
     ${divider}
 
     ${normalizedLink ? `
-      <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; font-weight: 600;">Join the meeting:</p>
+      <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; font-weight: 600;">${t('Join the meeting:', 'Rejoindre la réunion:', locale)}</p>
       <p style="margin: 0 0 24px 0;">
-        ${button('Join Meeting', normalizedLink, 'primary')}
+        ${button(t('Join Meeting', 'Rejoindre la réunion', locale), normalizedLink, 'primary')}
       </p>
     ` : `
       <p style="margin: 0 0 16px 0; color: ${colors.muted}; font-size: 14px; background: ${colors.background}; padding: 16px; border-radius: 10px;">
-        Schedule link not provided yet - reply with your availability and we'll send you a calendar invite.
+        ${t(
+          'Schedule link not provided yet - reply with your availability and we\'ll send you a calendar invite.',
+          'Le lien n\'est pas encore disponible - répondez avec vos disponibilités et nous vous enverrons une invitation calendrier.',
+          locale
+        )}
       </p>
     `}
 
     ${normalizedPortalUrl ? `
       ${divider}
-      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 15px; text-align: center;">Access your referrer portal</p>
+      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 15px; text-align: center;">${t('Access your referrer portal', 'Accédez à votre portail de parrain', locale)}</p>
       <p style="margin: 0 0 16px 0; text-align: center;">
-        ${button('Open portal', normalizedPortalUrl, 'outline')}
+        ${button(t('Open portal', 'Ouvrir le portail', locale), normalizedPortalUrl, 'outline')}
       </p>
     ` : ''}
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Best regards,<br>
-      <strong>Founder, iRefair</strong>
+      ${t('Best regards,', 'Cordialement,', locale)}<br>
+      <strong>${t('Founder, iRefair', 'Fondateur, iRefair', locale)}</strong>
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">FOUNDER MEETING INVITATION</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('FOUNDER MEETING INVITATION', 'INVITATION À RENCONTRER LE FONDATEUR', locale)}</div>
       <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRREF: <strong style="color:#1f2a37;">${safeIrref}</strong></div>
     </div>
   `;
 
-  const html = emailWrapper(content, `You're invited to meet with the iRefair founder`, customHeader);
+  const html = emailWrapper(content, t('You\'re invited to meet with the iRefair founder', 'Vous êtes invité à rencontrer le fondateur d\'iRefair', locale), customHeader);
 
   return { subject, text, html };
 }
 
-export function resumeRequest(applicantName: string, irain: string): TemplateResult {
-  const subject = "Please share your updated resume (iRefair)";
-  const greeting = applicantName ? `Hi ${applicantName},` : "Hi there,";
-  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : "Hi there,";
+export function resumeRequest(applicantName: string, irain: string, locale: 'en' | 'fr' = 'en'): TemplateResult {
+  const subject = t(
+    'Please share your updated resume (iRefair)',
+    'Veuillez partager votre CV mis à jour (iRefair)',
+    locale
+  );
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi there,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi there,', 'Bonjour,', locale);
   const safeIrain = escapeHtml(irain);
 
   const text = `${greeting}
 
-Thanks for being part of iRefair (iRAIN ${irain}). Could you reply to this email with your latest resume or CV? This will help us share the most up-to-date profile with referrers.
+${t(
+  `Thanks for being part of iRefair (iRAIN ${irain}). Could you reply to this email with your latest resume or CV? This will help us share the most up-to-date profile with referrers.`,
+  `Merci de faire partie d'iRefair (iRAIN ${irain}). Pourriez-vous répondre à ce courriel avec votre CV le plus récent? Cela nous aidera à partager le profil le plus à jour avec les parrains.`,
+  locale
+)}
 
-- Founder, iRefair`;
+- ${t('Founder, iRefair', 'Fondateur, iRefair', locale)}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Resume update request</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Help us keep your profile current</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Resume update request', 'Demande de mise à jour du CV', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Help us keep your profile current', 'Aidez-nous à garder votre profil à jour', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Thanks for being part of iRefair! To help connect you with the best opportunities, could you reply to this email with your latest resume or CV?
+      ${t(
+        'Thanks for being part of iRefair! To help connect you with the best opportunities, could you reply to this email with your latest resume or CV?',
+        'Merci de faire partie d\'iRefair! Pour vous aider à trouver les meilleures opportunités, pourriez-vous répondre à ce courriel avec votre CV le plus récent?',
+        locale
+      )}
     </p>
 
     ${divider}
 
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 8px;">
-      ${infoRow('Your iRAIN', safeIrain)}
+      ${infoRow(t('Your iRAIN', 'Votre iRAIN', locale), safeIrain)}
     </table>
 
     ${divider}
 
     <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
-      <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">How to submit:</p>
+      <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">${t('How to submit:', 'Comment soumettre:', locale)}</p>
       <p style="margin: 0; color: ${colors.muted}; font-size: 14px; line-height: 1.5;">
-        Simply reply to this email with your resume attached (PDF preferred). We'll update your profile right away.
+        ${t(
+          'Simply reply to this email with your resume attached (PDF preferred). We\'ll update your profile right away.',
+          'Répondez simplement à ce courriel avec votre CV en pièce jointe (PDF de préférence). Nous mettrons à jour votre profil immédiatement.',
+          locale
+        )}
       </p>
     </div>
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Thank you,<br>
-      <strong>Founder, iRefair</strong>
+      ${t('Thank you,', 'Merci,', locale)}<br>
+      <strong>${t('Founder, iRefair', 'Fondateur, iRefair', locale)}</strong>
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">RESUME UPDATE REQUEST</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('RESUME UPDATE REQUEST', 'DEMANDE DE MISE À JOUR DU CV', locale)}</div>
       <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRAIN: <strong style="color:#1f2a37;">${safeIrain}</strong></div>
     </div>
   `;
 
-  const html = emailWrapper(content, `Please share your updated resume`, customHeader);
+  const html = emailWrapper(content, t('Please share your updated resume', 'Veuillez partager votre CV mis à jour', locale), customHeader);
 
   return { subject, text, html };
 }
@@ -1391,71 +1462,84 @@ export function matchIntro(
   irain: string,
   ircrn: string,
   position: string,
+  locale: 'en' | 'fr' = 'en',
 ): TemplateResult {
-  const subject = "Introduction via iRefair";
-  const introApplicant = applicantName || "Applicant";
-  const introReferrer = referrerName || "Referrer";
+  const subject = t('Introduction via iRefair', 'Présentation via iRefair', locale);
+  const introApplicant = applicantName || t('Applicant', 'Candidat', locale);
+  const introReferrer = referrerName || t('Referrer', 'Parrain', locale);
   const introApplicantHtml = escapeHtml(introApplicant);
   const introReferrerHtml = escapeHtml(introReferrer);
   const safeIrain = escapeHtml(irain);
   const safeIrcrn = escapeHtml(ircrn);
-  const safePosition = position ? escapeHtml(position) : "Not specified";
+  const safePosition = position ? escapeHtml(position) : t('Not specified', 'Non spécifié', locale);
 
-  const text = `Hello ${introApplicant} and ${introReferrer},
+  const text = `${t('Hello', 'Bonjour', locale)} ${introApplicant} ${t('and', 'et', locale)} ${introReferrer},
 
-I'm connecting you via iRefair for the role/context noted below.
+${t(
+  'I\'m connecting you via iRefair for the role/context noted below.',
+  'Je vous mets en contact via iRefair pour le poste/contexte indiqué ci-dessous.',
+  locale
+)}
 
-- Applicant iRAIN: ${irain}
-- Company iRCRN: ${ircrn}
-- Position / Context: ${position || "Not specified"}
+- ${t('Applicant iRAIN', 'iRAIN du candidat', locale)}: ${irain}
+- ${t('Company iRCRN', 'iRCRN de l\'entreprise', locale)}: ${ircrn}
+- ${t('Position / Context', 'Poste / Contexte', locale)}: ${position || t('Not specified', 'Non spécifié', locale)}
 
-Please take the conversation forward and let us know if you need anything else.
+${t(
+  'Please take the conversation forward and let us know if you need anything else.',
+  'Veuillez poursuivre la conversation et faites-nous savoir si vous avez besoin de quoi que ce soit.',
+  locale
+)}
 
-- Founder, iRefair`;
+- ${t('Founder, iRefair', 'Fondateur, iRefair', locale)}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">You've been connected!</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">A new introduction via iRefair</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('You\'ve been connected!', 'Vous êtes maintenant en contact!', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('A new introduction via iRefair', 'Une nouvelle présentation via iRefair', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Hello <strong>${introApplicantHtml}</strong> and <strong>${introReferrerHtml}</strong>,
+      ${t('Hello', 'Bonjour', locale)} <strong>${introApplicantHtml}</strong> ${t('and', 'et', locale)} <strong>${introReferrerHtml}</strong>,
     </p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      I'm connecting you for the opportunity below. Please take the conversation forward - I'm confident this could be a great match!
+      ${t(
+        'I\'m connecting you for the opportunity below. Please take the conversation forward - I\'m confident this could be a great match!',
+        'Je vous mets en contact pour l\'opportunité ci-dessous. Veuillez poursuivre la conversation - je suis convaincu que cela pourrait être une excellente correspondance!',
+        locale
+      )}
     </p>
 
     ${divider}
 
     <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
-      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Connection Details</p>
+      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${t('Connection Details', 'Détails de la mise en contact', locale)}</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        ${infoRow('Position', safePosition)}
-        ${infoRow('Applicant iRAIN', safeIrain)}
-        ${infoRow('Company iRCRN', safeIrcrn)}
+        ${infoRow(t('Position', 'Poste', locale), safePosition)}
+        ${infoRow(t('Applicant iRAIN', 'iRAIN du candidat', locale), safeIrain)}
+        ${infoRow(t('Company iRCRN', 'iRCRN de l\'entreprise', locale), safeIrcrn)}
       </table>
     </div>
 
     ${divider}
 
     <p style="margin: 0 0 8px 0; color: ${colors.muted}; font-size: 14px;">
-      <strong>Next steps:</strong> Reply-all to this email to start the conversation.
+      <strong>${t('Next steps:', 'Prochaines étapes:', locale)}</strong> ${t('Reply-all to this email to start the conversation.', 'Répondez à tous à ce courriel pour commencer la conversation.', locale)}
     </p>
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Best of luck,<br>
-      <strong>Founder, iRefair</strong>
+      ${t('Best of luck,', 'Bonne chance,', locale)}<br>
+      <strong>${t('Founder, iRefair', 'Fondateur, iRefair', locale)}</strong>
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">MATCH INTRODUCTION</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('MATCH INTRODUCTION', 'PRÉSENTATION DE CORRESPONDANCE', locale)}</div>
       <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRAIN: <strong style="color:#1f2a37;">${safeIrain}</strong> • iRCRN: <strong style="color:#1f2a37;">${safeIrcrn}</strong></div>
     </div>
   `;
 
-  const html = emailWrapper(content, `You've been connected: ${introApplicant} meet ${introReferrer}`, customHeader);
+  const html = emailWrapper(content, t(`You've been connected: ${introApplicant} meet ${introReferrer}`, `Vous êtes en contact: ${introApplicant} rencontre ${introReferrer}`, locale), customHeader);
 
   return { subject, text, html };
 }
@@ -1475,6 +1559,7 @@ type ReferrerApplicationParams = {
   feedbackApproveUrl?: string;
   feedbackDeclineUrl?: string;
   portalUrl?: string;
+  locale?: 'en' | 'fr';
 };
 
 export function applicationSubmittedToReferrer(params: ReferrerApplicationParams): TemplateResult {
@@ -1493,20 +1578,29 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
     feedbackApproveUrl,
     feedbackDeclineUrl,
     portalUrl,
+    locale = 'en',
   } = params;
 
   const displayCompany = companyName || iCrn;
-  const subject = `New application for ${position} at ${displayCompany}`;
-  const greeting = referrerName ? `Hi ${referrerName},` : 'Hi,';
-  const displayResumeName = resumeFileName || 'Resume';
-  const safeGreetingHtml = referrerName ? `Hi ${escapeHtml(referrerName)},` : 'Hi,';
+  const subject = t(
+    `New application for ${position} at ${displayCompany}`,
+    `Nouvelle candidature pour ${position} chez ${displayCompany}`,
+    locale
+  );
+  const greeting = referrerName
+    ? t(`Hi ${referrerName},`, `Bonjour ${referrerName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const displayResumeName = resumeFileName || t('Resume', 'CV', locale);
+  const safeGreetingHtml = referrerName
+    ? t(`Hi ${escapeHtml(referrerName)},`, `Bonjour ${escapeHtml(referrerName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
   const normalizedResumeUrl = resumeUrl ? normalizeHttpUrl(resumeUrl) : null;
   const safeApplicantId = escapeHtml(applicantId);
   const safeIrcrn = escapeHtml(iCrn);
   const safeCompanyName = companyName ? escapeHtml(companyName) : '';
   const safePosition = position ? escapeHtml(position) : '';
   const safeReferenceNumber = referenceNumber ? escapeHtml(referenceNumber) : '';
-  const safeApplicantName = applicantName ? escapeHtml(applicantName) : 'Not provided';
+  const safeApplicantName = applicantName ? escapeHtml(applicantName) : t('Not provided', 'Non fourni', locale);
   const safeApplicantEmail = applicantEmail ? escapeHtml(applicantEmail) : '';
   const safeApplicantPhone = applicantPhone ? escapeHtml(applicantPhone) : '';
   const approveLink = feedbackApproveUrl ? normalizeHttpUrl(feedbackApproveUrl) : null;
@@ -1514,9 +1608,9 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
   const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
 
   const textCtas = [
-    feedbackApproveUrl ? `Approve: ${feedbackApproveUrl}` : null,
-    feedbackDeclineUrl ? `Decline: ${feedbackDeclineUrl}` : null,
-    portalUrl ? `Your Referrer Portal: ${portalUrl}` : null,
+    feedbackApproveUrl ? `${t('Approve', 'Approuver', locale)}: ${feedbackApproveUrl}` : null,
+    feedbackDeclineUrl ? `${t('Decline', 'Refuser', locale)}: ${feedbackDeclineUrl}` : null,
+    portalUrl ? `${t('Your Referrer Portal', 'Votre portail de parrain', locale)}: ${portalUrl}` : null,
   ]
     .filter(Boolean)
     .join('\n');
@@ -1524,54 +1618,58 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
   const textLines = [
     greeting,
     '',
-    `An applicant just applied for ${position} at ${displayCompany}.`,
-    `- Applicant ID: ${applicantId}`,
-    companyName ? `- Company: ${companyName}` : null,
-    `- Company iRCRN: ${iCrn}`,
-    position ? `- Position: ${position}` : null,
-    referenceNumber ? `- Reference Number: ${referenceNumber}` : null,
-    applicantName ? `- Name: ${applicantName}` : null,
-    applicantEmail ? `- Email: ${applicantEmail}` : null,
-    applicantPhone ? `- Phone: ${applicantPhone}` : null,
-    `- CV: ${normalizedResumeUrl || 'Not provided'}`,
+    t(
+      `An applicant just applied for ${position} at ${displayCompany}.`,
+      `Un candidat vient de postuler pour ${position} chez ${displayCompany}.`,
+      locale
+    ),
+    `- ${t('Applicant ID', 'ID du candidat', locale)}: ${applicantId}`,
+    companyName ? `- ${t('Company', 'Entreprise', locale)}: ${companyName}` : null,
+    `- ${t('Company iRCRN', 'iRCRN de l\'entreprise', locale)}: ${iCrn}`,
+    position ? `- ${t('Position', 'Poste', locale)}: ${position}` : null,
+    referenceNumber ? `- ${t('Reference Number', 'Numéro de référence', locale)}: ${referenceNumber}` : null,
+    applicantName ? `- ${t('Name', 'Nom', locale)}: ${applicantName}` : null,
+    applicantEmail ? `- ${t('Email', 'Courriel', locale)}: ${applicantEmail}` : null,
+    applicantPhone ? `- ${t('Phone', 'Téléphone', locale)}: ${applicantPhone}` : null,
+    `- ${t('CV', 'CV', locale)}: ${normalizedResumeUrl || t('Not provided', 'Non fourni', locale)}`,
     textCtas ? '' : null,
     textCtas || null,
     '',
-    'Thanks for the quick review!',
+    t('Thanks for the quick review!', 'Merci pour votre examen rapide!', locale),
   ]
     .filter(Boolean)
     .join('\n');
 
   const safeDisplayCompany = escapeHtml(displayCompany);
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">New application received!</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">An applicant is interested in ${safePosition} at ${safeDisplayCompany}</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('New application received!', 'Nouvelle candidature reçue!', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t(`An applicant is interested in ${safePosition} at ${safeDisplayCompany}`, `Un candidat est intéressé par ${safePosition} chez ${safeDisplayCompany}`, locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${safeGreetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Great news! An applicant just applied through iRefair. Here are the details:
+      ${t('Great news! An applicant just applied through iRefair. Here are the details:', 'Bonne nouvelle! Un candidat vient de postuler via iRefair. Voici les détails:', locale)}
     </p>
 
     ${divider}
 
     <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
-      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Applicant Information</p>
+      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${t('Applicant Information', 'Information sur le candidat', locale)}</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        ${infoRow('Name', safeApplicantName)}
-        ${safeApplicantEmail ? infoRow('Email', `<a href="mailto:${safeApplicantEmail}" style="color: ${colors.primary};">${safeApplicantEmail}</a>`) : ''}
-        ${safeApplicantPhone ? infoRow('Phone', safeApplicantPhone) : ''}
-        ${infoRow('Applicant ID', safeApplicantId)}
+        ${infoRow(t('Name', 'Nom', locale), safeApplicantName)}
+        ${safeApplicantEmail ? infoRow(t('Email', 'Courriel', locale), `<a href="mailto:${safeApplicantEmail}" style="color: ${colors.primary};">${safeApplicantEmail}</a>`) : ''}
+        ${safeApplicantPhone ? infoRow(t('Phone', 'Téléphone', locale), safeApplicantPhone) : ''}
+        ${infoRow(t('Applicant ID', 'ID du candidat', locale), safeApplicantId)}
       </table>
     </div>
 
     <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
-      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Application Details</p>
+      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${t('Application Details', 'Détails de la candidature', locale)}</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        ${safePosition ? infoRow('Position', safePosition) : ''}
-        ${safeCompanyName ? infoRow('Company', safeCompanyName) : ''}
-        ${infoRow('Company iRCRN', safeIrcrn)}
-        ${safeReferenceNumber ? infoRow('Reference #', safeReferenceNumber) : ''}
-        ${infoRow('Resume', normalizedResumeUrl ? `<a href="${escapeHtml(normalizedResumeUrl)}" target="_blank" style="color: ${colors.primary};">${escapeHtml(displayResumeName)}</a>` : '<span style="color: ' + colors.muted + ';">Not provided</span>')}
+        ${safePosition ? infoRow(t('Position', 'Poste', locale), safePosition) : ''}
+        ${safeCompanyName ? infoRow(t('Company', 'Entreprise', locale), safeCompanyName) : ''}
+        ${infoRow(t('Company iRCRN', 'iRCRN de l\'entreprise', locale), safeIrcrn)}
+        ${safeReferenceNumber ? infoRow(t('Reference #', 'Réf. #', locale), safeReferenceNumber) : ''}
+        ${infoRow(t('Resume', 'CV', locale), normalizedResumeUrl ? `<a href="${escapeHtml(normalizedResumeUrl)}" target="_blank" style="color: ${colors.primary};">${escapeHtml(displayResumeName)}</a>` : `<span style="color: ${colors.muted};">${t('Not provided', 'Non fourni', locale)}</span>`)}
       </table>
     </div>
 
@@ -1579,32 +1677,36 @@ export function applicationSubmittedToReferrer(params: ReferrerApplicationParams
 
     <table role="presentation" cellpadding="0" cellspacing="0">
       <tr>
-        ${normalizedResumeUrl ? `<td style="padding-right: 12px;">${button('View Resume', normalizedResumeUrl, 'secondary')}</td>` : ''}
-        ${approveLink ? `<td style="padding-right: 12px;">${button('Approve', approveLink, 'primary')}</td>` : ''}
-        ${declineLink ? `<td>${button('Decline', declineLink, 'danger')}</td>` : ''}
+        ${normalizedResumeUrl ? `<td style="padding-right: 12px;">${button(t('View Resume', 'Voir le CV', locale), normalizedResumeUrl, 'secondary')}</td>` : ''}
+        ${approveLink ? `<td style="padding-right: 12px;">${button(t('Approve', 'Approuver', locale), approveLink, 'primary')}</td>` : ''}
+        ${declineLink ? `<td>${button(t('Decline', 'Refuser', locale), declineLink, 'danger')}</td>` : ''}
       </tr>
     </table>
 
     ${normalizedPortalUrl ? `
     <p style="margin: 24px 0 12px 0; color: ${colors.muted}; font-size: 14px;">
-      Manage all your applications in your <a href="${escapeHtml(normalizedPortalUrl)}" style="color: ${colors.primary};">Referrer Portal</a>.
+      ${t(
+        `Manage all your applications in your <a href="${escapeHtml(normalizedPortalUrl)}" style="color: ${colors.primary};">Referrer Portal</a>.`,
+        `Gérez toutes vos candidatures dans votre <a href="${escapeHtml(normalizedPortalUrl)}" style="color: ${colors.primary};">portail de parrain</a>.`,
+        locale
+      )}
     </p>
     ` : ''}
 
     <p style="margin: 24px 0 0 0; color: ${colors.muted}; font-size: 14px;">
-      Thank you for your quick review!
+      ${t('Thank you for your quick review!', 'Merci pour votre examen rapide!', locale)}
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">NEW APPLICATION RECEIVED</div>
-      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">${safeCompanyName ? `Company: <strong style="color:#1f2a37;">${safeCompanyName}</strong> &bull; ` : ''}iRCRN: <strong style="color:#1f2a37;">${safeIrcrn}</strong></div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('NEW APPLICATION RECEIVED', 'NOUVELLE CANDIDATURE REÇUE', locale)}</div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">${safeCompanyName ? `${t('Company', 'Entreprise', locale)}: <strong style="color:#1f2a37;">${safeCompanyName}</strong> &bull; ` : ''}iRCRN: <strong style="color:#1f2a37;">${safeIrcrn}</strong></div>
     </div>
   `;
 
-  const html = emailWrapper(content, `New application for ${position} at ${displayCompany}`, customHeader);
+  const html = emailWrapper(content, t(`New application for ${position} at ${displayCompany}`, `Nouvelle candidature pour ${position} chez ${displayCompany}`, locale), customHeader);
 
   return { subject, text: textLines, html };
 }
@@ -1618,6 +1720,7 @@ type ApplicantConfirmationParams = {
   referenceNumber?: string;
   resumeFileName?: string;
   submissionId: string;
+  locale?: 'en' | 'fr';
 };
 
 export function applicationConfirmationToApplicant(params: ApplicantConfirmationParams): TemplateResult {
@@ -1629,11 +1732,16 @@ export function applicationConfirmationToApplicant(params: ApplicantConfirmation
     referenceNumber,
     resumeFileName,
     submissionId,
+    locale = 'en',
   } = params;
 
-  const subject = `Application received: ${position}`;
-  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
-  const safeGreetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
+  const subject = t(`Application received: ${position}`, `Candidature reçue: ${position}`, locale);
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeGreetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
   const safeApplicantId = escapeHtml(applicantId);
   const safeIrcrn = escapeHtml(iCrn);
   const safePosition = escapeHtml(position);
@@ -1643,78 +1751,78 @@ export function applicationConfirmationToApplicant(params: ApplicantConfirmation
 
   const text = `${greeting}
 
-Thank you for submitting your application through iRefair!
+${t('Thank you for submitting your application through iRefair!', 'Merci d\'avoir soumis votre candidature via iRefair!', locale)}
 
-Here's a summary of what you submitted:
+${t("Here's a summary of what you submitted:", 'Voici un résumé de votre soumission:', locale)}
 
-- Submission ID: ${submissionId}
-- Your iRAIN: ${applicantId}
-- Company (iRCRN): ${iCrn}
-- Position: ${position}${referenceNumber ? `\n- Reference Number: ${referenceNumber}` : ''}${resumeFileName ? `\n- Resume: ${resumeFileName}` : ''}
+- ${t('Submission ID', 'ID de soumission', locale)}: ${submissionId}
+- ${t('Your iRAIN', 'Votre iRAIN', locale)}: ${applicantId}
+- ${t('Company (iRCRN)', 'Entreprise (iRCRN)', locale)}: ${iCrn}
+- ${t('Position', 'Poste', locale)}: ${position}${referenceNumber ? `\n- ${t('Reference Number', 'Numéro de référence', locale)}: ${referenceNumber}` : ''}${resumeFileName ? `\n- ${t('Resume', 'CV', locale)}: ${resumeFileName}` : ''}
 
-What happens next?
-1. Your application has been forwarded to a referrer at the company
-2. They will review your profile and resume
-3. If there's a match, you'll be connected via email
+${t('What happens next?', 'Prochaines étapes?', locale)}
+1. ${t('Your application has been forwarded to a referrer at the company', 'Votre candidature a été transmise à un parrain de l\'entreprise', locale)}
+2. ${t('They will review your profile and resume', 'Ils examineront votre profil et votre CV', locale)}
+3. ${t("If there's a match, you'll be connected via email", 'S\'il y a correspondance, vous serez contacté par courriel', locale)}
 
-Keep this email for your records. You can use the same iRAIN and Applicant Key to apply to other companies.
+${t('Keep this email for your records. You can use the same iRAIN and Applicant Key to apply to other companies.', 'Conservez ce courriel pour vos dossiers. Vous pouvez utiliser le même iRAIN et clé de candidat pour postuler à d\'autres entreprises.', locale)}
 
-Good luck!
-- The iRefair Team`;
+${t('Good luck!', 'Bonne chance!', locale)}
+- ${t('The iRefair Team', 'L\'équipe iRefair', locale)}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Application received! 🎉</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">We've forwarded your application to a referrer</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Application received!', 'Candidature reçue!', locale)} 🎉</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t("We've forwarded your application to a referrer", 'Nous avons transmis votre candidature à un parrain', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${safeGreetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Thank you for submitting your application through iRefair! Here's a summary of what you submitted:
+      ${t('Thank you for submitting your application through iRefair! Here\'s a summary of what you submitted:', 'Merci d\'avoir soumis votre candidature via iRefair! Voici un résumé de votre soumission:', locale)}
     </p>
 
     ${divider}
 
     <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
-      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Application Summary</p>
+      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${t('Application Summary', 'Résumé de la candidature', locale)}</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        ${infoRow('Submission ID', safeSubmissionId)}
-        ${infoRow('Your iRAIN', safeApplicantId)}
-        ${infoRow('Company (iRCRN)', safeIrcrn)}
-        ${infoRow('Position', safePosition)}
-        ${safeReferenceNumber ? infoRow('Reference #', safeReferenceNumber) : ''}
-        ${safeResumeName ? infoRow('Resume', safeResumeName) : ''}
+        ${infoRow(t('Submission ID', 'ID de soumission', locale), safeSubmissionId)}
+        ${infoRow(t('Your iRAIN', 'Votre iRAIN', locale), safeApplicantId)}
+        ${infoRow(t('Company (iRCRN)', 'Entreprise (iRCRN)', locale), safeIrcrn)}
+        ${infoRow(t('Position', 'Poste', locale), safePosition)}
+        ${safeReferenceNumber ? infoRow(t('Reference #', 'Réf. #', locale), safeReferenceNumber) : ''}
+        ${safeResumeName ? infoRow(t('Resume', 'CV', locale), safeResumeName) : ''}
       </table>
     </div>
 
     ${divider}
 
     <div style="background: linear-gradient(135deg, rgba(61, 139, 253, 0.08), rgba(122, 215, 227, 0.08)); padding: 20px; border-radius: 12px; margin: 16px 0; border-left: 4px solid ${colors.primary};">
-      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 15px; font-weight: 700;">What happens next?</p>
+      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 15px; font-weight: 700;">${t('What happens next?', 'Prochaines étapes?', locale)}</p>
       <ol style="margin: 0; padding-left: 20px; color: ${colors.ink}; font-size: 14px; line-height: 1.8;">
-        <li>Your application has been forwarded to a referrer at the company</li>
-        <li>They will review your profile and resume</li>
-        <li>If there's a match, you'll be connected via email</li>
+        <li>${t('Your application has been forwarded to a referrer at the company', 'Votre candidature a été transmise à un parrain de l\'entreprise', locale)}</li>
+        <li>${t('They will review your profile and resume', 'Ils examineront votre profil et votre CV', locale)}</li>
+        <li>${t("If there's a match, you'll be connected via email", 'S\'il y a correspondance, vous serez contacté par courriel', locale)}</li>
       </ol>
     </div>
 
     <p style="margin: 16px 0; color: ${colors.muted}; font-size: 14px; line-height: 1.6;">
-      <strong>Tip:</strong> Keep this email for your records. You can use the same iRAIN and Applicant Key to apply to other companies on iRefair.
+      <strong>${t('Tip:', 'Conseil:', locale)}</strong> ${t('Keep this email for your records. You can use the same iRAIN and Applicant Key to apply to other companies on iRefair.', 'Conservez ce courriel pour vos dossiers. Vous pouvez utiliser le même iRAIN et clé de candidat pour postuler à d\'autres entreprises sur iRefair.', locale)}
     </p>
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Good luck! 🤞<br>
-      <strong>The iRefair Team</strong>
+      ${t('Good luck!', 'Bonne chance!', locale)} 🤞<br>
+      <strong>${t('The iRefair Team', 'L\'équipe iRefair', locale)}</strong>
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">APPLICATION RECEIVED</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('APPLICATION RECEIVED', 'CANDIDATURE REÇUE', locale)}</div>
       <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRAIN: <strong style="color:#1f2a37;">${safeApplicantId}</strong></div>
     </div>
   `;
 
-  const html = emailWrapper(content, `Your application for ${position} has been received`, customHeader);
+  const html = emailWrapper(content, t(`Your application for ${position} has been received`, `Votre candidature pour ${position} a été reçue`, locale), customHeader);
 
   return { subject, text, html };
 }
@@ -1736,6 +1844,7 @@ type MeetingInviteParams = {
   meetingUrl: string;
   rescheduleToken: string;
   applicationId: string;
+  locale?: 'en' | 'fr';
 };
 
 export function meetingInviteToApplicant(params: MeetingInviteParams): TemplateResult {
@@ -1750,80 +1859,85 @@ export function meetingInviteToApplicant(params: MeetingInviteParams): TemplateR
     meetingUrl,
     rescheduleToken,
     applicationId,
+    locale = 'en',
   } = params;
 
   const formattedDateTime = formatMeetingDateTime(meetingDate, meetingTime, meetingTimezone);
-  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
-  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
-  const safeReferrerName = referrerName ? escapeHtml(referrerName) : 'a referrer';
-  const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
-  const safePosition = position ? escapeHtml(position) : 'the position';
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeReferrerName = referrerName ? escapeHtml(referrerName) : t('a referrer', 'un parrain', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', 'l\'entreprise', locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
   const normalizedMeetingUrl = normalizeHttpUrl(meetingUrl);
   const rescheduleUrl = `${BASE_URL}/api/referrer/reschedule?token=${encodeURIComponent(rescheduleToken)}&appId=${encodeURIComponent(applicationId)}`;
 
-  const subject = `Meeting scheduled: ${position || 'Interview'}`;
+  const subject = t(`Meeting scheduled: ${position || 'Interview'}`, `Réunion planifiée: ${position || 'Entrevue'}`, locale);
 
   const text = `${greeting}
 
-Great news! ${referrerName || 'A referrer'} at ${companyName || 'the company'} would like to meet with you regarding ${position || 'your application'}.
+${t(`Great news! ${referrerName || 'A referrer'} at ${companyName || 'the company'} would like to meet with you regarding ${position || 'your application'}.`, `Bonne nouvelle! ${referrerName || 'Un parrain'} de ${companyName || 'l\'entreprise'} souhaite vous rencontrer concernant ${position || 'votre candidature'}.`, locale)}
 
-Meeting Details:
-- When: ${formattedDateTime}
-- Join link: ${normalizedMeetingUrl || 'Link will be provided'}
+${t('Meeting Details:', 'Détails de la réunion:', locale)}
+- ${t('When', 'Quand', locale)}: ${formattedDateTime}
+- ${t('Join link', 'Lien de connexion', locale)}: ${normalizedMeetingUrl || t('Link will be provided', 'Le lien sera fourni', locale)}
 
-Please join on time. If you need to reschedule, use this link: ${rescheduleUrl}
+${t('Please join on time. If you need to reschedule, use this link:', 'Veuillez vous connecter à l\'heure. Si vous devez reporter, utilisez ce lien:', locale)} ${rescheduleUrl}
 
-Good luck with your meeting!
-- The iRefair Team`;
+${t('Good luck with your meeting!', 'Bonne chance pour votre réunion!', locale)}
+- ${t('The iRefair Team', 'L\'équipe iRefair', locale)}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Meeting scheduled!</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">You have an upcoming interview</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Meeting scheduled!', 'Réunion planifiée!', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('You have an upcoming interview', 'Vous avez une entrevue à venir', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Great news! <strong>${safeReferrerName}</strong> at <strong>${safeCompanyName}</strong> would like to meet with you regarding <strong>${safePosition}</strong>.
+      ${t(`Great news! <strong>${safeReferrerName}</strong> at <strong>${safeCompanyName}</strong> would like to meet with you regarding <strong>${safePosition}</strong>.`, `Bonne nouvelle! <strong>${safeReferrerName}</strong> de <strong>${safeCompanyName}</strong> souhaite vous rencontrer concernant <strong>${safePosition}</strong>.`, locale)}
     </p>
 
     ${divider}
 
     <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
-      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Meeting Details</p>
+      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${t('Meeting Details', 'Détails de la réunion', locale)}</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        ${infoRow('When', `<strong>${escapeHtml(formattedDateTime)}</strong>`)}
+        ${infoRow(t('When', 'Quand', locale), `<strong>${escapeHtml(formattedDateTime)}</strong>`)}
       </table>
     </div>
 
     ${normalizedMeetingUrl ? `
       <p style="margin: 24px 0 16px 0; text-align: center;">
-        ${button('Join Meeting', normalizedMeetingUrl, 'primary')}
+        ${button(t('Join Meeting', 'Rejoindre la réunion', locale), normalizedMeetingUrl, 'primary')}
       </p>
     ` : `
       <p style="margin: 16px 0; color: ${colors.muted}; font-size: 14px; background: ${colors.background}; padding: 16px; border-radius: 10px;">
-        The meeting link will be provided separately.
+        ${t('The meeting link will be provided separately.', 'Le lien de la réunion sera fourni séparément.', locale)}
       </p>
     `}
 
     ${divider}
 
     <p style="margin: 0; color: ${colors.muted}; font-size: 13px; text-align: center;">
-      Need to reschedule? <a href="${escapeHtml(rescheduleUrl)}" style="color: ${colors.primary};">Request a new time</a>
+      ${t('Need to reschedule?', 'Besoin de reporter?', locale)} <a href="${escapeHtml(rescheduleUrl)}" style="color: ${colors.primary};">${t('Request a new time', 'Demander un nouveau moment', locale)}</a>
     </p>
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Good luck!<br>
-      <strong>The iRefair Team</strong>
+      ${t('Good luck!', 'Bonne chance!', locale)}<br>
+      <strong>${t('The iRefair Team', 'L\'équipe iRefair', locale)}</strong>
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">MEETING SCHEDULED</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('MEETING SCHEDULED', 'RÉUNION PLANIFIÉE', locale)}</div>
     </div>
   `;
 
-  const html = emailWrapper(content, `Meeting scheduled for ${formattedDateTime}`, customHeader);
+  const html = emailWrapper(content, t(`Meeting scheduled for ${formattedDateTime}`, `Réunion planifiée pour ${formattedDateTime}`, locale), customHeader);
 
   return { subject, text, html };
 }
@@ -1834,63 +1948,68 @@ type MeetingCancelledParams = {
   companyName?: string;
   position?: string;
   reason?: string;
+  locale?: 'en' | 'fr';
 };
 
 export function meetingCancelledToApplicant(params: MeetingCancelledParams): TemplateResult {
-  const { applicantName, referrerName, companyName, position, reason } = params;
+  const { applicantName, referrerName, companyName, position, reason, locale = 'en' } = params;
 
-  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
-  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
-  const safeReferrerName = referrerName ? escapeHtml(referrerName) : 'The referrer';
-  const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
-  const safePosition = position ? escapeHtml(position) : 'your application';
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeReferrerName = referrerName ? escapeHtml(referrerName) : t('The referrer', 'Le parrain', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', 'l\'entreprise', locale);
+  const safePosition = position ? escapeHtml(position) : t('your application', 'votre candidature', locale);
   const safeReason = reason ? escapeHtml(reason) : '';
 
-  const subject = `Meeting cancelled: ${position || 'Interview'}`;
+  const subject = t(`Meeting cancelled: ${position || 'Interview'}`, `Réunion annulée: ${position || 'Entrevue'}`, locale);
 
   const text = `${greeting}
 
-Unfortunately, your scheduled meeting with ${referrerName || 'the referrer'} at ${companyName || 'the company'} regarding ${position || 'your application'} has been cancelled.${reason ? `\n\nReason: ${reason}` : ''}
+${t(`Unfortunately, your scheduled meeting with ${referrerName || 'the referrer'} at ${companyName || 'the company'} regarding ${position || 'your application'} has been cancelled.`, `Malheureusement, votre réunion prévue avec ${referrerName || 'le parrain'} de ${companyName || 'l\'entreprise'} concernant ${position || 'votre candidature'} a été annulée.`, locale)}${reason ? `\n\n${t('Reason', 'Raison', locale)}: ${reason}` : ''}
 
-If appropriate, a new meeting may be scheduled. We'll keep you posted.
+${t("If appropriate, a new meeting may be scheduled. We'll keep you posted.", 'Si approprié, une nouvelle réunion pourra être planifiée. Nous vous tiendrons informé.', locale)}
 
-- The iRefair Team`;
+- ${t('The iRefair Team', 'L\'équipe iRefair', locale)}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Meeting cancelled</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Your scheduled meeting has been cancelled</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Meeting cancelled', 'Réunion annulée', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Your scheduled meeting has been cancelled', 'Votre réunion prévue a été annulée', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Unfortunately, your scheduled meeting with <strong>${safeReferrerName}</strong> at <strong>${safeCompanyName}</strong> regarding <strong>${safePosition}</strong> has been cancelled.
+      ${t(`Unfortunately, your scheduled meeting with <strong>${safeReferrerName}</strong> at <strong>${safeCompanyName}</strong> regarding <strong>${safePosition}</strong> has been cancelled.`, `Malheureusement, votre réunion prévue avec <strong>${safeReferrerName}</strong> de <strong>${safeCompanyName}</strong> concernant <strong>${safePosition}</strong> a été annulée.`, locale)}
     </p>
 
     ${safeReason ? `
       <div style="background: ${colors.background}; padding: 16px; border-radius: 12px; margin: 16px 0;">
         <p style="margin: 0; color: ${colors.muted}; font-size: 14px;">
-          <strong>Reason:</strong> ${safeReason}
+          <strong>${t('Reason:', 'Raison:', locale)}</strong> ${safeReason}
         </p>
       </div>
     ` : ''}
 
     <p style="margin: 16px 0 0 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      If appropriate, a new meeting may be scheduled. We'll keep you posted.
+      ${t("If appropriate, a new meeting may be scheduled. We'll keep you posted.", 'Si approprié, une nouvelle réunion pourra être planifiée. Nous vous tiendrons informé.', locale)}
     </p>
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Best regards,<br>
-      <strong>The iRefair Team</strong>
+      ${t('Best regards,', 'Cordialement,', locale)}<br>
+      <strong>${t('The iRefair Team', 'L\'équipe iRefair', locale)}</strong>
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">MEETING CANCELLED</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('MEETING CANCELLED', 'RÉUNION ANNULÉE', locale)}</div>
     </div>
   `;
 
-  const html = emailWrapper(content, `Your meeting has been cancelled`, customHeader);
+  const html = emailWrapper(content, t('Your meeting has been cancelled', 'Votre réunion a été annulée', locale), customHeader);
 
   return { subject, text, html };
 }
@@ -1900,58 +2019,63 @@ type RejectionParams = {
   referrerName?: string;
   companyName?: string;
   position?: string;
+  locale?: 'en' | 'fr';
 };
 
 export function rejectionToApplicant(params: RejectionParams): TemplateResult {
-  const { applicantName, referrerName, companyName, position } = params;
+  const { applicantName, referrerName, companyName, position, locale = 'en' } = params;
 
-  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
-  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
-  const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
-  const safePosition = position ? escapeHtml(position) : 'the position';
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', 'l\'entreprise', locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
 
-  const subject = `Application update: ${position || 'Your application'}`;
+  const subject = t(`Application update: ${position || 'Your application'}`, `Mise à jour de candidature: ${position || 'Votre candidature'}`, locale);
 
   const text = `${greeting}
 
-Thank you for your interest in ${position || 'the position'} at ${companyName || 'the company'}.
+${t(`Thank you for your interest in ${position || 'the position'} at ${companyName || 'the company'}.`, `Merci de votre intérêt pour ${position || 'le poste'} chez ${companyName || 'l\'entreprise'}.`, locale)}
 
-After careful review, we've decided not to move forward with your application at this time. This decision doesn't reflect on your qualifications - it simply means we're pursuing applicants whose experience more closely matches our current needs.
+${t("After careful review, we've decided not to move forward with your application at this time. This decision doesn't reflect on your qualifications - it simply means we're pursuing applicants whose experience more closely matches our current needs.", "Après examen attentif, nous avons décidé de ne pas poursuivre avec votre candidature pour le moment. Cette décision ne remet pas en cause vos qualifications - elle signifie simplement que nous poursuivons avec des candidats dont l'expérience correspond plus étroitement à nos besoins actuels.", locale)}
 
-We encourage you to continue exploring opportunities on iRefair. The right match is out there!
+${t('We encourage you to continue exploring opportunities on iRefair. The right match is out there!', 'Nous vous encourageons à continuer d\'explorer les opportunités sur iRefair. La bonne correspondance existe!', locale)}
 
-Best of luck in your job search.
-- The iRefair Team`;
+${t('Best of luck in your job search.', 'Bonne chance dans votre recherche d\'emploi.', locale)}
+- ${t('The iRefair Team', 'L\'équipe iRefair', locale)}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Application update</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Regarding your application</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Application update', 'Mise à jour de candidature', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Regarding your application', 'Concernant votre candidature', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Thank you for your interest in <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong>.
+      ${t(`Thank you for your interest in <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong>.`, `Merci de votre intérêt pour <strong>${safePosition}</strong> chez <strong>${safeCompanyName}</strong>.`, locale)}
     </p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      After careful review, we've decided not to move forward with your application at this time. This decision doesn't reflect on your qualifications - it simply means we're pursuing applicants whose experience more closely matches our current needs.
+      ${t("After careful review, we've decided not to move forward with your application at this time. This decision doesn't reflect on your qualifications - it simply means we're pursuing applicants whose experience more closely matches our current needs.", "Après examen attentif, nous avons décidé de ne pas poursuivre avec votre candidature pour le moment. Cette décision ne remet pas en cause vos qualifications - elle signifie simplement que nous poursuivons avec des candidats dont l'expérience correspond plus étroitement à nos besoins actuels.", locale)}
     </p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      We encourage you to continue exploring opportunities on iRefair. The right match is out there!
+      ${t('We encourage you to continue exploring opportunities on iRefair. The right match is out there!', 'Nous vous encourageons à continuer d\'explorer les opportunités sur iRefair. La bonne correspondance existe!', locale)}
     </p>
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Best of luck in your job search,<br>
-      <strong>The iRefair Team</strong>
+      ${t('Best of luck in your job search,', 'Bonne chance dans votre recherche d\'emploi,', locale)}<br>
+      <strong>${t('The iRefair Team', 'L\'équipe iRefair', locale)}</strong>
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">APPLICATION UPDATE</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('APPLICATION UPDATE', 'MISE À JOUR DE CANDIDATURE', locale)}</div>
     </div>
   `;
 
-  const html = emailWrapper(content, `Update on your application`, customHeader);
+  const html = emailWrapper(content, t('Update on your application', 'Mise à jour de votre candidature', locale), customHeader);
 
   return { subject, text, html };
 }
@@ -1966,6 +2090,7 @@ type CvMismatchParams = {
   updateToken?: string;
   applicationId?: string;
   meetingWasCancelled?: boolean;
+  locale?: 'en' | 'fr';
 };
 
 export function cvMismatchToApplicant(params: CvMismatchParams): TemplateResult {
@@ -1978,50 +2103,55 @@ export function cvMismatchToApplicant(params: CvMismatchParams): TemplateResult 
     updateToken,
     applicationId,
     meetingWasCancelled,
+    locale = 'en',
   } = params;
 
-  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
-  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
-  const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
-  const safePosition = position ? escapeHtml(position) : 'the position';
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', 'l\'entreprise', locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
   const safeFeedback = feedback ? escapeHtml(feedback) : '';
 
   const updateUrl = includeUpdateLink && updateToken && applicationId
     ? `${BASE_URL}/update-cv?token=${encodeURIComponent(updateToken)}&appId=${encodeURIComponent(applicationId)}`
     : null;
 
-  const subject = `CV feedback: ${position || 'Your application'}`;
+  const subject = t(`CV review needed: ${position || 'Your application'}`, `Révision du CV requise: ${position || 'Votre candidature'}`, locale);
 
   const meetingCancelledText = meetingWasCancelled
-    ? '\n\nNote: Your previously scheduled meeting has been cancelled. Once you update your CV, the referrer will review it and schedule a new meeting with you.'
+    ? t('\n\nNote: Your previously scheduled meeting has been cancelled. Once you update your CV, the referrer will review it and schedule a new meeting with you.', '\n\nNote: Votre réunion précédemment planifiée a été annulée. Une fois votre CV mis à jour, le parrain l\'examinera et planifiera une nouvelle réunion avec vous.', locale)
     : '';
 
   const text = `${greeting}
 
-Thank you for applying to ${position || 'the position'} at ${companyName || 'the company'}.
+${t(`Thank you for applying to ${position || 'the position'} at ${companyName || 'the company'}.`, `Merci d'avoir postulé pour ${position || 'le poste'} chez ${companyName || 'l\'entreprise'}.`, locale)}
 
-After reviewing your CV, we found that it doesn't quite match the requirements for this role.${feedback ? `\n\nFeedback: ${feedback}` : ''}${meetingCancelledText}
-${updateUrl ? `\nIf you'd like to update your CV and resubmit, you can do so here: ${updateUrl}\n\nThis link expires in 7 days.` : ''}
+${t("After reviewing your CV, we found that it doesn't quite match the requirements for this role.", "Après avoir examiné votre CV, nous avons constaté qu'il ne correspond pas tout à fait aux exigences de ce poste.", locale)}${feedback ? `\n\n${t('Feedback', 'Commentaires', locale)}: ${feedback}` : ''}${meetingCancelledText}
+${updateUrl ? `\n${t("If you'd like to update your CV and resubmit, you can do so here:", "Si vous souhaitez mettre à jour votre CV et le soumettre à nouveau, vous pouvez le faire ici:", locale)} ${updateUrl}\n\n${t('This link expires in 7 days.', 'Ce lien expire dans 7 jours.', locale)}` : ''}
 
-Don't be discouraged - there are many opportunities on iRefair that may be a better fit!
+${t("Don't be discouraged - there are many opportunities on iRefair that may be a better fit!", "Ne vous découragez pas - il existe de nombreuses opportunités sur iRefair qui pourraient mieux vous convenir!", locale)}
 
-- The iRefair Team`;
+- ${t('The iRefair Team', 'L\'équipe iRefair', locale)}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">CV feedback</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Regarding your application</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('CV feedback', 'Commentaires sur le CV', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Regarding your application', 'Concernant votre candidature', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Thank you for applying to <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong>.
+      ${t(`Thank you for applying to <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong>.`, `Merci d'avoir postulé pour <strong>${safePosition}</strong> chez <strong>${safeCompanyName}</strong>.`, locale)}
     </p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      After reviewing your CV, we found that it doesn't quite match the requirements for this role.
+      ${t("After reviewing your CV, we found that it doesn't quite match the requirements for this role.", "Après avoir examiné votre CV, nous avons constaté qu'il ne correspond pas tout à fait aux exigences de ce poste.", locale)}
     </p>
 
     ${safeFeedback ? `
       <div style="background: ${colors.background}; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid ${colors.primary};">
-        <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">Feedback:</p>
+        <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">${t('Feedback:', 'Commentaires:', locale)}</p>
         <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">${safeFeedback}</p>
       </div>
     ` : ''}
@@ -2029,7 +2159,7 @@ Don't be discouraged - there are many opportunities on iRefair that may be a bet
     ${meetingWasCancelled ? `
       <div style="background: #fef3c7; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid #f59e0b;">
         <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
-          <strong>Note:</strong> Your previously scheduled meeting has been cancelled. Once you update your CV, the referrer will review it and schedule a new meeting with you.
+          <strong>${t('Note:', 'Note:', locale)}</strong> ${t('Your previously scheduled meeting has been cancelled. Once you update your CV, the referrer will review it and schedule a new meeting with you.', 'Votre réunion précédemment planifiée a été annulée. Une fois votre CV mis à jour, le parrain l\'examinera et planifiera une nouvelle réunion avec vous.', locale)}
         </p>
       </div>
     ` : ''}
@@ -2037,34 +2167,34 @@ Don't be discouraged - there are many opportunities on iRefair that may be a bet
     ${updateUrl ? `
       ${divider}
       <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-        If you'd like to update your CV and resubmit, click the button below:
+        ${t("If you'd like to update your CV and resubmit, click the button below:", "Si vous souhaitez mettre à jour votre CV et le soumettre à nouveau, cliquez sur le bouton ci-dessous:", locale)}
       </p>
       <p style="margin: 0 0 8px 0; text-align: center;">
-        ${button('Update your CV / details', updateUrl, 'primary')}
+        ${button(t('Update your CV / details', 'Mettre à jour votre CV / détails', locale), updateUrl, 'primary')}
       </p>
       <p style="margin: 8px 0 0 0; color: ${colors.muted}; font-size: 13px; text-align: center;">
-        This link expires in 7 days.
+        ${t('This link expires in 7 days.', 'Ce lien expire dans 7 jours.', locale)}
       </p>
     ` : ''}
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Don't be discouraged - there are many opportunities on iRefair that may be a better fit!
+      ${t("Don't be discouraged - there are many opportunities on iRefair that may be a better fit!", "Ne vous découragez pas - il existe de nombreuses opportunités sur iRefair qui pourraient mieux vous convenir!", locale)}
     </p>
 
     <p style="margin: 16px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Best regards,<br>
-      <strong>The iRefair Team</strong>
+      ${t('Best regards,', 'Cordialement,', locale)}<br>
+      <strong>${t('The iRefair Team', 'L\'équipe iRefair', locale)}</strong>
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">CV FEEDBACK</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('CV FEEDBACK', 'COMMENTAIRES SUR LE CV', locale)}</div>
     </div>
   `;
 
-  const html = emailWrapper(content, `Feedback on your CV`, customHeader);
+  const html = emailWrapper(content, t('Feedback on your CV', 'Commentaires sur votre CV', locale), customHeader);
 
   return { subject, text, html };
 }
@@ -2078,6 +2208,7 @@ type CvUpdateRequestParams = {
   updateToken: string;
   applicationId: string;
   meetingWasCancelled?: boolean;
+  locale?: 'en' | 'fr';
 };
 
 export function cvUpdateRequestToApplicant(params: CvUpdateRequestParams): TemplateResult {
@@ -2089,44 +2220,49 @@ export function cvUpdateRequestToApplicant(params: CvUpdateRequestParams): Templ
     updateToken,
     applicationId,
     meetingWasCancelled,
+    locale = 'en',
   } = params;
 
-  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
-  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
-  const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
-  const safePosition = position ? escapeHtml(position) : 'the position';
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', 'l\'entreprise', locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
   const safeFeedback = feedback ? escapeHtml(feedback) : '';
 
   const updateUrl = `${BASE_URL}/update-cv?token=${encodeURIComponent(updateToken)}&appId=${encodeURIComponent(applicationId)}`;
 
-  const subject = `Action needed: Update your CV`;
+  const subject = t('Please update your CV - iRefair', 'Veuillez mettre à jour votre CV - iRefair', locale);
 
   const meetingCancelledText = meetingWasCancelled
-    ? '\n\nNote: Your previously scheduled meeting has been cancelled. Once you update your CV, the referrer will review it and schedule a new meeting with you.'
+    ? t('\n\nNote: Your previously scheduled meeting has been cancelled. Once you update your CV, the referrer will review it and schedule a new meeting with you.', '\n\nNote: Votre réunion précédemment planifiée a été annulée. Une fois votre CV mis à jour, le parrain l\'examinera et planifiera une nouvelle réunion avec vous.', locale)
     : '';
 
   const text = `${greeting}
 
-The referrer reviewing your application for ${position || 'the position'} at ${companyName || 'the company'} has requested that you update your CV.${feedback ? `\n\nFeedback: ${feedback}` : ''}${meetingCancelledText}
+${t(`The referrer reviewing your application for ${position || 'the position'} at ${companyName || 'the company'} has requested that you update your CV.`, `Le parrain qui examine votre candidature pour ${position || 'le poste'} chez ${companyName || 'l\'entreprise'} a demandé que vous mettiez à jour votre CV.`, locale)}${feedback ? `\n\n${t('Feedback', 'Commentaires', locale)}: ${feedback}` : ''}${meetingCancelledText}
 
-Please update your CV here: ${updateUrl}
+${t('Please update your CV here:', 'Veuillez mettre à jour votre CV ici:', locale)} ${updateUrl}
 
-This link expires in 7 days.
+${t('This link expires in 7 days.', 'Ce lien expire dans 7 jours.', locale)}
 
-- The iRefair Team`;
+- ${t('The iRefair Team', 'L\'équipe iRefair', locale)}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">CV update requested</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Action needed for your application</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('CV update requested', 'Mise à jour du CV demandée', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Action needed for your application', 'Action requise pour votre candidature', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      The referrer reviewing your application for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong> has requested that you update your CV.
+      ${t(`The referrer reviewing your application for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong> has requested that you update your CV.`, `Le parrain qui examine votre candidature pour <strong>${safePosition}</strong> chez <strong>${safeCompanyName}</strong> a demandé que vous mettiez à jour votre CV.`, locale)}
     </p>
 
     ${safeFeedback ? `
       <div style="background: ${colors.background}; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid ${colors.primary};">
-        <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">Feedback:</p>
+        <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">${t('Feedback:', 'Commentaires:', locale)}</p>
         <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">${safeFeedback}</p>
       </div>
     ` : ''}
@@ -2134,35 +2270,35 @@ This link expires in 7 days.
     ${meetingWasCancelled ? `
       <div style="background: #fef3c7; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid #f59e0b;">
         <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
-          <strong>Note:</strong> Your previously scheduled meeting has been cancelled. Once you update your CV, the referrer will review it and schedule a new meeting with you.
+          <strong>${t('Note:', 'Note:', locale)}</strong> ${t('Your previously scheduled meeting has been cancelled. Once you update your CV, the referrer will review it and schedule a new meeting with you.', 'Votre réunion précédemment planifiée a été annulée. Une fois votre CV mis à jour, le parrain l\'examinera et planifiera une nouvelle réunion avec vous.', locale)}
         </p>
       </div>
     ` : ''}
 
     ${divider}
 
-    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; font-weight: 600;">Update your CV to continue:</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; font-weight: 600;">${t('Update your CV to continue:', 'Mettez à jour votre CV pour continuer:', locale)}</p>
     <p style="margin: 0 0 8px 0; text-align: center;">
-      ${button('Update your CV / details', updateUrl, 'primary')}
+      ${button(t('Update your CV / details', 'Mettre à jour votre CV / détails', locale), updateUrl, 'primary')}
     </p>
     <p style="margin: 8px 0 0 0; color: ${colors.muted}; font-size: 13px; text-align: center;">
-      This link expires in 7 days.
+      ${t('This link expires in 7 days.', 'Ce lien expire dans 7 jours.', locale)}
     </p>
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Thank you,<br>
-      <strong>The iRefair Team</strong>
+      ${t('Thank you,', 'Merci,', locale)}<br>
+      <strong>${t('The iRefair Team', 'L\'équipe iRefair', locale)}</strong>
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">ACTION NEEDED</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('ACTION NEEDED', 'ACTION REQUISE', locale)}</div>
     </div>
   `;
 
-  const html = emailWrapper(content, `Action needed: Update your CV`, customHeader);
+  const html = emailWrapper(content, t('Action needed: Update your CV', 'Action requise: Mettez à jour votre CV', locale), customHeader);
 
   return { subject, text, html };
 }
@@ -2176,6 +2312,7 @@ type InfoRequestParams = {
   updateToken: string;
   applicationId: string;
   meetingWasCancelled?: boolean;
+  locale?: 'en' | 'fr';
 };
 
 export function infoRequestToApplicant(params: InfoRequestParams): TemplateResult {
@@ -2187,44 +2324,49 @@ export function infoRequestToApplicant(params: InfoRequestParams): TemplateResul
     updateToken,
     applicationId,
     meetingWasCancelled,
+    locale = 'en',
   } = params;
 
-  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
-  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
-  const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
-  const safePosition = position ? escapeHtml(position) : 'the position';
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', 'l\'entreprise', locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
   const safeRequestedInfo = requestedInfo ? escapeHtml(requestedInfo) : '';
 
   const updateUrl = `${BASE_URL}/applicant?updateToken=${encodeURIComponent(updateToken)}&appId=${encodeURIComponent(applicationId)}`;
 
-  const subject = `Action needed: Additional information requested`;
+  const subject = t('Information needed - iRefair', 'Information requise - iRefair', locale);
 
   const meetingCancelledText = meetingWasCancelled
-    ? '\n\nNote: Your previously scheduled meeting has been cancelled. Once you provide the requested information, the referrer will review it and schedule a new meeting with you.'
+    ? t('\n\nNote: Your previously scheduled meeting has been cancelled. Once you provide the requested information, the referrer will review it and schedule a new meeting with you.', '\n\nNote: Votre réunion précédemment planifiée a été annulée. Une fois les informations demandées fournies, le parrain les examinera et planifiera une nouvelle réunion avec vous.', locale)
     : '';
 
   const text = `${greeting}
 
-The referrer reviewing your application for ${position || 'the position'} at ${companyName || 'the company'} has requested additional information.${requestedInfo ? `\n\nRequested: ${requestedInfo}` : ''}${meetingCancelledText}
+${t(`The referrer reviewing your application for ${position || 'the position'} at ${companyName || 'the company'} has requested additional information.`, `Le parrain qui examine votre candidature pour ${position || 'le poste'} chez ${companyName || 'l\'entreprise'} a demandé des informations supplémentaires.`, locale)}${requestedInfo ? `\n\n${t('Requested', 'Demandé', locale)}: ${requestedInfo}` : ''}${meetingCancelledText}
 
-Please provide the information here: ${updateUrl}
+${t('Please provide the information here:', 'Veuillez fournir les informations ici:', locale)} ${updateUrl}
 
-This link expires in 7 days.
+${t('This link expires in 7 days.', 'Ce lien expire dans 7 jours.', locale)}
 
-- The iRefair Team`;
+- ${t('The iRefair Team', 'L\'équipe iRefair', locale)}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Information requested</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Action needed for your application</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Information requested', 'Information demandée', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Action needed for your application', 'Action requise pour votre candidature', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      The referrer reviewing your application for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong> has requested additional information.
+      ${t(`The referrer reviewing your application for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong> has requested additional information.`, `Le parrain qui examine votre candidature pour <strong>${safePosition}</strong> chez <strong>${safeCompanyName}</strong> a demandé des informations supplémentaires.`, locale)}
     </p>
 
     ${safeRequestedInfo ? `
       <div style="background: ${colors.background}; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid ${colors.primary};">
-        <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">Requested information:</p>
+        <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">${t('Requested information:', 'Information demandée:', locale)}</p>
         <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">${safeRequestedInfo}</p>
       </div>
     ` : ''}
@@ -2232,35 +2374,35 @@ This link expires in 7 days.
     ${meetingWasCancelled ? `
       <div style="background: #fef3c7; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid #f59e0b;">
         <p style="margin: 0; color: #92400e; font-size: 14px; line-height: 1.6;">
-          <strong>Note:</strong> Your previously scheduled meeting has been cancelled. Once you provide the requested information, the referrer will review it and schedule a new meeting with you.
+          <strong>${t('Note:', 'Note:', locale)}</strong> ${t('Your previously scheduled meeting has been cancelled. Once you provide the requested information, the referrer will review it and schedule a new meeting with you.', 'Votre réunion précédemment planifiée a été annulée. Une fois les informations demandées fournies, le parrain les examinera et planifiera une nouvelle réunion avec vous.', locale)}
         </p>
       </div>
     ` : ''}
 
     ${divider}
 
-    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; font-weight: 600;">Provide the information to continue:</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; font-weight: 600;">${t('Provide the information to continue:', 'Fournissez les informations pour continuer:', locale)}</p>
     <p style="margin: 0 0 8px 0; text-align: center;">
-      ${button('Update your CV / details', updateUrl, 'primary')}
+      ${button(t('Update your CV / details', 'Mettre à jour votre CV / détails', locale), updateUrl, 'primary')}
     </p>
     <p style="margin: 8px 0 0 0; color: ${colors.muted}; font-size: 13px; text-align: center;">
-      This link expires in 7 days.
+      ${t('This link expires in 7 days.', 'Ce lien expire dans 7 jours.', locale)}
     </p>
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Thank you,<br>
-      <strong>The iRefair Team</strong>
+      ${t('Thank you,', 'Merci,', locale)}<br>
+      <strong>${t('The iRefair Team', 'L\'équipe iRefair', locale)}</strong>
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">INFORMATION REQUEST</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('INFORMATION REQUEST', 'DEMANDE D\'INFORMATION', locale)}</div>
     </div>
   `;
 
-  const html = emailWrapper(content, `Action needed: Additional information requested`, customHeader);
+  const html = emailWrapper(content, t('Action needed: Additional information requested', 'Action requise: Informations supplémentaires demandées', locale), customHeader);
 
   return { subject, text, html };
 }
@@ -2270,52 +2412,57 @@ type InterviewCompletedParams = {
   referrerName?: string;
   companyName?: string;
   position?: string;
+  locale?: 'en' | 'fr';
 };
 
 export function interviewCompletedToApplicant(params: InterviewCompletedParams): TemplateResult {
-  const { applicantName, companyName, position } = params;
+  const { applicantName, companyName, position, locale = 'en' } = params;
 
-  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
-  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
-  const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
-  const safePosition = position ? escapeHtml(position) : 'the position';
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', 'l\'entreprise', locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
 
-  const subject = `Interview completed: ${position || 'Your application'}`;
+  const subject = t(`Interview completed: ${position || 'Your application'}`, `Entrevue terminée: ${position || 'Votre candidature'}`, locale);
 
   const text = `${greeting}
 
-Thank you for completing your interview for ${position || 'the position'} at ${companyName || 'the company'}.
+${t(`Thank you for completing your interview for ${position || 'the position'} at ${companyName || 'the company'}.`, `Merci d'avoir complété votre entrevue pour ${position || 'le poste'} chez ${companyName || 'l\'entreprise'}.`, locale)}
 
-The referrer will be reviewing your interview and will follow up with next steps. We'll keep you posted on any updates.
+${t("The referrer will be reviewing your interview and will follow up with next steps. We'll keep you posted on any updates.", "Le parrain examinera votre entrevue et vous informera des prochaines étapes. Nous vous tiendrons informé de toute mise à jour.", locale)}
 
-- The iRefair Team`;
+- ${t('The iRefair Team', 'L\'équipe iRefair', locale)}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Interview completed</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Thank you for your time</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Interview completed', 'Entrevue terminée', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Thank you for your time', 'Merci pour votre temps', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      Thank you for completing your interview for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong>.
+      ${t(`Thank you for completing your interview for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong>.`, `Merci d'avoir complété votre entrevue pour <strong>${safePosition}</strong> chez <strong>${safeCompanyName}</strong>.`, locale)}
     </p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      The referrer will be reviewing your interview and will follow up with next steps. We'll keep you posted on any updates.
+      ${t("The referrer will be reviewing your interview and will follow up with next steps. We'll keep you posted on any updates.", "Le parrain examinera votre entrevue et vous informera des prochaines étapes. Nous vous tiendrons informé de toute mise à jour.", locale)}
     </p>
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Best regards,<br>
-      <strong>The iRefair Team</strong>
+      ${t('Best regards,', 'Cordialement,', locale)}<br>
+      <strong>${t('The iRefair Team', 'L\'équipe iRefair', locale)}</strong>
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">INTERVIEW COMPLETED</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('INTERVIEW COMPLETED', 'ENTREVUE TERMINÉE', locale)}</div>
     </div>
   `;
 
-  const html = emailWrapper(content, `Your interview has been completed`, customHeader);
+  const html = emailWrapper(content, t('Your interview has been completed', 'Votre entrevue est terminée', locale), customHeader);
 
   return { subject, text, html };
 }
@@ -2326,35 +2473,56 @@ type JobOfferParams = {
   companyName?: string;
   position?: string;
   message?: string;
+  locale?: 'en' | 'fr';
 };
 
 export function jobOfferToApplicant(params: JobOfferParams): TemplateResult {
-  const { applicantName, companyName, position, message } = params;
+  const { applicantName, companyName, position, message, locale = 'en' } = params;
 
-  const greeting = applicantName ? `Hi ${applicantName},` : 'Hi,';
-  const greetingHtml = applicantName ? `Hi ${escapeHtml(applicantName)},` : 'Hi,';
-  const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
-  const safePosition = position ? escapeHtml(position) : 'the position';
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', "l'entreprise", locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
   const safeMessage = message ? escapeHtml(message) : '';
 
-  const subject = `${companyName || 'Company'} - Job Offer for ${position || 'your application'}`;
+  const subject = t(
+    `${companyName || 'Company'} - Job Offer for ${position || 'your application'}`,
+    `${companyName || 'Entreprise'} - Offre d'emploi pour ${position || 'votre candidature'}`,
+    locale
+  );
 
   const text = `${greeting}
 
-We are pleased to inform you that ${companyName || 'the company'} would like to offer you the position of ${position || 'the role you applied for'}.${message ? `\n\n${message}` : ''}
+${t(
+  `We are pleased to inform you that ${companyName || 'the company'} would like to offer you the position of ${position || 'the role you applied for'}.`,
+  `Nous avons le plaisir de vous informer que ${companyName || "l'entreprise"} souhaite vous offrir le poste de ${position || 'le poste pour lequel vous avez postulé'}.`,
+  locale
+)}${message ? `\n\n${message}` : ''}
 
-The referrer or hiring team will be in touch with the formal offer details.
+${t(
+  'The referrer or hiring team will be in touch with the formal offer details.',
+  "Le référent ou l'équipe de recrutement vous contactera avec les détails de l'offre formelle.",
+  locale
+)}
 
-Best regards,
-The iRefair Team`;
+${t('Best regards,', 'Cordialement,', locale)}
+${t('The iRefair Team', "L'équipe iRefair", locale)}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Job Offer</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Great news about your application</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Job Offer', "Offre d'emploi", locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Great news about your application', 'Excellentes nouvelles concernant votre candidature', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      We are pleased to inform you that <strong>${safeCompanyName}</strong> would like to offer you the position of <strong>${safePosition}</strong>.
+      ${t(
+        `We are pleased to inform you that <strong>${safeCompanyName}</strong> would like to offer you the position of <strong>${safePosition}</strong>.`,
+        `Nous avons le plaisir de vous informer que <strong>${safeCompanyName}</strong> souhaite vous offrir le poste de <strong>${safePosition}</strong>.`,
+        locale
+      )}
     </p>
 
     ${safeMessage ? `
@@ -2364,23 +2532,27 @@ The iRefair Team`;
     ` : ''}
 
     <p style="margin: 16px 0 0 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      The referrer or hiring team will be in touch with the formal offer details.
+      ${t(
+        'The referrer or hiring team will be in touch with the formal offer details.',
+        "Le référent ou l'équipe de recrutement vous contactera avec les détails de l'offre formelle.",
+        locale
+      )}
     </p>
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Best regards,<br>
-      <strong>The iRefair Team</strong>
+      ${t('Best regards,', 'Cordialement,', locale)}<br>
+      <strong>${t('The iRefair Team', "L'équipe iRefair", locale)}</strong>
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">JOB OFFER</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('JOB OFFER', "OFFRE D'EMPLOI", locale)}</div>
     </div>
   `;
 
-  const html = emailWrapper(content, `Job Offer - ${safeCompanyName}`, customHeader);
+  const html = emailWrapper(content, `${t('Job Offer', "Offre d'emploi", locale)} - ${safeCompanyName}`, customHeader);
 
   return { subject, text, html };
 }
@@ -2401,6 +2573,7 @@ type RescheduleRequestParams = {
   proposedTimes?: ProposedTime[];
   applicationId: string;
   portalUrl?: string;
+  locale?: 'en' | 'fr';
 };
 
 export function rescheduleRequestToReferrer(params: RescheduleRequestParams): TemplateResult {
@@ -2415,13 +2588,18 @@ export function rescheduleRequestToReferrer(params: RescheduleRequestParams): Te
     proposedTimes,
     applicationId,
     portalUrl,
+    locale = 'en',
   } = params;
 
-  const greeting = referrerName ? `Hi ${referrerName},` : 'Hi,';
-  const greetingHtml = referrerName ? `Hi ${escapeHtml(referrerName)},` : 'Hi,';
-  const safeApplicantName = applicantName ? escapeHtml(applicantName) : 'The applicant';
+  const greeting = referrerName
+    ? t(`Hi ${referrerName},`, `Bonjour ${referrerName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = referrerName
+    ? t(`Hi ${escapeHtml(referrerName)},`, `Bonjour ${escapeHtml(referrerName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeApplicantName = applicantName ? escapeHtml(applicantName) : t('The applicant', 'Le candidat', locale);
   const safeApplicantEmail = applicantEmail ? escapeHtml(applicantEmail) : '';
-  const safePosition = position ? escapeHtml(position) : 'the position';
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
   const safeOriginalDateTime = originalDateTime ? escapeHtml(originalDateTime) : '';
   const safeReason = reason ? escapeHtml(reason) : '';
   const safeApplicationId = escapeHtml(applicationId);
@@ -2430,31 +2608,41 @@ export function rescheduleRequestToReferrer(params: RescheduleRequestParams): Te
   // Format proposed times for display
   const hasProposedTimes = proposedTimes && proposedTimes.length > 0;
   const proposedTimesText = hasProposedTimes
-    ? proposedTimes.map((t, i) => `Option ${i + 1}: ${t.date} at ${t.time}`).join('\n')
+    ? proposedTimes.map((pt, i) => `${t('Option', 'Option', locale)} ${i + 1}: ${pt.date} ${t('at', 'à', locale)} ${pt.time}`).join('\n')
     : '';
 
-  const subject = `Reschedule request: ${applicantName || 'Applicant'} for ${position || 'meeting'}`;
+  const subject = t(
+    `Reschedule request: ${applicantName || 'Applicant'} for ${position || 'meeting'}`,
+    `Demande de report: ${applicantName || 'Candidat'} pour ${position || 'réunion'}`,
+    locale
+  );
 
   const text = `${greeting}
 
-${applicantName || 'The applicant'} has requested to reschedule their meeting for ${position || 'the position'}.${originalDateTime ? `\n\nOriginal time: ${originalDateTime}` : ''}${reason ? `\nReason: ${reason}` : ''}${hasProposedTimes ? `\n\nProposed alternative times:\n${proposedTimesText}` : ''}
+${t(
+  `${applicantName || 'The applicant'} has requested to reschedule their meeting for ${position || 'the position'}.`,
+  `${applicantName || 'Le candidat'} a demandé de reporter sa réunion pour ${position || 'le poste'}.`,
+  locale
+)}${originalDateTime ? `\n\n${t('Original time', 'Heure originale', locale)}: ${originalDateTime}` : ''}${reason ? `\n${t('Reason', 'Raison', locale)}: ${reason}` : ''}${hasProposedTimes ? `\n\n${t('Proposed alternative times', 'Horaires alternatifs proposés', locale)}:\n${proposedTimesText}` : ''}
 
-Application ID: ${applicationId}${applicantEmail ? `\nApplicant email: ${applicantEmail}` : ''}
+${t('Application ID', 'ID de candidature', locale)}: ${applicationId}${applicantEmail ? `\n${t('Applicant email', 'Courriel du candidat', locale)}: ${applicantEmail}` : ''}
 
-${normalizedPortalUrl ? `Open your portal to reschedule the meeting: ${normalizedPortalUrl}` : 'Please log in to your portal to reschedule the meeting.'}
+${normalizedPortalUrl
+  ? t(`Open your portal to reschedule the meeting: ${normalizedPortalUrl}`, `Ouvrez votre portail pour reporter la réunion: ${normalizedPortalUrl}`, locale)
+  : t('Please log in to your portal to reschedule the meeting.', 'Veuillez vous connecter à votre portail pour reporter la réunion.', locale)}
 
-- The iRefair Team`;
+- ${t('The iRefair Team', 'L\'équipe iRefair', locale)}`;
 
   // Build proposed times HTML
   const proposedTimesHtml = hasProposedTimes
     ? `
       <div style="background: #e8f5e9; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid #4caf50;">
-        <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">Suggested alternative times:</p>
+        <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">${t('Suggested alternative times:', 'Horaires alternatifs suggérés:', locale)}</p>
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-          ${proposedTimes.map((t, i) => `
+          ${proposedTimes.map((pt, i) => `
             <tr>
-              <td style="padding: 6px 0; color: ${colors.muted}; font-size: 13px; width: 70px;">Option ${i + 1}</td>
-              <td style="padding: 6px 0; color: ${colors.ink}; font-size: 14px; font-weight: 500;">${escapeHtml(t.date)} at ${escapeHtml(t.time)}</td>
+              <td style="padding: 6px 0; color: ${colors.muted}; font-size: 13px; width: 70px;">${t('Option', 'Option', locale)} ${i + 1}</td>
+              <td style="padding: 6px 0; color: ${colors.ink}; font-size: 14px; font-weight: 500;">${escapeHtml(pt.date)} ${t('at', 'à', locale)} ${escapeHtml(pt.time)}</td>
             </tr>
           `).join('')}
         </table>
@@ -2463,25 +2651,29 @@ ${normalizedPortalUrl ? `Open your portal to reschedule the meeting: ${normalize
     : '';
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Reschedule request</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">An applicant needs to reschedule</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Reschedule request', 'Demande de report', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('An applicant needs to reschedule', 'Un candidat doit reporter', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      <strong>${safeApplicantName}</strong> has requested to reschedule their meeting for <strong>${safePosition}</strong>.
+      ${t(
+        `<strong>${safeApplicantName}</strong> has requested to reschedule their meeting for <strong>${safePosition}</strong>.`,
+        `<strong>${safeApplicantName}</strong> a demandé de reporter sa réunion pour <strong>${safePosition}</strong>.`,
+        locale
+      )}
     </p>
 
     <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        ${infoRow('Application ID', safeApplicationId)}
-        ${safeApplicantEmail ? infoRow('Applicant email', `<a href="mailto:${safeApplicantEmail}" style="color: ${colors.primary};">${safeApplicantEmail}</a>`) : ''}
-        ${safeOriginalDateTime ? infoRow('Original time', safeOriginalDateTime) : ''}
+        ${infoRow(t('Application ID', 'ID de candidature', locale), safeApplicationId)}
+        ${safeApplicantEmail ? infoRow(t('Applicant email', 'Courriel du candidat', locale), `<a href="mailto:${safeApplicantEmail}" style="color: ${colors.primary};">${safeApplicantEmail}</a>`) : ''}
+        ${safeOriginalDateTime ? infoRow(t('Original time', 'Heure originale', locale), safeOriginalDateTime) : ''}
       </table>
     </div>
 
     ${safeReason ? `
       <div style="background: ${colors.background}; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid ${colors.secondary};">
-        <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">Reason:</p>
+        <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">${t('Reason:', 'Raison:', locale)}</p>
         <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">${safeReason}</p>
       </div>
     ` : ''}
@@ -2490,31 +2682,31 @@ ${normalizedPortalUrl ? `Open your portal to reschedule the meeting: ${normalize
 
     ${normalizedPortalUrl ? `
       <p style="margin: 16px 0 12px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6; text-align: center;">
-        Open your portal to reschedule the meeting
+        ${t('Open your portal to reschedule the meeting', 'Ouvrez votre portail pour reporter la réunion', locale)}
       </p>
       <p style="margin: 0 0 16px 0; text-align: center;">
-        ${button('Open portal', normalizedPortalUrl, 'primary')}
+        ${button(t('Open portal', 'Ouvrir le portail', locale), normalizedPortalUrl, 'primary')}
       </p>
     ` : `
       <p style="margin: 16px 0 0 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-        Please log in to your portal to reschedule the meeting.
+        ${t('Please log in to your portal to reschedule the meeting.', 'Veuillez vous connecter à votre portail pour reporter la réunion.', locale)}
       </p>
     `}
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Thank you,<br>
-      <strong>The iRefair Team</strong>
+      ${t('Thank you,', 'Merci,', locale)}<br>
+      <strong>${t('The iRefair Team', 'L\'équipe iRefair', locale)}</strong>
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">RESCHEDULE REQUEST</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('RESCHEDULE REQUEST', 'DEMANDE DE REPORT', locale)}</div>
     </div>
   `;
 
-  const html = emailWrapper(content, `Reschedule request from ${applicantName || 'a applicant'}`, customHeader);
+  const html = emailWrapper(content, t(`Reschedule request from ${applicantName || 'an applicant'}`, `Demande de report de ${applicantName || 'un candidat'}`, locale), customHeader);
 
   return { subject, text, html };
 }
@@ -2529,6 +2721,7 @@ type ApplicantUpdatedParams = {
   updatedFields?: string[];
   resumeUrl?: string;
   portalUrl?: string;
+  locale?: 'en' | 'fr';
 };
 
 export function applicantUpdatedToReferrer(params: ApplicantUpdatedParams): TemplateResult {
@@ -2541,83 +2734,102 @@ export function applicantUpdatedToReferrer(params: ApplicantUpdatedParams): Temp
     updatedFields,
     resumeUrl,
     portalUrl,
+    locale = 'en',
   } = params;
 
-  const greeting = referrerName ? `Hi ${referrerName},` : 'Hi,';
-  const greetingHtml = referrerName ? `Hi ${escapeHtml(referrerName)},` : 'Hi,';
-  const safeApplicantName = applicantName ? escapeHtml(applicantName) : 'The applicant';
+  const greeting = referrerName
+    ? t(`Hi ${referrerName},`, `Bonjour ${referrerName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = referrerName
+    ? t(`Hi ${escapeHtml(referrerName)},`, `Bonjour ${escapeHtml(referrerName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeApplicantName = applicantName ? escapeHtml(applicantName) : t('The applicant', 'Le candidat', locale);
   const safeApplicantEmail = applicantEmail ? escapeHtml(applicantEmail) : '';
-  const safePosition = position ? escapeHtml(position) : 'the position';
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
   const safeApplicationId = escapeHtml(applicationId);
   const normalizedResumeUrl = resumeUrl ? normalizeHttpUrl(resumeUrl) : null;
   const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
 
   const updatedFieldsList = updatedFields && updatedFields.length > 0
     ? updatedFields.map((f) => escapeHtml(f)).join(', ')
-    : 'their profile';
+    : t('their profile', 'leur profil', locale);
 
-  const subject = `Applicant updated: ${applicantName || 'Application'} for ${position || 'your review'}`;
+  const subject = t(
+    `Applicant updated: ${applicantName || 'Application'} for ${position || 'your review'}`,
+    `Candidat mis à jour: ${applicantName || 'Candidature'} pour ${position || 'votre examen'}`,
+    locale
+  );
 
   const text = `${greeting}
 
-${applicantName || 'The applicant'} has updated ${updatedFields && updatedFields.length > 0 ? updatedFields.join(', ') : 'their profile'} for their application to ${position || 'the position'}.
+${t(
+  `${applicantName || 'The applicant'} has updated ${updatedFields && updatedFields.length > 0 ? updatedFields.join(', ') : 'their profile'} for their application to ${position || 'the position'}.`,
+  `${applicantName || 'Le candidat'} a mis à jour ${updatedFields && updatedFields.length > 0 ? updatedFields.join(', ') : 'son profil'} pour sa candidature à ${position || 'le poste'}.`,
+  locale
+)}
 
-Application ID: ${applicationId}${applicantEmail ? `\nApplicant email: ${applicantEmail}` : ''}${resumeUrl ? `\nUpdated resume: ${resumeUrl}` : ''}
+${t('Application ID', 'ID de candidature', locale)}: ${applicationId}${applicantEmail ? `\n${t('Applicant email', 'Courriel du candidat', locale)}: ${applicantEmail}` : ''}${resumeUrl ? `\n${t('Updated resume', 'CV mis à jour', locale)}: ${resumeUrl}` : ''}
 
-${normalizedPortalUrl ? `Open your portal to review the updates: ${normalizedPortalUrl}` : 'Please log in to your portal to review the updates.'}
+${normalizedPortalUrl
+  ? t(`Open your portal to review the updates: ${normalizedPortalUrl}`, `Ouvrez votre portail pour examiner les mises à jour: ${normalizedPortalUrl}`, locale)
+  : t('Please log in to your portal to review the updates.', 'Veuillez vous connecter à votre portail pour examiner les mises à jour.', locale)}
 
-- The iRefair Team`;
+- ${t('The iRefair Team', 'L\'équipe iRefair', locale)}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Applicant updated</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">New information available for review</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Applicant updated', 'Candidat mis à jour', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('New information available for review', 'Nouvelles informations disponibles pour examen', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      <strong>${safeApplicantName}</strong> has updated <strong>${updatedFieldsList}</strong> for their application to <strong>${safePosition}</strong>.
+      ${t(
+        `<strong>${safeApplicantName}</strong> has updated <strong>${updatedFieldsList}</strong> for their application to <strong>${safePosition}</strong>.`,
+        `<strong>${safeApplicantName}</strong> a mis à jour <strong>${updatedFieldsList}</strong> pour sa candidature à <strong>${safePosition}</strong>.`,
+        locale
+      )}
     </p>
 
     <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        ${infoRow('Application ID', safeApplicationId)}
-        ${safeApplicantEmail ? infoRow('Applicant email', `<a href="mailto:${safeApplicantEmail}" style="color: ${colors.primary};">${safeApplicantEmail}</a>`) : ''}
-        ${updatedFields && updatedFields.length > 0 ? infoRow('Updated fields', updatedFieldsList) : ''}
+        ${infoRow(t('Application ID', 'ID de candidature', locale), safeApplicationId)}
+        ${safeApplicantEmail ? infoRow(t('Applicant email', 'Courriel du candidat', locale), `<a href="mailto:${safeApplicantEmail}" style="color: ${colors.primary};">${safeApplicantEmail}</a>`) : ''}
+        ${updatedFields && updatedFields.length > 0 ? infoRow(t('Updated fields', 'Champs mis à jour', locale), updatedFieldsList) : ''}
       </table>
     </div>
 
     ${normalizedResumeUrl ? `
       <p style="margin: 16px 0; text-align: center;">
-        ${button('View Updated Resume', normalizedResumeUrl, 'outline')}
+        ${button(t('View Updated Resume', 'Voir le CV mis à jour', locale), normalizedResumeUrl, 'outline')}
       </p>
     ` : ''}
 
     ${normalizedPortalUrl ? `
       <p style="margin: 16px 0 12px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6; text-align: center;">
-        Open your portal to review the updates
+        ${t('Open your portal to review the updates', 'Ouvrez votre portail pour examiner les mises à jour', locale)}
       </p>
       <p style="margin: 0 0 16px 0; text-align: center;">
-        ${button('Open portal', normalizedPortalUrl, 'primary')}
+        ${button(t('Open portal', 'Ouvrir le portail', locale), normalizedPortalUrl, 'primary')}
       </p>
     ` : `
       <p style="margin: 16px 0 0 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-        Please log in to your portal to review the updates.
+        ${t('Please log in to your portal to review the updates.', 'Veuillez vous connecter à votre portail pour examiner les mises à jour.', locale)}
       </p>
     `}
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Thank you,<br>
-      <strong>The iRefair Team</strong>
+      ${t('Thank you,', 'Merci,', locale)}<br>
+      <strong>${t('The iRefair Team', 'L\'équipe iRefair', locale)}</strong>
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">APPLICATION UPDATED</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('APPLICATION UPDATED', 'CANDIDATURE MISE À JOUR', locale)}</div>
     </div>
   `;
 
-  const html = emailWrapper(content, `${applicantName || 'A applicant'} has updated their application`, customHeader);
+  const html = emailWrapper(content, t(`${applicantName || 'An applicant'} has updated their application`, `${applicantName || 'Un candidat'} a mis à jour sa candidature`, locale), customHeader);
 
   return { subject, text, html };
 }
@@ -2632,6 +2844,7 @@ type MeetingScheduledToReferrerParams = {
   meetingTimezone: string;
   meetingUrl?: string;
   portalUrl?: string;
+  locale?: 'en' | 'fr';
 };
 
 export function meetingScheduledToReferrer(params: MeetingScheduledToReferrerParams): TemplateResult {
@@ -2645,79 +2858,96 @@ export function meetingScheduledToReferrer(params: MeetingScheduledToReferrerPar
     meetingTimezone,
     meetingUrl,
     portalUrl,
+    locale = 'en',
   } = params;
 
   const formattedDateTime = formatMeetingDateTime(meetingDate, meetingTime, meetingTimezone);
-  const greeting = referrerName ? `Hi ${referrerName},` : 'Hi,';
-  const greetingHtml = referrerName ? `Hi ${escapeHtml(referrerName)},` : 'Hi,';
-  const safeApplicantName = applicantName ? escapeHtml(applicantName) : 'The applicant';
-  const safeCompanyName = companyName ? escapeHtml(companyName) : 'the company';
-  const safePosition = position ? escapeHtml(position) : 'the position';
+  const greeting = referrerName
+    ? t(`Hi ${referrerName},`, `Bonjour ${referrerName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = referrerName
+    ? t(`Hi ${escapeHtml(referrerName)},`, `Bonjour ${escapeHtml(referrerName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeApplicantName = applicantName ? escapeHtml(applicantName) : t('The applicant', 'Le candidat', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', 'l\'entreprise', locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
   const normalizedMeetingUrl = meetingUrl ? normalizeHttpUrl(meetingUrl) : null;
   const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
 
-  const subject = `Meeting confirmed: ${applicantName || 'Applicant'} for ${position || 'Interview'}`;
+  const subject = t(
+    `Meeting confirmed: ${applicantName || 'Applicant'} for ${position || 'Interview'}`,
+    `Réunion confirmée: ${applicantName || 'Candidat'} pour ${position || 'Entrevue'}`,
+    locale
+  );
 
   const text = `${greeting}
 
-You have scheduled a meeting with ${applicantName || 'an applicant'} for ${position || 'the position'} at ${companyName || 'the company'}.
+${t(
+  `You have scheduled a meeting with ${applicantName || 'an applicant'} for ${position || 'the position'} at ${companyName || 'the company'}.`,
+  `Vous avez planifié une réunion avec ${applicantName || 'un candidat'} pour ${position || 'le poste'} chez ${companyName || 'l\'entreprise'}.`,
+  locale
+)}
 
-Meeting Details:
-- When: ${formattedDateTime}
-- Join link: ${normalizedMeetingUrl || 'Not provided'}
+${t('Meeting Details:', 'Détails de la réunion:', locale)}
+- ${t('When', 'Quand', locale)}: ${formattedDateTime}
+- ${t('Join link', 'Lien de connexion', locale)}: ${normalizedMeetingUrl || t('Not provided', 'Non fourni', locale)}
 
-${normalizedPortalUrl ? `Manage this application in your portal: ${normalizedPortalUrl}` : ''}
+${normalizedPortalUrl ? `${t('Manage this application in your portal', 'Gérez cette candidature dans votre portail', locale)}: ${normalizedPortalUrl}` : ''}
 
-The applicant has been notified and will receive the meeting details.
+${t('The applicant has been notified and will receive the meeting details.', 'Le candidat a été notifié et recevra les détails de la réunion.', locale)}
 
-- The iRefair Team`;
+- ${t('The iRefair Team', 'L\'équipe iRefair', locale)}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Meeting confirmed</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Your meeting has been scheduled</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Meeting confirmed', 'Réunion confirmée', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Your meeting has been scheduled', 'Votre réunion a été planifiée', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      You have scheduled a meeting with <strong>${safeApplicantName}</strong> for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong>.
+      ${t(
+        `You have scheduled a meeting with <strong>${safeApplicantName}</strong> for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong>.`,
+        `Vous avez planifié une réunion avec <strong>${safeApplicantName}</strong> pour <strong>${safePosition}</strong> chez <strong>${safeCompanyName}</strong>.`,
+        locale
+      )}
     </p>
 
     ${divider}
 
     <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
-      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Meeting Details</p>
+      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${t('Meeting Details', 'Détails de la réunion', locale)}</p>
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
-        ${infoRow('When', `<strong>${escapeHtml(formattedDateTime)}</strong>`)}
-        ${normalizedMeetingUrl ? infoRow('Join link', `<a href="${escapeHtml(normalizedMeetingUrl)}" style="color: ${colors.primary};">${escapeHtml(normalizedMeetingUrl)}</a>`, false) : ''}
+        ${infoRow(t('When', 'Quand', locale), `<strong>${escapeHtml(formattedDateTime)}</strong>`)}
+        ${normalizedMeetingUrl ? infoRow(t('Join link', 'Lien de connexion', locale), `<a href="${escapeHtml(normalizedMeetingUrl)}" style="color: ${colors.primary};">${escapeHtml(normalizedMeetingUrl)}</a>`, false) : ''}
       </table>
     </div>
 
     <p style="margin: 16px 0; color: ${colors.success}; font-size: 14px; background: #ecfdf5; padding: 12px 16px; border-radius: 10px; text-align: center;">
-      ✓ The applicant has been notified and will receive the meeting details.
+      ✓ ${t('The applicant has been notified and will receive the meeting details.', 'Le candidat a été notifié et recevra les détails de la réunion.', locale)}
     </p>
 
     ${normalizedPortalUrl ? `
       <p style="margin: 16px 0 12px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6; text-align: center;">
-        Manage this application in your portal
+        ${t('Manage this application in your portal', 'Gérez cette candidature dans votre portail', locale)}
       </p>
       <p style="margin: 0 0 16px 0; text-align: center;">
-        ${button('Open portal', normalizedPortalUrl, 'primary')}
+        ${button(t('Open portal', 'Ouvrir le portail', locale), normalizedPortalUrl, 'primary')}
       </p>
     ` : ''}
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Thank you,<br>
-      <strong>The iRefair Team</strong>
+      ${t('Thank you,', 'Merci,', locale)}<br>
+      <strong>${t('The iRefair Team', 'L\'équipe iRefair', locale)}</strong>
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">MEETING CONFIRMED</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('MEETING CONFIRMED', 'RÉUNION CONFIRMÉE', locale)}</div>
     </div>
   `;
 
-  const html = emailWrapper(content, `Meeting scheduled for ${formattedDateTime}`, customHeader);
+  const html = emailWrapper(content, t(`Meeting scheduled for ${formattedDateTime}`, `Réunion planifiée pour ${formattedDateTime}`, locale), customHeader);
 
   return { subject, text, html };
 }
@@ -2730,6 +2960,7 @@ type MeetingCancelledToReferrerParams = {
   reason?: string;
   cancelledDueToAction?: string;
   portalUrl?: string;
+  locale?: 'en' | 'fr';
 };
 
 export function meetingCancelledToReferrer(params: MeetingCancelledToReferrerParams): TemplateResult {
@@ -2741,83 +2972,104 @@ export function meetingCancelledToReferrer(params: MeetingCancelledToReferrerPar
     reason,
     cancelledDueToAction,
     portalUrl,
+    locale = 'en',
   } = params;
 
-  const greeting = referrerName ? `Hi ${referrerName},` : 'Hi,';
-  const greetingHtml = referrerName ? `Hi ${escapeHtml(referrerName)},` : 'Hi,';
-  const safeApplicantName = applicantName ? escapeHtml(applicantName) : 'The applicant';
-  const safePosition = position ? escapeHtml(position) : 'the position';
+  const greeting = referrerName
+    ? t(`Hi ${referrerName},`, `Bonjour ${referrerName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = referrerName
+    ? t(`Hi ${escapeHtml(referrerName)},`, `Bonjour ${escapeHtml(referrerName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeApplicantName = applicantName ? escapeHtml(applicantName) : t('The applicant', 'Le candidat', locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
   const safeReason = reason ? escapeHtml(reason) : '';
   const safeCancelledDueToAction = cancelledDueToAction ? escapeHtml(cancelledDueToAction) : '';
   const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
 
-  const subject = `Meeting cancelled: ${applicantName || 'Applicant'} for ${position || 'Interview'}`;
+  const subject = t(
+    `Meeting cancelled: ${applicantName || 'Applicant'} for ${position || 'Interview'}`,
+    `Réunion annulée: ${applicantName || 'Candidat'} pour ${position || 'Entrevue'}`,
+    locale
+  );
 
   const reasonText = reason
-    ? `\n\nReason: ${reason}`
+    ? `\n\n${t('Reason', 'Raison', locale)}: ${reason}`
     : cancelledDueToAction
-      ? `\n\nThis meeting was cancelled because you ${cancelledDueToAction}.`
+      ? `\n\n${t(`This meeting was cancelled because you ${cancelledDueToAction}.`, `Cette réunion a été annulée parce que vous avez ${cancelledDueToAction}.`, locale)}`
       : '';
 
   const text = `${greeting}
 
-The meeting with ${applicantName || 'the applicant'} for ${position || 'the position'} has been cancelled.${reasonText}
+${t(
+  `The meeting with ${applicantName || 'the applicant'} for ${position || 'the position'} has been cancelled.`,
+  `La réunion avec ${applicantName || 'le candidat'} pour ${position || 'le poste'} a été annulée.`,
+  locale
+)}${reasonText}
 
-${normalizedPortalUrl ? `Manage this application in your portal: ${normalizedPortalUrl}` : ''}
+${normalizedPortalUrl ? `${t('Manage this application in your portal', 'Gérez cette candidature dans votre portail', locale)}: ${normalizedPortalUrl}` : ''}
 
-The applicant has been notified.
+${t('The applicant has been notified.', 'Le candidat a été notifié.', locale)}
 
-- The iRefair Team`;
+- ${t('The iRefair Team', 'L\'équipe iRefair', locale)}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Meeting cancelled</h1>
-    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Confirmation of cancellation</p>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Meeting cancelled', 'Réunion annulée', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Confirmation of cancellation', 'Confirmation d\'annulation', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      The meeting with <strong>${safeApplicantName}</strong> for <strong>${safePosition}</strong> has been cancelled.
+      ${t(
+        `The meeting with <strong>${safeApplicantName}</strong> for <strong>${safePosition}</strong> has been cancelled.`,
+        `La réunion avec <strong>${safeApplicantName}</strong> pour <strong>${safePosition}</strong> a été annulée.`,
+        locale
+      )}
     </p>
 
     ${safeReason ? `
       <div style="background: ${colors.background}; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid ${colors.secondary};">
-        <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">Reason:</p>
+        <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">${t('Reason:', 'Raison:', locale)}</p>
         <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">${safeReason}</p>
       </div>
     ` : safeCancelledDueToAction ? `
       <div style="background: ${colors.background}; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid ${colors.primary};">
         <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">
-          This meeting was cancelled because you <strong>${safeCancelledDueToAction}</strong>.
+          ${t(
+            `This meeting was cancelled because you <strong>${safeCancelledDueToAction}</strong>.`,
+            `Cette réunion a été annulée parce que vous avez <strong>${safeCancelledDueToAction}</strong>.`,
+            locale
+          )}
         </p>
       </div>
     ` : ''}
 
     <p style="margin: 16px 0; color: ${colors.muted}; font-size: 14px; background: ${colors.background}; padding: 12px 16px; border-radius: 10px; text-align: center;">
-      The applicant has been notified of this cancellation.
+      ${t('The applicant has been notified of this cancellation.', 'Le candidat a été notifié de cette annulation.', locale)}
     </p>
 
     ${normalizedPortalUrl ? `
       <p style="margin: 16px 0 12px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6; text-align: center;">
-        Manage this application in your portal
+        ${t('Manage this application in your portal', 'Gérez cette candidature dans votre portail', locale)}
       </p>
       <p style="margin: 0 0 16px 0; text-align: center;">
-        ${button('Open portal', normalizedPortalUrl, 'primary')}
+        ${button(t('Open portal', 'Ouvrir le portail', locale), normalizedPortalUrl, 'primary')}
       </p>
     ` : ''}
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      Thank you,<br>
-      <strong>The iRefair Team</strong>
+      ${t('Thank you,', 'Merci,', locale)}<br>
+      <strong>${t('The iRefair Team', 'L\'équipe iRefair', locale)}</strong>
     </p>
   `;
 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">MEETING CANCELLED</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('MEETING CANCELLED', 'RÉUNION ANNULÉE', locale)}</div>
     </div>
   `;
 
-  const html = emailWrapper(content, `Meeting cancelled: ${applicantName || 'Applicant'}`, customHeader);
+  const html = emailWrapper(content, t(`Meeting cancelled: ${applicantName || 'Applicant'}`, `Réunion annulée: ${applicantName || 'Candidat'}`, locale), customHeader);
 
   return { subject, text, html };
 }

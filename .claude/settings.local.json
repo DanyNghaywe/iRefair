@@ -64,7 +64,9 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nRequire email confirmation for existing applicant profile updates\n\nPreviously, existing applicants with matching email could update their\nprofile directly without confirmation. Now all updates require email\nconfirmation before changes are saved, matching the flow for new applicants.\n\n- Store pending update payload and send confirmation email for all existing applicants\n- Add cleanupExpiredPendingUpdates\\(\\) to clear stale pending data after 24 hours\n- Remove unused imports from applicant route\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(npm install:*)",
       "Bash(npm ls:*)",
-      "Bash(git fetch:*)"
+      "Bash(git fetch:*)",
+      "Bash(git rm:*)",
+      "Bash(git reset:*)"
     ]
   }
 }

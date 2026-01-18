@@ -244,3 +244,31 @@
     font-size: 13px;
   }
 }
+
+@media (max-height: 540px) and (orientation: landscape) {
+  .role-selector__list {
+    position: static;
+    transform: none;
+    margin-top: 12px;
+    max-height: 60vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+  }
+
+  .role-selector:not(.is-open) .role-selector__list {
+    display: none;
+  }
+
+  .role-selector.is-open .role-selector__button {
+    background: var(--background);
+    border-color: var(--border);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    pointer-events: auto;
+  }
+
+  .role-selector.is-open .role-selector__content,
+  .role-selector.is-open .role-selector__arrow {
+    opacity: 1;
+  }
+}

@@ -25,11 +25,11 @@ import { applicantRegistrationConfirmation, applicantIneligibleNotification } fr
 type EmailLanguage = "en" | "fr";
 
 const successPageHtml = `<!DOCTYPE html>
-<html lang="en">
+<html lang="{{lang}}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registration Confirmed - iRefair</title>
+  <title>{{pageTitle}} - iRefair</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -175,21 +175,21 @@ const successPageHtml = `<!DOCTYPE html>
           <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
         </svg>
       </div>
-      <h1>Registration Confirmed!</h1>
-      <p>Your iRefair profile has been successfully activated. You can now apply for referral opportunities.</p>
+      <h1>{{heading}}</h1>
+      <p>{{description}}</p>
       <div class="irain">iRAIN: {{iRain}}</div>
     </div>
-    <p class="footer">You'll receive a confirmation email shortly with your credentials.</p>
+    <p class="footer">{{footer}}</p>
   </div>
 </body>
 </html>`;
 
 const ineligiblePageHtml = `<!DOCTYPE html>
-<html lang="en">
+<html lang="{{lang}}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Profile Created - iRefair</title>
+  <title>{{pageTitle}} - iRefair</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -335,21 +335,21 @@ const ineligiblePageHtml = `<!DOCTYPE html>
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
         </svg>
       </div>
-      <h1>Profile Created</h1>
-      <p>Your iRefair profile has been created. However, based on the information you provided, we're unable to match you with referrers at this time.</p>
+      <h1>{{heading}}</h1>
+      <p>{{description}}</p>
       <div class="irain">iRAIN: {{iRain}}</div>
     </div>
-    <p class="footer">Check your email for more details about your eligibility status.</p>
+    <p class="footer">{{footer}}</p>
   </div>
 </body>
 </html>`;
 
 const errorPageHtml = `<!DOCTYPE html>
-<html lang="en">
+<html lang="{{lang}}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Registration Failed - iRefair</title>
+  <title>{{pageTitle}} - iRefair</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -496,24 +496,56 @@ const errorPageHtml = `<!DOCTYPE html>
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
       </div>
-      <h1>Registration Failed</h1>
-      <p>We couldn't complete your registration.</p>
+      <h1>{{heading}}</h1>
+      <p>{{description}}</p>
       <div class="error-msg">{{errorMessage}}</div>
     </div>
-    <p class="footer">Need help? <a href="mailto:irefair.andbeyondconsulting@gmail.com">Contact support</a></p>
+    <p class="footer">{{needHelp}} <a href="mailto:irefair.andbeyondconsulting@gmail.com">{{contactSupport}}</a></p>
   </div>
 </body>
 </html>`;
 
 export const runtime = "nodejs";
 
-function errorResponse(message: string, status: number, isGetRequest: boolean) {
+function getLocaleFromToken(token: string): 'en' | 'fr' {
+  try {
+    const parts = token.split('.');
+    if (parts.length >= 2) {
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+      return payload.locale === 'fr' ? 'fr' : 'en';
+    }
+  } catch {}
+  return 'en';
+}
+
+function errorResponse(message: string, status: number, isGetRequest: boolean, locale: 'en' | 'fr' = 'en') {
   if (isGetRequest) {
-    const html = errorPageHtml.replace("{{errorMessage}}", escapeHtml(message));
-    return new NextResponse(html, {
-      status,
-      headers: { "Content-Type": "text/html; charset=utf-8" },
-    });
+    const translations = {
+      en: {
+        pageTitle: 'Registration Failed',
+        heading: 'Registration Failed',
+        description: "We couldn't complete your registration.",
+        needHelp: 'Need help?',
+        contactSupport: 'Contact support',
+      },
+      fr: {
+        pageTitle: "Échec de l'inscription",
+        heading: "Échec de l'inscription",
+        description: "Nous n'avons pas pu compléter votre inscription.",
+        needHelp: "Besoin d'aide?",
+        contactSupport: 'Contacter le support',
+      },
+    };
+    const t = translations[locale];
+    const html = errorPageHtml
+      .replace('{{lang}}', locale)
+      .replace('{{pageTitle}}', t.pageTitle)
+      .replace('{{heading}}', t.heading)
+      .replace('{{description}}', t.description)
+      .replace('{{needHelp}}', t.needHelp)
+      .replace('{{contactSupport}}', t.contactSupport)
+      .replace('{{errorMessage}}', message);
+    return new NextResponse(html, { status, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   return NextResponse.json({ ok: false, error: message }, { status });
 }
@@ -565,14 +597,21 @@ async function readToken(request: NextRequest) {
 async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
   const token = await readToken(request);
   if (!token) {
-    return errorResponse("Missing confirmation token. Please use the link from your email.", 400, isGetRequest);
+    // No token means we can't determine locale, default to English
+    const msg = "Missing confirmation token. Please use the link from your email.";
+    return errorResponse(msg, 400, isGetRequest, 'en');
   }
+
+  const locale = getLocaleFromToken(token);
 
   let payload;
   try {
     payload = verifyApplicantUpdateToken(token);
   } catch {
-    return errorResponse("This confirmation link is invalid or has expired. Please register again.", 401, isGetRequest);
+    const msg = locale === 'fr'
+      ? 'Ce lien de confirmation est invalide ou a expiré. Veuillez vous inscrire à nouveau <a href="/applicant" style="text-decoration:underline;">ici</a>.'
+      : 'This confirmation link is invalid or has expired. Please register again <a href="/applicant" style="text-decoration:underline;">here</a>.';
+    return errorResponse(msg, 401, isGetRequest, locale);
   }
 
   const tokenHash = hashToken(token);
@@ -580,14 +619,20 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
   // Look up applicant by email
   const applicant = await getApplicantByEmail(payload.email);
   if (!applicant) {
-    return errorResponse("We couldn't find your registration. Please register again.", 404, isGetRequest);
+    const msg = locale === 'fr'
+      ? 'Nous n\'avons pas trouvé votre inscription. Veuillez vous inscrire à nouveau <a href="/applicant" style="text-decoration:underline;">ici</a>.'
+      : 'We couldn\'t find your registration. Please register again <a href="/applicant" style="text-decoration:underline;">here</a>.';
+    return errorResponse(msg, 404, isGetRequest, locale);
   }
 
   const storedTokenHash = applicant.record.updateTokenHash?.trim() || "";
 
   // Verify token hash matches
   if (!safeCompareHash(storedTokenHash, tokenHash)) {
-    return errorResponse("This confirmation link is no longer valid. Please register again.", 403, isGetRequest);
+    const msg = locale === 'fr'
+      ? 'Ce lien de confirmation n\'est plus valide. Veuillez vous inscrire à nouveau <a href="/applicant" style="text-decoration:underline;">ici</a>.'
+      : 'This confirmation link is no longer valid. Please register again <a href="/applicant" style="text-decoration:underline;">here</a>.';
+    return errorResponse(msg, 403, isGetRequest, locale);
   }
 
   // Check if already confirmed
@@ -604,7 +649,43 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
         (locatedCanada.toLowerCase() === "no" && eligibleMoveCanada.toLowerCase() === "no") ||
         (locatedCanada.toLowerCase() === "yes" && authorizedCanada.toLowerCase() === "no");
       const pageHtml = wasIneligible ? ineligiblePageHtml : successPageHtml;
-      const resultHtml = pageHtml.replace("{{iRain}}", escapeHtml(iRainValue));
+      const translations = wasIneligible
+        ? {
+            en: {
+              pageTitle: 'Profile Created',
+              heading: 'Profile Created',
+              description: "Your iRefair profile has been created. However, based on the information you provided, we're unable to match you with referrers at this time.",
+              footer: 'Check your email for more details about your eligibility status.',
+            },
+            fr: {
+              pageTitle: 'Profil créé',
+              heading: 'Profil créé',
+              description: "Votre profil iRefair a été créé. Cependant, en fonction des informations que vous avez fournies, nous ne sommes pas en mesure de vous jumeler avec des recommandateurs pour le moment.",
+              footer: 'Consultez votre courriel pour plus de détails sur votre statut d\'éligibilité.',
+            },
+          }
+        : {
+            en: {
+              pageTitle: 'Registration Confirmed',
+              heading: 'Registration Confirmed!',
+              description: 'Your iRefair profile has been successfully activated. You can now apply for referral opportunities.',
+              footer: "You'll receive a confirmation email shortly with your credentials.",
+            },
+            fr: {
+              pageTitle: 'Inscription confirmée',
+              heading: 'Inscription confirmée!',
+              description: 'Votre profil iRefair a été activé avec succès. Vous pouvez maintenant postuler pour des opportunités de recommandation.',
+              footer: 'Vous recevrez bientôt un courriel de confirmation avec vos identifiants.',
+            },
+          };
+      const t = translations[locale];
+      const resultHtml = pageHtml
+        .replace('{{lang}}', locale)
+        .replace('{{pageTitle}}', t.pageTitle)
+        .replace('{{heading}}', t.heading)
+        .replace('{{description}}', t.description)
+        .replace('{{footer}}', t.footer)
+        .replace('{{iRain}}', escapeHtml(iRainValue));
       return new NextResponse(resultHtml, {
         status: 200,
         headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -620,7 +701,10 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     if (applicant.record.id) {
       await deleteApplicantByIrain(applicant.record.id);
     }
-    return errorResponse("This confirmation link has expired. Please register again.", 403, isGetRequest);
+    const msg = locale === 'fr'
+      ? 'Ce lien de confirmation a expiré. Veuillez vous inscrire à nouveau <a href="/applicant" style="text-decoration:underline;">ici</a>.'
+      : 'This confirmation link has expired. Please register again <a href="/applicant" style="text-decoration:underline;">here</a>.';
+    return errorResponse(msg, 403, isGetRequest, locale);
   }
 
   // Generate applicant secret
@@ -646,17 +730,17 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
 
   const updateResult = await updateRowById(APPLICANT_SHEET_NAME, "Email", payload.email, updates);
   if (!updateResult.updated) {
-    return errorResponse("We couldn't complete your registration. Please try again or contact support.", 500, isGetRequest);
+    const msg = locale === 'fr'
+      ? "Nous n'avons pas pu compléter votre inscription. Veuillez réessayer ou contacter le support."
+      : "We couldn't complete your registration. Please try again or contact support.";
+    return errorResponse(msg, 500, isGetRequest, locale);
   }
 
   const iRainValue = applicant.record.id || "";
   const firstName = applicant.record.firstName || "there";
 
-  // Determine locale from stored data or default to 'en'
-  const locale: EmailLanguage = "en";
-
   // Build profile snapshot for confirmation email
-  const notProvided = "Not provided";
+  const notProvided = locale === 'fr' ? "Non fourni" : "Not provided";
   const locationSnapshot = (() => {
     const locatedCanada = applicant.record.locatedCanada || "";
     const province = applicant.record.province || "";
@@ -673,7 +757,8 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     if (locatedCanada.toLowerCase() === "yes") return authorizedCanada || notProvided;
     if (locatedCanada.toLowerCase() === "no") {
       if (eligibleMoveCanada) {
-        return `Eligible to move/work in 6 months: ${eligibleMoveCanada}`;
+        const label = locale === 'fr' ? "Admissible à déménager/travailler dans 6 mois" : "Eligible to move/work in 6 months";
+        return `${label}: ${eligibleMoveCanada}`;
       }
       return notProvided;
     }
@@ -726,7 +811,43 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
 
   if (isGetRequest) {
     const pageHtml = isIneligible ? ineligiblePageHtml : successPageHtml;
-    const resultHtml = pageHtml.replace("{{iRain}}", escapeHtml(iRainValue));
+    const translations = isIneligible
+      ? {
+          en: {
+            pageTitle: 'Profile Created',
+            heading: 'Profile Created',
+            description: "Your iRefair profile has been created. However, based on the information you provided, we're unable to match you with referrers at this time.",
+            footer: 'Check your email for more details about your eligibility status.',
+          },
+          fr: {
+            pageTitle: 'Profil créé',
+            heading: 'Profil créé',
+            description: "Votre profil iRefair a été créé. Cependant, en fonction des informations que vous avez fournies, nous ne sommes pas en mesure de vous jumeler avec des recommandateurs pour le moment.",
+            footer: 'Consultez votre courriel pour plus de détails sur votre statut d\'éligibilité.',
+          },
+        }
+      : {
+          en: {
+            pageTitle: 'Registration Confirmed',
+            heading: 'Registration Confirmed!',
+            description: 'Your iRefair profile has been successfully activated. You can now apply for referral opportunities.',
+            footer: "You'll receive a confirmation email shortly with your credentials.",
+          },
+          fr: {
+            pageTitle: 'Inscription confirmée',
+            heading: 'Inscription confirmée!',
+            description: 'Votre profil iRefair a été activé avec succès. Vous pouvez maintenant postuler pour des opportunités de recommandation.',
+            footer: 'Vous recevrez bientôt un courriel de confirmation avec vos identifiants.',
+          },
+        };
+    const t = translations[locale];
+    const resultHtml = pageHtml
+      .replace('{{lang}}', locale)
+      .replace('{{pageTitle}}', t.pageTitle)
+      .replace('{{heading}}', t.heading)
+      .replace('{{description}}', t.description)
+      .replace('{{footer}}', t.footer)
+      .replace('{{iRain}}', escapeHtml(iRainValue));
     return new NextResponse(resultHtml, {
       status: 200,
       headers: { "Content-Type": "text/html; charset=utf-8" },
