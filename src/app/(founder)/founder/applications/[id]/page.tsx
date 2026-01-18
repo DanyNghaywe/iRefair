@@ -217,6 +217,7 @@ export default function ApplicationDetailPage() {
   const { language } = useLanguage();
   const t = translations[language];
   const historyLocale = language === "fr" ? "fr-CA" : "en-US";
+  const actionLabels = t.actionHistory.labels as Record<string, string>;
 
   const [application, setApplication] = useState<ApplicationRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -497,7 +498,7 @@ export default function ApplicationDetailPage() {
                         <div className="founder-timeline__dot" />
                         <div className="founder-timeline__content">
                           <div className="founder-timeline__header">
-                            <strong>{t.actionHistory.labels[entry.action] || entry.action}</strong>
+                            <strong>{actionLabels[entry.action] || entry.action}</strong>
                             <span className="founder-timeline__time">
                               {new Date(entry.timestamp).toLocaleDateString(historyLocale, {
                                 month: "short",
