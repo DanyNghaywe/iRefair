@@ -168,12 +168,10 @@ export async function POST(request: Request) {
 
     // Use existing iRAIN if found, otherwise generate new
     let iRain: string;
-    if (isExistingApplicant && existingApplicant.record.id && isIrain(existingApplicant.record.id)) {
+    if (existingApplicant && existingApplicant.record.id && isIrain(existingApplicant.record.id)) {
       iRain = existingApplicant.record.id;
-    } else if (isExistingApplicant && existingApplicant.record.legacyApplicantId) {
+    } else if (existingApplicant && existingApplicant.record.legacyApplicantId) {
       // Has legacy ID but no iRAIN - generate new iRAIN but keep legacy reference
-      iRain = await generateIRAIN();
-    } else if (!isExistingApplicant) {
       iRain = await generateIRAIN();
     } else {
       iRain = await generateIRAIN();
