@@ -7,14 +7,10 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ActionBtn } from "@/components/ActionBtn";
 import { useLanguage } from "@/components/LanguageProvider";
 import { useNavigationLoader } from "@/components/NavigationLoader";
+import { formMessages } from "@/lib/translations";
 
 const translations = {
   en: {
-    emailRequired: "Please enter your email.",
-    emailInvalid: "Enter a valid email address.",
-    passwordRequired: "Please enter your password.",
-    signInError: "Unable to sign in. Please check your details.",
-    signInErrorGeneric: "Unable to sign in right now. Please try again.",
     signingIn: "Signing you in...",
     signingInBtn: "Signing in...",
     logIn: "Log in",
@@ -23,11 +19,6 @@ const translations = {
     passwordLabel: "Password",
   },
   fr: {
-    emailRequired: "Veuillez entrer votre courriel.",
-    emailInvalid: "Entrez une adresse courriel valide.",
-    passwordRequired: "Veuillez entrer votre mot de passe.",
-    signInError: "Connexion impossible. Veuillez v\u00e9rifier vos informations.",
-    signInErrorGeneric: "Connexion impossible pour le moment. Veuillez r\u00e9essayer.",
     signingIn: "Connexion en cours...",
     signingInBtn: "Connexion...",
     logIn: "Se connecter",
@@ -45,6 +36,7 @@ export default function LoginForm() {
   const { startNavigation } = useNavigationLoader();
   const { language } = useLanguage();
   const t = translations[language];
+  const formCopy = formMessages.login[language];
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -65,13 +57,13 @@ export default function LoginForm() {
   const validate = () => {
     const nextErrors: Record<string, string> = {};
     if (!email.trim()) {
-      nextErrors.email = t.emailRequired;
+      nextErrors.email = formCopy.validation.emailRequired;
     } else if (!/\S+@\S+\.\S+/.test(email)) {
-      nextErrors.email = t.emailInvalid;
+      nextErrors.email = formCopy.validation.emailInvalid;
     }
 
     if (!password.trim()) {
-      nextErrors.password = t.passwordRequired;
+      nextErrors.password = formCopy.validation.passwordRequired;
     }
 
     return nextErrors;
@@ -102,7 +94,7 @@ export default function LoginForm() {
 
       const data = await response.json().catch(() => null);
       if (!response.ok || !data?.ok) {
-        setBannerMessage(data?.error ?? t.signInError);
+        setBannerMessage(data?.error ?? formCopy.errors.signInError);
         setStatus("error");
         return;
       }
@@ -113,7 +105,7 @@ export default function LoginForm() {
       router.refresh();
     } catch (err) {
       console.error("Founder login failed", err);
-      setBannerMessage(t.signInErrorGeneric);
+      setBannerMessage(formCopy.errors.signInErrorGeneric);
       setStatus("error");
     } finally {
       setStatus((prev) => (prev === "submitting" ? "idle" : prev));
@@ -124,7 +116,7 @@ export default function LoginForm() {
     <form className="founder-login-form" onSubmit={handleSubmit} noValidate>
       {status === "error" && (
       <div className="founder-login-banner" role="alert">
-          {bannerMessage || t.signInError}
+          {bannerMessage || formCopy.errors.signInError}
         </div>
       )}
 

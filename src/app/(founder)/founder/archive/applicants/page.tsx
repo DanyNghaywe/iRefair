@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/founder/EmptyState";
 import { FilterBar } from "@/components/founder/FilterBar";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type ArchivedApplicant = {
   irain: string;
@@ -21,9 +22,80 @@ type ArchivedApplicant = {
 
 const PAGE_SIZE = 10;
 
+const translations = {
+  en: {
+    title: "Archived Applicants",
+    subtitle: (total: number) => `${total} archived applicant${total !== 1 ? "s" : ""}`,
+    backLabel: "Archive",
+    labels: {
+      irain: "iRAIN",
+      name: "Name",
+      email: "Email",
+      archivedAt: "Archived At",
+      archivedBy: "Archived By",
+      actions: "Actions",
+      direct: "Direct",
+    },
+    buttons: {
+      restore: "Restore",
+      delete: "Delete",
+    },
+    errors: {
+      restoreFailed: "Failed to restore applicant",
+      deleteFailed: "Failed to delete applicant",
+      deleteConfirm:
+        "Are you sure you want to permanently delete this applicant? This cannot be undone.",
+    },
+    searchPlaceholder: "Search archived applicants...",
+    empty: {
+      title: "No archived applicants",
+      description: "Applicants that are archived will appear here.",
+    },
+    loading: "Loading...",
+  },
+  fr: {
+    title: "Candidats archivés",
+    subtitle: (total: number) => `${total} candidat${total !== 1 ? "s" : ""} archivé${total !== 1 ? "s" : ""}`,
+    backLabel: "Archives",
+    labels: {
+      irain: "iRAIN",
+      name: "Nom",
+      email: "Courriel",
+      archivedAt: "Archivé le",
+      archivedBy: "Archivé par",
+      actions: "Actions",
+      direct: "Direct",
+    },
+    buttons: {
+      restore: "Restaurer",
+      delete: "Supprimer",
+    },
+    errors: {
+      restoreFailed: "Échec de la restauration du candidat",
+      deleteFailed: "Échec de la suppression du candidat",
+      deleteConfirm:
+        "Êtes-vous sûr de vouloir supprimer définitivement ce candidat ? Cette action est irréversible.",
+    },
+    searchPlaceholder: "Rechercher des candidats archivés...",
+    empty: {
+      title: "Aucun candidat archivé",
+      description: "Les candidats archivés apparaîtront ici.",
+    },
+    loading: "Chargement...",
+  },
+};
+
+function ArchivedApplicantsFallback() {
+  const { language } = useLanguage();
+  const t = translations[language];
+  return <p className="text-muted">{t.loading}</p>;
+}
+
 function ArchivedApplicantsContent() {
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
+  const { language } = useLanguage();
+  const t = translations[language];
 
   const [items, setItems] = useState<ArchivedApplicant[]>([]);
   const [total, setTotal] = useState(0);
@@ -76,16 +148,16 @@ function ArchivedApplicantsContent() {
       if (data?.ok) {
         await fetchData();
       } else {
-        setError(data?.error || "Failed to restore applicant");
+        setError(data?.error || t.errors.restoreFailed);
       }
     } catch {
-      setError("Failed to restore applicant");
+      setError(t.errors.restoreFailed);
     }
     setActionLoading(null);
   };
 
   const handlePermanentDelete = async (irain: string) => {
-    if (!confirm("Are you sure you want to permanently delete this applicant? This cannot be undone.")) {
+    if (!confirm(t.errors.deleteConfirm)) {
       return;
     }
     setActionLoading(irain);
@@ -98,10 +170,10 @@ function ArchivedApplicantsContent() {
       if (data?.ok) {
         await fetchData();
       } else {
-        setError(data?.error || "Failed to delete applicant");
+        setError(data?.error || t.errors.deleteFailed);
       }
     } catch {
-      setError("Failed to delete applicant");
+      setError(t.errors.deleteFailed);
     }
     setActionLoading(null);
   };
@@ -110,24 +182,24 @@ function ArchivedApplicantsContent() {
     () => [
       {
         key: "irain",
-        label: "iRAIN",
+        label: t.labels.irain,
         width: "180px",
         nowrap: true,
         ellipsis: true,
       },
       {
         key: "firstName",
-        label: "Name",
+        label: t.labels.name,
         width: "200px",
         nowrap: true,
         ellipsis: true,
         render: (row: ArchivedApplicant) =>
           [row.firstName, row.middleName, row.familyName].filter(Boolean).join(" ") || "-",
       },
-      { key: "email", label: "Email", width: "280px", nowrap: true, ellipsis: true },
+      { key: "email", label: t.labels.email, width: "280px", nowrap: true, ellipsis: true },
       {
         key: "archivedAt",
-        label: "Archived At",
+        label: t.labels.archivedAt,
         width: "180px",
         nowrap: true,
         render: (row: ArchivedApplicant) => {
@@ -141,14 +213,14 @@ function ArchivedApplicantsContent() {
       },
       {
         key: "archivedBy",
-        label: "Archived By",
+        label: t.labels.archivedBy,
         width: "180px",
         nowrap: true,
-        render: (row: ArchivedApplicant) => row.archivedBy || "Direct",
+        render: (row: ArchivedApplicant) => row.archivedBy || t.labels.direct,
       },
       {
         key: "actions",
-        label: "Actions",
+        label: t.labels.actions,
         width: "200px",
         align: "right",
         render: (row: ArchivedApplicant) => (
@@ -160,7 +232,7 @@ function ArchivedApplicantsContent() {
               onClick={() => handleRestore(row.irain)}
               disabled={actionLoading === row.irain}
             >
-              Restore
+              {t.buttons.restore}
             </ActionBtn>
             <ActionBtn
               as="button"
@@ -170,22 +242,22 @@ function ArchivedApplicantsContent() {
               onClick={() => handlePermanentDelete(row.irain)}
               disabled={actionLoading === row.irain}
             >
-              Delete
+              {t.buttons.delete}
             </ActionBtn>
           </div>
         ),
       },
     ],
-    [actionLoading],
+    [actionLoading, t],
   );
 
   return (
     <div className="founder-page">
       <Topbar
-        title="Archived Applicants"
-        subtitle={`${total} archived applicant${total !== 1 ? "s" : ""}`}
+        title={t.title}
+        subtitle={t.subtitle(total)}
         backHref="/founder/archive"
-        backLabel="Archive"
+        backLabel={t.backLabel}
       />
 
       {error && (
@@ -199,7 +271,7 @@ function ArchivedApplicantsContent() {
           {
             type: "text",
             key: "search",
-            placeholder: "Search archived applicants...",
+            placeholder: t.searchPlaceholder,
             value: searchInput,
             onChange: setSearchInput,
           },
@@ -213,8 +285,8 @@ function ArchivedApplicantsContent() {
         emptyState={
           <EmptyState
             variant="candidates"
-            title="No archived applicants"
-            description="Applicants that are archived will appear here."
+            title={t.empty.title}
+            description={t.empty.description}
           />
         }
         pageSize={PAGE_SIZE}
@@ -228,7 +300,7 @@ function ArchivedApplicantsContent() {
 
 export default function ArchivedApplicantsPage() {
   return (
-    <Suspense fallback={<p className="text-muted">Loading...</p>}>
+    <Suspense fallback={<ArchivedApplicantsFallback />}>
       <ArchivedApplicantsContent />
     </Suspense>
   );

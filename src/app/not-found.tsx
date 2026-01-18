@@ -1,6 +1,25 @@
+"use client";
+
 import { ActionBtn } from "@/components/ActionBtn";
 import { AppShell } from "@/components/AppShell";
 import { PublicFooter } from "@/components/PublicFooter";
+import { useLanguage } from "@/components/LanguageProvider";
+
+const translations = {
+  en: {
+    title: "Page not found",
+    description: "The page you're looking for doesn't exist or has been moved. Let's get you back on track.",
+    goHome: "Go home",
+    findReferrers: "Find referrers",
+  },
+  fr: {
+    title: "Page introuvable",
+    description:
+      "La page que vous recherchez n'existe pas ou a été déplacée. Revenons à quelque chose d'utile.",
+    goHome: "Retour à l'accueil",
+    findReferrers: "Trouver des référents",
+  },
+};
 
 function NotFoundIllustration() {
   return (
@@ -47,6 +66,9 @@ function NotFoundIllustration() {
 }
 
 export default function NotFound() {
+  const { language, withLanguage } = useLanguage();
+  const t = translations[language];
+
   return (
     <AppShell>
       <main className="not-found">
@@ -54,17 +76,14 @@ export default function NotFound() {
           <NotFoundIllustration />
           <div className="not-found__content">
             <p className="not-found__code">404</p>
-            <h1 className="not-found__title">Page not found</h1>
-            <p className="not-found__description">
-              The page you're looking for doesn't exist or has been moved.
-              Let's get you back on track.
-            </p>
+            <h1 className="not-found__title">{t.title}</h1>
+            <p className="not-found__description">{t.description}</p>
             <div className="not-found__actions">
-              <ActionBtn as="link" href="/" variant="primary">
-                Go home
+              <ActionBtn as="link" href={withLanguage("/")} variant="primary">
+                {t.goHome}
               </ActionBtn>
-              <ActionBtn as="link" href="/hiring-companies" variant="ghost">
-                Find referrers
+              <ActionBtn as="link" href={withLanguage("/hiring-companies")} variant="ghost">
+                {t.findReferrers}
               </ActionBtn>
             </div>
           </div>

@@ -3,8 +3,54 @@
 import { useEffect, useState } from "react";
 
 import { Topbar } from "@/components/founder/Topbar";
+import { useLanguage } from "@/components/LanguageProvider";
+
+const translations = {
+  en: {
+    title: "Calendar",
+    subtitle: "Manage referrer meetings",
+    localTime: "Local time",
+    loading: "Loading...",
+    scheduledEvents: {
+      title: "Scheduled Events",
+      description: "View and manage upcoming meetings",
+    },
+    eventTypes: {
+      title: "Event Types",
+      description: "Configure your meeting templates",
+    },
+    shareLink: {
+      title: "Share Link",
+      description: "Copy your booking page link",
+    },
+    quickBooking: "Quick booking view",
+    openCalendly: "Open in Calendly",
+  },
+  fr: {
+    title: "Calendrier",
+    subtitle: "Gérer les rendez-vous des référents",
+    localTime: "Heure locale",
+    loading: "Chargement...",
+    scheduledEvents: {
+      title: "Événements planifiés",
+      description: "Voir et gérer les rendez-vous à venir",
+    },
+    eventTypes: {
+      title: "Types d'événements",
+      description: "Configurer vos modèles de rendez-vous",
+    },
+    shareLink: {
+      title: "Lien de partage",
+      description: "Copier le lien de réservation",
+    },
+    quickBooking: "Vue rapide des réservations",
+    openCalendly: "Ouvrir dans Calendly",
+  },
+};
 
 export default function CalendarPage() {
+  const { language } = useLanguage();
+  const t = translations[language];
   const [currentTime, setCurrentTime] = useState<Date | null>(null);
 
   useEffect(() => {
@@ -19,8 +65,10 @@ export default function CalendarPage() {
     return () => clearInterval(interval);
   }, []);
 
+  const locale = language === "fr" ? "fr-CA" : "en-US";
+
   const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
+    return date.toLocaleDateString(locale, {
       weekday: "long",
       year: "numeric",
       month: "long",
@@ -29,7 +77,7 @@ export default function CalendarPage() {
   };
 
   const formatTime = (date: Date) => {
-    return date.toLocaleTimeString("en-US", {
+    return date.toLocaleTimeString(locale, {
       hour: "2-digit",
       minute: "2-digit",
     });
@@ -52,8 +100,8 @@ export default function CalendarPage() {
           />
         </svg>
       ),
-      title: "Scheduled Events",
-      description: "View and manage upcoming meetings",
+      title: t.scheduledEvents.title,
+      description: t.scheduledEvents.description,
       href: "https://calendly.com/app/scheduled_events/user/me",
     },
     {
@@ -77,8 +125,8 @@ export default function CalendarPage() {
           />
         </svg>
       ),
-      title: "Event Types",
-      description: "Configure your meeting templates",
+      title: t.eventTypes.title,
+      description: t.eventTypes.description,
       href: "https://calendly.com/event_types/user/me",
     },
     {
@@ -97,26 +145,26 @@ export default function CalendarPage() {
           />
         </svg>
       ),
-      title: "Share Link",
-      description: "Copy your booking page link",
+      title: t.shareLink.title,
+      description: t.shareLink.description,
       href: "https://calendly.com/mbissani/30min",
     },
   ];
 
   return (
     <div className="founder-page">
-      <Topbar title="Calendar" subtitle="Manage referrer meetings" />
+      <Topbar title={t.title} subtitle={t.subtitle} />
 
       {/* Hero stat card */}
       <div className="glass-card founder-card calendar-stat">
         <div className="calendar-stat__row">
           <div className="calendar-stat__date">
-            {currentTime ? formatDate(currentTime) : "Loading..."}
+            {currentTime ? formatDate(currentTime) : t.loading}
           </div>
           <div className="calendar-stat__time">
             {currentTime ? formatTime(currentTime) : "--:--"}
           </div>
-          <div className="calendar-stat__label">Local time</div>
+          <div className="calendar-stat__label">{t.localTime}</div>
         </div>
       </div>
 
@@ -154,7 +202,7 @@ export default function CalendarPage() {
 
       {/* Calendly embed section */}
       <div className="glass-card founder-card calendar-embed">
-        <div className="calendar-embed__header">Quick booking view</div>
+        <div className="calendar-embed__header">{t.quickBooking}</div>
         <div className="calendar-embed__frame">
           <iframe
             src="https://calendly.com/mbissani/30min"
@@ -168,7 +216,7 @@ export default function CalendarPage() {
           rel="noopener noreferrer"
           className="calendar-embed__fallback"
         >
-          Open in Calendly
+          {t.openCalendly}
         </a>
       </div>
     </div>

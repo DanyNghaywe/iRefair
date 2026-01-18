@@ -6,6 +6,7 @@ import { AppShell } from "@/components/AppShell";
 import "./login.css";
 import { Skeleton, SkeletonStack } from "@/components/founder/Skeleton";
 import LoginForm from "./LoginForm";
+import { LoginTitle } from "./LoginTitle";
 
 export const metadata: Metadata = {
   title: "Founder login | iRefair",
@@ -29,7 +30,9 @@ export default function FounderLoginPage() {
                   className="founder-login-brand__logo"
                 />
               </div>
-              <h1 id="founder-login-title">Login</h1>
+              <h1 id="founder-login-title">
+                <LoginTitle />
+              </h1>
             </div>
 
             <Suspense
