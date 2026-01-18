@@ -540,7 +540,8 @@ export default function CandidateReviewPage() {
   const languagesLabel = formatOptionList(languages, languageLabels);
   const industryLabel = getOptionLabel(industryType, industryLabels);
   const employmentLabel = getOptionLabel(employmentStatus, employmentLabels);
-  const statusLabel = status ? t.statusLabels[status] ?? toTitleCase(status) : t.statusLabels.unassigned;
+  const statusLabels = t.statusLabels as Record<string, string>;
+  const statusLabel = status ? statusLabels[status] ?? toTitleCase(status) : statusLabels.unassigned;
 
   const fetchCandidate = useCallback(async () => {
     if (!cleanIrain) return;
