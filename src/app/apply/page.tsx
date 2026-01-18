@@ -19,6 +19,7 @@ import { Confetti, useConfetti } from '@/components/Confetti';
 import { useLanguage } from '@/components/LanguageProvider';
 import { PublicFooter } from '@/components/PublicFooter';
 import { SubmissionSuccessModal } from '@/components/SubmissionSuccessModal';
+import { formMessages } from '@/lib/translations';
 
 const useIsomorphicLayoutEffect = typeof window !== 'undefined' ? useLayoutEffect : useEffect;
 
@@ -59,23 +60,10 @@ const translations: Record<
     upload: string;
     uploadHint: string;
     noFile: string;
-    statusMessages: {
-      ok: string;
-      error: string;
-      networkError: string;
-    };
     buttons: {
       submit: string;
       submitting: string;
       reset: string;
-    };
-    errors: {
-      applicantId: string;
-      applicantKey: string;
-      iCrn: string;
-      position: string;
-      resume: string;
-      resumeInvalid: string;
     };
     languageLabel: string;
     english: string;
@@ -108,23 +96,10 @@ const translations: Record<
     upload: 'Add file',
     uploadHint: 'Upload a CV specific to this company and position. PDF or DOC/DOCX, max 10 MB.',
     noFile: 'No file chosen',
-    statusMessages: {
-      ok: "Application submitted. We'll log it and follow up with next steps.",
-      error: 'Something went wrong. Please try again.',
-      networkError: 'Unable to connect. Please check your internet connection and try again.',
-    },
     buttons: {
       submit: 'Submit',
       submitting: 'Submitting...',
       reset: 'Clear form',
-    },
-    errors: {
-      applicantId: 'Please enter your iRAIN or legacy CAND ID.',
-      applicantKey: 'Please enter your Applicant Key.',
-      iCrn: 'Please enter the iRCRN.',
-      position: 'Please enter the position you are applying for.',
-      resume: 'Please upload your resume (PDF or DOC/DOCX under 10MB).',
-      resumeInvalid: 'Please upload a PDF or DOC/DOCX file under 10MB.',
     },
     languageLabel: 'Language',
     english: 'English',
@@ -156,23 +131,10 @@ const translations: Record<
     upload: 'Ajouter un fichier',
     uploadHint: 'Téléchargez un CV spécifique à cette entreprise et ce poste. PDF ou DOC/DOCX, max 10 Mo.',
     noFile: 'Aucun fichier choisi',
-    statusMessages: {
-      ok: 'Candidature soumise. Nous l\'enregistrerons et vous contacterons pour les prochaines étapes.',
-      error: 'Une erreur s\'est produite. Veuillez réessayer.',
-      networkError: 'Connexion impossible. Veuillez vérifier votre connexion internet et réessayer.',
-    },
     buttons: {
       submit: 'Soumettre',
       submitting: 'Envoi...',
       reset: 'Effacer le formulaire',
-    },
-    errors: {
-      applicantId: 'Veuillez entrer votre iRAIN ou ancien CAND ID.',
-      applicantKey: 'Veuillez entrer votre clé de candidat.',
-      iCrn: "Veuillez entrer l'iRCRN.",
-      position: 'Veuillez entrer le poste pour lequel vous postulez.',
-      resume: 'Veuillez télécharger votre CV (PDF ou DOC/DOCX moins de 10 Mo).',
-      resumeInvalid: 'Veuillez télécharger un fichier PDF ou DOC/DOCX de moins de 10 Mo.',
     },
     languageLabel: 'Langue',
     english: 'English',
@@ -501,6 +463,7 @@ export default function ApplyPage() {
   const resumeInputRef = useRef<HTMLInputElement | null>(null);
 
   const t = translations[language];
+  const formCopy = formMessages.apply[language];
 
   const fieldClass = (name: string) => `field ${errors[name] ? 'has-error' : ''}`.trim();
 
@@ -548,7 +511,7 @@ export default function ApplyPage() {
     if (!isAllowedResume(file) || file.size > MAX_RESUME_SIZE) {
       setErrors((prev) => ({
         ...prev,
-        resume: t.errors.resumeInvalid,
+        resume: formCopy.validation.resumeInvalid,
       }));
       setResumeName('');
       event.target.value = '';
@@ -589,16 +552,16 @@ export default function ApplyPage() {
 
   const validate = () => {
     const nextErrors: Record<string, string> = {};
-    if (!applicantId.trim()) nextErrors.applicantId = t.errors.applicantId;
-    if (!applicantKey.trim()) nextErrors.applicantKey = t.errors.applicantKey;
-    if (!iCrn.trim()) nextErrors.iCrn = t.errors.iCrn;
-    if (!position.trim()) nextErrors.position = t.errors.position;
+    if (!applicantId.trim()) nextErrors.applicantId = formCopy.validation.applicantId;
+    if (!applicantKey.trim()) nextErrors.applicantKey = formCopy.validation.applicantKey;
+    if (!iCrn.trim()) nextErrors.iCrn = formCopy.validation.iCrn;
+    if (!position.trim()) nextErrors.position = formCopy.validation.position;
 
     const resumeFile = resumeInputRef.current?.files?.[0];
     if (!resumeFile) {
-      nextErrors.resume = t.errors.resume;
+      nextErrors.resume = formCopy.validation.resume;
     } else if (!isAllowedResume(resumeFile) || resumeFile.size > MAX_RESUME_SIZE) {
-      nextErrors.resume = t.errors.resumeInvalid;
+      nextErrors.resume = formCopy.validation.resumeInvalid;
     }
 
     return nextErrors;
@@ -643,7 +606,7 @@ export default function ApplyPage() {
 
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok) {
-        const message = typeof data?.error === 'string' ? data.error : 'Something went wrong.';
+        const message = typeof data?.error === 'string' ? data.error : formCopy.errors.submitFailed;
         if (data?.field === 'resume') {
           setErrors((prev) => ({ ...prev, resume: message }));
           setStatus('idle');
@@ -660,7 +623,7 @@ export default function ApplyPage() {
       confetti.trigger();
     } catch (error) {
       console.error('Application submission failed', error);
-      setErrorMessage(t.statusMessages.networkError);
+      setErrorMessage(formCopy.statusMessages.networkError);
       setStatus('error');
     } finally {
       setSubmitting(false);
@@ -865,7 +828,7 @@ export default function ApplyPage() {
               <div className="footer-status">
                 {status === 'ok' && (
                   <div className="status-banner status-banner--ok" role="status" aria-live="polite">
-                    <span>{t.statusMessages.ok}</span>
+                    <span>{formCopy.statusMessages.ok}</span>
                   </div>
                 )}
                 {status === 'error' && (
@@ -877,7 +840,7 @@ export default function ApplyPage() {
                     tabIndex={-1}
                   >
                     <span className="status-icon" aria-hidden="true">!</span>
-                    <span>{errorMessage || t.statusMessages.error}</span>
+                    <span>{errorMessage || formCopy.statusMessages.error}</span>
                   </div>
                 )}
               </div>

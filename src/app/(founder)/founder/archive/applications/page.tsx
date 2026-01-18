@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/founder/EmptyState";
 import { FilterBar } from "@/components/founder/FilterBar";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type ArchivedApplication = {
   id: string;
@@ -20,9 +21,82 @@ type ArchivedApplication = {
 
 const PAGE_SIZE = 10;
 
+const translations = {
+  en: {
+    title: "Archived Applications",
+    subtitle: (total: number) => `${total} archived application${total !== 1 ? "s" : ""}`,
+    backLabel: "Archive",
+    labels: {
+      id: "ID",
+      applicant: "Applicant",
+      referrer: "Referrer",
+      position: "Position",
+      archivedAt: "Archived At",
+      archivedBy: "Archived By",
+      actions: "Actions",
+      direct: "Direct",
+    },
+    buttons: {
+      restore: "Restore",
+      delete: "Delete",
+    },
+    errors: {
+      restoreFailed: "Failed to restore application",
+      deleteFailed: "Failed to delete application",
+      deleteConfirm:
+        "Are you sure you want to permanently delete this application? This cannot be undone.",
+    },
+    searchPlaceholder: "Search archived applications...",
+    empty: {
+      title: "No archived applications",
+      description: "Applications that are archived will appear here.",
+    },
+    loading: "Loading...",
+  },
+  fr: {
+    title: "Candidatures archivées",
+    subtitle: (total: number) => `${total} candidature${total !== 1 ? "s" : ""} archivée${total !== 1 ? "s" : ""}`,
+    backLabel: "Archives",
+    labels: {
+      id: "ID",
+      applicant: "Candidat",
+      referrer: "Référent",
+      position: "Poste",
+      archivedAt: "Archivée le",
+      archivedBy: "Archivée par",
+      actions: "Actions",
+      direct: "Direct",
+    },
+    buttons: {
+      restore: "Restaurer",
+      delete: "Supprimer",
+    },
+    errors: {
+      restoreFailed: "Échec de la restauration de la candidature",
+      deleteFailed: "Échec de la suppression de la candidature",
+      deleteConfirm:
+        "Êtes-vous sûr de vouloir supprimer définitivement cette candidature ? Cette action est irréversible.",
+    },
+    searchPlaceholder: "Rechercher des candidatures archivées...",
+    empty: {
+      title: "Aucune candidature archivée",
+      description: "Les candidatures archivées apparaîtront ici.",
+    },
+    loading: "Chargement...",
+  },
+};
+
+function ArchivedApplicationsFallback() {
+  const { language } = useLanguage();
+  const t = translations[language];
+  return <p className="text-muted">{t.loading}</p>;
+}
+
 function ArchivedApplicationsContent() {
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
+  const { language } = useLanguage();
+  const t = translations[language];
 
   const [items, setItems] = useState<ArchivedApplication[]>([]);
   const [total, setTotal] = useState(0);
@@ -75,16 +149,16 @@ function ArchivedApplicationsContent() {
       if (data?.ok) {
         await fetchData();
       } else {
-        setError(data?.error || "Failed to restore application");
+        setError(data?.error || t.errors.restoreFailed);
       }
     } catch {
-      setError("Failed to restore application");
+      setError(t.errors.restoreFailed);
     }
     setActionLoading(null);
   };
 
   const handlePermanentDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to permanently delete this application? This cannot be undone.")) {
+    if (!confirm(t.errors.deleteConfirm)) {
       return;
     }
     setActionLoading(id);
@@ -97,10 +171,10 @@ function ArchivedApplicationsContent() {
       if (data?.ok) {
         await fetchData();
       } else {
-        setError(data?.error || "Failed to delete application");
+        setError(data?.error || t.errors.deleteFailed);
       }
     } catch {
-      setError("Failed to delete application");
+      setError(t.errors.deleteFailed);
     }
     setActionLoading(null);
   };
@@ -109,30 +183,30 @@ function ArchivedApplicationsContent() {
     () => [
       {
         key: "id",
-        label: "ID",
+        label: t.labels.id,
         width: "160px",
         nowrap: true,
         ellipsis: true,
       },
       {
         key: "applicantId",
-        label: "Applicant",
+        label: t.labels.applicant,
         width: "180px",
         nowrap: true,
         ellipsis: true,
       },
       {
         key: "referrerIrref",
-        label: "Referrer",
+        label: t.labels.referrer,
         width: "180px",
         nowrap: true,
         ellipsis: true,
         render: (row: ArchivedApplication) => row.referrerIrref || "-",
       },
-      { key: "position", label: "Position", width: "180px", nowrap: true, ellipsis: true },
+      { key: "position", label: t.labels.position, width: "180px", nowrap: true, ellipsis: true },
       {
         key: "archivedAt",
-        label: "Archived At",
+        label: t.labels.archivedAt,
         width: "140px",
         nowrap: true,
         render: (row: ArchivedApplication) => {
@@ -146,14 +220,14 @@ function ArchivedApplicationsContent() {
       },
       {
         key: "archivedBy",
-        label: "Archived By",
+        label: t.labels.archivedBy,
         width: "180px",
         nowrap: true,
-        render: (row: ArchivedApplication) => row.archivedBy || "Direct",
+        render: (row: ArchivedApplication) => row.archivedBy || t.labels.direct,
       },
       {
         key: "actions",
-        label: "Actions",
+        label: t.labels.actions,
         width: "200px",
         align: "right",
         render: (row: ArchivedApplication) => (
@@ -165,7 +239,7 @@ function ArchivedApplicationsContent() {
               onClick={() => handleRestore(row.id)}
               disabled={actionLoading === row.id}
             >
-              Restore
+              {t.buttons.restore}
             </ActionBtn>
             <ActionBtn
               as="button"
@@ -175,22 +249,22 @@ function ArchivedApplicationsContent() {
               onClick={() => handlePermanentDelete(row.id)}
               disabled={actionLoading === row.id}
             >
-              Delete
+              {t.buttons.delete}
             </ActionBtn>
           </div>
         ),
       },
     ],
-    [actionLoading],
+    [actionLoading, t],
   );
 
   return (
     <div className="founder-page">
       <Topbar
-        title="Archived Applications"
-        subtitle={`${total} archived application${total !== 1 ? "s" : ""}`}
+        title={t.title}
+        subtitle={t.subtitle(total)}
         backHref="/founder/archive"
-        backLabel="Archive"
+        backLabel={t.backLabel}
       />
 
       {error && (
@@ -204,7 +278,7 @@ function ArchivedApplicationsContent() {
           {
             type: "text",
             key: "search",
-            placeholder: "Search archived applications...",
+            placeholder: t.searchPlaceholder,
             value: searchInput,
             onChange: setSearchInput,
           },
@@ -218,8 +292,8 @@ function ArchivedApplicationsContent() {
         emptyState={
           <EmptyState
             variant="applications"
-            title="No archived applications"
-            description="Applications that are archived will appear here."
+            title={t.empty.title}
+            description={t.empty.description}
           />
         }
         pageSize={PAGE_SIZE}
@@ -233,7 +307,7 @@ function ArchivedApplicationsContent() {
 
 export default function ArchivedApplicationsPage() {
   return (
-    <Suspense fallback={<p className="text-muted">Loading...</p>}>
+    <Suspense fallback={<ArchivedApplicationsFallback />}>
       <ArchivedApplicationsContent />
     </Suspense>
   );

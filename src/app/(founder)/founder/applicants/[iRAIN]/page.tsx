@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
+import { useLanguage } from "@/components/LanguageProvider";
 import { AutosaveHint } from "@/components/founder/AutosaveHint";
 import { Badge } from "@/components/founder/Badge";
 import { DetailPageShell } from "@/components/founder/DetailPageShell";
@@ -56,9 +57,252 @@ type ApplicationRecord = {
   ownerNotes: string;
 };
 
-const statusOptions = ["", "New", "Reviewed", "In Progress", "On Hold", "Closed"];
-const yesNoOptions = ["", "Yes", "No"];
-const employmentOptions = ["", "Yes", "No", "Temporary Work"];
+const translations = {
+  en: {
+    page: {
+      title: "Candidate Review",
+      invalidSubtitle: "Invalid candidate ID",
+      notFoundTitle: "Candidate not found",
+      notFoundDescription: "This candidate ID is missing or invalid.",
+      notFoundRetry: "Double-check the iRAIN and try again.",
+      reviewTitle: (name: string, id: string) => (name ? `${name} (${id})` : "Candidate Review"),
+    },
+    sections: {
+      profile: "Profile",
+      admin: "Admin",
+      resume: "Resume",
+      dataQuality: "Data quality",
+      decision: "Decision",
+      applications: "Applications",
+    },
+    labels: {
+      firstName: "First Name",
+      middleName: "Middle Name",
+      familyName: "Family Name",
+      email: "Email",
+      phone: "Phone",
+      candidateId: "Candidate iRAIN",
+      legacyId: "Legacy Candidate ID",
+      locatedCanada: "Located in Canada",
+      province: "Province",
+      workAuthorization: "Work Authorization",
+      eligibleMove: "Eligible to Move (6 Months)",
+      countryOfOrigin: "Country of Origin",
+      languages: "Languages",
+      languagesOther: "Languages Other",
+      industryType: "Industry Type",
+      industryOther: "Industry Other",
+      employmentStatus: "Employment Status",
+      eligibility: "Eligibility",
+      currentStatus: "Current status",
+      currentResume: "Current Resume",
+    },
+    placeholders: {
+      select: "Select",
+    },
+    options: {
+      yesNo: {
+        Yes: "Yes",
+        No: "No",
+      },
+      employment: {
+        Yes: "Yes",
+        No: "No",
+        "Temporary Work": "Temporary Work",
+      },
+      languages: {
+        English: "English",
+        Arabic: "Arabic",
+        French: "French",
+        Other: "Other",
+      },
+    },
+    statusLabels: {
+      new: "New",
+      reviewed: "Reviewed",
+      "in progress": "In Progress",
+      "on hold": "On Hold",
+      closed: "Closed",
+      "resume requested": "Resume Requested",
+      unassigned: "Unassigned",
+    },
+    eligibility: {
+      inCanada: "In Canada",
+      canMove: "Can move in 6 months",
+      notEligible: "Not eligible",
+    },
+    buttons: {
+      save: "Save",
+      saving: "Saving...",
+      cancel: "Cancel",
+      editDetails: "Edit details",
+      reviewed: "Reviewed",
+      markReviewed: "Mark Reviewed",
+      requestResume: "Request updated resume",
+      sending: "Sending...",
+      archiveApplicant: "Archive applicant",
+      confirmArchive: "Confirm archive",
+      archiving: "Archiving...",
+      backToApplicants: "Back to Applicants",
+      uploadResume: "Upload Resume",
+      replaceResume: "Replace Resume",
+      submit: "Submit",
+      uploading: "Uploading...",
+      chooseFile: "Choose File",
+      view: "View",
+    },
+    messages: {
+      resumeRequestSent: "Resume request sent.",
+      unableToSendRequest: "Unable to send request.",
+      unableToArchive: "Unable to archive applicant.",
+      invalidFileType: "Please upload a PDF, DOC, or DOCX file.",
+      fileTooLarge: "File size exceeds 10MB limit.",
+      unableToUploadResume: "Unable to upload resume.",
+      resumeUploaded: "Resume uploaded successfully.",
+    },
+    hints: {
+      resumeTypes: "PDF, DOC, or DOCX. Max 10MB.",
+    },
+    banners: {
+      archiveWarning: "This will also archive all related applications.",
+    },
+    applications: {
+      none: "No applications yet.",
+      application: "Application",
+      unassigned: "Unassigned",
+    },
+    resume: {
+      none: "No resume on file.",
+    },
+    dataQuality: {
+      complete: "Complete",
+    },
+  },
+  fr: {
+    page: {
+      title: "Revue du candidat",
+      invalidSubtitle: "Identifiant candidat invalide",
+      notFoundTitle: "Candidat introuvable",
+      notFoundDescription: "Cet identifiant de candidat est manquant ou invalide.",
+      notFoundRetry: "V?rifiez l'iRAIN et r?essayez.",
+      reviewTitle: (name: string, id: string) => (name ? `${name} (${id})` : "Revue du candidat"),
+    },
+    sections: {
+      profile: "Profil",
+      admin: "Administration",
+      resume: "CV",
+      dataQuality: "Qualit? des donn?es",
+      decision: "D?cision",
+      applications: "Candidatures",
+    },
+    labels: {
+      firstName: "Pr?nom",
+      middleName: "Deuxi?me pr?nom",
+      familyName: "Nom de famille",
+      email: "Courriel",
+      phone: "T?l?phone",
+      candidateId: "iRAIN du candidat",
+      legacyId: "Identifiant candidat h?rit?",
+      locatedCanada: "Situ? au Canada",
+      province: "Province",
+      workAuthorization: "Autorisation de travail",
+      eligibleMove: "Admissible ? d?m?nager (6 mois)",
+      countryOfOrigin: "Pays d'origine",
+      languages: "Langues",
+      languagesOther: "Autres langues",
+      industryType: "Secteur d'activit?",
+      industryOther: "Autre secteur",
+      employmentStatus: "Statut d'emploi",
+      eligibility: "Admissibilit?",
+      currentStatus: "Statut actuel",
+      currentResume: "CV actuel",
+    },
+    placeholders: {
+      select: "S?lectionner",
+    },
+    options: {
+      yesNo: {
+        Yes: "Oui",
+        No: "Non",
+      },
+      employment: {
+        Yes: "Oui",
+        No: "Non",
+        "Temporary Work": "Travail temporaire",
+      },
+      languages: {
+        English: "Anglais",
+        Arabic: "Arabe",
+        French: "Fran?ais",
+        Other: "Autre",
+      },
+    },
+    statusLabels: {
+      new: "Nouveau",
+      reviewed: "R?vis?",
+      "in progress": "En cours",
+      "on hold": "En pause",
+      closed: "Ferm?",
+      "resume requested": "CV demand?",
+      unassigned: "Non assign?",
+    },
+    eligibility: {
+      inCanada: "Au Canada",
+      canMove: "Peut d?m?nager dans 6 mois",
+      notEligible: "Non admissible",
+    },
+    buttons: {
+      save: "Enregistrer",
+      saving: "Enregistrement...",
+      cancel: "Annuler",
+      editDetails: "Modifier les d?tails",
+      reviewed: "R?vis?",
+      markReviewed: "Marquer comme r?vis?",
+      requestResume: "Demander un CV mis ? jour",
+      sending: "Envoi...",
+      archiveApplicant: "Archiver le candidat",
+      confirmArchive: "Confirmer l'archivage",
+      archiving: "Archivage...",
+      backToApplicants: "Retour aux candidats",
+      uploadResume: "T?l?verser le CV",
+      replaceResume: "Remplacer le CV",
+      submit: "Soumettre",
+      uploading: "T?l?versement...",
+      chooseFile: "Choisir un fichier",
+      view: "Voir",
+    },
+    messages: {
+      resumeRequestSent: "Demande de CV envoy?e.",
+      unableToSendRequest: "Impossible d'envoyer la demande.",
+      unableToArchive: "Impossible d'archiver le candidat.",
+      invalidFileType: "Veuillez t?l?verser un fichier PDF, DOC ou DOCX.",
+      fileTooLarge: "La taille du fichier d?passe la limite de 10 Mo.",
+      unableToUploadResume: "Impossible de t?l?verser le CV.",
+      resumeUploaded: "CV t?l?vers? avec succ?s.",
+    },
+    hints: {
+      resumeTypes: "PDF, DOC ou DOCX. Max 10 Mo.",
+    },
+    banners: {
+      archiveWarning: "Cela archivera ?galement toutes les candidatures associ?es.",
+    },
+    applications: {
+      none: "Aucune candidature pour l'instant.",
+      application: "Candidature",
+      unassigned: "Non assign?",
+    },
+    resume: {
+      none: "Aucun CV enregistr?.",
+    },
+    dataQuality: {
+      complete: "Complet",
+    },
+  },
+};
+
+const YES_NO_VALUES = ["Yes", "No"] as const;
+const EMPLOYMENT_VALUES = ["Yes", "No", "Temporary Work"] as const;
+const LANGUAGE_VALUES = ["English", "Arabic", "French", "Other"] as const;
 
 const PROVINCES: string[] = [
   "Alberta",
@@ -76,14 +320,23 @@ const PROVINCES: string[] = [
   "Yukon",
 ];
 
-const LANGUAGE_OPTIONS = [
-  { value: "English", label: "English" },
-  { value: "Arabic", label: "Arabic" },
-  { value: "French", label: "French" },
-  { value: "Other", label: "Other" },
-];
+const PROVINCE_LABELS_FR: Record<string, string> = {
+  Alberta: "Alberta",
+  "British Columbia": "Colombie-Britannique",
+  Manitoba: "Manitoba",
+  "New Brunswick": "Nouveau-Brunswick",
+  "Newfoundland and Labrador": "Terre-Neuve-et-Labrador",
+  "Nova Scotia": "Nouvelle-?cosse",
+  Ontario: "Ontario",
+  "Prince Edward Island": "?le-du-Prince-?douard",
+  Quebec: "Qu?bec",
+  Saskatchewan: "Saskatchewan",
+  "Northwest Territories": "Territoires du Nord-Ouest",
+  Nunavut: "Nunavut",
+  Yukon: "Yukon",
+};
 
-const INDUSTRY_OPTIONS: string[] = [
+const INDUSTRY_VALUES: string[] = [
   "Information Technology (IT)",
   "Finance / Banking / Accounting",
   "Healthcare / Medical",
@@ -106,11 +359,66 @@ const INDUSTRY_OPTIONS: string[] = [
   "Other",
 ];
 
-const computeEligibility = (located: string, eligibleMove: string) => {
+const INDUSTRY_LABELS_FR: Record<string, string> = {
+  "Information Technology (IT)": "Technologies de l'information (TI)",
+  "Finance / Banking / Accounting": "Finance / Banque / Comptabilit?",
+  "Healthcare / Medical": "Sant? / M?dical",
+  "Education / Academia": "?ducation / Milieu acad?mique",
+  "Engineering / Construction": "Ing?nierie / Construction",
+  "Marketing / Advertising / PR": "Marketing / Publicit? / RP",
+  "Media / Entertainment / Journalism": "M?dias / Divertissement / Journalisme",
+  "Legal / Law": "Juridique / Droit",
+  "Human Resources / Recruitment": "Ressources humaines / Recrutement",
+  "Retail / E-commerce": "Commerce de d?tail / Commerce ?lectronique",
+  "Hospitality / Travel / Tourism": "H?tellerie / Voyages / Tourisme",
+  "Logistics / Transportation": "Logistique / Transport",
+  Manufacturing: "Fabrication",
+  "Non-Profit / NGO": "Organisme ? but non lucratif / ONG",
+  "Real Estate": "Immobilier",
+  "Energy / Utilities": "?nergie / Services publics",
+  Telecommunications: "T?l?communications",
+  "Agriculture / Food Industry": "Agriculture / Industrie alimentaire",
+  "Compliance/ Audit/ Monitoring & Evaluation": "Conformit? / Audit / Suivi et ?valuation",
+  Other: "Autre",
+};
+
+const getOptionLabel = (value: string, labels?: Record<string, string>) => {
+  if (!value) return value;
+  return labels?.[value] ?? value;
+};
+
+const formatOptionList = (value: string, labels?: Record<string, string>) => {
+  if (!value) return value;
+  return value
+    .split(",")
+    .map((item) => {
+      const trimmed = item.trim();
+      return labels?.[trimmed] ?? trimmed;
+    })
+    .filter(Boolean)
+    .join(", ");
+};
+
+const toTitleCase = (value: string) =>
+  value
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
+const computeEligibility = (
+  located: string,
+  eligibleMove: string,
+  eligibilityCopy: { inCanada: string; canMove: string; notEligible: string },
+) => {
   const locatedYes = located.trim().toLowerCase() === "yes";
   const eligibleYes = eligibleMove.trim().toLowerCase() === "yes";
   const eligible = locatedYes || eligibleYes;
-  const reason = eligible ? (locatedYes ? "In Canada" : "Can move in 6 months") : "Not eligible";
+  const reason = eligible
+    ? locatedYes
+      ? eligibilityCopy.inCanada
+      : eligibilityCopy.canMove
+    : eligibilityCopy.notEligible;
   return { eligible, reason };
 };
 
@@ -122,6 +430,35 @@ export default function CandidateReviewPage() {
   const searchParams = useSearchParams();
   const initialEdit = searchParams?.get("edit") === "1";
   const router = useRouter();
+  const { language } = useLanguage();
+  const t = translations[language];
+
+  const yesNoLabels = t.options.yesNo;
+  const employmentLabels = t.options.employment;
+  const languageLabels = t.options.languages;
+  const provinceLabels = language === "fr" ? PROVINCE_LABELS_FR : undefined;
+  const industryLabels = language === "fr" ? INDUSTRY_LABELS_FR : undefined;
+
+  const yesNoOptions = YES_NO_VALUES.map((value) => ({
+    value,
+    label: yesNoLabels[value] ?? value,
+  }));
+  const employmentOptions = EMPLOYMENT_VALUES.map((value) => ({
+    value,
+    label: employmentLabels[value] ?? value,
+  }));
+  const languageOptions = LANGUAGE_VALUES.map((value) => ({
+    value,
+    label: languageLabels[value] ?? value,
+  }));
+  const provinceOptions = PROVINCES.map((value) => ({
+    value,
+    label: getOptionLabel(value, provinceLabels),
+  }));
+  const industryOptions = INDUSTRY_VALUES.map((value) => ({
+    value,
+    label: getOptionLabel(value, industryLabels),
+  }));
 
   const [candidate, setCandidate] = useState<CandidateRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -192,9 +529,18 @@ export default function CandidateReviewPage() {
   );
 
   const profileEligibility = useMemo(
-    () => computeEligibility(locatedCanada, eligibleMoveCanada),
-    [locatedCanada, eligibleMoveCanada],
+    () => computeEligibility(locatedCanada, eligibleMoveCanada, t.eligibility),
+    [locatedCanada, eligibleMoveCanada, t],
   );
+
+  const locatedCanadaLabel = getOptionLabel(locatedCanada, yesNoLabels);
+  const workAuthorizationLabel = getOptionLabel(workAuthorization, yesNoLabels);
+  const eligibleMoveLabel = getOptionLabel(eligibleMoveCanada, yesNoLabels);
+  const provinceLabel = getOptionLabel(province, provinceLabels);
+  const languagesLabel = formatOptionList(languages, languageLabels);
+  const industryLabel = getOptionLabel(industryType, industryLabels);
+  const employmentLabel = getOptionLabel(employmentStatus, employmentLabels);
+  const statusLabel = status ? t.statusLabels[status] ?? toTitleCase(status) : t.statusLabels.unassigned;
 
   const fetchCandidate = useCallback(async () => {
     if (!cleanIrain) return;
@@ -277,7 +623,7 @@ export default function CandidateReviewPage() {
       if (!prev) return prev;
       const next = { ...prev, ...patch };
       if ("locatedCanada" in patch || "eligibleMoveCanada" in patch) {
-        next.eligibility = computeEligibility(next.locatedCanada, next.eligibleMoveCanada);
+        next.eligibility = computeEligibility(next.locatedCanada, next.eligibleMoveCanada, t.eligibility);
       }
       return next;
     });
@@ -405,15 +751,15 @@ export default function CandidateReviewPage() {
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok) {
-        setActionError(data?.error || "Unable to send request.");
+        setActionError(data?.error || t.messages.unableToSendRequest);
       } else {
-        setActionMessage("Resume request sent.");
+        setActionMessage(t.messages.resumeRequestSent);
         updateLocalCandidate({ status: "resume requested" });
         setStatus("resume requested");
       }
     } catch (error) {
       console.error("Request resume failed", error);
-      setActionError("Unable to send request.");
+      setActionError(t.messages.unableToSendRequest);
     } finally {
       setActionLoading(false);
     }
@@ -439,14 +785,14 @@ export default function CandidateReviewPage() {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok || !data?.ok) {
-        setActionError(data?.error || "Unable to archive applicant.");
+        setActionError(data?.error || t.messages.unableToArchive);
         setDeleteConfirm(false);
       } else {
         router.push("/founder/applicants");
       }
     } catch (error) {
       console.error("Archive applicant failed", error);
-      setActionError("Unable to archive applicant.");
+      setActionError(t.messages.unableToArchive);
       setDeleteConfirm(false);
     } finally {
       setDeleteLoading(false);
@@ -464,13 +810,13 @@ export default function CandidateReviewPage() {
     const extension = file.name.split(".").pop()?.toLowerCase();
     const allowedExtensions = ["pdf", "doc", "docx"];
     if (!extension || !allowedExtensions.includes(extension)) {
-      setResumeError("Please upload a PDF, DOC, or DOCX file.");
+      setResumeError(t.messages.invalidFileType);
       return;
     }
 
     const maxSize = 10 * 1024 * 1024; // 10MB
     if (file.size > maxSize) {
-      setResumeError("File size exceeds 10MB limit.");
+      setResumeError(t.messages.fileTooLarge);
       return;
     }
 
@@ -498,11 +844,11 @@ export default function CandidateReviewPage() {
       const data = await response.json().catch(() => ({}));
 
       if (!response.ok || !data?.ok) {
-        setResumeError(data?.error || "Unable to upload resume.");
+        setResumeError(data?.error || t.messages.unableToUploadResume);
       } else {
         setResumeFileName(data.resumeFileName || pendingResumeFile.name);
         setResumeFileId(data.resumeFileId || "");
-        setResumeSuccess("Resume uploaded successfully.");
+        setResumeSuccess(t.messages.resumeUploaded);
         updateLocalCandidate({
           resumeFileName: data.resumeFileName,
           resumeFileId: data.resumeFileId,
@@ -512,7 +858,7 @@ export default function CandidateReviewPage() {
       }
     } catch (error) {
       console.error("Resume upload failed", error);
-      setResumeError("Unable to upload resume.");
+      setResumeError(t.messages.unableToUploadResume);
     } finally {
       setResumeUploading(false);
     }
@@ -526,12 +872,12 @@ export default function CandidateReviewPage() {
   if (!cleanIrain) {
     return (
       <div className="founder-page">
-        <Topbar title="Candidate Review" subtitle="Invalid candidate ID" />
+        <Topbar title={t.page.title} subtitle={t.page.invalidSubtitle} />
         <div className="card referrer-review__empty">
-          <h2>Candidate not found</h2>
-          <p className="field-hint">This candidate ID is missing or invalid.</p>
+          <h2>{t.page.notFoundTitle}</h2>
+          <p className="field-hint">{t.page.notFoundDescription}</p>
           <ActionBtn as="link" href="/founder/applicants" variant="ghost">
-            &larr; Back to Applicants
+            &larr; {t.buttons.backToApplicants}
           </ActionBtn>
         </div>
       </div>
@@ -541,20 +887,20 @@ export default function CandidateReviewPage() {
   if (loading) {
     return (
       <div className="founder-page">
-        <Topbar title="Candidate Review" subtitle={cleanIrain.toUpperCase()} />
+        <Topbar title={t.page.title} subtitle={cleanIrain.toUpperCase()} />
         <DetailPageShell
           main={
             <>
-              <DetailSection title="Profile">
+              <DetailSection title={t.sections.profile}>
                 <SkeletonDetailGrid fields={8} />
               </DetailSection>
-              <DetailSection title="Admin">
+              <DetailSection title={t.sections.admin}>
                 <SkeletonDetailGrid fields={4} />
               </DetailSection>
             </>
           }
           sidebar={
-            <DetailSection title="Decision">
+            <DetailSection title={t.sections.decision}>
               <SkeletonStack>
                 <Skeleton variant="input" />
                 <Skeleton variant="button" />
@@ -571,12 +917,12 @@ export default function CandidateReviewPage() {
   if (notFound || !candidate) {
     return (
       <div className="founder-page">
-        <Topbar title="Candidate Review" subtitle={cleanIrain.toUpperCase()} />
+        <Topbar title={t.page.title} subtitle={cleanIrain.toUpperCase()} />
         <div className="card referrer-review__empty">
-          <h2>Candidate not found</h2>
-          <p className="field-hint">Double-check the iRAIN and try again.</p>
+          <h2>{t.page.notFoundTitle}</h2>
+          <p className="field-hint">{t.page.notFoundRetry}</p>
           <ActionBtn as="link" href="/founder/applicants" variant="ghost">
-            &larr; Back to Applicants
+            &larr; {t.buttons.backToApplicants}
           </ActionBtn>
         </div>
       </div>
@@ -584,10 +930,10 @@ export default function CandidateReviewPage() {
   }
 
   const headerId = candidate.irain || cleanIrain;
-  const headerTitle = fullName ? `${fullName} (${headerId})` : "Candidate Review";
+  const headerTitle = t.page.reviewTitle(fullName, headerId);
   const missingFieldsLabel = candidate.missingFields.length
     ? candidate.missingFields.join(", ")
-    : "Complete";
+    : t.dataQuality.complete;
 
   return (
     <div className="founder-page">
@@ -596,10 +942,10 @@ export default function CandidateReviewPage() {
       <DetailPageShell
         main={
           <>
-            <DetailSection title="Profile">
+            <DetailSection title={t.sections.profile}>
               <div className="field-grid field-grid--two">
                 <div className="field">
-                  <label htmlFor="candidate-first-name">First Name</label>
+                  <label htmlFor="candidate-first-name">{t.labels.firstName}</label>
                   {editDetails ? (
                     <input
                       id="candidate-first-name"
@@ -618,7 +964,7 @@ export default function CandidateReviewPage() {
                   )}
                 </div>
                 <div className="field">
-                  <label htmlFor="candidate-middle-name">Middle Name</label>
+                  <label htmlFor="candidate-middle-name">{t.labels.middleName}</label>
                   {editDetails ? (
                     <input
                       id="candidate-middle-name"
@@ -637,7 +983,7 @@ export default function CandidateReviewPage() {
                   )}
                 </div>
                 <div className="field">
-                  <label htmlFor="candidate-family-name">Family Name</label>
+                  <label htmlFor="candidate-family-name">{t.labels.familyName}</label>
                   {editDetails ? (
                     <input
                       id="candidate-family-name"
@@ -656,7 +1002,7 @@ export default function CandidateReviewPage() {
                   )}
                 </div>
                 <div className="field">
-                  <label htmlFor="candidate-email">Email</label>
+                  <label htmlFor="candidate-email">{t.labels.email}</label>
                   {editDetails ? (
                     <input
                       id="candidate-email"
@@ -675,7 +1021,7 @@ export default function CandidateReviewPage() {
                   )}
                 </div>
                 <div className="field">
-                  <label htmlFor="candidate-phone">Phone</label>
+                  <label htmlFor="candidate-phone">{t.labels.phone}</label>
                   {editDetails ? (
                     <input
                       id="candidate-phone"
@@ -694,11 +1040,11 @@ export default function CandidateReviewPage() {
                   )}
                 </div>
                 <div className="field">
-                  <label htmlFor="candidate-irain">Candidate iRAIN</label>
+                  <label htmlFor="candidate-irain">{t.labels.candidateId}</label>
                   <input id="candidate-irain" type="text" value={candidate.irain || "-"} readOnly tabIndex={-1} />
                 </div>
                 <div className="field">
-                  <label htmlFor="candidate-legacy-id">Legacy Candidate ID</label>
+                  <label htmlFor="candidate-legacy-id">{t.labels.legacyId}</label>
                   <input
                     id="candidate-legacy-id"
                     type="text"
@@ -708,13 +1054,13 @@ export default function CandidateReviewPage() {
                   />
                 </div>
                 <div className="field">
-                  <label htmlFor="candidate-located">Located in Canada</label>
+                  <label htmlFor="candidate-located">{t.labels.locatedCanada}</label>
                   {editDetails ? (
                     <Select
                       id="candidate-located"
                       name="candidate-located"
-                      options={yesNoOptions.filter(Boolean)}
-                      placeholder="Select"
+                      options={yesNoOptions}
+                      placeholder={t.placeholders.select}
                       value={locatedCanada}
                       onChange={(value) => setLocatedCanada(Array.isArray(value) ? value[0] : value)}
                     />
@@ -722,7 +1068,7 @@ export default function CandidateReviewPage() {
                     <input
                       id="candidate-located"
                       type="text"
-                      value={locatedCanada || "-"}
+                      value={locatedCanadaLabel || "-"}
                       readOnly
                       tabIndex={-1}
                     />
@@ -730,13 +1076,13 @@ export default function CandidateReviewPage() {
                 </div>
                 {locatedCanada === "Yes" && (
                   <div className="field">
-                    <label htmlFor="candidate-province">Province</label>
+                    <label htmlFor="candidate-province">{t.labels.province}</label>
                     {editDetails ? (
                       <Select
                         id="candidate-province"
                         name="candidate-province"
-                        options={PROVINCES}
-                        placeholder="Select"
+                        options={provinceOptions}
+                        placeholder={t.placeholders.select}
                         value={province}
                         onChange={(value) => setProvince(Array.isArray(value) ? value[0] : value)}
                       />
@@ -744,7 +1090,7 @@ export default function CandidateReviewPage() {
                       <input
                         id="candidate-province"
                         type="text"
-                        value={province || "-"}
+                        value={provinceLabel || "-"}
                         readOnly
                         tabIndex={-1}
                       />
@@ -753,13 +1099,13 @@ export default function CandidateReviewPage() {
                 )}
                 {locatedCanada === "Yes" && (
                   <div className="field">
-                    <label htmlFor="candidate-work-auth">Work Authorization</label>
+                    <label htmlFor="candidate-work-auth">{t.labels.workAuthorization}</label>
                     {editDetails ? (
                       <Select
                         id="candidate-work-auth"
                         name="candidate-work-auth"
-                        options={yesNoOptions.filter(Boolean)}
-                        placeholder="Select"
+                        options={yesNoOptions}
+                        placeholder={t.placeholders.select}
                         value={workAuthorization}
                         onChange={(value) => setWorkAuthorization(Array.isArray(value) ? value[0] : value)}
                       />
@@ -767,7 +1113,7 @@ export default function CandidateReviewPage() {
                       <input
                         id="candidate-work-auth"
                         type="text"
-                        value={workAuthorization || "-"}
+                        value={workAuthorizationLabel || "-"}
                         readOnly
                         tabIndex={-1}
                       />
@@ -776,13 +1122,13 @@ export default function CandidateReviewPage() {
                 )}
                 {locatedCanada === "No" && (
                   <div className="field">
-                    <label htmlFor="candidate-eligible-move">Eligible to Move (6 Months)</label>
+                    <label htmlFor="candidate-eligible-move">{t.labels.eligibleMove}</label>
                     {editDetails ? (
                       <Select
                         id="candidate-eligible-move"
                         name="candidate-eligible-move"
-                        options={yesNoOptions.filter(Boolean)}
-                        placeholder="Select"
+                        options={yesNoOptions}
+                        placeholder={t.placeholders.select}
                         value={eligibleMoveCanada}
                         onChange={(value) => setEligibleMoveCanada(Array.isArray(value) ? value[0] : value)}
                       />
@@ -790,7 +1136,7 @@ export default function CandidateReviewPage() {
                       <input
                         id="candidate-eligible-move"
                         type="text"
-                        value={eligibleMoveCanada || "-"}
+                        value={eligibleMoveLabel || "-"}
                         readOnly
                         tabIndex={-1}
                       />
@@ -798,13 +1144,13 @@ export default function CandidateReviewPage() {
                   </div>
                 )}
                 <div className="field">
-                  <label htmlFor="candidate-country">Country of Origin</label>
+                  <label htmlFor="candidate-country">{t.labels.countryOfOrigin}</label>
                   {editDetails ? (
                     <Select
                       id="candidate-country"
                       name="candidate-country"
                       options={countryOptions()}
-                      placeholder="Select"
+                      placeholder={t.placeholders.select}
                       value={countryOfOrigin}
                       onChange={(value) => setCountryOfOrigin(Array.isArray(value) ? value[0] : value)}
                     />
@@ -819,13 +1165,13 @@ export default function CandidateReviewPage() {
                   )}
                 </div>
                 <div className="field">
-                  <label htmlFor="candidate-languages">Languages</label>
+                  <label htmlFor="candidate-languages">{t.labels.languages}</label>
                   {editDetails ? (
                     <Select
                       id="candidate-languages"
                       name="candidate-languages"
-                      options={LANGUAGE_OPTIONS}
-                      placeholder="Select"
+                      options={languageOptions}
+                      placeholder={t.placeholders.select}
                       multi
                       values={languages ? languages.split(", ").map((l) => l.trim()).filter(Boolean) : []}
                       onChange={(value) => {
@@ -837,7 +1183,7 @@ export default function CandidateReviewPage() {
                     <input
                       id="candidate-languages"
                       type="text"
-                      value={languages || "-"}
+                      value={languagesLabel || "-"}
                       readOnly
                       tabIndex={-1}
                     />
@@ -845,7 +1191,7 @@ export default function CandidateReviewPage() {
                 </div>
                 {languages.includes("Other") && (
                   <div className="field">
-                    <label htmlFor="candidate-languages-other">Languages Other</label>
+                    <label htmlFor="candidate-languages-other">{t.labels.languagesOther}</label>
                     {editDetails ? (
                       <input
                         id="candidate-languages-other"
@@ -865,13 +1211,13 @@ export default function CandidateReviewPage() {
                   </div>
                 )}
                 <div className="field">
-                  <label htmlFor="candidate-industry-type">Industry Type</label>
+                  <label htmlFor="candidate-industry-type">{t.labels.industryType}</label>
                   {editDetails ? (
                     <Select
                       id="candidate-industry-type"
                       name="candidate-industry-type"
-                      options={INDUSTRY_OPTIONS}
-                      placeholder="Select"
+                      options={industryOptions}
+                      placeholder={t.placeholders.select}
                       value={industryType}
                       onChange={(value) => setIndustryType(Array.isArray(value) ? value[0] : value)}
                     />
@@ -879,7 +1225,7 @@ export default function CandidateReviewPage() {
                     <input
                       id="candidate-industry-type"
                       type="text"
-                      value={industryType || "-"}
+                      value={industryLabel || "-"}
                       readOnly
                       tabIndex={-1}
                     />
@@ -887,7 +1233,7 @@ export default function CandidateReviewPage() {
                 </div>
                 {industryType === "Other" && (
                   <div className="field">
-                    <label htmlFor="candidate-industry-other">Industry Other</label>
+                    <label htmlFor="candidate-industry-other">{t.labels.industryOther}</label>
                     {editDetails ? (
                       <input
                         id="candidate-industry-other"
@@ -907,13 +1253,13 @@ export default function CandidateReviewPage() {
                   </div>
                 )}
                 <div className="field">
-                  <label htmlFor="candidate-employment-status">Employment Status</label>
+                  <label htmlFor="candidate-employment-status">{t.labels.employmentStatus}</label>
                   {editDetails ? (
                     <Select
                       id="candidate-employment-status"
                       name="candidate-employment-status"
-                      options={employmentOptions.filter(Boolean)}
-                      placeholder="Select"
+                      options={employmentOptions}
+                      placeholder={t.placeholders.select}
                       value={employmentStatus}
                       onChange={(value) => setEmploymentStatus(Array.isArray(value) ? value[0] : value)}
                     />
@@ -921,14 +1267,14 @@ export default function CandidateReviewPage() {
                     <input
                       id="candidate-employment-status"
                       type="text"
-                      value={employmentStatus || "-"}
+                      value={employmentLabel || "-"}
                       readOnly
                       tabIndex={-1}
                     />
                   )}
                 </div>
                 <div className="field">
-                  <label htmlFor="candidate-eligibility">Eligibility</label>
+                  <label htmlFor="candidate-eligibility">{t.labels.eligibility}</label>
                   <input
                     id="candidate-eligibility"
                     type="text"
@@ -940,11 +1286,11 @@ export default function CandidateReviewPage() {
               </div>
             </DetailSection>
 
-            <DetailSection title="Resume">
+            <DetailSection title={t.sections.resume}>
               {resumeFileName ? (
                 <div className="field-grid">
                   <div className="field">
-                    <label>Current Resume</label>
+                    <label>{t.labels.currentResume}</label>
                     <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-sm)" }}>
                       <span style={{ flex: 1 }}>{resumeFileName}</span>
                       {resumeFileId && (
@@ -956,18 +1302,18 @@ export default function CandidateReviewPage() {
                           variant="ghost"
                           size="sm"
                         >
-                          View
+                          {t.buttons.view}
                         </ActionBtn>
                       )}
                     </div>
                   </div>
                 </div>
               ) : (
-                <p className="founder-card__meta">No resume on file.</p>
+                <p className="founder-card__meta">{t.resume.none}</p>
               )}
               <div className="field" style={{ marginTop: "var(--gap)" }}>
                 <label htmlFor="resume-upload">
-                  {resumeFileName ? "Replace Resume" : "Upload Resume"}
+                  {resumeFileName ? t.buttons.replaceResume : t.buttons.uploadResume}
                 </label>
                 <div className="file-upload">
                   <input
@@ -990,7 +1336,7 @@ export default function CandidateReviewPage() {
                           onClick={handleResumeUploadSubmit}
                           disabled={resumeUploading}
                         >
-                          {resumeUploading ? "Uploading..." : "Submit"}
+                          {resumeUploading ? t.buttons.uploading : t.buttons.submit}
                         </ActionBtn>
                         <ActionBtn
                           as="button"
@@ -999,7 +1345,7 @@ export default function CandidateReviewPage() {
                           onClick={handleResumeUploadCancel}
                           disabled={resumeUploading}
                         >
-                          Cancel
+                          {t.buttons.cancel}
                         </ActionBtn>
                       </div>
                     </div>
@@ -1010,11 +1356,11 @@ export default function CandidateReviewPage() {
                       onClick={() => resumeInputRef.current?.click()}
                       disabled={resumeUploading}
                     >
-                      Choose File
+                      {t.buttons.chooseFile}
                     </ActionBtn>
                   )}
                 </div>
-                <p className="field-hint">PDF, DOC, or DOCX. Max 10MB.</p>
+                <p className="field-hint">{t.hints.resumeTypes}</p>
                 {resumeError && (
                   <div className="status-banner status-banner--error" role="alert">
                     {resumeError}
@@ -1028,31 +1374,24 @@ export default function CandidateReviewPage() {
               </div>
             </DetailSection>
 
-            <DetailSection title="Data quality">
+            <DetailSection title={t.sections.dataQuality}>
               {candidate.missingFields.length ? (
                 <div className="founder-pill">{missingFieldsLabel}</div>
               ) : (
-                <div className="founder-pill founder-pill--success">Complete</div>
+                <div className="founder-pill founder-pill--success">{t.dataQuality.complete}</div>
               )}
             </DetailSection>
           </>
         }
         sidebar={
           <>
-            <DetailSection title="Decision" className="referrer-review__decision">
+            <DetailSection title={t.sections.decision} className="referrer-review__decision">
               <div className="field">
-                <label htmlFor="decision-status">Current status</label>
+                <label htmlFor="decision-status">{t.labels.currentStatus}</label>
                 <input
                   id="decision-status"
                   type="text"
-                  value={
-                    status
-                      ? status
-                          .split(" ")
-                          .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-                          .join(" ")
-                      : "Unassigned"
-                  }
+                  value={statusLabel}
                   readOnly
                   tabIndex={-1}
                   aria-readonly="true"
@@ -1062,15 +1401,15 @@ export default function CandidateReviewPage() {
                 {editDetails ? (
                   <>
                     <ActionBtn as="button" variant="primary" onClick={handleSaveEdit} disabled={saving}>
-                      {saving ? "Saving..." : "Save"}
+                      {saving ? t.buttons.saving : t.buttons.save}
                     </ActionBtn>
                     <ActionBtn as="button" variant="ghost" onClick={handleCancelEdit} disabled={saving}>
-                      Cancel
+                      {t.buttons.cancel}
                     </ActionBtn>
                   </>
                 ) : (
                   <ActionBtn as="button" variant="ghost" onClick={handleStartEdit}>
-                    Edit details
+                    {t.buttons.editDetails}
                   </ActionBtn>
                 )}
                 <ActionBtn
@@ -1079,7 +1418,7 @@ export default function CandidateReviewPage() {
                   onClick={handleMarkReviewed}
                   disabled={status === "reviewed"}
                 >
-                  {status === "reviewed" ? "Reviewed" : "Mark Reviewed"}
+                  {status === "reviewed" ? t.buttons.reviewed : t.buttons.markReviewed}
                 </ActionBtn>
                 <ActionBtn
                   as="button"
@@ -1087,12 +1426,12 @@ export default function CandidateReviewPage() {
                   onClick={handleRequestResume}
                   disabled={actionLoading}
                 >
-                  {actionLoading ? "Sending..." : "Request updated resume"}
+                  {actionLoading ? t.buttons.sending : t.buttons.requestResume}
                 </ActionBtn>
                 {deleteConfirm ? (
                   <>
                     <div className="status-banner status-banner--warning" role="alert" style={{ marginBottom: "8px" }}>
-                      This will also archive all related applications.
+                      {t.banners.archiveWarning}
                     </div>
                     <ActionBtn
                       as="button"
@@ -1100,7 +1439,7 @@ export default function CandidateReviewPage() {
                       onClick={handleDelete}
                       disabled={deleteLoading}
                     >
-                      {deleteLoading ? "Archiving..." : "Confirm archive"}
+                      {deleteLoading ? t.buttons.archiving : t.buttons.confirmArchive}
                     </ActionBtn>
                     <ActionBtn
                       as="button"
@@ -1108,7 +1447,7 @@ export default function CandidateReviewPage() {
                       onClick={() => setDeleteConfirm(false)}
                       disabled={deleteLoading}
                     >
-                      Cancel
+                      {t.buttons.cancel}
                     </ActionBtn>
                   </>
                 ) : (
@@ -1117,7 +1456,7 @@ export default function CandidateReviewPage() {
                     variant="ghost"
                     onClick={() => setDeleteConfirm(true)}
                   >
-                    Archive applicant
+                    {t.buttons.archiveApplicant}
                   </ActionBtn>
                 )}
               </div>
@@ -1135,28 +1474,28 @@ export default function CandidateReviewPage() {
                 ) : null}
               </div>
               <ActionBtn as="link" href="/founder/applicants" variant="ghost">
-                &larr; Back to Applicants
+                &larr; {t.buttons.backToApplicants}
               </ActionBtn>
             </DetailSection>
 
-            <DetailSection title="Applications">
+            <DetailSection title={t.sections.applications}>
               {appsLoading ? (
                 <SkeletonStack>
                   <Skeleton variant="text" width="100%" />
                   <Skeleton variant="text" width="80%" />
                 </SkeletonStack>
               ) : applications.length === 0 ? (
-                <p className="founder-card__meta">No applications yet.</p>
+                <p className="founder-card__meta">{t.applications.none}</p>
               ) : (
                 <ul className="founder-list">
                   {applications.map((app) => (
                     <li key={app.id}>
                       <Link href={`/founder/applications/${app.id}`} className="founder-list__link">
                         <div className="founder-list__title">
-                          {app.position || "Application"} <Badge tone="neutral">{app.iCrn}</Badge>
+                          {app.position || t.applications.application} <Badge tone="neutral">{app.iCrn}</Badge>
                         </div>
                         <div className="founder-list__meta">
-                          {app.id} - {app.status || "Unassigned"}
+                          {app.id} - {app.status || t.applications.unassigned}
                         </div>
                       </Link>
                     </li>

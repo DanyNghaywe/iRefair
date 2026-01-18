@@ -12,6 +12,7 @@ import { Select } from '@/components/Select';
 import { SubmissionSuccessModal } from '@/components/SubmissionSuccessModal';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 import { countryOptions } from '@/lib/countries';
+import { formMessages } from '@/lib/translations';
 
 type Language = 'en' | 'fr';
 
@@ -128,7 +129,6 @@ const translations: Record<
     title: string;
     lead: string;
     success: string;
-    statusMessages: { ok: string; error: string };
     legends: Record<string, string>;
     labels: Record<string, string>;
     placeholders: Record<string, string>;
@@ -167,10 +167,6 @@ const translations: Record<
     title: 'Applicant referral request',
     lead: "Tell us your background and target roles. We'll pair you with referrers when they're available.",
     success: 'Request sent. We will notify you when a referrer is available.',
-    statusMessages: {
-      ok: "We've received your request. We'll follow up by email soon.",
-      error: "We couldn't send your request right now. Please try again in a moment.",
-    },
     legends: {
       details: 'Personal Information',
       profiles: 'Your profiles',
@@ -281,10 +277,6 @@ const translations: Record<
     title: 'Demande de recommandation de candidat',
     lead: 'Parlez-nous de votre parcours et des postes visés. Nous vous mettrons en relation avec des référents disponibles.',
     success: 'Demande envoyée. Nous vous informerons lorsqu’un référent sera disponible.',
-    statusMessages: {
-      ok: 'Nous avons bien reçu votre demande. Nous vous contacterons bientôt par e-mail.',
-      error: "Nous ne pouvons pas envoyer votre demande pour l'instant. Veuillez réessayer dans un moment.",
-    },
     legends: {
       details: 'Informations personnelles',
       profiles: 'Vos profils',
@@ -427,6 +419,7 @@ function ApplicantPageContent() {
   const [updatePurpose, setUpdatePurpose] = useState<'cv' | 'info'>('cv');
 
   const t = translations[language];
+  const formCopy = formMessages.applicant[language];
 
   const fieldClass = (base: string, field: string) => `${base}${errors[field] ? ' has-error' : ''}`;
 
@@ -479,7 +472,7 @@ function ApplicantPageContent() {
         const json = await res.json();
 
         if (!res.ok || !json?.ok) {
-          setPrefillError(json?.error || 'Failed to load your existing data');
+          setPrefillError(json?.error || formCopy.errors.prefillLoadFailed);
           setPrefillLoading(false);
           return;
         }
@@ -533,7 +526,7 @@ function ApplicantPageContent() {
         setPrefillLoading(false);
       } catch (err) {
         console.error('Error fetching prefill data:', err);
-        setPrefillError('Failed to load your existing data');
+        setPrefillError(formCopy.errors.prefillLoadFailed);
         setPrefillLoading(false);
       }
     };
@@ -640,68 +633,68 @@ function ApplicantPageContent() {
   const validateValues = (values: ReturnType<typeof getFormValues>) => {
     const nextErrors: Record<string, string> = {};
 
-    if (!values.firstName) nextErrors['first-name'] = 'Please enter your first name.';
-    if (!values.familyName) nextErrors['family-name'] = 'Please enter your family name.';
+    if (!values.firstName) nextErrors['first-name'] = formCopy.validation.firstName;
+    if (!values.familyName) nextErrors['family-name'] = formCopy.validation.familyName;
 
     if (!values.email) {
-      nextErrors.email = 'Please enter your email address.';
+      nextErrors.email = formCopy.validation.emailRequired;
     } else if (!isValidEmail(values.email)) {
-      nextErrors.email = 'Please enter a valid email address.';
+      nextErrors.email = formCopy.validation.emailInvalid;
     }
 
     if (!values.phone) {
-      nextErrors.phone = 'Please enter your phone number.';
+      nextErrors.phone = formCopy.validation.phoneRequired;
     }
 
     if (!values.locatedCanada) {
-      nextErrors['located-canada'] = 'Please select your current location status.';
+      nextErrors['located-canada'] = formCopy.validation.locatedCanadaRequired;
     }
 
     if (values.locatedCanada === 'Yes') {
       if (!values.province) {
-        nextErrors.province = 'Please select your province.';
+        nextErrors.province = formCopy.validation.provinceRequired;
       }
 
       if (!values.authorizedCanada) {
-        nextErrors['authorized-canada'] = 'Please confirm your work authorization.';
+        nextErrors['authorized-canada'] = formCopy.validation.authorizedCanadaRequired;
       }
     }
 
     if (values.locatedCanada === 'No' && !values.eligibleMoveCanada) {
-      nextErrors['eligible-move-canada'] = 'Please confirm if you can move and work in Canada in the next 6 months.';
+      nextErrors['eligible-move-canada'] = formCopy.validation.eligibleMoveCanadaRequired;
     }
 
     if (!values.industryType) {
-      nextErrors['industry-type'] = 'Please select an industry type.';
+      nextErrors['industry-type'] = formCopy.validation.industryTypeRequired;
     }
 
     if (values.industryType === 'Other' && !values.industryOther) {
-      nextErrors['industry-other'] = 'Please specify the other industry type.';
+      nextErrors['industry-other'] = formCopy.validation.industryOtherRequired;
     }
 
     if (!values.employmentStatus) {
-      nextErrors['employment-status'] = 'Please select your employment status.';
+      nextErrors['employment-status'] = formCopy.validation.employmentStatusRequired;
     }
 
     if (!values.languages.length) {
-      nextErrors.languages = 'Please select at least one language.';
+      nextErrors.languages = formCopy.validation.languagesRequired;
     }
 
     if (values.languages.includes('Other') && !values.languagesOther) {
-      nextErrors['languages-other'] = 'Please specify the other language.';
+      nextErrors['languages-other'] = formCopy.validation.languagesOtherRequired;
     }
 
     if (!values.countryOfOrigin) {
-      nextErrors['country-of-origin'] = 'Please select your country of origin.';
+      nextErrors['country-of-origin'] = formCopy.validation.countryOfOriginRequired;
     }
 
     if (values.linkedin && !isValidLinkedInProfileUrl(values.linkedin)) {
-      nextErrors.linkedin = 'Please enter a valid LinkedIn profile URL.';
+      nextErrors.linkedin = formCopy.validation.linkedinInvalid;
     }
 
     const resumeFile = resumeInputRef.current?.files?.[0];
     if (!resumeFile) {
-      nextErrors.resume = 'Please upload your resume / CV.';
+      nextErrors.resume = formCopy.validation.resumeRequired;
     }
 
     return nextErrors;
@@ -718,7 +711,7 @@ function ApplicantPageContent() {
     if (!isAllowedResume(file) || file.size > MAX_RESUME_SIZE) {
       setErrors((prev) => ({
         ...prev,
-        resume: 'Please upload a PDF or DOC/DOCX file under 10MB.',
+        resume: formCopy.validation.resumeInvalid,
       }));
       setResumeName('');
       event.target.value = '';
@@ -738,12 +731,12 @@ function ApplicantPageContent() {
 
     const resumeFile = resumeInputRef.current?.files?.[0];
     if (resumeFile && (!isAllowedResume(resumeFile) || resumeFile.size > MAX_RESUME_SIZE)) {
-      validationErrors.resume = 'Please upload a PDF or DOC/DOCX file under 10MB.';
+      validationErrors.resume = formCopy.validation.resumeInvalid;
     }
 
     const linkedinInput = linkedinInputRef.current;
     const linkedinInvalid = Boolean(values.linkedin) && !isValidLinkedInProfileUrl(values.linkedin);
-    const linkedinErrorMessage = 'Please enter a valid LinkedIn profile URL.';
+    const linkedinErrorMessage = formCopy.validation.linkedinInvalid;
     linkedinInput?.setCustomValidity('');
     if (linkedinInvalid) {
       validationErrors.linkedin = linkedinErrorMessage;
@@ -813,7 +806,7 @@ function ApplicantPageContent() {
 
       if (!response.ok || !data?.ok) {
         const errorMessage =
-          typeof data?.error === 'string' ? data.error : 'Something went wrong. Please try again.';
+          typeof data?.error === 'string' ? data.error : formCopy.errors.submitFailed;
         if (data?.field === 'resume') {
           setErrors((prev) => ({ ...prev, resume: errorMessage }));
           setStatus('idle');
@@ -1382,7 +1375,7 @@ function ApplicantPageContent() {
                 <div className="footer-status">
                   {status === 'ok' && (
                     <div className="status-banner status-banner--ok" role="status" aria-live="polite">
-                      <span>{t.statusMessages.ok}</span>
+                      <span>{formCopy.statusMessages.ok}</span>
                     </div>
                   )}
                   {status === 'error' && (
@@ -1394,7 +1387,7 @@ function ApplicantPageContent() {
                       tabIndex={-1}
                     >
                       <span className="status-icon" aria-hidden="true">!</span>
-                      <span>{t.statusMessages.error}</span>
+                      <span>{formCopy.statusMessages.error}</span>
                     </div>
                   )}
                 </div>

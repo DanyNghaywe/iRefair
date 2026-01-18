@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
+import { useLanguage } from "@/components/LanguageProvider";
 import { AutosaveHint } from "@/components/founder/AutosaveHint";
 import { DetailPageShell } from "@/components/founder/DetailPageShell";
 import { DetailSection } from "@/components/founder/DetailSection";
@@ -32,8 +33,166 @@ type ApplicationRecord = {
   actionHistory: string;
 };
 
-const statusOptions = [
-  "",
+const translations = {
+  en: {
+    page: {
+      title: "Application Review",
+      invalidSubtitle: "Invalid application ID",
+      notFoundTitle: "Application not found",
+      notFoundDescription: "This application ID is missing or invalid.",
+      notFoundRetry: "Double-check the application ID and try again.",
+      reviewTitle: (position: string, id: string) =>
+        position ? `${position} (${id})` : "Application Review",
+    },
+    sections: {
+      details: "Details",
+      resume: "Resume",
+      meeting: "Meeting",
+      actionHistory: "Action History",
+      decision: "Decision",
+      quickLinks: "Quick Links",
+    },
+    labels: {
+      applicationId: "Application ID",
+      ircrn: "iRCRN",
+      position: "Position",
+      applicant: "Applicant",
+      referrer: "Referrer",
+      referenceNumber: "Reference Number",
+      submitted: "Submitted",
+      resumeFile: "Resume File",
+      dateTime: "Date/Time",
+      meetingLink: "Meeting Link",
+      status: "Status",
+      internalNotes: "Internal Notes",
+    },
+    placeholders: {
+      unassigned: "Unassigned",
+      notes: "Add context, follow-ups, next steps...",
+    },
+    buttons: {
+      view: "View",
+      backToApplications: "Back to Applications",
+      viewApplicant: "View Applicant Profile",
+      viewReferrer: "View Referrer",
+    },
+    empty: {
+      noResume: "No resume on file.",
+    },
+    statusOptions: {
+      new: "New",
+      "meeting scheduled": "Meeting Scheduled",
+      "meeting requested": "Meeting Requested",
+      "needs reschedule": "Needs Reschedule",
+      interviewed: "Interviewed",
+      "cv mismatch": "CV Mismatch",
+      "cv update requested": "CV Update Requested",
+      "info requested": "Info Requested",
+      "not a good fit": "Not a Good Fit",
+      "job offered": "Job Offered",
+      "in review": "In Review",
+      submitted: "Submitted",
+      "on hold": "On Hold",
+      closed: "Closed",
+    },
+    actionHistory: {
+      by: "by",
+      viewMeeting: "View meeting",
+      labels: {
+        SCHEDULE_MEETING: "Scheduled Meeting",
+        CANCEL_MEETING: "Cancelled Meeting",
+        REJECT: "Marked Not a Good Fit",
+        CV_MISMATCH: "Flagged CV Mismatch",
+        REQUEST_CV_UPDATE: "Requested CV Update",
+        REQUEST_INFO: "Requested Info",
+        MARK_INTERVIEWED: "Marked Interviewed",
+        OFFER_JOB: "Offered Job",
+        APPLICANT_UPDATED: "Applicant Updated Profile",
+        APPLICANT_RESCHEDULED: "Applicant Requested Reschedule",
+      },
+    },
+  },
+  fr: {
+    page: {
+      title: "Revue de candidature",
+      invalidSubtitle: "Identifiant de candidature invalide",
+      notFoundTitle: "Candidature introuvable",
+      notFoundDescription: "Cet identifiant de candidature est manquant ou invalide.",
+      notFoundRetry: "V?rifiez l'identifiant de candidature et r?essayez.",
+      reviewTitle: (position: string, id: string) =>
+        position ? `${position} (${id})` : "Revue de candidature",
+    },
+    sections: {
+      details: "D?tails",
+      resume: "CV",
+      meeting: "Entretien",
+      actionHistory: "Historique des actions",
+      decision: "D?cision",
+      quickLinks: "Liens rapides",
+    },
+    labels: {
+      applicationId: "Identifiant de candidature",
+      ircrn: "iRCRN",
+      position: "Poste",
+      applicant: "Candidat",
+      referrer: "R?f?rent",
+      referenceNumber: "Num?ro de r?f?rence",
+      submitted: "Soumis",
+      resumeFile: "Fichier CV",
+      dateTime: "Date/Heure",
+      meetingLink: "Lien de r?union",
+      status: "Statut",
+      internalNotes: "Notes internes",
+    },
+    placeholders: {
+      unassigned: "Non assign?",
+      notes: "Ajoutez le contexte, les relances, les prochaines ?tapes...",
+    },
+    buttons: {
+      view: "Voir",
+      backToApplications: "Retour aux candidatures",
+      viewApplicant: "Voir le profil du candidat",
+      viewReferrer: "Voir le r?f?rent",
+    },
+    empty: {
+      noResume: "Aucun CV enregistr?.",
+    },
+    statusOptions: {
+      new: "Nouveau",
+      "meeting scheduled": "Entretien planifi?",
+      "meeting requested": "Entretien demand?",
+      "needs reschedule": "Replanification n?cessaire",
+      interviewed: "Entretien r?alis?",
+      "cv mismatch": "Inad?quation du CV",
+      "cv update requested": "Mise ? jour du CV demand?e",
+      "info requested": "Informations demand?es",
+      "not a good fit": "Pas un bon profil",
+      "job offered": "Offre d'emploi",
+      "in review": "En cours d'examen",
+      submitted: "Soumis",
+      "on hold": "En pause",
+      closed: "Ferm?",
+    },
+    actionHistory: {
+      by: "par",
+      viewMeeting: "Voir l'entretien",
+      labels: {
+        SCHEDULE_MEETING: "Entretien planifi?",
+        CANCEL_MEETING: "Entretien annul?",
+        REJECT: "Marqu? comme pas un bon profil",
+        CV_MISMATCH: "Inad?quation du CV signal?e",
+        REQUEST_CV_UPDATE: "Mise ? jour du CV demand?e",
+        REQUEST_INFO: "Informations demand?es",
+        MARK_INTERVIEWED: "Entretien r?alis?",
+        OFFER_JOB: "Offre d'emploi",
+        APPLICANT_UPDATED: "Le candidat a mis ? jour son profil",
+        APPLICANT_RESCHEDULED: "Le candidat a demand? un report",
+      },
+    },
+  },
+};
+
+const STATUS_VALUES = [
   "New",
   "Meeting Scheduled",
   "Meeting Requested",
@@ -50,24 +209,14 @@ const statusOptions = [
   "Closed",
 ];
 
-const ACTION_LABELS: Record<string, string> = {
-  SCHEDULE_MEETING: "Scheduled Meeting",
-  CANCEL_MEETING: "Cancelled Meeting",
-  REJECT: "Marked Not a Good Fit",
-  CV_MISMATCH: "Flagged CV Mismatch",
-  REQUEST_CV_UPDATE: "Requested CV Update",
-  REQUEST_INFO: "Requested Info",
-  MARK_INTERVIEWED: "Marked Interviewed",
-  OFFER_JOB: "Offered Job",
-  APPLICANT_UPDATED: "Applicant Updated Profile",
-  APPLICANT_RESCHEDULED: "Applicant Requested Reschedule",
-};
-
 export default function ApplicationDetailPage() {
   const params = useParams();
   const rawId = params?.id;
   const applicationId = Array.isArray(rawId) ? rawId[0] : rawId;
   const cleanId = typeof applicationId === "string" ? applicationId.trim() : "";
+  const { language } = useLanguage();
+  const t = translations[language];
+  const historyLocale = language === "fr" ? "fr-CA" : "en-US";
 
   const [application, setApplication] = useState<ApplicationRecord | null>(null);
   const [loading, setLoading] = useState(true);
@@ -157,12 +306,12 @@ export default function ApplicationDetailPage() {
   if (!cleanId) {
     return (
       <div className="founder-page">
-        <Topbar title="Application Review" subtitle="Invalid application ID" />
+        <Topbar title={t.page.title} subtitle={t.page.invalidSubtitle} />
         <div className="card referrer-review__empty">
-          <h2>Application not found</h2>
-          <p className="field-hint">This application ID is missing or invalid.</p>
+          <h2>{t.page.notFoundTitle}</h2>
+          <p className="field-hint">{t.page.notFoundDescription}</p>
           <ActionBtn as="link" href="/founder/applications" variant="ghost">
-            &larr; Back to Applications
+            &larr; {t.buttons.backToApplications}
           </ActionBtn>
         </div>
       </div>
@@ -172,20 +321,20 @@ export default function ApplicationDetailPage() {
   if (loading) {
     return (
       <div className="founder-page">
-        <Topbar title="Application Review" subtitle={cleanId} />
+        <Topbar title={t.page.title} subtitle={cleanId} />
         <DetailPageShell
           main={
             <>
-              <DetailSection title="Details">
+              <DetailSection title={t.sections.details}>
                 <SkeletonDetailGrid fields={6} />
               </DetailSection>
-              <DetailSection title="Meeting">
+              <DetailSection title={t.sections.meeting}>
                 <SkeletonDetailGrid fields={2} />
               </DetailSection>
             </>
           }
           sidebar={
-            <DetailSection title="Decision">
+            <DetailSection title={t.sections.decision}>
               <SkeletonStack>
                 <Skeleton variant="input" />
                 <Skeleton variant="input" />
@@ -200,21 +349,19 @@ export default function ApplicationDetailPage() {
   if (notFound || !application) {
     return (
       <div className="founder-page">
-        <Topbar title="Application Review" subtitle={cleanId} />
+        <Topbar title={t.page.title} subtitle={cleanId} />
         <div className="card referrer-review__empty">
-          <h2>Application not found</h2>
-          <p className="field-hint">Double-check the application ID and try again.</p>
+          <h2>{t.page.notFoundTitle}</h2>
+          <p className="field-hint">{t.page.notFoundRetry}</p>
           <ActionBtn as="link" href="/founder/applications" variant="ghost">
-            &larr; Back to Applications
+            &larr; {t.buttons.backToApplications}
           </ActionBtn>
         </div>
       </div>
     );
   }
 
-  const headerTitle = application.position
-    ? `${application.position} (${application.id})`
-    : "Application Review";
+  const headerTitle = t.page.reviewTitle(application.position, application.id);
   const history = parseActionHistory(application.actionHistory);
 
   return (
@@ -224,22 +371,22 @@ export default function ApplicationDetailPage() {
       <DetailPageShell
         main={
           <>
-            <DetailSection title="Details">
+            <DetailSection title={t.sections.details}>
               <div className="field-grid field-grid--two">
                 <div className="field">
-                  <label htmlFor="app-id">Application ID</label>
+                  <label htmlFor="app-id">{t.labels.applicationId}</label>
                   <input id="app-id" type="text" value={application.id || "-"} readOnly tabIndex={-1} />
                 </div>
                 <div className="field">
-                  <label htmlFor="app-ircrn">iRCRN</label>
+                  <label htmlFor="app-ircrn">{t.labels.ircrn}</label>
                   <input id="app-ircrn" type="text" value={application.iCrn || "-"} readOnly tabIndex={-1} />
                 </div>
                 <div className="field">
-                  <label htmlFor="app-position">Position</label>
+                  <label htmlFor="app-position">{t.labels.position}</label>
                   <input id="app-position" type="text" value={application.position || "-"} readOnly tabIndex={-1} />
                 </div>
                 <div className="field">
-                  <label htmlFor="app-applicant">Applicant</label>
+                  <label htmlFor="app-applicant">{t.labels.applicant}</label>
                   {application.applicantId ? (
                     <a href={`/founder/applicants/${encodeURIComponent(application.applicantId)}`}>
                       {application.applicantId}
@@ -249,7 +396,7 @@ export default function ApplicationDetailPage() {
                   )}
                 </div>
                 <div className="field">
-                  <label htmlFor="app-referrer">Referrer</label>
+                  <label htmlFor="app-referrer">{t.labels.referrer}</label>
                   <input
                     id="app-referrer"
                     type="text"
@@ -259,7 +406,7 @@ export default function ApplicationDetailPage() {
                   />
                 </div>
                 <div className="field">
-                  <label htmlFor="app-reference">Reference Number</label>
+                  <label htmlFor="app-reference">{t.labels.referenceNumber}</label>
                   <input
                     id="app-reference"
                     type="text"
@@ -269,7 +416,7 @@ export default function ApplicationDetailPage() {
                   />
                 </div>
                 <div className="field">
-                  <label htmlFor="app-timestamp">Submitted</label>
+                  <label htmlFor="app-timestamp">{t.labels.submitted}</label>
                   <input
                     id="app-timestamp"
                     type="text"
@@ -281,11 +428,11 @@ export default function ApplicationDetailPage() {
               </div>
             </DetailSection>
 
-            <DetailSection title="Resume">
+            <DetailSection title={t.sections.resume}>
               {application.resumeFileName ? (
                 <div className="field-grid">
                   <div className="field">
-                    <label>Resume File</label>
+                    <label>{t.labels.resumeFile}</label>
                     <div style={{ display: "flex", alignItems: "center", gap: "var(--gap-sm)" }}>
                       <span style={{ flex: 1 }}>{application.resumeFileName}</span>
                       {application.resumeFileId && (
@@ -297,22 +444,22 @@ export default function ApplicationDetailPage() {
                           variant="ghost"
                           size="sm"
                         >
-                          View
+                          {t.buttons.view}
                         </ActionBtn>
                       )}
                     </div>
                   </div>
                 </div>
               ) : (
-                <p className="founder-card__meta">No resume on file.</p>
+                <p className="founder-card__meta">{t.empty.noResume}</p>
               )}
             </DetailSection>
 
             {application.meetingDate && (
-              <DetailSection title="Meeting">
+              <DetailSection title={t.sections.meeting}>
                 <div className="field-grid field-grid--two">
                   <div className="field">
-                    <label htmlFor="app-meeting-datetime">Date/Time</label>
+                    <label htmlFor="app-meeting-datetime">{t.labels.dateTime}</label>
                     <input
                       id="app-meeting-datetime"
                       type="text"
@@ -329,7 +476,7 @@ export default function ApplicationDetailPage() {
                   </div>
                   {application.meetingUrl && (
                     <div className="field">
-                      <label>Meeting Link</label>
+                      <label>{t.labels.meetingLink}</label>
                       <a href={application.meetingUrl} target="_blank" rel="noopener noreferrer">
                         {application.meetingUrl}
                       </a>
@@ -340,7 +487,7 @@ export default function ApplicationDetailPage() {
             )}
 
             {history.length > 0 && (
-              <DetailSection title="Action History">
+              <DetailSection title={t.sections.actionHistory}>
                 <div className="founder-timeline">
                   {history
                     .slice()
@@ -350,9 +497,9 @@ export default function ApplicationDetailPage() {
                         <div className="founder-timeline__dot" />
                         <div className="founder-timeline__content">
                           <div className="founder-timeline__header">
-                            <strong>{ACTION_LABELS[entry.action] || entry.action}</strong>
+                            <strong>{t.actionHistory.labels[entry.action] || entry.action}</strong>
                             <span className="founder-timeline__time">
-                              {new Date(entry.timestamp).toLocaleDateString("en-US", {
+                              {new Date(entry.timestamp).toLocaleDateString(historyLocale, {
                                 month: "short",
                                 day: "numeric",
                                 year: "numeric",
@@ -362,7 +509,7 @@ export default function ApplicationDetailPage() {
                             </span>
                           </div>
                           <div className="founder-timeline__meta">
-                            by {entry.performedBy}
+                            {t.actionHistory.by} {entry.performedBy}
                             {entry.performedByEmail && ` (${entry.performedByEmail})`}
                           </div>
                           {entry.notes && <div className="founder-timeline__notes">{entry.notes}</div>}
@@ -376,7 +523,7 @@ export default function ApplicationDetailPage() {
                               {entry.meetingDetails.url && (
                                 <a href={entry.meetingDetails.url} target="_blank" rel="noopener noreferrer">
                                   {" "}
-                                  View meeting
+                                  {t.actionHistory.viewMeeting}
                                 </a>
                               )}
                             </div>
@@ -391,39 +538,37 @@ export default function ApplicationDetailPage() {
         }
         sidebar={
           <>
-            <DetailSection title="Decision" className="referrer-review__decision">
+            <DetailSection title={t.sections.decision} className="referrer-review__decision">
               <div className="field">
-                <label htmlFor="decision-status">Status</label>
+                <label htmlFor="decision-status">{t.labels.status}</label>
                 <select id="decision-status" value={status} onChange={(event) => setStatus(event.target.value)}>
-                  <option value="">Unassigned</option>
-                  {statusOptions
-                    .filter((value) => value)
-                    .map((value) => (
-                      <option key={value} value={value.toLowerCase()}>
-                        {value}
-                      </option>
-                    ))}
+                  <option value="">{t.placeholders.unassigned}</option>
+                  {STATUS_VALUES.map((value) => (
+                    <option key={value} value={value.toLowerCase()}>
+                      {t.statusOptions[value.toLowerCase()] || value}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div className="field">
-                <label htmlFor="decision-notes">Internal Notes</label>
+                <label htmlFor="decision-notes">{t.labels.internalNotes}</label>
                 <textarea
                   id="decision-notes"
                   rows={4}
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
-                  placeholder="Add context, follow-ups, next steps..."
+                  placeholder={t.placeholders.notes}
                 />
               </div>
               <div>
                 <AutosaveHint saving={saving} />
               </div>
               <ActionBtn as="link" href="/founder/applications" variant="ghost">
-                &larr; Back to Applications
+                &larr; {t.buttons.backToApplications}
               </ActionBtn>
             </DetailSection>
 
-            <DetailSection title="Quick Links">
+            <DetailSection title={t.sections.quickLinks}>
               <div className="flow-stack">
                 {application.applicantId && (
                   <ActionBtn
@@ -432,7 +577,7 @@ export default function ApplicationDetailPage() {
                     variant="ghost"
                     size="sm"
                   >
-                    View Applicant Profile
+                    {t.buttons.viewApplicant}
                   </ActionBtn>
                 )}
                 {application.referrerIrref && (
@@ -442,7 +587,7 @@ export default function ApplicationDetailPage() {
                     variant="ghost"
                     size="sm"
                   >
-                    View Referrer
+                    {t.buttons.viewReferrer}
                   </ActionBtn>
                 )}
               </div>

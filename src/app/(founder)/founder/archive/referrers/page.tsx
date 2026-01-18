@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/founder/EmptyState";
 import { FilterBar } from "@/components/founder/FilterBar";
 import { OpsDataTable, type OpsColumn } from "@/components/founder/OpsDataTable";
 import { Topbar } from "@/components/founder/Topbar";
+import { useLanguage } from "@/components/LanguageProvider";
 
 type ArchivedReferrer = {
   irref: string;
@@ -20,9 +21,82 @@ type ArchivedReferrer = {
 
 const PAGE_SIZE = 10;
 
+const translations = {
+  en: {
+    title: "Archived Referrers",
+    subtitle: (total: number) => `${total} archived referrer${total !== 1 ? "s" : ""}`,
+    backLabel: "Archive",
+    labels: {
+      irref: "iRREF",
+      name: "Name",
+      email: "Email",
+      company: "Company",
+      archivedAt: "Archived At",
+      archivedBy: "Archived By",
+      actions: "Actions",
+      direct: "Direct",
+    },
+    buttons: {
+      restore: "Restore",
+      delete: "Delete",
+    },
+    errors: {
+      restoreFailed: "Failed to restore referrer",
+      deleteFailed: "Failed to delete referrer",
+      deleteConfirm:
+        "Are you sure you want to permanently delete this referrer? This cannot be undone.",
+    },
+    searchPlaceholder: "Search archived referrers...",
+    empty: {
+      title: "No archived referrers",
+      description: "Referrers that are archived will appear here.",
+    },
+    loading: "Loading...",
+  },
+  fr: {
+    title: "Référents archivés",
+    subtitle: (total: number) => `${total} référent${total !== 1 ? "s" : ""} archivé${total !== 1 ? "s" : ""}`,
+    backLabel: "Archives",
+    labels: {
+      irref: "iRREF",
+      name: "Nom",
+      email: "Courriel",
+      company: "Entreprise",
+      archivedAt: "Archivé le",
+      archivedBy: "Archivé par",
+      actions: "Actions",
+      direct: "Direct",
+    },
+    buttons: {
+      restore: "Restaurer",
+      delete: "Supprimer",
+    },
+    errors: {
+      restoreFailed: "Échec de la restauration du référent",
+      deleteFailed: "Échec de la suppression du référent",
+      deleteConfirm:
+        "Êtes-vous sûr de vouloir supprimer définitivement ce référent ? Cette action est irréversible.",
+    },
+    searchPlaceholder: "Rechercher des référents archivés...",
+    empty: {
+      title: "Aucun référent archivé",
+      description: "Les référents archivés apparaîtront ici.",
+    },
+    loading: "Chargement...",
+  },
+};
+
+function ArchivedReferrersFallback() {
+  const { language } = useLanguage();
+  const t = translations[language];
+  return <p className="text-muted">{t.loading}</p>;
+}
+
 function ArchivedReferrersContent() {
   const searchParams = useSearchParams();
   const initialSearch = searchParams.get("search") || "";
+  const { language } = useLanguage();
+  const t = translations[language];
 
   const [items, setItems] = useState<ArchivedReferrer[]>([]);
   const [total, setTotal] = useState(0);
@@ -75,16 +149,16 @@ function ArchivedReferrersContent() {
       if (data?.ok) {
         await fetchData();
       } else {
-        setError(data?.error || "Failed to restore referrer");
+        setError(data?.error || t.errors.restoreFailed);
       }
     } catch {
-      setError("Failed to restore referrer");
+      setError(t.errors.restoreFailed);
     }
     setActionLoading(null);
   };
 
   const handlePermanentDelete = async (irref: string) => {
-    if (!confirm("Are you sure you want to permanently delete this referrer? This cannot be undone.")) {
+    if (!confirm(t.errors.deleteConfirm)) {
       return;
     }
     setActionLoading(irref);
@@ -97,10 +171,10 @@ function ArchivedReferrersContent() {
       if (data?.ok) {
         await fetchData();
       } else {
-        setError(data?.error || "Failed to delete referrer");
+        setError(data?.error || t.errors.deleteFailed);
       }
     } catch {
-      setError("Failed to delete referrer");
+      setError(t.errors.deleteFailed);
     }
     setActionLoading(null);
   };
@@ -109,23 +183,23 @@ function ArchivedReferrersContent() {
     () => [
       {
         key: "irref",
-        label: "iRREF",
+        label: t.labels.irref,
         width: "180px",
         nowrap: true,
         ellipsis: true,
       },
       {
         key: "name",
-        label: "Name",
+        label: t.labels.name,
         width: "180px",
         nowrap: true,
         ellipsis: true,
       },
-      { key: "email", label: "Email", width: "240px", nowrap: true, ellipsis: true },
-      { key: "company", label: "Company", width: "180px", nowrap: true, ellipsis: true },
+      { key: "email", label: t.labels.email, width: "240px", nowrap: true, ellipsis: true },
+      { key: "company", label: t.labels.company, width: "180px", nowrap: true, ellipsis: true },
       {
         key: "archivedAt",
-        label: "Archived At",
+        label: t.labels.archivedAt,
         width: "140px",
         nowrap: true,
         render: (row: ArchivedReferrer) => {
@@ -139,14 +213,14 @@ function ArchivedReferrersContent() {
       },
       {
         key: "archivedBy",
-        label: "Archived By",
+        label: t.labels.archivedBy,
         width: "140px",
         nowrap: true,
-        render: (row: ArchivedReferrer) => row.archivedBy || "Direct",
+        render: (row: ArchivedReferrer) => row.archivedBy || t.labels.direct,
       },
       {
         key: "actions",
-        label: "Actions",
+        label: t.labels.actions,
         width: "200px",
         align: "right",
         render: (row: ArchivedReferrer) => (
@@ -158,7 +232,7 @@ function ArchivedReferrersContent() {
               onClick={() => handleRestore(row.irref)}
               disabled={actionLoading === row.irref}
             >
-              Restore
+              {t.buttons.restore}
             </ActionBtn>
             <ActionBtn
               as="button"
@@ -168,22 +242,22 @@ function ArchivedReferrersContent() {
               onClick={() => handlePermanentDelete(row.irref)}
               disabled={actionLoading === row.irref}
             >
-              Delete
+              {t.buttons.delete}
             </ActionBtn>
           </div>
         ),
       },
     ],
-    [actionLoading],
+    [actionLoading, t],
   );
 
   return (
     <div className="founder-page">
       <Topbar
-        title="Archived Referrers"
-        subtitle={`${total} archived referrer${total !== 1 ? "s" : ""}`}
+        title={t.title}
+        subtitle={t.subtitle(total)}
         backHref="/founder/archive"
-        backLabel="Archive"
+        backLabel={t.backLabel}
       />
 
       {error && (
@@ -197,7 +271,7 @@ function ArchivedReferrersContent() {
           {
             type: "text",
             key: "search",
-            placeholder: "Search archived referrers...",
+            placeholder: t.searchPlaceholder,
             value: searchInput,
             onChange: setSearchInput,
           },
@@ -211,8 +285,8 @@ function ArchivedReferrersContent() {
         emptyState={
           <EmptyState
             variant="referrers"
-            title="No archived referrers"
-            description="Referrers that are archived will appear here."
+            title={t.empty.title}
+            description={t.empty.description}
           />
         }
         pageSize={PAGE_SIZE}
@@ -226,7 +300,7 @@ function ArchivedReferrersContent() {
 
 export default function ArchivedReferrersPage() {
   return (
-    <Suspense fallback={<p className="text-muted">Loading...</p>}>
+    <Suspense fallback={<ArchivedReferrersFallback />}>
       <ArchivedReferrersContent />
     </Suspense>
   );

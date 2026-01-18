@@ -11,6 +11,7 @@ import { Select } from '@/components/Select';
 import { SubmissionSuccessModal } from '@/components/SubmissionSuccessModal';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 import { countryOptions } from '@/lib/countries';
+import { formMessages } from '@/lib/translations';
 
 type Language = 'en' | 'fr';
 
@@ -99,8 +100,6 @@ const translations: Record<
     };
     selects: { selectLabel: string };
     optional: string;
-    statusMessages: { ok: string; okExisting: string; error: string };
-    errors: { submissionFailed: string };
     buttons: { submit: string; submitting: string; reset: string };
     disclaimer: {
       body: string;
@@ -166,14 +165,6 @@ const translations: Record<
       selectLabel: 'Select',
     },
     optional: '(optional)',
-    statusMessages: {
-      ok: "We've received your details. We'll reach out when there's an applicant match.",
-      okExisting: "We've received your submission. Our admin team will review any updates and be in touch.",
-      error: "We couldn't send your details right now. Please try again in a moment.",
-    },
-    errors: {
-      submissionFailed: 'Submission failed',
-    },
     buttons: {
       submit: 'Send referrer details',
       submitting: 'Submitting...',
@@ -252,14 +243,6 @@ const translations: Record<
       selectLabel: 'Sélectionner',
     },
     optional: '(optionnel)',
-    statusMessages: {
-      ok: "Nous avons bien reçu vos informations. Nous vous contacterons lorsqu'un candidat correspondra.",
-      okExisting: "Nous avons reçu votre soumission. Notre équipe d'administration examinera toute mise à jour et vous contactera.",
-      error: "Impossible d'envoyer vos informations pour l'instant. Veuillez réessayer dans un instant.",
-    },
-    errors: {
-      submissionFailed: "Échec de l'envoi",
-    },
     buttons: {
       submit: 'Envoyer les informations du référent',
       submitting: 'Envoi...',
@@ -315,6 +298,7 @@ export default function ReferrerPage() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState('');
   const t = translations[language];
+  const formCopy = formMessages.referrer[language];
   const founderMeetLink = (process.env.FOUNDER_MEET_LINK || '').trim();
   const showFounderMeetCta = Boolean(founderMeetLink);
 
@@ -440,25 +424,25 @@ export default function ReferrerPage() {
   const validateValues = (values: ReturnType<typeof getFormValues>) => {
     const nextErrors: Record<string, string> = {};
 
-    if (!values.name) nextErrors['referrer-name'] = 'Please enter your name.';
+    if (!values.name) nextErrors['referrer-name'] = formCopy.validation.nameRequired;
 
     if (!values.email) {
-      nextErrors['referrer-email'] = 'Please enter your work email.';
+      nextErrors['referrer-email'] = formCopy.validation.emailRequired;
     } else if (!isValidEmail(values.email)) {
-      nextErrors['referrer-email'] = 'Please enter a valid email address.';
+      nextErrors['referrer-email'] = formCopy.validation.emailInvalid;
     }
 
-    if (!values.companyIndustry) nextErrors['referrer-company-industry'] = 'Please select the company industry.';
+    if (!values.companyIndustry) nextErrors['referrer-company-industry'] = formCopy.validation.companyIndustryRequired;
     if (values.companyIndustry === 'Other' && !values.companyIndustryOther) {
-      nextErrors['referrer-company-industry-other'] = 'Please specify the company industry.';
+      nextErrors['referrer-company-industry-other'] = formCopy.validation.companyIndustryOtherRequired;
     }
-    if (!values.workType) nextErrors['work-type'] = 'Please select a work type.';
-    if (!values.phone) nextErrors['referrer-phone'] = 'Please enter your phone number.';
-    if (!values.country) nextErrors['referrer-country'] = 'Please select your country of origin.';
+    if (!values.workType) nextErrors['work-type'] = formCopy.validation.workTypeRequired;
+    if (!values.phone) nextErrors['referrer-phone'] = formCopy.validation.phoneRequired;
+    if (!values.country) nextErrors['referrer-country'] = formCopy.validation.countryRequired;
     if (!values.careersPortal) {
-      nextErrors['referrer-careers-portal'] = 'Please enter the careers portal URL.';
+      nextErrors['referrer-careers-portal'] = formCopy.validation.careersPortalRequired;
     } else if (!isValidUrl(values.careersPortal)) {
-      nextErrors['referrer-careers-portal'] = 'Please enter a valid URL (http/https).';
+      nextErrors['referrer-careers-portal'] = formCopy.validation.careersPortalInvalid;
     }
 
     return nextErrors;
@@ -479,7 +463,7 @@ export default function ReferrerPage() {
     const linkedinInvalid = Boolean(values.linkedin) && !isValidLinkedInProfileUrl(values.linkedin);
     linkedinInput?.setCustomValidity('');
     if (linkedinInvalid) {
-      validationErrors['referrer-linkedin'] = 'Please enter a valid LinkedIn profile URL.';
+      validationErrors['referrer-linkedin'] = formCopy.validation.linkedinInvalid;
     }
 
     const hasErrors = Object.keys(validationErrors).length > 0;
@@ -527,7 +511,7 @@ export default function ReferrerPage() {
       const data = await response.json();
 
       if (!response.ok || !data?.ok) {
-        throw new Error(data?.error || t.errors.submissionFailed);
+        throw new Error(data?.error || formCopy.errors.submissionFailed);
       }
 
       setIRref(typeof data.iRref === 'string' ? data.iRref : null);
@@ -880,13 +864,13 @@ export default function ReferrerPage() {
                   {status === 'ok' && (
                     <div className="status-banner status-banner--ok" role="status" aria-live="polite">
                       <span className="status-icon" aria-hidden="true">✓</span>
-                      <span>{isExisting ? t.statusMessages.okExisting : t.statusMessages.ok}</span>
+                      <span>{isExisting ? formCopy.statusMessages.okExisting : formCopy.statusMessages.ok}</span>
                     </div>
                   )}
                   {status === 'error' && (
                     <div className="status-banner status-banner--error" role="alert" aria-live="assertive">
                       <span className="status-icon" aria-hidden="true">!</span>
-                      <span>{t.statusMessages.error}</span>
+                      <span>{formCopy.statusMessages.error}</span>
                     </div>
                   )}
                 </div>

@@ -32,22 +32,280 @@ const translations = {
     unableToGeneratePortal: "Unable to generate portal link.",
     portalTokensRotated: "Portal tokens rotated. Generate a new link to share.",
     unableToRotateToken: "Unable to rotate portal token.",
+    page: {
+      title: "Referrer Review",
+      invalidSubtitle: "Invalid referrer ID",
+      notFoundTitle: "Referrer not found",
+      notFoundDescription: "This referrer ID is missing or invalid.",
+      notFoundRetry: "Double-check the referrer ID and try again.",
+      reviewTitle: (name: string) => (name ? `${name} - Review` : "Referrer Review"),
+    },
+    sections: {
+      pendingUpdates: "Pending Updates",
+      companies: "Companies",
+      admin: "Admin",
+      profile: "Profile",
+      links: "Links",
+      decision: "Decision",
+      applications: "Applications",
+    },
+    labels: {
+      status: "Status",
+      unassigned: "Unassigned",
+      referrerType: "Referrer Type",
+      lastContacted: "Last Contact Date",
+      nextFollowUp: "Next Follow-up",
+      internalNotes: "Internal Notes",
+      name: "Name",
+      email: "Email",
+      phone: "Phone",
+      country: "Country",
+      referrerId: "Referrer iRREF",
+      missingFields: "Missing Fields",
+      linkedin: "LinkedIn",
+      currentStatus: "Current status",
+      complete: "Complete",
+      company: "Company",
+      ircrn: "iRCRN",
+      industry: "Industry",
+      workType: "Work Type",
+      careersPortal: "Careers Portal",
+    },
+    placeholders: {
+      referrerType: "e.g. HR Manager, Recruiter, Agency",
+      lastContacted: "e.g. 2025-01-15",
+      nextFollowUp: "e.g. 2025-01-20 or Call Monday",
+      notes: "Add notes about this referrer...",
+      select: "Select",
+      careersPortal: "https://...",
+    },
+    buttons: {
+      save: "Save",
+      saving: "Saving...",
+      cancel: "Cancel",
+      editDetails: "Edit details",
+      approve: "Approve",
+      reject: "Reject",
+      confirmReject: "Confirm reject",
+      updating: "Updating...",
+      archiveReferrer: "Archive referrer",
+      confirmArchive: "Confirm archive",
+      archiving: "Archiving...",
+      backToReferrers: "Back to Referrers",
+    },
+    statusLabels: {
+      pending: "Pending",
+      approved: "Approved",
+      denied: "Denied",
+    },
+    statusOptions: {
+      new: "New",
+      engaged: "Engaged",
+      active: "Active",
+      paused: "Paused",
+      closed: "Closed",
+    },
+    pendingUpdates: {
+      title: "Pending Updates",
+      pending: "Pending",
+      applying: "Applying...",
+      approve: "Approve",
+      deny: "Deny",
+    },
+    companies: {
+      pending: "Pending",
+      approved: "Approved",
+      denied: "Denied",
+      company: "Company",
+      ircrn: "iRCRN",
+      industry: "Industry",
+      workType: "Work Type",
+      careersPortal: "Careers Portal",
+      unnamed: "Unnamed",
+      select: "Select",
+    },
+    links: {
+      linkedin: "LinkedIn",
+      view: "View",
+      referrerPortal: "Referrer Portal",
+      open: "Open",
+      generate: "Generate",
+      generating: "Generating...",
+      generateHint: "Generate a portal link for this referrer",
+      rotateToken: "Rotate Portal Token",
+      rotate: "Rotate",
+      rotating: "Rotating...",
+      rotateHint: "Invalidate existing portal tokens",
+      meetFounder: "Meet Founder",
+      invite: "Invite",
+      sendingInvite: "Sending invite...",
+      sendInviteEmail: "Send invite email",
+      notProvided: "Not provided",
+    },
+    banners: {
+      archiveWarning: "This will also archive all related applications.",
+    },
+    applications: {
+      none: "No applications yet.",
+      application: "Application",
+      unassigned: "Unassigned",
+    },
+    fieldLabels: {
+      name: "Name",
+      email: "Email",
+      phone: "Phone",
+      country: "Country",
+      company: "Company",
+      companyIndustry: "Industry",
+      careersPortal: "Careers Portal",
+      workType: "Work Type",
+      linkedin: "LinkedIn",
+    },
   },
   fr: {
-    inviteSent: "Invitation envoy\u00e9e.",
+    inviteSent: "Invitation envoy?e.",
     unableToSendInvite: "Impossible d'envoyer l'invitation.",
-    companyApproved: "Entreprise approuv\u00e9e.",
-    companyDenied: "Entreprise refus\u00e9e.",
-    unableToUpdateApproval: "Impossible de mettre \u00e0 jour l'approbation.",
-    updateApplied: "Mise \u00e0 jour appliqu\u00e9e avec succ\u00e8s.",
-    updateDenied: "Mise \u00e0 jour refus\u00e9e.",
-    unableToProcessUpdate: "Impossible de traiter la mise \u00e0 jour.",
-    unableToArchive: "Impossible d'archiver le r\u00e9f\u00e9rent.",
-    portalLinkGenerated: "Lien du portail g\u00e9n\u00e9r\u00e9.",
-    portalLinkGeneratedEmailed: "Lien du portail g\u00e9n\u00e9r\u00e9 et envoy\u00e9 par courriel.",
-    unableToGeneratePortal: "Impossible de g\u00e9n\u00e9rer le lien du portail.",
-    portalTokensRotated: "Jetons du portail r\u00e9initialis\u00e9s. G\u00e9n\u00e9rez un nouveau lien \u00e0 partager.",
-    unableToRotateToken: "Impossible de r\u00e9initialiser le jeton du portail.",
+    companyApproved: "Entreprise approuv?e.",
+    companyDenied: "Entreprise refus?e.",
+    unableToUpdateApproval: "Impossible de mettre ? jour l'approbation.",
+    updateApplied: "Mise ? jour appliqu?e avec succ?s.",
+    updateDenied: "Mise ? jour refus?e.",
+    unableToProcessUpdate: "Impossible de traiter la mise ? jour.",
+    unableToArchive: "Impossible d'archiver le r?f?rent.",
+    portalLinkGenerated: "Lien du portail g?n?r?.",
+    portalLinkGeneratedEmailed: "Lien du portail g?n?r? et envoy? par courriel.",
+    unableToGeneratePortal: "Impossible de g?n?rer le lien du portail.",
+    portalTokensRotated: "Jetons du portail r?initialis?s. G?n?rez un nouveau lien ? partager.",
+    unableToRotateToken: "Impossible de r?initialiser le jeton du portail.",
+    page: {
+      title: "Revue du r?f?rent",
+      invalidSubtitle: "Identifiant r?f?rent invalide",
+      notFoundTitle: "R?f?rent introuvable",
+      notFoundDescription: "Cet identifiant de r?f?rent est manquant ou invalide.",
+      notFoundRetry: "V?rifiez l'identifiant du r?f?rent et r?essayez.",
+      reviewTitle: (name: string) => (name ? `${name} - Revue` : "Revue du r?f?rent"),
+    },
+    sections: {
+      pendingUpdates: "Mises ? jour en attente",
+      companies: "Entreprises",
+      admin: "Administration",
+      profile: "Profil",
+      links: "Liens",
+      decision: "D?cision",
+      applications: "Candidatures",
+    },
+    labels: {
+      status: "Statut",
+      unassigned: "Non assign?",
+      referrerType: "Type de r?f?rent",
+      lastContacted: "Derni?re prise de contact",
+      nextFollowUp: "Prochaine relance",
+      internalNotes: "Notes internes",
+      name: "Nom",
+      email: "Courriel",
+      phone: "T?l?phone",
+      country: "Pays",
+      referrerId: "iRREF du r?f?rent",
+      missingFields: "Champs manquants",
+      linkedin: "LinkedIn",
+      currentStatus: "Statut actuel",
+      complete: "Complet",
+      company: "Entreprise",
+      ircrn: "iRCRN",
+      industry: "Secteur",
+      workType: "Type de travail",
+      careersPortal: "Portail carri?res",
+    },
+    placeholders: {
+      referrerType: "ex. RH, recruteur, agence",
+      lastContacted: "ex. 2025-01-15",
+      nextFollowUp: "ex. 2025-01-20 ou Appeler lundi",
+      notes: "Ajoutez des notes sur ce r?f?rent...",
+      select: "S?lectionner",
+      careersPortal: "https://...",
+    },
+    buttons: {
+      save: "Enregistrer",
+      saving: "Enregistrement...",
+      cancel: "Annuler",
+      editDetails: "Modifier les d?tails",
+      approve: "Approuver",
+      reject: "Refuser",
+      confirmReject: "Confirmer le refus",
+      updating: "Mise ? jour...",
+      archiveReferrer: "Archiver le r?f?rent",
+      confirmArchive: "Confirmer l'archivage",
+      archiving: "Archivage...",
+      backToReferrers: "Retour aux r?f?rents",
+    },
+    statusLabels: {
+      pending: "En attente",
+      approved: "Approuv?",
+      denied: "Refus?",
+    },
+    statusOptions: {
+      new: "Nouveau",
+      engaged: "Engag?",
+      active: "Actif",
+      paused: "En pause",
+      closed: "Ferm?",
+    },
+    pendingUpdates: {
+      title: "Mises ? jour en attente",
+      pending: "En attente",
+      applying: "Traitement...",
+      approve: "Approuver",
+      deny: "Refuser",
+    },
+    companies: {
+      pending: "En attente",
+      approved: "Approuv?",
+      denied: "Refus?",
+      company: "Entreprise",
+      ircrn: "iRCRN",
+      industry: "Secteur",
+      workType: "Type de travail",
+      careersPortal: "Portail carri?res",
+      unnamed: "Sans nom",
+      select: "S?lectionner",
+    },
+    links: {
+      linkedin: "LinkedIn",
+      view: "Voir",
+      referrerPortal: "Portail r?f?rent",
+      open: "Ouvrir",
+      generate: "G?n?rer",
+      generating: "G?n?ration...",
+      generateHint: "G?n?rer un lien de portail pour ce r?f?rent",
+      rotateToken: "R?initialiser le jeton du portail",
+      rotate: "R?initialiser",
+      rotating: "R?initialisation...",
+      rotateHint: "Invalider les jetons de portail existants",
+      meetFounder: "Rencontrer le fondateur",
+      invite: "Inviter",
+      sendingInvite: "Envoi de l'invitation...",
+      sendInviteEmail: "Envoyer un e-mail d'invitation",
+      notProvided: "Non fourni",
+    },
+    banners: {
+      archiveWarning: "Cela archivera ?galement toutes les candidatures associ?es.",
+    },
+    applications: {
+      none: "Aucune candidature pour l'instant.",
+      application: "Candidature",
+      unassigned: "Non assign?",
+    },
+    fieldLabels: {
+      name: "Nom",
+      email: "Courriel",
+      phone: "T?l?phone",
+      country: "Pays",
+      company: "Entreprise",
+      companyIndustry: "Secteur",
+      careersPortal: "Portail carri?res",
+      workType: "Type de travail",
+      linkedin: "LinkedIn",
+    },
   },
 };
 
@@ -114,7 +372,7 @@ type ReferrerCompany = {
 const statusOptions = ["", "New", "Engaged", "Active", "Paused", "Closed"];
 const LINK_PREVIEW_MAX = 42;
 
-const COMPANY_INDUSTRY_OPTIONS: string[] = [
+const COMPANY_INDUSTRY_VALUES: string[] = [
   "Technology",
   "Finance",
   "Healthcare",
@@ -129,16 +387,45 @@ const COMPANY_INDUSTRY_OPTIONS: string[] = [
   "Other",
 ];
 
-const WORK_TYPE_OPTIONS: string[] = ["On-site", "Remote", "Hybrid"];
+const WORK_TYPE_VALUES: string[] = ["On-site", "Remote", "Hybrid"];
 
-const fieldLabelMap: Record<string, string> = {
-  companyIndustry: "Industry",
-  careersPortal: "Careers Portal",
-  workType: "Work Type",
+const COMPANY_INDUSTRY_LABELS_FR: Record<string, string> = {
+  Technology: "Technologie",
+  Finance: "Finance",
+  Healthcare: "Sant?",
+  Education: "?ducation",
+  Retail: "Commerce de d?tail",
+  Hospitality: "H?tellerie",
+  "Marketing / Media": "Marketing / M?dias",
+  "Engineering / Construction": "Ing?nierie / Construction",
+  Consulting: "Conseil",
+  "Not for profit": "Organisme ? but non lucratif",
+  "Compliance / Audit": "Conformit? / Audit",
+  Other: "Autre",
 };
 
-const formatFieldLabel = (key: string) => {
-  if (fieldLabelMap[key]) return fieldLabelMap[key];
+
+const WORK_TYPE_LABELS_FR: Record<string, string> = {
+  "On-site": "Sur site",
+  Remote: "T?l?travail",
+  Hybrid: "Hybride",
+};
+
+
+const companyIndustryOptions = (lang: "en" | "fr") =>
+  COMPANY_INDUSTRY_VALUES.map((value) => ({
+    value,
+    label: lang === "fr" ? COMPANY_INDUSTRY_LABELS_FR[value] || value : value,
+  }));
+
+const workTypeOptions = (lang: "en" | "fr") =>
+  WORK_TYPE_VALUES.map((value) => ({
+    value,
+    label: lang === "fr" ? WORK_TYPE_LABELS_FR[value] || value : value,
+  }));
+
+const formatFieldLabel = (key: string, labels: Record<string, string>) => {
+  if (labels[key]) return labels[key];
   return key.charAt(0).toUpperCase() + key.slice(1);
 };
 
@@ -147,10 +434,10 @@ const truncateText = (value: string, max: number) => {
   return `${value.slice(0, max - 3)}...`;
 };
 
-const buildLinkPreview = (url?: string | null) => {
+const buildLinkPreview = (url: string | null | undefined, notProvidedLabel: string) => {
   const raw = typeof url === "string" ? url.trim() : "";
   if (!raw) {
-    return { preview: "Not provided", href: "", isMissing: true };
+    return { preview: notProvidedLabel, href: "", isMissing: true };
   }
 
   const normalized = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
@@ -177,6 +464,7 @@ type LinkRowProps = {
   isLoading?: boolean;
   loadingLabel?: string;
   previewOverride?: string;
+  notProvidedLabel: string;
 };
 
 const IconLink = () => (
@@ -215,8 +503,9 @@ function LinkRow({
   isLoading,
   loadingLabel,
   previewOverride,
+  notProvidedLabel,
 }: LinkRowProps) {
-  const { preview, href, isMissing: linkMissing } = buildLinkPreview(url);
+  const { preview, href, isMissing: linkMissing } = buildLinkPreview(url, notProvidedLabel);
   const hasCustomAction = Boolean(onAction);
   const isMissing = hasCustomAction ? false : linkMissing;
   const hasAction = hasCustomAction || Boolean(href);
@@ -272,7 +561,7 @@ function LinkRow({
           }}
           disabled={isDisabled}
         >
-          {isLoading ? loadingLabel || "Sending..." : actionLabel}
+          {isLoading ? loadingLabel ?? actionLabel : actionLabel}
         </ActionBtn>
       ) : (
         <span className="referrer-review__link-chip-spacer" aria-hidden="true" />
@@ -365,10 +654,10 @@ export default function ReferrerReviewPage() {
   }, [referrer?.companyApproval]);
 
   const approvalLabel = useMemo(() => {
-    if (approvalValue === "approved") return "Approved";
-    if (approvalValue === "denied") return "Rejected";
-    return "Pending";
-  }, [approvalValue]);
+    if (approvalValue === "approved") return t.statusLabels.approved;
+    if (approvalValue === "denied") return t.statusLabels.denied;
+    return t.statusLabels.pending;
+  }, [approvalValue, t.statusLabels]);
 
   const fetchReferrer = useCallback(async () => {
     if (!cleanIrref) return;
@@ -802,12 +1091,12 @@ export default function ReferrerReviewPage() {
   if (!cleanIrref) {
     return (
       <div className="founder-page">
-        <Topbar title="Referrer Review" subtitle="Invalid referrer ID" />
+        <Topbar title={t.page.title} subtitle={t.page.invalidSubtitle} />
         <div className="card referrer-review__empty">
-          <h2>Referrer not found</h2>
-          <p className="field-hint">This referrer ID is missing or invalid.</p>
+          <h2>{t.page.notFoundTitle}</h2>
+          <p className="field-hint">{t.page.notFoundDescription}</p>
           <ActionBtn as="link" href="/founder/referrers" variant="ghost">
-            &larr; Back to Referrers
+            &larr; {t.buttons.backToReferrers}
           </ActionBtn>
         </div>
       </div>
@@ -817,20 +1106,20 @@ export default function ReferrerReviewPage() {
   if (loading) {
     return (
       <div className="founder-page">
-        <Topbar title="Referrer Review" subtitle={cleanIrref.toUpperCase()} />
+        <Topbar title={t.page.title} subtitle={cleanIrref.toUpperCase()} />
         <DetailPageShell
           main={
             <>
-              <DetailSection title="Status + Approval">
+              <DetailSection title={t.sections.decision}>
                 <SkeletonDetailGrid fields={2} />
               </DetailSection>
-              <DetailSection title="Profile">
+              <DetailSection title={t.sections.profile}>
                 <SkeletonDetailGrid fields={6} />
               </DetailSection>
-              <DetailSection title="Company">
+              <DetailSection title={t.sections.companies}>
                 <SkeletonDetailGrid fields={4} />
               </DetailSection>
-              <DetailSection title="Links">
+              <DetailSection title={t.sections.links}>
                 <SkeletonDetailGrid fields={2} />
                 <SkeletonStack>
                   <Skeleton variant="button" />
@@ -841,7 +1130,7 @@ export default function ReferrerReviewPage() {
             </>
           }
           sidebar={
-            <DetailSection title="Decision">
+            <DetailSection title={t.sections.decision}>
               <SkeletonStack>
                 <Skeleton variant="input" />
                 <Skeleton variant="button" />
@@ -858,24 +1147,24 @@ export default function ReferrerReviewPage() {
   if (notFound || !referrer) {
     return (
       <div className="founder-page">
-        <Topbar title="Referrer Review" subtitle={cleanIrref.toUpperCase()} />
+        <Topbar title={t.page.title} subtitle={cleanIrref.toUpperCase()} />
         <div className="card referrer-review__empty">
-          <h2>Referrer not found</h2>
-          <p className="field-hint">Double-check the iRREF and try again.</p>
+          <h2>{t.page.notFoundTitle}</h2>
+          <p className="field-hint">{t.page.notFoundRetry}</p>
           <ActionBtn as="link" href="/founder/referrers" variant="ghost">
-            &larr; Back to Referrers
+            &larr; {t.buttons.backToReferrers}
           </ActionBtn>
         </div>
       </div>
     );
   }
 
-  const missingFieldsLabel = referrer.missingFields.length ? referrer.missingFields.join(", ") : "Complete";
+  const missingFieldsLabel = referrer.missingFields.length ? referrer.missingFields.join(", ") : t.labels.complete;
 
   return (
     <div className="founder-page">
       <Topbar
-        title={name ? `${name} - Review` : "Referrer Review"}
+        title={t.page.reviewTitle(name)}
         subtitle={email || referrer.irref}
       />
 
@@ -884,20 +1173,20 @@ export default function ReferrerReviewPage() {
           <>
             {pendingOnlyUpdates.length > 0 && (
               <DetailSection
-                title={
-                  <span className="referrer-name-cell">
-                    Pending Updates
-                    <span className="pending-updates-badge">
-                      {pendingOnlyUpdates.length}
+                  title={
+                    <span className="referrer-name-cell">
+                      {t.pendingUpdates.title}
+                      <span className="pending-updates-badge">
+                        {pendingOnlyUpdates.length}
+                      </span>
                     </span>
-                  </span>
-                }
+                  }
               >
                 <div className="pending-updates-list">
                   {pendingOnlyUpdates.map((update) => (
                     <div key={update.id} className="pending-update-card">
                       <div className="pending-update-header">
-                        <span className="pending-updates-badge">Pending</span>
+                        <span className="pending-updates-badge">{t.pendingUpdates.pending}</span>
                         <span className="pending-update-timestamp">
                           {new Date(update.timestamp).toLocaleString()}
                         </span>
@@ -911,7 +1200,7 @@ export default function ReferrerReviewPage() {
                           return (
                             <div key={key} className="pending-update-row">
                               <span className="pending-update-label">
-                                {formatFieldLabel(key)}
+                                {formatFieldLabel(key, t.fieldLabels)}
                               </span>
                               <span className="pending-update-value">
                                 {String(currentValue) || "-"}
@@ -934,7 +1223,7 @@ export default function ReferrerReviewPage() {
                           onClick={() => handlePendingUpdate(update.id, "approve")}
                           disabled={pendingUpdateLoading === update.id}
                         >
-                          {pendingUpdateLoading === update.id ? "Applying..." : "Approve"}
+                          {pendingUpdateLoading === update.id ? t.pendingUpdates.applying : t.pendingUpdates.approve}
                         </ActionBtn>
                         <ActionBtn
                           as="button"
@@ -943,7 +1232,7 @@ export default function ReferrerReviewPage() {
                           onClick={() => handlePendingUpdate(update.id, "deny")}
                           disabled={pendingUpdateLoading === update.id}
                         >
-                          Deny
+                          {t.pendingUpdates.deny}
                         </ActionBtn>
                       </div>
                     </div>
@@ -961,7 +1250,7 @@ export default function ReferrerReviewPage() {
                 <DetailSection
                   title={
                     <span className="referrer-name-cell">
-                      Companies
+                      {t.sections.companies}
                       {/* Only show action-color badge when there are individual approve/deny buttons */}
                       {pendingCount > 0 && approvalValue !== "pending" && (
                         <span className="pending-updates-badge">{pendingCount}</span>
@@ -984,14 +1273,14 @@ export default function ReferrerReviewPage() {
                             <div className="company-card__header">
                               {isPending ? (
                                 approvalValue === "pending" ? (
-                                  <Badge tone="neutral">Pending</Badge>
+                                  <Badge tone="neutral">{t.companies.pending}</Badge>
                                 ) : (
-                                  <span className="pending-updates-badge">Pending</span>
+                                  <span className="pending-updates-badge">{t.companies.pending}</span>
                                 )
                               ) : isDenied ? (
-                                <Badge tone="danger">Denied</Badge>
+                                <Badge tone="danger">{t.companies.denied}</Badge>
                               ) : justApproved ? (
-                                <Badge tone="success">Approved</Badge>
+                                <Badge tone="success">{t.companies.approved}</Badge>
                               ) : null}
                               <span className="company-card__timestamp">
                                 {new Date(comp.timestamp).toLocaleString()}
@@ -999,7 +1288,7 @@ export default function ReferrerReviewPage() {
                             </div>
                           <div className="company-card__details">
                             <div className="company-card__row">
-                              <span className="company-card__label">Company</span>
+                              <span className="company-card__label">{t.companies.company}</span>
                               {editDetails ? (
                                 <input
                                   type="text"
@@ -1008,21 +1297,21 @@ export default function ReferrerReviewPage() {
                                   className="company-card__input"
                                 />
                               ) : (
-                                <span>{comp.companyName || "Unnamed"}</span>
+                                <span>{comp.companyName || t.companies.unnamed}</span>
                               )}
                             </div>
                             <div className="company-card__row">
-                              <span className="company-card__label">iRCRN</span>
+                              <span className="company-card__label">{t.companies.ircrn}</span>
                               <span>{comp.companyIrcrn || "-"}</span>
                             </div>
                             <div className="company-card__row">
-                              <span className="company-card__label">Industry</span>
+                              <span className="company-card__label">{t.companies.industry}</span>
                               {editDetails ? (
                                 <Select
                                   id={`company-industry-${comp.id}`}
                                   name={`company-industry-${comp.id}`}
-                                  options={COMPANY_INDUSTRY_OPTIONS}
-                                  placeholder="Select"
+                                  options={companyIndustryOptions(language)}
+                                  placeholder={t.companies.select}
                                   value={comp.companyIndustry || ""}
                                   onChange={(value) => handleCompanyFieldChange(comp.id, "companyIndustry", Array.isArray(value) ? value[0] : value)}
                                 />
@@ -1031,13 +1320,13 @@ export default function ReferrerReviewPage() {
                               )}
                             </div>
                             <div className="company-card__row">
-                              <span className="company-card__label">Work Type</span>
+                              <span className="company-card__label">{t.companies.workType}</span>
                               {editDetails ? (
                                 <Select
                                   id={`company-work-type-${comp.id}`}
                                   name={`company-work-type-${comp.id}`}
-                                  options={WORK_TYPE_OPTIONS}
-                                  placeholder="Select"
+                                  options={workTypeOptions(language)}
+                                  placeholder={t.companies.select}
                                   value={comp.workType || ""}
                                   onChange={(value) => handleCompanyFieldChange(comp.id, "workType", Array.isArray(value) ? value[0] : value)}
                                 />
@@ -1046,14 +1335,14 @@ export default function ReferrerReviewPage() {
                               )}
                             </div>
                             <div className="company-card__row">
-                              <span className="company-card__label">Careers Portal</span>
+                              <span className="company-card__label">{t.companies.careersPortal}</span>
                               {editDetails ? (
                                 <input
                                   type="url"
                                   value={comp.careersPortal || ""}
                                   onChange={(e) => handleCompanyFieldChange(comp.id, "careersPortal", e.target.value)}
                                   className="company-card__input"
-                                  placeholder="https://..."
+                                  placeholder={t.placeholders.careersPortal}
                                 />
                               ) : comp.careersPortal ? (
                                 <a href={comp.careersPortal} target="_blank" rel="noopener noreferrer" className="company-card__link">
@@ -1067,24 +1356,24 @@ export default function ReferrerReviewPage() {
                           {/* Only show individual approve/deny buttons for returning referrers (already approved/denied) */}
                           {isPending && approvalValue !== "pending" && !editDetails && (
                             <div className="company-card__actions">
-                              <ActionBtn
-                                as="button"
-                                variant="primary"
-                                size="sm"
-                                onClick={() => handleCompanyApproval(comp.id, "approved")}
-                                disabled={isLoading}
-                              >
-                                {isLoading ? "..." : "Approve"}
-                              </ActionBtn>
-                              <ActionBtn
-                                as="button"
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleCompanyApproval(comp.id, "denied")}
-                                disabled={isLoading}
-                              >
-                                {isLoading ? "..." : "Deny"}
-                              </ActionBtn>
+                                <ActionBtn
+                                  as="button"
+                                  variant="primary"
+                                  size="sm"
+                                  onClick={() => handleCompanyApproval(comp.id, "approved")}
+                                  disabled={isLoading}
+                                >
+                                  {isLoading ? "..." : t.buttons.approve}
+                                </ActionBtn>
+                                <ActionBtn
+                                  as="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleCompanyApproval(comp.id, "denied")}
+                                  disabled={isLoading}
+                                >
+                                  {isLoading ? "..." : t.pendingUpdates.deny}
+                                </ActionBtn>
                             </div>
                           )}
                         </div>
@@ -1096,68 +1385,71 @@ export default function ReferrerReviewPage() {
               );
             })()}
 
-            <DetailSection title="Admin">
+            <DetailSection title={t.sections.admin}>
               <div className="field-grid field-grid--two">
                 <div className="field">
-                  <label htmlFor="referrer-status">Status</label>
+                  <label htmlFor="referrer-status">{t.labels.status}</label>
                   <Select
                     id="referrer-status"
                     name="referrer-status"
                     options={statusOptions
                       .filter((opt) => opt)
-                      .map((opt) => ({ value: opt.toLowerCase(), label: opt }))}
-                    placeholder="Unassigned"
+                      .map((opt) => ({
+                        value: opt.toLowerCase(),
+                        label: t.statusOptions[opt.toLowerCase() as keyof typeof t.statusOptions] || opt,
+                      }))}
+                    placeholder={t.labels.unassigned}
                     value={status}
                     onChange={(value) => setStatus(Array.isArray(value) ? value[0] : value)}
                   />
                 </div>
                 <div className="field">
-                  <label htmlFor="referrer-type">Referrer Type</label>
+                  <label htmlFor="referrer-type">{t.labels.referrerType}</label>
                   <input
                     id="referrer-type"
                     type="text"
                     value={tags}
                     onChange={(event) => setTags(event.target.value)}
-                    placeholder="e.g. HR Manager, Recruiter, Agency"
+                    placeholder={t.placeholders.referrerType}
                   />
                 </div>
                 <div className="field">
-                  <label htmlFor="referrer-last-contacted">Last Contact Date</label>
+                  <label htmlFor="referrer-last-contacted">{t.labels.lastContacted}</label>
                   <input
                     id="referrer-last-contacted"
                     type="text"
                     value={lastContactedAt}
                     onChange={(event) => setLastContactedAt(event.target.value)}
-                    placeholder="e.g. 2025-01-15"
+                    placeholder={t.placeholders.lastContacted}
                   />
                 </div>
                 <div className="field">
-                  <label htmlFor="referrer-next-action">Next Follow-up</label>
+                  <label htmlFor="referrer-next-action">{t.labels.nextFollowUp}</label>
                   <input
                     id="referrer-next-action"
                     type="text"
                     value={nextActionAt}
                     onChange={(event) => setNextActionAt(event.target.value)}
-                    placeholder="e.g. 2025-01-20 or Call Monday"
+                    placeholder={t.placeholders.nextFollowUp}
                   />
                 </div>
               </div>
               <div className="field" style={{ marginTop: "var(--gap)" }}>
-                <label htmlFor="referrer-notes">Internal Notes</label>
+                <label htmlFor="referrer-notes">{t.labels.internalNotes}</label>
                 <textarea
                   id="referrer-notes"
                   rows={4}
                   value={notes}
                   onChange={(event) => setNotes(event.target.value)}
-                  placeholder="Add notes about this referrer..."
+                  placeholder={t.placeholders.notes}
                 />
               </div>
             </DetailSection>
 
-            <DetailSection title="Profile">
+            <DetailSection title={t.sections.profile}>
               <div className="field-grid field-grid--two">
                 <div className="field">
-                  <label htmlFor="profile-name">Name</label>
+                  <label htmlFor="profile-name">{t.labels.name}</label>
                   {editDetails ? (
                     <input
                       id="profile-name"
@@ -1176,7 +1468,7 @@ export default function ReferrerReviewPage() {
                   )}
                 </div>
                 <div className="field">
-                  <label htmlFor="profile-email">Email</label>
+                  <label htmlFor="profile-email">{t.labels.email}</label>
                   {editDetails ? (
                     <input
                       id="profile-email"
@@ -1195,7 +1487,7 @@ export default function ReferrerReviewPage() {
                   )}
                 </div>
                 <div className="field">
-                  <label htmlFor="profile-phone">Phone</label>
+                  <label htmlFor="profile-phone">{t.labels.phone}</label>
                   {editDetails ? (
                     <input
                       id="profile-phone"
@@ -1214,13 +1506,13 @@ export default function ReferrerReviewPage() {
                   )}
                 </div>
                 <div className="field">
-                  <label htmlFor="profile-country">Country</label>
+                  <label htmlFor="profile-country">{t.labels.country}</label>
                   {editDetails ? (
                     <Select
                       id="profile-country"
                       name="profile-country"
                       options={countryOptions()}
-                      placeholder="Select"
+                      placeholder={t.placeholders.select}
                       value={country}
                       onChange={(value) => setCountry(Array.isArray(value) ? value[0] : value)}
                     />
@@ -1235,21 +1527,21 @@ export default function ReferrerReviewPage() {
                   )}
                 </div>
                 <div className="field">
-                  <label htmlFor="profile-irref">Referrer iRREF</label>
+                  <label htmlFor="profile-irref">{t.labels.referrerId}</label>
                   <input id="profile-irref" type="text" value={referrer.irref || "-"} readOnly tabIndex={-1} />
                 </div>
                 <div className="field">
-                  <label htmlFor="profile-missing">Missing Fields</label>
+                  <label htmlFor="profile-missing">{t.labels.missingFields}</label>
                   <input id="profile-missing" type="text" value={missingFieldsLabel} readOnly tabIndex={-1} />
                 </div>
               </div>
             </DetailSection>
 
 
-            <DetailSection title="Links">
+            <DetailSection title={t.sections.links}>
               <div className="field-grid field-grid--two">
                 <div className="field">
-                  <label htmlFor="link-linkedin">LinkedIn</label>
+                  <label htmlFor="link-linkedin">{t.labels.linkedin}</label>
                   {editDetails ? (
                     <input
                       id="link-linkedin"
@@ -1269,33 +1561,43 @@ export default function ReferrerReviewPage() {
                 </div>
               </div>
               <div className="referrer-review__link-list">
-                <LinkRow icon={<IconLinkedIn />} label="LinkedIn" url={linkedin} actionLabel="View" />
                 <LinkRow
-                  icon={<IconLink />}
-                  label="Referrer Portal"
-                  url={portalLink}
-                  actionLabel={portalLink ? "Open" : "Generate"}
-                  onAction={handlePortalLink}
-                  isLoading={portalLoading}
-                  loadingLabel="Generating..."
-                  previewOverride={portalLink ? undefined : "Generate a portal link for this referrer"}
+                  icon={<IconLinkedIn />}
+                  label={t.links.linkedin}
+                  url={linkedin}
+                  actionLabel={t.links.view}
+                  notProvidedLabel={t.links.notProvided}
                 />
                 <LinkRow
                   icon={<IconLink />}
-                  label="Rotate Portal Token"
-                  actionLabel="Rotate"
+                  label={t.links.referrerPortal}
+                  url={portalLink}
+                  actionLabel={portalLink ? t.links.open : t.links.generate}
+                  onAction={handlePortalLink}
+                  isLoading={portalLoading}
+                  loadingLabel={t.links.generating}
+                  previewOverride={portalLink ? undefined : t.links.generateHint}
+                  notProvidedLabel={t.links.notProvided}
+                />
+                <LinkRow
+                  icon={<IconLink />}
+                  label={t.links.rotateToken}
+                  actionLabel={t.links.rotate}
                   onAction={handleRotatePortalToken}
                   isLoading={portalRotateLoading}
-                  loadingLabel="Rotating..."
-                  previewOverride="Invalidate existing portal tokens"
+                  loadingLabel={t.links.rotating}
+                  previewOverride={t.links.rotateHint}
+                  notProvidedLabel={t.links.notProvided}
                 />
                 <LinkRow
                   icon={<IconMeet />}
-                  label="Meet Founder"
-                  actionLabel="Invite"
+                  label={t.links.meetFounder}
+                  actionLabel={t.links.invite}
                   onAction={handleInvite}
                   isLoading={actionLoading}
-                  previewOverride={actionLoading ? "Sending invite..." : "Send invite email"}
+                  loadingLabel={t.links.sendingInvite}
+                  previewOverride={actionLoading ? t.links.sendingInvite : t.links.sendInviteEmail}
+                  notProvidedLabel={t.links.notProvided}
                 />
               </div>
               {portalMessage ? (
@@ -1313,9 +1615,9 @@ export default function ReferrerReviewPage() {
         }
         sidebar={
           <>
-            <DetailSection title="Decision" className="referrer-review__decision">
+            <DetailSection title={t.sections.decision} className="referrer-review__decision">
               <div className="field">
-                <label htmlFor="decision-status">Current status</label>
+                <label htmlFor="decision-status">{t.labels.currentStatus}</label>
                 <input
                   id="decision-status"
                   type="text"
@@ -1329,15 +1631,15 @@ export default function ReferrerReviewPage() {
                 {editDetails ? (
                   <>
                     <ActionBtn as="button" variant="primary" onClick={handleSaveEdit} disabled={saving}>
-                      {saving ? "Saving..." : "Save"}
+                      {saving ? t.buttons.saving : t.buttons.save}
                     </ActionBtn>
                     <ActionBtn as="button" variant="ghost" onClick={handleCancelEdit} disabled={saving}>
-                      Cancel
+                      {t.buttons.cancel}
                     </ActionBtn>
                   </>
                 ) : (
                   <ActionBtn as="button" variant="ghost" onClick={handleStartEdit}>
-                    Edit details
+                    {t.buttons.editDetails}
                   </ActionBtn>
                 )}
                 {approvalValue === "pending" && (
@@ -1348,7 +1650,7 @@ export default function ReferrerReviewPage() {
                       onClick={() => handleApproval("approved")}
                       disabled={!referrer || approvalLoading}
                     >
-                      {approvalLoading ? "Updating..." : "Approve"}
+                      {approvalLoading ? t.buttons.updating : t.buttons.approve}
                     </ActionBtn>
                     {rejectConfirm ? (
                       <>
@@ -1358,7 +1660,7 @@ export default function ReferrerReviewPage() {
                           onClick={() => handleApproval("denied")}
                           disabled={!referrer || approvalLoading}
                         >
-                          {approvalLoading ? "Updating..." : "Confirm reject"}
+                          {approvalLoading ? t.buttons.updating : t.buttons.confirmReject}
                         </ActionBtn>
                         <ActionBtn
                           as="button"
@@ -1366,7 +1668,7 @@ export default function ReferrerReviewPage() {
                           onClick={() => setRejectConfirm(false)}
                           disabled={approvalLoading}
                         >
-                          Cancel
+                          {t.buttons.cancel}
                         </ActionBtn>
                       </>
                     ) : (
@@ -1376,7 +1678,7 @@ export default function ReferrerReviewPage() {
                         onClick={() => setRejectConfirm(true)}
                         disabled={!referrer || approvalLoading}
                       >
-                        Reject
+                        {t.buttons.reject}
                       </ActionBtn>
                     )}
                   </>
@@ -1386,7 +1688,7 @@ export default function ReferrerReviewPage() {
                     {deleteConfirm ? (
                       <>
                         <div className="status-banner status-banner--warning" role="alert" style={{ marginBottom: "8px" }}>
-                          This will also archive all related applications.
+                          {t.banners.archiveWarning}
                         </div>
                         <ActionBtn
                           as="button"
@@ -1395,7 +1697,7 @@ export default function ReferrerReviewPage() {
                           disabled={!referrer || deleteLoading}
                           className="action-btn--danger"
                         >
-                          {deleteLoading ? "Archiving..." : "Confirm archive"}
+                          {deleteLoading ? t.buttons.archiving : t.buttons.confirmArchive}
                         </ActionBtn>
                         <ActionBtn
                           as="button"
@@ -1403,7 +1705,7 @@ export default function ReferrerReviewPage() {
                           onClick={() => setDeleteConfirm(false)}
                           disabled={deleteLoading}
                         >
-                          Cancel
+                          {t.buttons.cancel}
                         </ActionBtn>
                       </>
                     ) : (
@@ -1413,7 +1715,7 @@ export default function ReferrerReviewPage() {
                         onClick={() => setDeleteConfirm(true)}
                         disabled={!referrer || deleteLoading}
                       >
-                        Archive referrer
+                        {t.buttons.archiveReferrer}
                       </ActionBtn>
                     )}
                   </>
@@ -1433,28 +1735,28 @@ export default function ReferrerReviewPage() {
                 ) : null}
               </div>
               <ActionBtn as="link" href="/founder/referrers" variant="ghost">
-                &larr; Back to Referrers
+                &larr; {t.buttons.backToReferrers}
               </ActionBtn>
             </DetailSection>
 
-            <DetailSection title="Applications">
+            <DetailSection title={t.sections.applications}>
               {appsLoading ? (
                 <SkeletonStack>
                   <Skeleton variant="text" width="100%" />
                   <Skeleton variant="text" width="80%" />
                 </SkeletonStack>
               ) : applications.length === 0 ? (
-                <p className="founder-card__meta">No applications yet.</p>
+                <p className="founder-card__meta">{t.applications.none}</p>
               ) : (
                 <ul className="founder-list">
                   {applications.map((app) => (
                     <li key={app.id}>
                       <Link href={`/founder/applications/${app.id}`} className="founder-list__link">
                         <div className="founder-list__title">
-                          {app.position || "Application"} <Badge tone="neutral">{app.iCrn}</Badge>
+                          {app.position || t.applications.application} <Badge tone="neutral">{app.iCrn}</Badge>
                         </div>
                         <div className="founder-list__meta">
-                          {app.id} - {app.status || "Unassigned"}
+                          {app.id} - {app.status || t.applications.unassigned}
                         </div>
                       </Link>
                     </li>

@@ -11,6 +11,7 @@ import { Select } from '@/components/Select';
 import { SuccessAnimation } from '@/components/SuccessAnimation';
 import { getAllTimezoneOptions } from '@/lib/timezone';
 import { useLanguage } from '@/components/LanguageProvider';
+import { formMessages } from '@/lib/translations';
 
 const TIMEZONE_OPTIONS = getAllTimezoneOptions();
 
@@ -32,13 +33,8 @@ const translations = {
     successTitle: 'Request Submitted',
     successMessage: 'Your reschedule request has been sent. The referrer will contact you with a new time.',
     errorTitle: 'Error',
-    missingLink: 'This reschedule link is missing required information. Please use the link from your email.',
-    invalidLink: 'This reschedule link is invalid or has expired.',
-    validationError: 'Unable to validate the reschedule link. Please try again.',
     loading: 'Loading...',
     loadingHint: 'Validating your reschedule link',
-    unableToReschedule: 'Unable to Reschedule',
-    errorHint: 'If you need assistance, please contact the recruiter directly.',
     successHint: 'You can close this window.',
     formTitle: 'Request to Reschedule',
     formLead: 'Would you like to request a new meeting time? The recruiter will be notified and will reach out with alternative options.',
@@ -55,51 +51,42 @@ const translations = {
     requestReschedule: 'Request Reschedule',
     changedMind: 'Changed your mind?',
     closeWindow: 'Close this window',
-    submitError: 'Something went wrong. Please try again.',
-    submitNetworkError: 'Unable to submit reschedule request. Please try again.',
   },
   fr: {
-    title: 'Reprogrammer la réunion',
-    currentMeeting: 'Réunion actuelle',
+    title: 'Reprogrammer la r?union',
+    currentMeeting: 'R?union actuelle',
     position: 'Poste',
-    scheduledFor: 'Prévue pour',
+    scheduledFor: 'Pr?vue pour',
     reasonLabel: 'Raison de la reprogrammation',
     reasonPlaceholder: 'Veuillez expliquer pourquoi vous devez reprogrammer...',
     timezoneLabel: 'Votre fuseau horaire',
-    proposedTimesLabel: 'Horaires alternatifs proposés',
-    proposedTimesHint: 'Veuillez suggérer au moins un horaire alternatif',
+    proposedTimesLabel: 'Horaires alternatifs propos?s',
+    proposedTimesHint: 'Veuillez sugg?rer au moins un horaire alternatif',
     dateLabel: 'Date',
     timeLabel: 'Heure',
     submitButton: 'Soumettre la demande',
     submitting: 'Envoi en cours...',
     successTitle: 'Demande soumise',
-    successMessage: 'Votre demande de reprogrammation a été envoyée. Le recommandateur vous contactera avec un nouvel horaire.',
+    successMessage: 'Votre demande de reprogrammation a ?t? envoy?e. Le r?f?rent vous contactera avec un nouvel horaire.',
     errorTitle: 'Erreur',
-    missingLink: 'Ce lien de reprogrammation manque d\'informations requises. Veuillez utiliser le lien de votre courriel.',
-    invalidLink: 'Ce lien de reprogrammation est invalide ou a expiré.',
-    validationError: 'Impossible de valider le lien de reprogrammation. Veuillez réessayer.',
     loading: 'Chargement...',
     loadingHint: 'Validation de votre lien de reprogrammation',
-    unableToReschedule: 'Impossible de reprogrammer',
-    errorHint: 'Si vous avez besoin d\'aide, veuillez contacter le recruteur directement.',
-    successHint: 'Vous pouvez fermer cette fenêtre.',
+    successHint: 'Vous pouvez fermer cette fen?tre.',
     formTitle: 'Demande de reprogrammation',
-    formLead: 'Souhaitez-vous demander un nouvel horaire de réunion ? Le recruteur sera notifié et vous proposera des alternatives.',
+    formLead: 'Souhaitez-vous demander un nouvel horaire de r?union ? Le recruteur sera notifi? et vous proposera des alternatives.',
     dateTimeLabel: 'Date et heure',
     optional: '(facultatif)',
-    characters: 'caractères',
-    suggestAlternativeTimes: 'Suggérer des horaires alternatifs',
-    suggestAlternativeTimesHint: 'Aidez le recruteur à trouver un meilleur moment en suggérant jusqu\'à 3 créneaux horaires qui vous conviennent.',
+    characters: 'caract?res',
+    suggestAlternativeTimes: 'Sugg?rer des horaires alternatifs',
+    suggestAlternativeTimesHint: 'Aidez le recruteur ? trouver un meilleur moment en sugg?rant jusqu'? 3 cr?neaux horaires qui vous conviennent.',
     timezone: 'Fuseau horaire',
-    selectTimezone: 'Sélectionner le fuseau horaire',
+    selectTimezone: 'S?lectionner le fuseau horaire',
     option: 'Option',
-    selectDate: 'Sélectionner la date',
-    selectTime: 'Sélectionner l\'heure',
+    selectDate: 'S?lectionner la date',
+    selectTime: 'S?lectionner l'heure',
     requestReschedule: 'Demander la reprogrammation',
-    changedMind: 'Vous avez changé d\'avis ?',
-    closeWindow: 'Fermer cette fenêtre',
-    submitError: 'Une erreur s\'est produite. Veuillez réessayer.',
-    submitNetworkError: 'Impossible de soumettre la demande de reprogrammation. Veuillez réessayer.',
+    changedMind: 'Vous avez chang? d'avis ?',
+    closeWindow: 'Fermer cette fen?tre',
   },
 };
 
@@ -123,6 +110,7 @@ function ReschedulePageContent() {
   const token = searchParams.get('token');
   const { language } = useLanguage();
   const t = translations[language];
+  const formCopy = formMessages.reschedule[language];
 
   const [pageState, setPageState] = useState<PageState>('loading');
   const [errorMessage, setErrorMessage] = useState('');
@@ -147,7 +135,7 @@ function ReschedulePageContent() {
   // Validate token on mount
   useEffect(() => {
     if (!token) {
-      setErrorMessage(t.missingLink);
+      setErrorMessage(formCopy.errors.missingLink);
       setPageState('error');
       return;
     }
@@ -158,7 +146,7 @@ function ReschedulePageContent() {
         const data = await response.json();
 
         if (!response.ok || !data.valid) {
-          setErrorMessage(data.error || t.invalidLink);
+          setErrorMessage(data.error || formCopy.errors.invalidLink);
           setPageState('error');
           return;
         }
@@ -167,13 +155,13 @@ function ReschedulePageContent() {
         setTimezone(data.meetingInfo.meetingTimezone || '');
         setPageState('form');
       } catch {
-        setErrorMessage(t.validationError);
+        setErrorMessage(formCopy.errors.validationError);
         setPageState('error');
       }
     };
 
     validateToken();
-  }, [token, t.missingLink, t.invalidLink, t.validationError]);
+  }, [token, formCopy.errors.missingLink, formCopy.errors.invalidLink, formCopy.errors.validationError]);
 
   const updateProposedTime = (index: number, field: 'date' | 'time', value: string) => {
     setProposedTimes((prev) => {
@@ -206,7 +194,7 @@ function ReschedulePageContent() {
       const data = await response.json();
 
       if (!response.ok || !data.success) {
-        setErrorMessage(data.error || t.submitError);
+        setErrorMessage(data.error || formCopy.errors.submitError);
         setPageState('error');
         return;
       }
@@ -214,7 +202,7 @@ function ReschedulePageContent() {
       setShowSuccessAnimation(true);
       setPageState('success');
     } catch {
-      setErrorMessage(t.submitNetworkError);
+      setErrorMessage(formCopy.errors.submitNetworkError);
       setPageState('error');
     } finally {
       setSubmitting(false);
@@ -244,9 +232,9 @@ function ReschedulePageContent() {
                   <line x1="9" y1="9" x2="15" y2="15" />
                 </svg>
               </div>
-              <h1 id="reschedule-title">{t.unableToReschedule}</h1>
+              <h1 id="reschedule-title">{formCopy.errors.unableToReschedule}</h1>
               <p className="lead">{errorMessage}</p>
-              <p className="reschedule-hint">{t.errorHint}</p>
+              <p className="reschedule-hint">{formCopy.errors.errorHint}</p>
             </div>
           )}
 
@@ -285,7 +273,7 @@ function ReschedulePageContent() {
                 <div className="meeting-details">
                   <div className="meeting-detail">
                     <span className="meeting-detail-label">{t.dateTimeLabel}</span>
-                    <span className="meeting-detail-value">{meetingInfo.formattedDateTime || `${meetingInfo.meetingDate} at ${meetingInfo.meetingTime}`}</span>
+                    <span className="meeting-detail-value">{meetingInfo.formattedDateTime || `${meetingInfo.meetingDate} ${meetingInfo.meetingTime}`}</span>
                   </div>
                   <div className="meeting-detail">
                     <span className="meeting-detail-label">{t.position}</span>
@@ -386,6 +374,9 @@ function ReschedulePageContent() {
 }
 
 function ReschedulePageLoading() {
+  const { language } = useLanguage();
+  const t = translations[language];
+
   return (
     <AppShell>
       <main>
@@ -394,8 +385,8 @@ function ReschedulePageLoading() {
             <div className="reschedule-icon reschedule-icon--loading">
               <span className="loading-indicator" aria-hidden="true" />
             </div>
-            <h1 id="reschedule-title">Loading...</h1>
-            <p className="lead">Validating your reschedule link</p>
+            <h1 id="reschedule-title">{t.loading}</h1>
+            <p className="lead">{t.loadingHint}</p>
           </div>
         </section>
       </main>

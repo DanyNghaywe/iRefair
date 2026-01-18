@@ -36,6 +36,21 @@ const navLabels = {
   },
 };
 
+const uiLabels = {
+  en: {
+    menu: "Menu",
+    close: "Close",
+    openNav: "Open navigation",
+    closeNav: "Close navigation",
+  },
+  fr: {
+    menu: "Menu",
+    close: "Fermer",
+    openNav: "Ouvrir la navigation",
+    closeNav: "Fermer la navigation",
+  },
+};
+
 export default function FounderLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { language } = useLanguage();
@@ -49,6 +64,7 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
     label: navLabels[language][item.labelKey],
     iconKey: item.labelKey,
   }));
+  const ui = uiLabels[language];
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
@@ -98,10 +114,10 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
             as="button"
             variant="ghost"
             className={`ops-menu-button ${sidebarOpen && isMobile ? "is-hidden" : ""}`}
-            aria-label={sidebarOpen ? "Close navigation" : "Open navigation"}
+            aria-label={sidebarOpen ? ui.closeNav : ui.openNav}
             onClick={() => setSidebarOpen((prev) => !prev)}
           >
-            {sidebarOpen && isMobile ? "Close" : "Menu"}
+            {sidebarOpen && isMobile ? ui.close : ui.menu}
           </ActionBtn>
 
           <div

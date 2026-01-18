@@ -5,6 +5,7 @@ import "./globals.css";
 import { LanguageProvider } from "@/components/LanguageProvider";
 import { NavigationLoaderProvider } from "@/components/NavigationLoader";
 import { ToastProvider } from "@/components/Toast";
+import { SkipLink } from "@/components/SkipLink";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -71,10 +72,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={manrope.variable}>
-        <a href="#main-content" className="skip-link">
-          Skip to main content
-        </a>
         <LanguageProvider>
+          <SkipLink />
           <ToastProvider>
             <NavigationLoaderProvider>{children}</NavigationLoaderProvider>
           </ToastProvider>

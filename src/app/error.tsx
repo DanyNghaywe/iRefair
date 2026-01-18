@@ -5,6 +5,28 @@ import { useEffect } from "react";
 import { ActionBtn } from "@/components/ActionBtn";
 import { AppShell } from "@/components/AppShell";
 import { PublicFooter } from "@/components/PublicFooter";
+import { useLanguage } from "@/components/LanguageProvider";
+
+const translations = {
+  en: {
+    code: "Error",
+    title: "Something went wrong",
+    description:
+      "We encountered an unexpected issue. This has been logged and we're looking into it. Please try again or return to the homepage.",
+    tryAgain: "Try again",
+    goHome: "Go home",
+    reference: "Reference:",
+  },
+  fr: {
+    code: "Erreur",
+    title: "Une erreur s'est produite",
+    description:
+      "Nous avons rencontré un problème inattendu. Il a été enregistré et nous l'examinons. Veuillez réessayer ou revenir à l'accueil.",
+    tryAgain: "Réessayer",
+    goHome: "Retour à l'accueil",
+    reference: "Référence :",
+  },
+};
 
 function ErrorIllustration() {
   return (
@@ -60,6 +82,9 @@ type ErrorPageProps = {
 };
 
 export default function ErrorPage({ error, reset }: ErrorPageProps) {
+  const { language, withLanguage } = useLanguage();
+  const t = translations[language];
+
   useEffect(() => {
     console.error("Application error:", error);
   }, [error]);
@@ -70,23 +95,20 @@ export default function ErrorPage({ error, reset }: ErrorPageProps) {
         <section className="glass-card error-page__card">
           <ErrorIllustration />
           <div className="error-page__content">
-            <p className="error-page__code">Error</p>
-            <h1 className="error-page__title">Something went wrong</h1>
-            <p className="error-page__description">
-              We encountered an unexpected issue. This has been logged and we're looking into it.
-              Please try again or return to the homepage.
-            </p>
+            <p className="error-page__code">{t.code}</p>
+            <h1 className="error-page__title">{t.title}</h1>
+            <p className="error-page__description">{t.description}</p>
             {error.digest && (
               <p className="error-page__digest">
-                Reference: <code>{error.digest}</code>
+                {t.reference} <code>{error.digest}</code>
               </p>
             )}
             <div className="error-page__actions">
               <ActionBtn as="button" variant="primary" onClick={reset}>
-                Try again
+                {t.tryAgain}
               </ActionBtn>
-              <ActionBtn as="link" href="/" variant="ghost">
-                Go home
+              <ActionBtn as="link" href={withLanguage("/")} variant="ghost">
+                {t.goHome}
               </ActionBtn>
             </div>
           </div>
