@@ -202,9 +202,10 @@ function ReferrersPageContent() {
             ) : null}
             {(() => {
               const isNew = !row.companyApproval || row.companyApproval === 'pending';
-              const hasPendingCompanies = row.pendingCompanyCount && row.pendingCompanyCount > 0;
+              const pendingCount = row.pendingCompanyCount ?? 0;
+              const hasPendingCompanies = pendingCount > 0;
               if (isNew && hasPendingCompanies) {
-                const companiesText = `${row.pendingCompanyCount} ${row.pendingCompanyCount > 1 ? t.pendingCompanies : t.pendingCompany}`;
+                const companiesText = `${pendingCount} ${pendingCount > 1 ? t.pendingCompanies : t.pendingCompany}`;
                 return (
                   <span className="pending-approval-badge" title={`${t.newApproval}, ${companiesText}`}>
                     {t.newApproval}, {companiesText}
@@ -215,9 +216,9 @@ function ReferrersPageContent() {
                 return (
                   <span
                     className="pending-updates-badge"
-                    title={`${row.pendingCompanyCount} ${row.pendingCompanyCount > 1 ? t.pendingCompanies : t.pendingCompany}`}
+                    title={`${pendingCount} ${pendingCount > 1 ? t.pendingCompanies : t.pendingCompany}`}
                   >
-                    {row.pendingCompanyCount} {row.pendingCompanyCount > 1 ? t.pendingCompanies : t.pendingCompany}
+                    {pendingCount} {pendingCount > 1 ? t.pendingCompanies : t.pendingCompany}
                   </span>
                 );
               }
