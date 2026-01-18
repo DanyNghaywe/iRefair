@@ -468,8 +468,8 @@ export function newApplicantRegistrationConfirmation(params: NewApplicantRegistr
   );
 
   const expiryNote = t(
-    "This confirmation link will expire in 24 hours.",
-    "Ce lien de confirmation expirera dans 24 heures.",
+    "This confirmation link will expire in 7 days.",
+    "Ce lien de confirmation expirera dans 7 jours.",
     locale
   );
 
@@ -569,8 +569,8 @@ export function applicantProfileUpdateConfirmation(params: ApplicantProfileUpdat
   );
 
   const expiryNote = t(
-    "This confirmation link will expire in 24 hours.",
-    "Ce lien de confirmation expirera dans 24 heures.",
+    "This confirmation link will expire in 7 days.",
+    "Ce lien de confirmation expirera dans 7 jours.",
     locale
   );
 
