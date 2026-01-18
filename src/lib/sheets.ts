@@ -1920,13 +1920,28 @@ export async function listReferrers(params: ReferrerListParams) {
   const companiesData = await getSheetDataWithHeaders(REFERRER_COMPANIES_SHEET_NAME);
   const companiesHeaderMap = buildHeaderMap(companiesData.headers);
   const pendingCompanyCountMap = new Map<string, number>();
+  const companyNameMap = new Map<string, string[]>();
+
+  const addCompanyName = (referrerIrref: string, companyName: string) => {
+    const trimmedName = companyName.trim();
+    if (!trimmedName) return;
+    const existing = companyNameMap.get(referrerIrref) ?? [];
+    const normalizedName = trimmedName.toLowerCase();
+    if (!existing.some((value) => value.toLowerCase() === normalizedName)) {
+      existing.push(trimmedName);
+      companyNameMap.set(referrerIrref, existing);
+    }
+  };
 
   for (const companyRow of companiesData.rows) {
-    const referrerIrref = getHeaderValue(companiesHeaderMap, companyRow, 'Referrer iRREF').toLowerCase();
+    const referrerIrref = getHeaderValue(companiesHeaderMap, companyRow, 'Referrer iRREF').trim().toLowerCase();
+    if (!referrerIrref) continue;
     const approval = getHeaderValue(companiesHeaderMap, companyRow, 'Company Approval').toLowerCase();
     const archived = getHeaderValue(companiesHeaderMap, companyRow, 'Archived');
 
     if (archived === 'true') continue;
+
+    addCompanyName(referrerIrref, getHeaderValue(companiesHeaderMap, companyRow, 'Company Name'));
     if (approval === 'pending' || approval === '') {
       pendingCompanyCountMap.set(referrerIrref, (pendingCompanyCountMap.get(referrerIrref) || 0) + 1);
     }
@@ -1939,9 +1954,11 @@ export async function listReferrers(params: ReferrerListParams) {
   const items = rows
     .map((row) => {
       const missingFields: string[] = [];
+      const irref = getHeaderValue(headerMap, row, 'iRREF');
+      const legacyCompany = getHeaderValue(headerMap, row, 'Company');
       if (!getHeaderValue(headerMap, row, 'Email')) missingFields.push('Email');
       if (!getHeaderValue(headerMap, row, 'Phone')) missingFields.push('Phone');
-      if (!getHeaderValue(headerMap, row, 'Company')) missingFields.push('Company');
+      if (!legacyCompany) missingFields.push('Company');
       if (!getHeaderValue(headerMap, row, 'Careers Portal')) missingFields.push('Careers Portal');
 
       // Check for pending updates
@@ -1958,14 +1975,25 @@ export async function listReferrers(params: ReferrerListParams) {
         }
       }
 
+      const normalizedIrref = irref.trim().toLowerCase();
+      const companies = [...(companyNameMap.get(normalizedIrref) ?? [])];
+      const trimmedLegacyCompany = legacyCompany.trim();
+      if (trimmedLegacyCompany) {
+        const hasLegacy = companies.some((value) => value.toLowerCase() === trimmedLegacyCompany.toLowerCase());
+        if (!hasLegacy) {
+          companies.push(trimmedLegacyCompany);
+        }
+      }
+
       return {
-        irref: getHeaderValue(headerMap, row, 'iRREF'),
+        irref,
         timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
         name: getHeaderValue(headerMap, row, 'Name'),
         email: getHeaderValue(headerMap, row, 'Email'),
         phone: getHeaderValue(headerMap, row, 'Phone'),
         country: getHeaderValue(headerMap, row, 'Country'),
-        company: getHeaderValue(headerMap, row, 'Company'),
+        company: legacyCompany,
+        companies,
         companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
         companyApproval: getHeaderValue(headerMap, row, 'Company Approval'),
         companyIndustry: getHeaderValue(headerMap, row, 'Company Industry'),
@@ -1975,7 +2003,7 @@ export async function listReferrers(params: ReferrerListParams) {
         portalTokenVersion: getHeaderValue(headerMap, row, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
         pendingUpdates: pendingUpdatesRaw,
         pendingUpdateCount,
-        pendingCompanyCount: pendingCompanyCountMap.get(getHeaderValue(headerMap, row, 'iRREF').toLowerCase()) || 0,
+        pendingCompanyCount: pendingCompanyCountMap.get(normalizedIrref) || 0,
         status: getHeaderValue(headerMap, row, 'Status'),
         ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
         tags: getHeaderValue(headerMap, row, 'Tags'),
@@ -1998,11 +2026,11 @@ export async function listReferrers(params: ReferrerListParams) {
           record.name,
           record.phone,
           record.country,
-          record.company,
           record.companyIndustry,
           record.workType,
           record.tags,
           record.ownerNotes,
+          ...(record.companies ?? []),
         ]
           .filter(Boolean)
           .map((value) => value.toLowerCase());
@@ -2019,8 +2047,10 @@ export async function listReferrers(params: ReferrerListParams) {
           return false;
         }
       }
-      if (companyFilter && record.company.toLowerCase().includes(companyFilter) === false) {
-        return false;
+      if (companyFilter) {
+        const companyMatches = (record.companies ?? [])
+          .some((company) => company.toLowerCase().includes(companyFilter));
+        if (!companyMatches) return false;
       }
       return true;
     });
