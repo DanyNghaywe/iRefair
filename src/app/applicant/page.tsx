@@ -109,6 +109,7 @@ function industryOptions(lang: Language): Option[] {
       'Compliance/ Audit/ Monitoring & Evaluation': 'Conformité / Audit / Suivi & Évaluation',
       Other: 'Autre',
     };
+
     return INDUSTRY_VALUES.map((v) => ({ value: v, label: map[v] ?? v }));
   }
   return INDUSTRY_VALUES.map((v) => ({ value: v, label: v }));
@@ -288,11 +289,11 @@ const translations: Record<
       attachments: 'Pièces jointes',
     },
     labels: {
-      firstName: 'Prenom',
-      middleName: 'Deuxieme prenom',
+      firstName: 'Prénom',
+      middleName: 'Deuxième prénom',
       familyName: 'Nom de famille',
       email: 'Adresse email',
-      languagesSpoken: 'Langues parlees',
+      languagesSpoken: 'Langues parlées',
       languagesOther: 'Autre langue',
       locatedCanada: 'Êtes-vous actuellement au Canada ?',
       province: 'Si oui, quelle province',
@@ -302,7 +303,7 @@ const translations: Record<
       industryOther: 'Autre industrie',
       employmentStatus: 'Êtes-vous actuellement en emploi ?',
       countryOfOrigin: "Pays d'origine",
-      phone: 'Numero de telephone',
+      phone: 'Numéro de téléphone',
       location: 'Lieu',
       linkedin: 'Profil LinkedIn',
       portfolio: 'Portfolio ou site',
@@ -324,9 +325,9 @@ const translations: Record<
     },
     placeholders: {
       phone: '+1-XXX-XXXX ou +961-XX-XXXXXX',
-      languagesOther: 'Precisez',
+      languagesOther: 'Précisez',
       province: 'Sélectionnez une province',
-      industryOther: 'Precisez',
+      industryOther: 'Précisez',
       countryOfOrigin: 'ex. France',
       location: 'Ville, Pays',
       linkedin: 'https://linkedin.com/in/',

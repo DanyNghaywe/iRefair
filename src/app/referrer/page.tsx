@@ -49,6 +49,7 @@ function companyIndustryOptions(lang: Language): Option[] {
       'Compliance / Audit': 'Conformité / Audit',
       Other: 'Autre',
     };
+
     return COMPANY_INDUSTRY_VALUES.map((v) => ({ value: v, label: map[v] ?? v }));
   }
   return COMPANY_INDUSTRY_VALUES.map((v) => ({ value: v, label: v }));
@@ -57,6 +58,7 @@ function companyIndustryOptions(lang: Language): Option[] {
 function workTypeOptions(lang: Language): Option[] {
   if (lang === 'fr') {
     const map: Record<string, string> = { 'On-site': 'Sur site', Remote: 'Télétravail', Hybrid: 'Hybride' };
+
     return ['On-site', 'Remote', 'Hybrid'].map((v) => ({ value: v, label: map[v] }));
   }
   return ['On-site', 'Remote', 'Hybrid'].map((v) => ({ value: v, label: v }));
@@ -207,7 +209,7 @@ const translations: Record<
     english: 'English',
     french: 'Français',
     eyebrow: 'Pour les référents',
-    title: 'Formulaire de recommandation référent',
+    title: 'Formulaire de recommandation du référent',
     lead: 'Indiquez les équipes, les rôles et votre capacité. Enregistrez un candidat ou simplement votre disponibilité.',
     legends: {
       personal: 'Informations personnelles',
@@ -269,14 +271,14 @@ const translations: Record<
     ],
     consentAgreement: "J'ai lu, compris et j'accepte les conditions ci-dessus.",
     success: {
-      title: 'Merci de contribuer Aÿ iRefair',
+      title: 'Merci de contribuer à iRefair',
       thankYou:
-        "Merci d’avoir partagAc vos informations de rAcfArent et de soutenir iRefair. Votre contribution aide des candidats qui recherchent activement un emploi et comptent sur les recommandations de la communautAc.",
+        "Merci d'avoir partagé vos informations de référent et de soutenir iRefair. Votre contribution aide des candidats qui recherchent activement un emploi et comptent sur les recommandations de la communauté.",
       iRrefLabel: 'Votre identifiant de recommandation iRefair (iRREF) :',
       founderIntro:
-        "Le fondateur et directeur gAcnAc ral d’iRefair souhaiterait AAcgalement vous rencontrer pour mieux vous connaAAtre et voir comment vous pourriez collaborer ensemble.",
+        "Le fondateur et directeur général d'iRefair souhaiterait également vous rencontrer pour mieux vous connaître et voir comment vous pourriez collaborer ensemble.",
       founderCtaLabel: 'Planifier un rendez-vous avec le fondateur',
-      founderCtaNote: "BAcentAt disponible : le lien de prise de rendez-vous n’est pas encore actif.",
+      founderCtaNote: "Bientôt disponible : le lien de prise de rendez-vous n'est pas encore actif.",
     },
   },
 };
