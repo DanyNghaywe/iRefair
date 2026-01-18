@@ -148,7 +148,11 @@ export async function POST(request: Request) {
     };
 
     // Check for existing applicant using 2-of-3 matching (name, email, phone)
-    const existingApplicant = await findExistingApplicant(firstName, familyName, email, phone);
+    let existingApplicant = await findExistingApplicant(firstName, familyName, email, phone);
+    if (!existingApplicant) {
+      // Fallback to email match to avoid treating updates as new registrations.
+      existingApplicant = await getApplicantByEmail(email);
+    }
 
     // Block archived applicants from registering or updating their profile
     if (existingApplicant?.record.archived?.toLowerCase() === 'true') {

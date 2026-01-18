@@ -1414,6 +1414,14 @@ export async function getApplicantByRowIndex(rowIndex: number): Promise<Applican
  * - email
  * - phone
  */
+const normalizePhoneForMatch = (value: string) => {
+  const digits = value.replace(/\D/g, '');
+  if (digits.length === 11 && digits.startsWith('1')) {
+    return digits.slice(1);
+  }
+  return digits;
+};
+
 export async function findExistingApplicant(
   firstName: string,
   familyName: string,
@@ -1421,7 +1429,7 @@ export async function findExistingApplicant(
   phone: string,
 ): Promise<ApplicantLookupResult | null> {
   const normalizedEmail = email.trim().toLowerCase();
-  const normalizedPhone = phone.replace(/\D/g, ''); // Remove non-digits for comparison
+  const normalizedPhone = normalizePhoneForMatch(phone);
   const normalizedFirstName = firstName.trim().toLowerCase();
   const normalizedFamilyName = familyName.trim().toLowerCase();
 
@@ -1466,7 +1474,7 @@ export async function findExistingApplicant(
     if (!row.length) continue;
 
     const rowEmail = cellValue(row, emailIdx === -1 ? APPLICANT_EMAIL_COLUMN_INDEX : emailIdx).toLowerCase();
-    const rowPhone = cellValue(row, phoneIdx === -1 ? 6 : phoneIdx).replace(/\D/g, '');
+    const rowPhone = normalizePhoneForMatch(cellValue(row, phoneIdx === -1 ? 6 : phoneIdx));
     const rowFirstName = cellValue(row, firstNameIdx === -1 ? 2 : firstNameIdx).toLowerCase();
     const rowFamilyName = cellValue(row, familyNameIdx === -1 ? 4 : familyNameIdx).toLowerCase();
 
@@ -1906,6 +1914,23 @@ export async function listReferrers(params: ReferrerListParams) {
   if (!headers.length) return { total: 0, items: [] as unknown[] };
 
   const headerMap = buildHeaderMap(headers);
+
+  // Fetch referrer companies to count pending companies per referrer
+  await ensureHeaders(REFERRER_COMPANIES_SHEET_NAME, REFERRER_COMPANIES_HEADERS);
+  const companiesData = await getSheetDataWithHeaders(REFERRER_COMPANIES_SHEET_NAME);
+  const companiesHeaderMap = buildHeaderMap(companiesData.headers);
+  const pendingCompanyCountMap = new Map<string, number>();
+
+  for (const companyRow of companiesData.rows) {
+    const referrerIrref = getHeaderValue(companiesHeaderMap, companyRow, 'Referrer iRREF').toLowerCase();
+    const approval = getHeaderValue(companiesHeaderMap, companyRow, 'Company Approval').toLowerCase();
+    const archived = getHeaderValue(companiesHeaderMap, companyRow, 'Archived');
+
+    if (archived === 'true') continue;
+    if (approval === 'pending' || approval === '') {
+      pendingCompanyCountMap.set(referrerIrref, (pendingCompanyCountMap.get(referrerIrref) || 0) + 1);
+    }
+  }
   const searchTerm = normalizeSearch(params.search);
   const statusFilter = normalizeSearch(params.status);
   const companyFilter = normalizeSearch(params.company);
@@ -1950,6 +1975,7 @@ export async function listReferrers(params: ReferrerListParams) {
         portalTokenVersion: getHeaderValue(headerMap, row, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
         pendingUpdates: pendingUpdatesRaw,
         pendingUpdateCount,
+        pendingCompanyCount: pendingCompanyCountMap.get(getHeaderValue(headerMap, row, 'iRREF').toLowerCase()) || 0,
         status: getHeaderValue(headerMap, row, 'Status'),
         ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
         tags: getHeaderValue(headerMap, row, 'Tags'),
@@ -2000,9 +2026,9 @@ export async function listReferrers(params: ReferrerListParams) {
     });
 
   const ordered = items.sort((a, b) => {
-    // Check if records are "pending" (either first-time approval or pending updates)
-    const aIsPending = (a.companyApproval === 'pending' || !a.companyApproval) || (a.pendingUpdateCount && a.pendingUpdateCount > 0);
-    const bIsPending = (b.companyApproval === 'pending' || !b.companyApproval) || (b.pendingUpdateCount && b.pendingUpdateCount > 0);
+    // Check if records are "pending" (either first-time approval, pending updates, or pending companies)
+    const aIsPending = (a.companyApproval === 'pending' || !a.companyApproval) || (a.pendingUpdateCount && a.pendingUpdateCount > 0) || (a.pendingCompanyCount && a.pendingCompanyCount > 0);
+    const bIsPending = (b.companyApproval === 'pending' || !b.companyApproval) || (b.pendingUpdateCount && b.pendingUpdateCount > 0) || (b.pendingCompanyCount && b.pendingCompanyCount > 0);
 
     // Pending records come first
     if (aIsPending && !bIsPending) return -1;
