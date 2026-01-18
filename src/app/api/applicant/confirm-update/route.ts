@@ -34,6 +34,19 @@ import { buildReferrerPortalLink, ensureReferrerPortalTokenVersion } from "@/lib
 
 type EmailLanguage = "en" | "fr";
 
+function getLocaleFromToken(token: string): EmailLanguage {
+  try {
+    const parts = token.split('.');
+    if (parts.length >= 2) {
+      const payload = JSON.parse(Buffer.from(parts[1], 'base64url').toString());
+      return payload.locale === 'fr' ? 'fr' : 'en';
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return 'en';
+}
+
 type PendingApplicantUpdatePayload = {
   id?: string;
   legacyApplicantId?: string;
@@ -58,11 +71,11 @@ type PendingApplicantUpdatePayload = {
 };
 
 const successPageHtml = `<!DOCTYPE html>
-<html lang="en">
+<html lang="{{lang}}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Profile Updated - iRefair</title>
+  <title>{{pageTitle}} - iRefair</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -208,21 +221,21 @@ const successPageHtml = `<!DOCTYPE html>
           <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
         </svg>
       </div>
-      <h1>Profile Updated!</h1>
-      <p>Your iRefair profile has been successfully updated. You can close this page.</p>
+      <h1>{{heading}}</h1>
+      <p>{{description}}</p>
       <div class="irain">iRAIN: {{iRain}}</div>
     </div>
-    <p class="footer">You'll receive a confirmation email shortly.</p>
+    <p class="footer">{{footer}}</p>
   </div>
 </body>
 </html>`;
 
 const ineligiblePageHtml = `<!DOCTYPE html>
-<html lang="en">
+<html lang="{{lang}}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Profile Updated - iRefair</title>
+  <title>{{pageTitle}} - iRefair</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -368,21 +381,21 @@ const ineligiblePageHtml = `<!DOCTYPE html>
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
         </svg>
       </div>
-      <h1>Profile Updated</h1>
-      <p>Your iRefair profile has been updated. However, based on the information you provided, we're unable to match you with referrers at this time.</p>
+      <h1>{{heading}}</h1>
+      <p>{{description}}</p>
       <div class="irain">iRAIN: {{iRain}}</div>
     </div>
-    <p class="footer">Check your email for more details about your eligibility status.</p>
+    <p class="footer">{{footer}}</p>
   </div>
 </body>
 </html>`;
 
 const errorPageHtml = `<!DOCTYPE html>
-<html lang="en">
+<html lang="{{lang}}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Update Failed - iRefair</title>
+  <title>{{pageTitle}} - iRefair</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -529,20 +542,45 @@ const errorPageHtml = `<!DOCTYPE html>
           <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
         </svg>
       </div>
-      <h1>Update Failed</h1>
-      <p>We couldn't complete your profile update.</p>
+      <h1>{{heading}}</h1>
+      <p>{{description}}</p>
       <div class="error-msg">{{errorMessage}}</div>
     </div>
-    <p class="footer">Need help? <a href="mailto:irefair.andbeyondconsulting@gmail.com">Contact support</a></p>
+    <p class="footer">{{needHelp}} <a href="mailto:irefair.andbeyondconsulting@gmail.com">{{contactSupport}}</a></p>
   </div>
 </body>
 </html>`;
 
 export const runtime = "nodejs";
 
-function errorResponse(message: string, status: number, isGetRequest: boolean) {
+function errorResponse(message: string, status: number, isGetRequest: boolean, locale: EmailLanguage = 'en') {
+  const translations = {
+    en: {
+      pageTitle: 'Update Failed',
+      heading: 'Update Failed',
+      description: "We couldn't complete your profile update.",
+      needHelp: 'Need help?',
+      contactSupport: 'Contact support',
+    },
+    fr: {
+      pageTitle: 'Échec de la mise à jour',
+      heading: 'Échec de la mise à jour',
+      description: "Nous n'avons pas pu compléter la mise à jour de votre profil.",
+      needHelp: "Besoin d'aide?",
+      contactSupport: 'Contacter le support',
+    },
+  };
+  const t = translations[locale];
+
   if (isGetRequest) {
-    const html = errorPageHtml.replace("{{errorMessage}}", escapeHtml(message));
+    const html = errorPageHtml
+      .replace("{{lang}}", locale)
+      .replace("{{pageTitle}}", t.pageTitle)
+      .replace("{{heading}}", t.heading)
+      .replace("{{description}}", t.description)
+      .replace("{{needHelp}}", t.needHelp)
+      .replace("{{contactSupport}}", t.contactSupport)
+      .replace("{{errorMessage}}", message);
     return new NextResponse(html, {
       status,
       headers: { "Content-Type": "text/html; charset=utf-8" },
@@ -598,14 +636,27 @@ async function readToken(request: NextRequest) {
 async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
   const token = await readToken(request);
   if (!token) {
-    return errorResponse("Missing confirmation token. Please use the link from your email.", 400, isGetRequest);
+    return errorResponse(
+      "Missing confirmation token. Please use the link from your email.",
+      400,
+      isGetRequest
+    );
   }
+
+  const locale = getLocaleFromToken(token);
 
   let payload;
   try {
     payload = verifyApplicantUpdateToken(token);
   } catch {
-    return errorResponse("This confirmation link is invalid or has expired. Please submit a new update request.", 401, isGetRequest);
+    return errorResponse(
+      locale === 'fr'
+        ? "Ce lien de confirmation est invalide ou a expiré. Veuillez soumettre une nouvelle demande de mise à jour."
+        : "This confirmation link is invalid or has expired. Please submit a new update request.",
+      401,
+      isGetRequest,
+      locale
+    );
   }
 
   const tokenHash = hashToken(token);
@@ -618,33 +669,75 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
   }
 
   if (!applicant) {
-    return errorResponse("We couldn't find your profile. Please contact support if this persists.", 404, isGetRequest);
+    return errorResponse(
+      locale === 'fr'
+        ? "Nous n'avons pas trouvé votre profil. Veuillez contacter le support si le problème persiste."
+        : "We couldn't find your profile. Please contact support if this persists.",
+      404,
+      isGetRequest,
+      locale
+    );
   }
 
   // Block archived applicants from confirming profile updates
   if (applicant.record.archived?.toLowerCase() === 'true') {
-    return errorResponse("This applicant profile has been archived and can no longer be updated.", 403, isGetRequest);
+    return errorResponse(
+      locale === 'fr'
+        ? "Ce profil de candidat a été archivé et ne peut plus être mis à jour."
+        : "This applicant profile has been archived and can no longer be updated.",
+      403,
+      isGetRequest,
+      locale
+    );
   }
 
   if (!safeCompareHash(storedTokenHash, tokenHash)) {
-    return errorResponse("This confirmation link is no longer valid. Please submit a new update request.", 403, isGetRequest);
+    return errorResponse(
+      locale === 'fr'
+        ? "Ce lien de confirmation n'est plus valide. Veuillez soumettre une nouvelle demande de mise à jour."
+        : "This confirmation link is no longer valid. Please submit a new update request.",
+      403,
+      isGetRequest,
+      locale
+    );
   }
 
   const storedExpiry = parseExpiry(applicant.record.updateTokenExpiresAt);
   if (!storedExpiry || storedExpiry < Date.now()) {
-    return errorResponse("This confirmation link has expired. Please submit a new update request.", 403, isGetRequest);
+    return errorResponse(
+      locale === 'fr'
+        ? "Ce lien de confirmation a expiré. Veuillez soumettre une nouvelle demande de mise à jour."
+        : "This confirmation link has expired. Please submit a new update request.",
+      403,
+      isGetRequest,
+      locale
+    );
   }
 
   const pendingRaw = applicant.record.updatePendingPayload?.trim();
   if (!pendingRaw) {
-    return errorResponse("No pending update found. Your profile may have already been updated.", 400, isGetRequest);
+    return errorResponse(
+      locale === 'fr'
+        ? "Aucune mise à jour en attente. Votre profil a peut-être déjà été mis à jour."
+        : "No pending update found. Your profile may have already been updated.",
+      400,
+      isGetRequest,
+      locale
+    );
   }
 
   let pending: PendingApplicantUpdatePayload;
   try {
     pending = JSON.parse(pendingRaw) as PendingApplicantUpdatePayload;
   } catch {
-    return errorResponse("There was a problem processing your update. Please try again.", 400, isGetRequest);
+    return errorResponse(
+      locale === 'fr'
+        ? "Un problème est survenu lors du traitement de votre mise à jour. Veuillez réessayer."
+        : "There was a problem processing your update. Please try again.",
+      400,
+      isGetRequest,
+      locale
+    );
   }
 
   const timestamp = new Date().toISOString();
@@ -703,11 +796,18 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
   }
 
   const updateResult = await updateRowById(APPLICANT_SHEET_NAME, "Email", payload.email, updates);
+  // Prefer pending.locale over token locale
+  const finalLocale: EmailLanguage = pending.locale === "fr" ? "fr" : locale;
   if (!updateResult.updated) {
-    return errorResponse("We couldn't save your update. Please try again or contact support.", 500, isGetRequest);
+    return errorResponse(
+      finalLocale === 'fr'
+        ? "Nous n'avons pas pu enregistrer votre mise à jour. Veuillez réessayer ou contacter le support."
+        : "We couldn't save your update. Please try again or contact support.",
+      500,
+      isGetRequest,
+      finalLocale
+    );
   }
-
-  const locale: EmailLanguage = pending.locale === "fr" ? "fr" : "en";
   const firstName = pending.firstName || applicant.record.firstName || "there";
   const iRainValue = pending.id || applicant.record.id || "";
 
@@ -763,9 +863,10 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
                 referrerName,
                 companyName,
                 position: app.position,
-                reason: locale === "fr"
+                reason: finalLocale === "fr"
                   ? "Votre profil ne répond plus aux critères d'éligibilité."
                   : "Your profile no longer meets the eligibility requirements.",
+                locale: finalLocale,
               });
               await sendMail({
                 to: pending.email,
@@ -807,13 +908,13 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
         firstName,
         iRain: iRainValue,
         applicantKey: applicantSecret,
-        locale,
+        locale: finalLocale,
       })
     : applicantProfileUpdateConfirmed({
         firstName,
         iRain: iRainValue,
         applicantKey: applicantSecret,
-        locale,
+        locale: finalLocale,
       });
 
   await sendMail({
@@ -824,8 +925,45 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
   });
 
   if (isGetRequest) {
+    const successTranslations = {
+      en: {
+        pageTitle: 'Profile Updated',
+        heading: 'Profile Updated!',
+        description: 'Your iRefair profile has been successfully updated. You can close this page.',
+        footer: "You'll receive a confirmation email shortly.",
+      },
+      fr: {
+        pageTitle: 'Profil mis à jour',
+        heading: 'Profil mis à jour!',
+        description: 'Votre profil iRefair a été mis à jour avec succès. Vous pouvez fermer cette page.',
+        footer: 'Vous recevrez bientôt un courriel de confirmation.',
+      },
+    };
+
+    const ineligibleTranslations = {
+      en: {
+        pageTitle: 'Profile Updated',
+        heading: 'Profile Updated',
+        description: "Your iRefair profile has been updated. However, based on the information you provided, we're unable to match you with referrers at this time.",
+        footer: 'Check your email for more details about your eligibility status.',
+      },
+      fr: {
+        pageTitle: 'Profil mis à jour',
+        heading: 'Profil mis à jour',
+        description: "Votre profil iRefair a été mis à jour. Cependant, selon les informations fournies, nous ne sommes pas en mesure de vous jumeler avec des parrains pour le moment.",
+        footer: 'Consultez votre courriel pour plus de détails sur votre statut d\'éligibilité.',
+      },
+    };
+
     const pageHtml = isIneligible ? ineligiblePageHtml : successPageHtml;
-    const resultHtml = pageHtml.replace("{{iRain}}", escapeHtml(iRainValue));
+    const t = isIneligible ? ineligibleTranslations[finalLocale] : successTranslations[finalLocale];
+    const resultHtml = pageHtml
+      .replace("{{lang}}", finalLocale)
+      .replace("{{pageTitle}}", t.pageTitle)
+      .replace("{{heading}}", t.heading)
+      .replace("{{description}}", t.description)
+      .replace("{{footer}}", t.footer)
+      .replace("{{iRain}}", escapeHtml(iRainValue));
     return new NextResponse(resultHtml, {
       status: 200,
       headers: { "Content-Type": "text/html; charset=utf-8" },

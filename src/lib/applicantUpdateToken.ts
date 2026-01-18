@@ -4,6 +4,7 @@ export type ApplicantUpdatePayload = {
   email: string;
   rowIndex: number;
   exp: number;
+  locale?: 'en' | 'fr';
 };
 
 function base64Url(input: Buffer | string) {

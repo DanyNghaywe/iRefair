@@ -1,9 +1,33 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useNavigationLoader } from "@/components/NavigationLoader";
+import { useLanguage } from "@/components/LanguageProvider";
 import "./RoleSelector.css";
+
+const translations = {
+  en: {
+    tagline: 'Get referred to jobs in Canada',
+    question: 'I am a...',
+    applicant: 'Job Seeker',
+    applicantDesc: 'Looking for referrals to Canadian companies',
+    referrer: 'Referrer',
+    referrerDesc: 'Ready to help newcomers get hired',
+    continue: 'Continue',
+    selectRole: 'Select your role',
+  },
+  fr: {
+    tagline: 'Obtenez des recommandations pour des emplois au Canada',
+    question: 'Je suis...',
+    applicant: 'Chercheur d\'emploi',
+    applicantDesc: 'À la recherche de recommandations pour des entreprises canadiennes',
+    referrer: 'Recommandateur',
+    referrerDesc: 'Prêt à aider les nouveaux arrivants à être embauchés',
+    continue: 'Continuer',
+    selectRole: 'Sélectionnez votre rôle',
+  },
+};
 
 type Role = {
   id: string;
@@ -12,24 +36,27 @@ type Role = {
   description: string;
 };
 
-const roles: Role[] = [
-  {
-    id: "applicant",
-    label: "I'm an Applicant",
-    href: "/applicant",
-    description: "Looking for job referrals in Canada",
-  },
-  {
-    id: "referrer",
-    label: "I'm a Referrer",
-    href: "/referrer",
-    description: "I can refer candidates at my company",
-  },
-];
-
 export function RoleSelector() {
   const router = useRouter();
   const { startNavigation } = useNavigationLoader();
+  const { language } = useLanguage();
+  const t = translations[language];
+
+  const roles: Role[] = useMemo(() => [
+    {
+      id: "applicant",
+      label: t.applicant,
+      href: "/applicant",
+      description: t.applicantDesc,
+    },
+    {
+      id: "referrer",
+      label: t.referrer,
+      href: "/referrer",
+      description: t.referrerDesc,
+    },
+  ], [t.applicant, t.applicantDesc, t.referrer, t.referrerDesc]);
+
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [focusedIndex, setFocusedIndex] = useState(-1);
@@ -89,7 +116,7 @@ export function RoleSelector() {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, focusedIndex]);
+  }, [isOpen, focusedIndex, roles.length]);
 
   // Focus management
   useEffect(() => {
@@ -116,7 +143,7 @@ export function RoleSelector() {
       startNavigation(roles[index].href);
       router.push(roles[index].href);
     },
-    [router, startNavigation]
+    [router, startNavigation, roles]
   );
 
   const menuClasses = [
@@ -153,7 +180,7 @@ export function RoleSelector() {
         ref={listRef}
         className="role-selector__list"
         role="listbox"
-        aria-label="Select your role"
+        aria-label={t.selectRole}
       >
         {roles.map((role, index) => (
           <li

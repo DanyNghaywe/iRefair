@@ -34,6 +34,8 @@ const translations: Record<
     pageOf: (current: number, total: number) => string;
     footnote: string;
     followup: { before: string; middle: string; after: string };
+    applyNow: string;
+    followupSuffix: string;
     goodLuck: string;
     languageLabel: string;
     english: string;
@@ -69,6 +71,8 @@ const translations: Record<
       middle: ' and your ',
       after: ' ready, then submit your application through the ',
     },
+    applyNow: 'Apply Now',
+    followupSuffix: ' page on iRefair.',
     goodLuck: 'We wish you success with your applications.',
     languageLabel: 'Language',
     english: 'English',
@@ -103,6 +107,8 @@ const translations: Record<
       middle: ' de l\'entreprise et votre ',
       after: ' à portée de main, puis soumettez votre candidature via la page ',
     },
+    applyNow: 'Postuler maintenant',
+    followupSuffix: '.',
     goodLuck: 'Nous vous souhaitons beaucoup de succès dans vos candidatures.',
     languageLabel: 'Langue',
     english: 'English',
@@ -279,9 +285,9 @@ export function HiringCompaniesClient({ mergedCompanies }: Props) {
             <strong>iRAIN</strong>
             {t.followup.after}
             <Link href={withLanguage('/apply')} className="hiring-link hiring-link--cta">
-              {language === 'en' ? 'Apply Now' : 'Postuler maintenant'}
+              {t.applyNow}
             </Link>
-            {language === 'en' ? ' page on iRefair.' : '.'}
+            {t.followupSuffix}
           </p>
           <p className="hiring-good-luck">{t.goodLuck}</p>
         </section>

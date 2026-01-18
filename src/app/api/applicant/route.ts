@@ -72,7 +72,7 @@ const isAllowedResume = (file: File) => {
 
 export const runtime = "nodejs";
 
-const UPDATE_TOKEN_TTL_SECONDS = 60 * 60 * 24;
+const UPDATE_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7;
 
 const baseFromEnv =
   process.env.NEXT_PUBLIC_APP_URL ||
@@ -281,6 +281,7 @@ export async function POST(request: Request) {
         email: existingApplicant.record.email || email,
         rowIndex: existingApplicant.rowIndex,
         exp,
+        locale,
       });
       const tokenHash = hashToken(token);
       const pendingPayload: PendingApplicantUpdatePayload = {
@@ -373,6 +374,7 @@ export async function POST(request: Request) {
         email,
         rowIndex: 0, // Not used for new applicants - lookup by email instead
         exp,
+        locale,
       });
       const tokenHash = hashToken(token);
 
@@ -430,6 +432,7 @@ export async function POST(request: Request) {
       email: existingApplicant.record.email,
       rowIndex: existingApplicant.rowIndex,
       exp,
+      locale,
     });
     const tokenHash = hashToken(token);
     const pendingPayload: PendingApplicantUpdatePayload = {
