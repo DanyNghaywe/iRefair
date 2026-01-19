@@ -223,6 +223,7 @@
     border-bottom: none;
     color: #f1f5f9;
     background: transparent !important;
+    text-align: left !important;
   }
 
   .responsiveCards td::before {
