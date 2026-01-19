@@ -10,7 +10,7 @@ const translations = {
   en: {
     tagline: 'Get referred to jobs in Canada',
     question: 'I am a...',
-    applicant: 'Job Seeker',
+    applicant: 'Applicant',
     applicantDesc: 'Looking for referrals to Canadian companies',
     referrer: 'Referrer',
     referrerDesc: 'Ready to help newcomers get hired',
@@ -20,7 +20,7 @@ const translations = {
   fr: {
     tagline: 'Obtenez des recommandations pour des emplois au Canada',
     question: 'Je suis...',
-    applicant: 'Chercheur d\'emploi',
+    applicant: 'Candidat',
     applicantDesc: 'À la recherche de recommandations pour des entreprises canadiennes',
     referrer: 'Recommandateur',
     referrerDesc: 'Prêt à aider les nouveaux arrivants à être embauchés',
