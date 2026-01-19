@@ -12,6 +12,9 @@ import {
   APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
   APPLICANT_UPDATE_TOKEN_HASH_HEADER,
   APPLICANT_REGISTRATION_STATUS_HEADER,
+  APPLICANT_REMINDER_TOKEN_HASH_HEADER,
+  APPLICANT_REMINDER_SENT_AT_HEADER,
+  APPLICANT_LOCALE_HEADER,
   LEGACY_APPLICANT_ID_HEADER,
   APPLICANT_SHEET_NAME,
   cleanupExpiredPendingApplicants,
@@ -284,6 +287,9 @@ export async function POST(request: Request) {
           APPLICANT_UPDATE_TOKEN_HASH_HEADER,
           APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
           APPLICANT_REGISTRATION_STATUS_HEADER,
+          APPLICANT_REMINDER_TOKEN_HASH_HEADER,
+          APPLICANT_REMINDER_SENT_AT_HEADER,
+          APPLICANT_LOCALE_HEADER,
         ];
         if (resumeFileId || resumeFileName) {
           requiredColumns.push("Resume File Name", "Resume File ID", "Resume URL");
@@ -309,6 +315,10 @@ export async function POST(request: Request) {
           "Industry Other": industryOther,
           "Employment Status": employmentStatus,
           [APPLICANT_REGISTRATION_STATUS_HEADER]: "Pending Confirmation",
+          // Clear reminder fields when issuing fresh token, store locale for reminder
+          [APPLICANT_REMINDER_TOKEN_HASH_HEADER]: "",
+          [APPLICANT_REMINDER_SENT_AT_HEADER]: "",
+          [APPLICANT_LOCALE_HEADER]: locale,
         };
 
         if (shouldAssignNewIrain && legacyApplicantId) {
@@ -472,6 +482,9 @@ export async function POST(request: Request) {
         APPLICANT_UPDATE_TOKEN_HASH_HEADER,
         APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
         APPLICANT_REGISTRATION_STATUS_HEADER,
+        APPLICANT_REMINDER_TOKEN_HASH_HEADER,
+        APPLICANT_REMINDER_SENT_AT_HEADER,
+        APPLICANT_LOCALE_HEADER,
       ];
       if (resumeFileId || resumeFileName) {
         requiredColumns.push("Resume File Name", "Resume File ID", "Resume URL");
@@ -482,6 +495,10 @@ export async function POST(request: Request) {
         [APPLICANT_UPDATE_TOKEN_HASH_HEADER]: tokenHash,
         [APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER]: new Date(exp * 1000).toISOString(),
         [APPLICANT_REGISTRATION_STATUS_HEADER]: "Pending Confirmation",
+        // Clear reminder fields for new registration, store locale for reminder
+        [APPLICANT_REMINDER_TOKEN_HASH_HEADER]: "",
+        [APPLICANT_REMINDER_SENT_AT_HEADER]: "",
+        [APPLICANT_LOCALE_HEADER]: locale,
       };
       if (resumeFileId || resumeFileName) {
         applicantRowUpdates["Resume File Name"] = resumeFileName;

@@ -7,6 +7,8 @@ import {
   APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
   APPLICANT_UPDATE_TOKEN_HASH_HEADER,
   APPLICANT_REGISTRATION_STATUS_HEADER,
+  APPLICANT_REMINDER_TOKEN_HASH_HEADER,
+  APPLICANT_REMINDER_SENT_AT_HEADER,
   APPLICANT_SHEET_NAME,
   deleteApplicantByIrain,
   ensureColumns,
@@ -626,9 +628,13 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
   }
 
   const storedTokenHash = applicant.record.updateTokenHash?.trim() || "";
+  const storedReminderTokenHash = applicant.record.reminderTokenHash?.trim() || "";
 
-  // Verify token hash matches
-  if (!safeCompareHash(storedTokenHash, tokenHash)) {
+  // Verify token hash matches EITHER the original token OR the reminder token
+  const matchesOriginal = safeCompareHash(storedTokenHash, tokenHash);
+  const matchesReminder = safeCompareHash(storedReminderTokenHash, tokenHash);
+
+  if (!matchesOriginal && !matchesReminder) {
     const msg = locale === 'fr'
       ? 'Ce lien de confirmation n\'est plus valide. Veuillez vous inscrire à nouveau <a href="/applicant" style="text-decoration:underline;">ici</a>.'
       : 'This confirmation link is no longer valid. Please register again <a href="/applicant" style="text-decoration:underline;">here</a>.';
@@ -717,15 +723,19 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     APPLICANT_UPDATE_TOKEN_HASH_HEADER,
     APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
     APPLICANT_REGISTRATION_STATUS_HEADER,
+    APPLICANT_REMINDER_TOKEN_HASH_HEADER,
+    APPLICANT_REMINDER_SENT_AT_HEADER,
   ];
   await ensureColumns(APPLICANT_SHEET_NAME, requiredColumns);
 
-  // Update applicant: clear token, set secret, clear registration status
+  // Update applicant: clear both tokens, set secret, clear registration status and reminder fields
   const updates: Record<string, string> = {
     [APPLICANT_SECRET_HASH_HEADER]: applicantSecretHash,
     [APPLICANT_UPDATE_TOKEN_HASH_HEADER]: "",
     [APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER]: "",
     [APPLICANT_REGISTRATION_STATUS_HEADER]: "",
+    [APPLICANT_REMINDER_TOKEN_HASH_HEADER]: "",
+    [APPLICANT_REMINDER_SENT_AT_HEADER]: "",
   };
 
   const updateResult = await updateRowById(APPLICANT_SHEET_NAME, "Email", payload.email, updates);

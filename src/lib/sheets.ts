@@ -11,6 +11,9 @@ export const APPLICANT_UPDATE_TOKEN_HASH_HEADER = 'Update Token Hash';
 export const APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER = 'Update Token Expires At';
 export const APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER = 'Update Pending Payload';
 export const APPLICANT_REGISTRATION_STATUS_HEADER = 'Registration Status';
+export const APPLICANT_REMINDER_TOKEN_HASH_HEADER = 'Registration Reminder Token Hash';
+export const APPLICANT_REMINDER_SENT_AT_HEADER = 'Registration Reminder Sent At';
+export const APPLICANT_LOCALE_HEADER = 'Locale';
 
 const APPLICANT_SECURITY_COLUMNS = [
   APPLICANT_SECRET_HASH_HEADER,
@@ -18,6 +21,9 @@ const APPLICANT_SECURITY_COLUMNS = [
   APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
   APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
   APPLICANT_REGISTRATION_STATUS_HEADER,
+  APPLICANT_REMINDER_TOKEN_HASH_HEADER,
+  APPLICANT_REMINDER_SENT_AT_HEADER,
+  APPLICANT_LOCALE_HEADER,
 ];
 
 export const APPLICANT_HEADERS = [
@@ -487,6 +493,9 @@ type ApplicantRow = {
   updateTokenExpiresAt?: string;
   updatePendingPayload?: string;
   registrationStatus?: string;
+  reminderTokenHash?: string;
+  reminderSentAt?: string;
+  locale?: string;
   resumeFileName?: string;
   resumeFileId?: string;
   resumeUrl?: string;
@@ -714,6 +723,9 @@ function buildApplicantRecordFromHeaderMap(
     updateTokenExpiresAt: getHeaderValue(headerMap, row, APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER),
     updatePendingPayload: getHeaderValue(headerMap, row, APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER),
     registrationStatus: getHeaderValue(headerMap, row, APPLICANT_REGISTRATION_STATUS_HEADER) || undefined,
+    reminderTokenHash: getHeaderValue(headerMap, row, APPLICANT_REMINDER_TOKEN_HASH_HEADER) || undefined,
+    reminderSentAt: getHeaderValue(headerMap, row, APPLICANT_REMINDER_SENT_AT_HEADER) || undefined,
+    locale: getHeaderValue(headerMap, row, APPLICANT_LOCALE_HEADER) || undefined,
     resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name') || undefined,
     resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID') || undefined,
     resumeUrl: getHeaderValue(headerMap, row, 'Resume URL') || undefined,
@@ -3265,6 +3277,76 @@ export async function cleanupExpiredPendingUpdates(): Promise<{ cleared: number;
   }
 
   return { cleared, errors };
+}
+
+/**
+ * Result type for applicants eligible for reminder email.
+ */
+export type ApplicantReminderCandidate = {
+  irain: string;
+  email: string;
+  firstName: string;
+  updateTokenExpiresAt: string;
+  locale: 'en' | 'fr';
+};
+
+/**
+ * Find all pending applicants eligible for a day-5 registration reminder.
+ * Criteria:
+ * - registrationStatus === "Pending Confirmation"
+ * - updateTokenExpiresAt parses to a valid date
+ * - now >= expiresAt - 2 days (i.e., within last 2 days before expiry)
+ * - now < expiresAt (not yet expired)
+ * - reminderSentAt is empty (reminder not yet sent)
+ */
+export async function findApplicantsNeedingRegistrationReminder(): Promise<ApplicantReminderCandidate[]> {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+  await ensureColumns(APPLICANT_SHEET_NAME, APPLICANT_SECURITY_COLUMNS);
+
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME);
+  if (!headers.length) return [];
+
+  const headerMap = buildHeaderMap(headers);
+  const now = Date.now();
+  const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+
+  const candidates: ApplicantReminderCandidate[] = [];
+
+  for (const row of rows) {
+    const registrationStatus = getHeaderValue(headerMap, row, APPLICANT_REGISTRATION_STATUS_HEADER);
+    if (registrationStatus !== 'Pending Confirmation') continue;
+
+    const expiresAtRaw = getHeaderValue(headerMap, row, APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER);
+    if (!expiresAtRaw) continue;
+
+    const expiresAt = Date.parse(expiresAtRaw);
+    if (Number.isNaN(expiresAt)) continue;
+
+    // Check if within reminder window: now >= expiresAt - 2 days AND now < expiresAt
+    const reminderWindowStart = expiresAt - TWO_DAYS_MS;
+    if (now < reminderWindowStart || now >= expiresAt) continue;
+
+    // Check if reminder not already sent
+    const reminderSentAt = getHeaderValue(headerMap, row, APPLICANT_REMINDER_SENT_AT_HEADER);
+    if (reminderSentAt) continue;
+
+    const irain = getHeaderValue(headerMap, row, 'iRAIN');
+    const email = getHeaderValue(headerMap, row, 'Email');
+    const firstName = getHeaderValue(headerMap, row, 'First Name');
+    const storedLocale = getHeaderValue(headerMap, row, APPLICANT_LOCALE_HEADER);
+
+    if (!irain || !email) continue;
+
+    candidates.push({
+      irain,
+      email,
+      firstName: firstName || 'there',
+      updateTokenExpiresAt: expiresAtRaw,
+      locale: storedLocale === 'fr' ? 'fr' : 'en',
+    });
+  }
+
+  return candidates;
 }
 
 // ============================================================================

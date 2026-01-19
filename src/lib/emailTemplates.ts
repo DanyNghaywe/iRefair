@@ -56,7 +56,7 @@ const emailWrapper = (content: string, preheader?: string, customHeader?: string
           <tr>
             <td style="padding:0 26px 20px 26px;text-align:center;">
               <p style="margin:10px 0 0 0;font-size:12px;line-height:1.6;color:#68707f;">
-                Sent by iRefair · Connecting talent with opportunity
+                Sent by iRefair - Connecting talent with opportunity
               </p>
             </td>
           </tr>
@@ -539,6 +539,108 @@ ${ignoreText}
   return { subject, html, text };
 }
 
+type ApplicantRegistrationReminderParams = {
+  firstName: string;
+  confirmUrl: string;
+  expiresAt: string;
+  locale?: 'en' | 'fr';
+};
+
+export function applicantRegistrationReminder(params: ApplicantRegistrationReminderParams): TemplateResult {
+  const { firstName, confirmUrl, expiresAt, locale = 'en' } = params;
+
+  const subject = t(
+    'Reminder: Complete your registration - iRefair',
+    'Rappel: Complétez votre inscription - iRefair',
+    locale
+  );
+
+  const greeting = `${t('Hi', 'Bonjour', locale)} ${escapeHtml(firstName)},`;
+
+  const mainText1 = t(
+    "We noticed you haven't completed your iRefair registration yet. Your confirmation link is about to expire!",
+    "Nous avons remarqué que vous n'avez pas encore complété votre inscription iRefair. Votre lien de confirmation est sur le point d'expirer!",
+    locale
+  );
+
+  const mainText2 = t(
+    "To activate your profile and start exploring referral opportunities, please confirm your email address by clicking the button below.",
+    "Pour activer votre profil et commencer à explorer les opportunités de recommandation, veuillez confirmer votre adresse e-mail en cliquant sur le bouton ci-dessous.",
+    locale
+  );
+
+  const expiryNote = t(
+    `This link will expire on ${expiresAt}.`,
+    `Ce lien expirera le ${expiresAt}.`,
+    locale
+  );
+
+  const ignoreText = t(
+    "If you no longer wish to register, you can safely ignore this email.",
+    "Si vous ne souhaitez plus vous inscrire, vous pouvez ignorer cet e-mail en toute sécurité.",
+    locale
+  );
+
+  const ctaButton = t('Complete my registration', 'Compléter mon inscription', locale);
+
+  const normalizedConfirmUrl = normalizeHttpUrl(confirmUrl) || confirmUrl;
+
+  const content = `
+    <h1 style="margin:0 0 14px 0;font-size:22px;line-height:1.5;font-weight:700;color:#1f2a37;">
+      ${greeting}
+    </h1>
+    <p style="margin:0 0 14px 0;font-size:14px;line-height:1.7;color:#3b4251;">
+      ${escapeHtml(mainText1)}
+    </p>
+    <p style="margin:0 0 20px 0;font-size:14px;line-height:1.7;color:#3b4251;">
+      ${escapeHtml(mainText2)}
+    </p>
+    <div style="text-align:center;margin:24px 0;">
+      ${button(ctaButton, normalizedConfirmUrl, 'primary')}
+    </div>
+    <p style="margin:16px 0 0 0;font-size:13px;text-align:center;color:#e11d48;font-weight:600;">
+      ${escapeHtml(expiryNote)}
+    </p>
+    ${divider}
+    <p style="margin:16px 0 0 0;font-size:13px;line-height:1.6;color:#68707f;">
+      ${escapeHtml(ignoreText)}
+    </p>
+  `;
+
+  const preheader = t(
+    'Your registration link is about to expire - complete your iRefair profile now!',
+    'Votre lien d\'inscription est sur le point d\'expirer - complétez votre profil iRefair maintenant!',
+    locale
+  );
+
+  const eyebrowText = t('REGISTRATION REMINDER', 'RAPPEL D\'INSCRIPTION', locale);
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#e11d48;margin-top:8px;">${escapeHtml(eyebrowText)}</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, preheader, customHeader);
+
+  const text = `${greeting}
+
+${mainText1}
+
+${mainText2}
+
+${ctaButton}: ${normalizedConfirmUrl}
+
+${expiryNote}
+
+${ignoreText}
+
+- ${t('The iRefair team', 'L\'équipe iRefair', locale)}`;
+
+  return { subject, html, text };
+}
+
 type ApplicantProfileUpdateConfirmationParams = {
   firstName: string;
   confirmUrl: string;
@@ -789,8 +891,8 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
     locale
   );
   const step3 = t(
-    "When there is a fit, we'll reach out before sharing any candidate details.",
-    "Lorsqu'il y a une correspondance, nous vous contacterons avant de partager les détails d'un candidat.",
+    "When an applicant applies to your company, you'll receive their details to review and refer.",
+    "Lorsqu'un candidat postule auprès de votre entreprise, vous recevrez ses informations pour examen et recommandation.",
     locale
   );
 
@@ -1535,7 +1637,7 @@ ${t(
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
       <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('MATCH INTRODUCTION', 'PRÉSENTATION DE CORRESPONDANCE', locale)}</div>
-      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRAIN: <strong style="color:#1f2a37;">${safeIrain}</strong> • iRCRN: <strong style="color:#1f2a37;">${safeIrcrn}</strong></div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">iRAIN: <strong style="color:#1f2a37;">${safeIrain}</strong> - iRCRN: <strong style="color:#1f2a37;">${safeIrcrn}</strong></div>
     </div>
   `;
 
@@ -1771,7 +1873,7 @@ ${t('Good luck!', 'Bonne chance!', locale)}
 - ${t('The iRefair Team', 'L\'équipe iRefair', locale)}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Application received!', 'Candidature reçue!', locale)} 🎉</h1>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Application received!', 'Candidature reçue!', locale)}</h1>
     <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t("We've forwarded your application to a referrer", 'Nous avons transmis votre candidature à un parrain', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${safeGreetingHtml}</p>
@@ -1809,7 +1911,7 @@ ${t('Good luck!', 'Bonne chance!', locale)}
     </p>
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
-      ${t('Good luck!', 'Bonne chance!', locale)} 🤞<br>
+      ${t('Good luck!', 'Bonne chance!', locale)}<br>
       <strong>${t('The iRefair Team', 'L\'équipe iRefair', locale)}</strong>
     </p>
   `;
@@ -2922,7 +3024,7 @@ ${t('The applicant has been notified and will receive the meeting details.', 'Le
     </div>
 
     <p style="margin: 16px 0; color: ${colors.success}; font-size: 14px; background: #ecfdf5; padding: 12px 16px; border-radius: 10px; text-align: center;">
-      ✓ ${t('The applicant has been notified and will receive the meeting details.', 'Le candidat a été notifié et recevra les détails de la réunion.', locale)}
+      - ${t('The applicant has been notified and will receive the meeting details.', 'Le candidat a été notifié et recevra les détails de la réunion.', locale)}
     </p>
 
     ${normalizedPortalUrl ? `
