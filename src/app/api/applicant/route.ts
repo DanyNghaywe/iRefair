@@ -634,7 +634,7 @@ export async function POST(request: Request) {
         text: emailTemplate.text,
       });
 
-      return NextResponse.json({ ok: true, needsEmailConfirm: true, confirmationEmailStatus: "sent" });
+      return NextResponse.json({ ok: true, needsEmailConfirm: true, confirmationEmailStatus: "first" });
     }
 
     // For existing applicants with matching email, also require confirmation before updating
