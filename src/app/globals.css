@@ -5700,23 +5700,26 @@ section.founder-auth input:focus-visible {
     gap: 12px;
   }
 
-  /* Each row becomes a card */
+  /* Each row - simple dividers, no card styling */
   .table-responsive-cards tr {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 8px 12px;
-    padding: 14px 16px;
-    background: linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08));
-    border: 1px solid rgba(255, 255, 255, 0.22);
-    border-radius: 14px;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    gap: 2px 12px;
+    padding: 5px 7px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 0;
+  }
+
+  .table-responsive-cards tr:last-child {
+    border-bottom: none;
   }
 
   .table-responsive-cards td {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 1px;
     padding: 0;
     border: none;
     background: transparent;
@@ -5726,8 +5729,8 @@ section.founder-auth input:focus-visible {
   .table-responsive-cards td::before {
     content: attr(data-label);
     font-size: var(--font-size-xs);
-    font-weight: 700;
-    color: rgba(255, 255, 255, 0.6);
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.5);
     text-transform: uppercase;
     letter-spacing: 0.05em;
   }
@@ -5742,18 +5745,22 @@ section.founder-auth input:focus-visible {
     display: none;
   }
 
-  /* Ops scope variant - darker theme */
+  /* Ops scope variant - transparent rows with dividers */
   .ops-scope .table-responsive-cards tr {
-    background: var(--glass-bg, linear-gradient(150deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.12)));
-    border-color: var(--glass-border, rgba(255, 255, 255, 0.26));
+    background: transparent;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+  }
+
+  .ops-scope .table-responsive-cards tr:last-child {
+    border-bottom: none;
   }
 
   .ops-scope .table-responsive-cards td::before {
-    color: #cbd5e1;
+    color: rgba(255, 255, 255, 0.5);
   }
 
   .ops-scope .table-responsive-cards td {
-    color: #e2e8f0;
+    color: #f1f5f9;
   }
 
   /* Clickable row styles */
@@ -5805,12 +5812,24 @@ section.founder-auth input:focus-visible {
   .founder-table.table-responsive-cards tbody {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 0;
   }
 
   .founder-table.table-responsive-cards tr {
-    background: var(--glass-bg, linear-gradient(150deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.08)));
-    border: 1px solid var(--glass-border, rgba(255, 255, 255, 0.22));
+    background: transparent;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+  }
+
+  .founder-table.table-responsive-cards tr:last-child {
+    border-bottom: none;
+  }
+
+  .founder-table.table-responsive-cards td::before {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .founder-table.table-responsive-cards td {
+    color: #f1f5f9;
   }
 }
 
