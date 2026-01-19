@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getApplicationById, getReferrerByIrref } from '@/lib/sheets';
+import { getApplicationById, getReferrerByIrref, getReferrerCompanyById } from '@/lib/sheets';
 import { hashOpaqueToken, isExpired } from '@/lib/tokens';
 
 export const dynamic = 'force-dynamic';
@@ -33,7 +33,11 @@ export async function GET(request: NextRequest) {
 
   // Get company name from referrer
   let companyName = '';
-  if (application.record.referrerIrref) {
+  if (application.record.referrerCompanyId) {
+    const company = await getReferrerCompanyById(application.record.referrerCompanyId);
+    companyName = company?.record?.companyName || '';
+  }
+  if (!companyName && application.record.referrerIrref) {
     const referrer = await getReferrerByIrref(application.record.referrerIrref);
     companyName = referrer?.record?.company || '';
   }

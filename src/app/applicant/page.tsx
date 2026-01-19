@@ -422,6 +422,7 @@ function ApplicantPageContent() {
 
   const t = translations[language];
   const formCopy = formMessages.applicant[language];
+  const resumeRequired = !(hasUpdateRequest && updatePurpose === 'info');
 
   const fieldClass = (base: string, field: string) => `${base}${errors[field] ? ' has-error' : ''}`;
 
@@ -523,6 +524,7 @@ function ApplicantPageContent() {
           setInputValue('phone', data.phone);
           setInputValue('languages-other', data.languagesOther);
           setInputValue('industry-other', data.industryOther);
+          setInputValue('linkedin', data.linkedin);
         });
 
         setPrefillLoading(false);
@@ -695,7 +697,7 @@ function ApplicantPageContent() {
     }
 
     const resumeFile = resumeInputRef.current?.files?.[0];
-    if (!resumeFile) {
+    if (resumeRequired && !resumeFile) {
       nextErrors.resume = formCopy.validation.resumeRequired;
     }
 
@@ -789,6 +791,7 @@ function ApplicantPageContent() {
     formBody.append('employmentStatus', values.employmentStatus);
     formBody.append('countryOfOrigin', values.countryOfOrigin);
     formBody.append('phone', values.phone);
+    formBody.append('linkedin', values.linkedin);
     formBody.append('website', honeypot);
     if (resumeFile) {
       formBody.append('resume', resumeFile);

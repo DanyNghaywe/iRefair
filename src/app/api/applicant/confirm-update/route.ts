@@ -12,12 +12,15 @@ import {
   ensureColumns,
   getApplicantByEmail,
   getApplicantByRowIndex,
+  getApplicationById,
   updateRowById,
+  updateApplicationAdmin,
   checkApplicantEligibilityAndGetAffectedApplications,
   markApplicationsAsIneligible,
   getReferrerByIrref,
 } from "@/lib/sheets";
 import { escapeHtml } from "@/lib/validation";
+import { appendActionHistoryEntry, type ActionLogEntry } from "@/lib/actionHistory";
 import {
   createApplicantSecret,
   hashApplicantSecret,
@@ -27,6 +30,7 @@ import {
 import {
   applicantProfileUpdateConfirmed,
   applicantIneligibleNotification,
+  applicantUpdatedToReferrer,
   meetingCancelledToApplicant,
   meetingCancelledToReferrer,
 } from "@/lib/emailTemplates";
@@ -55,6 +59,7 @@ type PendingApplicantUpdatePayload = {
   familyName: string;
   email: string;
   phone: string;
+  linkedin: string;
   locatedCanada: string;
   province: string;
   authorizedCanada: string;
@@ -68,6 +73,9 @@ type PendingApplicantUpdatePayload = {
   resumeFileId?: string;
   resumeFileName?: string;
   locale?: EmailLanguage;
+  updateRequestApplicationId?: string;
+  updateRequestTokenHash?: string;
+  updateRequestPurpose?: string;
 };
 
 const successPageHtml = `<!DOCTYPE html>
@@ -772,6 +780,7 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     "Family Name": pending.familyName,
     Email: pending.email,
     Phone: pending.phone,
+    LinkedIn: pending.linkedin,
     "Located in Canada": pending.locatedCanada,
     Province: pending.province,
     "Work Authorization": pending.authorizedCanada,
@@ -899,6 +908,78 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     } catch (eligibilityErr) {
       // Log but don't fail the update - eligibility handling is best-effort
       console.error("Error handling eligibility update for applications:", eligibilityErr);
+    }
+  }
+
+  const updateRequestApplicationId = pending.updateRequestApplicationId?.trim();
+  const updateRequestTokenHash = pending.updateRequestTokenHash?.trim().toLowerCase();
+  const updateRequestPurpose = (pending.updateRequestPurpose || "").trim().toLowerCase();
+
+  if (updateRequestApplicationId && updateRequestTokenHash) {
+    try {
+      const application = await getApplicationById(updateRequestApplicationId);
+      if (application?.record && application.record.archived?.toLowerCase() !== "true") {
+        const storedHash = (application.record.updateRequestTokenHash || "").trim().toLowerCase();
+        const purpose = (application.record.updateRequestPurpose || updateRequestPurpose || "").trim().toLowerCase();
+        const shouldHandleUpdate = (!purpose || purpose === "info") && storedHash === updateRequestTokenHash;
+
+        if (shouldHandleUpdate) {
+          const actionEntry: ActionLogEntry = {
+            action: "APPLICANT_UPDATED",
+            timestamp: new Date().toISOString(),
+            performedBy: "applicant",
+          };
+          const updatedActionHistory = appendActionHistoryEntry(
+            application.record.actionHistory,
+            actionEntry,
+          );
+
+          await updateApplicationAdmin(application.record.id, {
+            status: isIneligible ? undefined : "info updated",
+            actionHistory: updatedActionHistory,
+            updateRequestTokenHash: "",
+            updateRequestExpiresAt: "",
+            updateRequestPurpose: "",
+          });
+
+          if (!isIneligible && application.record.referrerIrref) {
+            const referrer = await getReferrerByIrref(application.record.referrerIrref);
+            if (referrer?.record?.email && referrer.record.archived?.toLowerCase() !== "true") {
+              let portalUrl: string | undefined;
+              try {
+                const tokenVersion = await ensureReferrerPortalTokenVersion(application.record.referrerIrref);
+                portalUrl = buildReferrerPortalLink(application.record.referrerIrref, tokenVersion);
+              } catch {
+                // Ignore portal link errors
+              }
+
+              const applicantName = [pending.firstName, pending.familyName]
+                .filter(Boolean)
+                .join(" ")
+                .trim();
+
+              const template = applicantUpdatedToReferrer({
+                referrerName: referrer.record.name || undefined,
+                applicantName: applicantName || undefined,
+                applicantEmail: pending.email || applicant.record.email || undefined,
+                position: application.record.position || undefined,
+                applicationId: application.record.id,
+                portalUrl,
+                locale: finalLocale,
+              });
+
+              await sendMail({
+                to: referrer.record.email,
+                subject: template.subject,
+                html: template.html,
+                text: template.text,
+              });
+            }
+          }
+        }
+      }
+    } catch (infoUpdateErr) {
+      console.error("Error updating application after info request:", infoUpdateErr);
     }
   }
 

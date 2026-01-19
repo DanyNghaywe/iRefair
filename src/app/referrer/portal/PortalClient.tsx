@@ -172,6 +172,7 @@ const translations: Record<
       MARK_INTERVIEWED: "Mark as Interviewed",
       OFFER_JOB: "Offer Job",
       CV_UPDATED: "CV Updated",
+      APPLICANT_UPDATED: "Applicant Updated Profile",
     },
     modalTitles: {
       SCHEDULE_MEETING: "Schedule Meeting",
@@ -329,6 +330,7 @@ const translations: Record<
       MARK_INTERVIEWED: "Marquer comme interviewé",
       OFFER_JOB: "Proposer le poste",
       CV_UPDATED: "CV mis à jour",
+      APPLICANT_UPDATED: "Profil candidat mis a jour",
     },
     modalTitles: {
       SCHEDULE_MEETING: "Planifier une réunion",

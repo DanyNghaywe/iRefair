@@ -21,7 +21,9 @@ import {
   cleanupExpiredPendingUpdates,
   ensureColumns,
   generateIRAIN,
+  findApplicantByIdentifier,
   getApplicantByEmail,
+  getApplicationById,
   findExistingApplicant,
   isIrain,
   updateRowById,
@@ -33,6 +35,7 @@ import {
   createApplicantUpdateToken,
   hashToken,
 } from "@/lib/applicantUpdateToken";
+import { hashOpaqueToken, isExpired } from "@/lib/tokens";
 
 type EmailLanguage = "en" | "fr";
 
@@ -44,6 +47,7 @@ type PendingApplicantUpdatePayload = {
   familyName: string;
   email: string;
   phone: string;
+  linkedin: string;
   locatedCanada: string;
   province: string;
   authorizedCanada: string;
@@ -57,6 +61,17 @@ type PendingApplicantUpdatePayload = {
   resumeFileId?: string;
   resumeFileName?: string;
   locale: EmailLanguage;
+  updateRequestApplicationId?: string;
+  updateRequestTokenHash?: string;
+  updateRequestPurpose?: string;
+};
+
+type UpdateRequestContext = {
+  applicationId: string;
+  applicantId: string;
+  tokenHash: string;
+  purpose: string;
+  shouldUpdateApplication: boolean;
 };
 
 const ALLOWED_RESUME_TYPES = [
@@ -117,6 +132,8 @@ export async function POST(request: Request) {
     const familyName = valueOf("familyName");
     const email = valueOf("email");
     const phone = valueOf("phone");
+    const linkedinInput = valueOf("linkedin");
+    const linkedin = linkedinInput ? normalizeHttpUrl(linkedinInput) || linkedinInput : "";
     const locatedCanada = valueOf("locatedCanada");
     const province = valueOf("province");
     const authorizedCanada = valueOf("authorizedCanada");
@@ -142,6 +159,54 @@ export async function POST(request: Request) {
       return NextResponse.json({ ok: false, error: "Missing required fields: firstName and email." }, { status: 400 });
     }
 
+    let updateRequestContext: UpdateRequestContext | null = null;
+    if (updateRequestToken || updateRequestApplicationId) {
+      if (!updateRequestToken || !updateRequestApplicationId) {
+        return NextResponse.json(
+          { ok: false, error: "Missing update request information. Please use the link from your email." },
+          { status: 400 },
+        );
+      }
+
+      const application = await getApplicationById(updateRequestApplicationId);
+      if (!application?.record) {
+        return NextResponse.json({ ok: false, error: "Update request not found." }, { status: 404 });
+      }
+      if (application.record.archived?.toLowerCase() === "true") {
+        return NextResponse.json(
+          { ok: false, error: "This application has been archived and can no longer be updated." },
+          { status: 403 },
+        );
+      }
+
+      if (isExpired(application.record.updateRequestExpiresAt)) {
+        return NextResponse.json({ ok: false, error: "This update link has expired." }, { status: 410 });
+      }
+
+      const storedHash = (application.record.updateRequestTokenHash || "").trim().toLowerCase();
+      const providedHash = hashOpaqueToken(updateRequestToken).toLowerCase();
+      if (!storedHash || storedHash !== providedHash) {
+        return NextResponse.json({ ok: false, error: "Invalid update link." }, { status: 401 });
+      }
+
+      const purpose = (application.record.updateRequestPurpose || "").trim().toLowerCase();
+      updateRequestContext = {
+        applicationId: application.record.id,
+        applicantId: application.record.applicantId,
+        tokenHash: providedHash,
+        purpose,
+        shouldUpdateApplication: !purpose || purpose === "info",
+      };
+    }
+
+    const resumeRequired = !(updateRequestContext && updateRequestContext.purpose === "info");
+    if (resumeRequired && (!(resumeEntry instanceof File) || resumeEntry.size === 0)) {
+      return NextResponse.json(
+        { ok: false, field: "resume", error: "Please upload your resume (PDF or DOC/DOCX, max 10MB)." },
+        { status: 400 },
+      );
+    }
+
     const notProvided = locale === "fr" ? "Non fourni" : "Not provided";
     const normalizeYesNo = (value: string) => {
       const trimmed = value.trim();
@@ -157,6 +222,38 @@ export async function POST(request: Request) {
     if (!existingApplicant) {
       // Fallback to email match to avoid treating updates as new registrations.
       existingApplicant = await getApplicantByEmail(email);
+    }
+
+    if (updateRequestContext) {
+      const applicationApplicantId = updateRequestContext.applicantId?.trim();
+      if (!applicationApplicantId) {
+        return NextResponse.json(
+          { ok: false, error: "This update request is missing applicant information." },
+          { status: 400 },
+        );
+      }
+
+      const normalizeId = (value?: string) => (value || "").trim().toLowerCase();
+      const matchesApplicantId = (candidate: typeof existingApplicant) => {
+        if (!candidate?.record) return false;
+        const normalized = normalizeId(applicationApplicantId);
+        const matches = [
+          normalizeId(candidate.record.id),
+          normalizeId(candidate.record.legacyApplicantId),
+        ];
+        return matches.includes(normalized);
+      };
+
+      if (!matchesApplicantId(existingApplicant)) {
+        const applicationApplicant = await findApplicantByIdentifier(applicationApplicantId);
+        if (!applicationApplicant) {
+          return NextResponse.json(
+            { ok: false, error: "We could not find the applicant associated with this update request." },
+            { status: 404 },
+          );
+        }
+        existingApplicant = applicationApplicant;
+      }
     }
 
     // Block archived applicants from registering or updating their profile
@@ -304,6 +401,7 @@ export async function POST(request: Request) {
           "Family Name": familyName,
           Email: email,
           Phone: phone,
+          LinkedIn: linkedin,
           "Located in Canada": locatedCanada,
           Province: province,
           "Work Authorization": authorizedCanada,
@@ -389,6 +487,7 @@ export async function POST(request: Request) {
         familyName,
         email,
         phone,
+        linkedin,
         locatedCanada,
         province,
         authorizedCanada,
@@ -403,6 +502,12 @@ export async function POST(request: Request) {
         resumeFileName,
         locale,
       };
+
+      if (updateRequestContext?.shouldUpdateApplication) {
+        pendingPayload.updateRequestApplicationId = updateRequestContext.applicationId;
+        pendingPayload.updateRequestTokenHash = updateRequestContext.tokenHash;
+        pendingPayload.updateRequestPurpose = updateRequestContext.purpose || "info";
+      }
 
       if (shouldAssignNewIrain) {
         pendingPayload.id = iRain;
@@ -455,6 +560,7 @@ export async function POST(request: Request) {
         familyName,
         email,
         phone,
+        linkedin,
         locatedCanada,
         province,
         authorizedCanada,
@@ -547,6 +653,7 @@ export async function POST(request: Request) {
       familyName,
       email,
       phone,
+      linkedin,
       locatedCanada,
       province,
       authorizedCanada,
@@ -561,6 +668,12 @@ export async function POST(request: Request) {
       resumeFileName,
       locale,
     };
+
+    if (updateRequestContext?.shouldUpdateApplication) {
+      pendingPayload.updateRequestApplicationId = updateRequestContext.applicationId;
+      pendingPayload.updateRequestTokenHash = updateRequestContext.tokenHash;
+      pendingPayload.updateRequestPurpose = updateRequestContext.purpose || "info";
+    }
 
     if (shouldAssignNewIrain) {
       pendingPayload.id = iRain;

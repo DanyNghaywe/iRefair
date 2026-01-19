@@ -45,10 +45,11 @@ export const APPLICANT_HEADERS = [
   'Industry Other',
   'Employment Status',
   LEGACY_APPLICANT_ID_HEADER,
+  'LinkedIn',
 ];
 export const APPLICANT_SHEET_NAME = 'Applicants';
 const APPLICANT_EMAIL_COLUMN_INDEX = 5; // zero-based (Column F)
-const LEGACY_APPLICANT_ID_COLUMN_INDEX = APPLICANT_HEADERS.length - 1;
+const LEGACY_APPLICANT_ID_COLUMN_INDEX = APPLICANT_HEADERS.indexOf(LEGACY_APPLICANT_ID_HEADER);
 export const REFERRER_SHEET_NAME = 'Referrers';
 export const REFERRER_HEADERS = [
   'iRREF',
@@ -477,6 +478,7 @@ type ApplicantRow = {
   familyName: string;
   email: string;
   phone: string;
+  linkedin: string;
   locatedCanada: string;
   province: string;
   authorizedCanada: string;
@@ -691,6 +693,7 @@ function buildApplicantRecordFromRow(row: (string | number | null | undefined)[]
     industryType: cellValue(row, 14),
     industryOther: cellValue(row, 15),
     employmentStatus: cellValue(row, 16),
+    linkedin: cellValue(row, 18),
     legacyApplicantId: cellValue(row, LEGACY_APPLICANT_ID_COLUMN_INDEX),
   };
 }
@@ -707,6 +710,7 @@ function buildApplicantRecordFromHeaderMap(
     familyName: getHeaderValue(headerMap, row, 'Family Name'),
     email: getHeaderValue(headerMap, row, 'Email'),
     phone: getHeaderValue(headerMap, row, 'Phone'),
+    linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
     locatedCanada: getHeaderValue(headerMap, row, 'Located in Canada'),
     province: getHeaderValue(headerMap, row, 'Province'),
     authorizedCanada: getHeaderValue(headerMap, row, 'Work Authorization'),
@@ -790,6 +794,9 @@ export async function ensureHeaders(
 ): Promise<{ created: boolean }> {
   if (!force && headersInitialized.has(sheetName)) {
     await ensureAdminColumnsForSheet(sheetName);
+    if (sheetName === APPLICANT_SHEET_NAME) {
+      await ensureColumns(APPLICANT_SHEET_NAME, ['LinkedIn']);
+    }
     return { created: false };
   }
   const spreadsheetId = getSpreadsheetIdOrThrow();
@@ -942,6 +949,9 @@ export async function ensureHeaders(
   const finalHeaders = await getCachedHeaders(sheetName);
   if (finalHeaders.length) {
     headersCache.set(sheetName, finalHeaders);
+  }
+  if (sheetName === APPLICANT_SHEET_NAME) {
+    await ensureColumns(APPLICANT_SHEET_NAME, ['LinkedIn']);
   }
   await ensureAdminColumnsForSheet(sheetName);
   return { created: createdSheet };
@@ -1235,28 +1245,33 @@ function buildApplicantRowValues(
   row: ApplicantRow,
   id: string,
   timestamp: string,
+  headers: string[],
   legacyApplicantId?: string,
 ) {
-  return [
-    id,
-    timestamp,
-    row.firstName,
-    row.middleName,
-    row.familyName,
-    row.email,
-    row.phone,
-    row.locatedCanada,
-    row.province,
-    row.authorizedCanada,
-    row.eligibleMoveCanada,
-    row.countryOfOrigin,
-    row.languages,
-    row.languagesOther,
-    row.industryType,
-    row.industryOther,
-    row.employmentStatus,
-    legacyApplicantId ?? row.legacyApplicantId ?? '',
-  ];
+  const rowValues = Array(headers.length).fill('');
+  const headerMap = buildHeaderMap(headers);
+
+  setByHeader(rowValues, headerMap, 'iRAIN', id);
+  setByHeader(rowValues, headerMap, 'Timestamp', timestamp);
+  setByHeader(rowValues, headerMap, 'First Name', row.firstName);
+  setByHeader(rowValues, headerMap, 'Middle Name', row.middleName);
+  setByHeader(rowValues, headerMap, 'Family Name', row.familyName);
+  setByHeader(rowValues, headerMap, 'Email', row.email);
+  setByHeader(rowValues, headerMap, 'Phone', row.phone);
+  setByHeader(rowValues, headerMap, 'LinkedIn', row.linkedin);
+  setByHeader(rowValues, headerMap, 'Located in Canada', row.locatedCanada);
+  setByHeader(rowValues, headerMap, 'Province', row.province);
+  setByHeader(rowValues, headerMap, 'Work Authorization', row.authorizedCanada);
+  setByHeader(rowValues, headerMap, 'Eligible to Move (6 Months)', row.eligibleMoveCanada);
+  setByHeader(rowValues, headerMap, 'Country of Origin', row.countryOfOrigin);
+  setByHeader(rowValues, headerMap, 'Languages', row.languages);
+  setByHeader(rowValues, headerMap, 'Languages Other', row.languagesOther);
+  setByHeader(rowValues, headerMap, 'Industry Type', row.industryType);
+  setByHeader(rowValues, headerMap, 'Industry Other', row.industryOther);
+  setByHeader(rowValues, headerMap, 'Employment Status', row.employmentStatus);
+  setByHeader(rowValues, headerMap, LEGACY_APPLICANT_ID_HEADER, legacyApplicantId ?? row.legacyApplicantId ?? '');
+
+  return rowValues;
 }
 
 async function findApplicantRowByEmail(email: string) {
@@ -1525,6 +1540,8 @@ export async function upsertApplicantRow(row: ApplicantRow) {
     throw new Error('Missing Google Sheets spreadsheet ID. Please set GOOGLE_SHEETS_SPREADSHEET_ID.');
   }
 
+  const headers = await getCachedHeaders(APPLICANT_SHEET_NAME);
+  const headerList = headers.length ? headers : APPLICANT_HEADERS;
   const timestamp = new Date().toISOString();
   const existing = await findApplicantRowByEmail(row.email);
   const providedLegacyId = row.legacyApplicantId ?? '';
@@ -1543,6 +1560,7 @@ export async function upsertApplicantRow(row: ApplicantRow) {
       'Family Name': row.familyName,
       Email: row.email,
       Phone: row.phone,
+      LinkedIn: row.linkedin,
       'Located in Canada': row.locatedCanada,
       Province: row.province,
       'Work Authorization': row.authorizedCanada,
@@ -1562,7 +1580,7 @@ export async function upsertApplicantRow(row: ApplicantRow) {
   const legacyApplicantId = providedLegacyId;
   await appendRow(
     APPLICANT_SHEET_NAME,
-    buildApplicantRowValues(row, row.id, timestamp, legacyApplicantId),
+    buildApplicantRowValues(row, row.id, timestamp, headerList, legacyApplicantId),
   );
   return { id: row.id, wasUpdated: false, legacyApplicantId };
 }
@@ -1849,6 +1867,7 @@ export async function listApplicants(params: ApplicantListParams) {
         familyName: getHeaderValue(headerMap, row, 'Family Name'),
         email: getHeaderValue(headerMap, row, 'Email'),
         phone: getHeaderValue(headerMap, row, 'Phone'),
+        linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
         locatedCanada,
         province: getHeaderValue(headerMap, row, 'Province'),
         workAuthorization: getHeaderValue(headerMap, row, 'Work Authorization'),
@@ -2442,6 +2461,7 @@ export async function getApplicationById(id: string) {
           resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID'),
           referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
           referrerEmail: getHeaderValue(headerMap, row, 'Referrer Email'),
+          referrerCompanyId: getHeaderValue(headerMap, row, 'Referrer Company ID'),
           status: getHeaderValue(headerMap, row, 'Status'),
           ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
           meetingDate: getHeaderValue(headerMap, row, 'Meeting Date'),
@@ -2535,6 +2555,7 @@ type ApplicantPatch = AdminPatch & {
   familyName?: string;
   email?: string;
   phone?: string;
+  linkedin?: string;
   locatedCanada?: string;
   province?: string;
   workAuthorization?: string;
@@ -2655,6 +2676,7 @@ export async function updateApplicantFields(irain: string, patch: ApplicantPatch
     'Family Name': patch.familyName,
     Email: patch.email,
     Phone: patch.phone,
+    LinkedIn: patch.linkedin,
     'Located in Canada': patch.locatedCanada,
     Province: patch.province,
     'Work Authorization': patch.workAuthorization,
