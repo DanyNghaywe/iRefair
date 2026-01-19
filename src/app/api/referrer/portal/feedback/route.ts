@@ -278,14 +278,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (meetingUrl && !isValidUrl(meetingUrl)) {
-      const normalized = normalizeHttpUrl(meetingUrl);
-      if (!normalized || !isValidUrl(normalized)) {
-        return NextResponse.json(
-          { ok: false, error: 'Invalid meeting URL.' },
-          { status: 400 },
-        );
-      }
+    if (!meetingUrl) {
+      return NextResponse.json(
+        { ok: false, error: 'Meeting URL is required.' },
+        { status: 400 },
+      );
+    }
+
+    const normalizedMeetingUrl = normalizeHttpUrl(meetingUrl);
+    if (!normalizedMeetingUrl || !isValidUrl(normalizedMeetingUrl)) {
+      return NextResponse.json(
+        { ok: false, error: 'Invalid meeting URL.' },
+        { status: 400 },
+      );
     }
 
     // Generate reschedule token
@@ -296,7 +301,7 @@ export async function POST(request: NextRequest) {
     patch.meetingDate = meetingDate;
     patch.meetingTime = meetingTime;
     patch.meetingTimezone = meetingTimezone;
-    patch.meetingUrl = normalizeHttpUrl(meetingUrl) || meetingUrl;
+    patch.meetingUrl = normalizedMeetingUrl;
     patch.rescheduleTokenHash = rescheduleHash;
     patch.rescheduleTokenExpiresAt = rescheduleExpiry;
     // Clear any update request tokens

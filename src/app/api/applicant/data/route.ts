@@ -93,6 +93,7 @@ export async function GET(request: NextRequest) {
         industryType: record.industryType || '',
         industryOther: record.industryOther || '',
         employmentStatus: record.employmentStatus || '',
+        linkedin: record.linkedin || '',
         resumeFileName: record.resumeFileName || '',
       },
     });
