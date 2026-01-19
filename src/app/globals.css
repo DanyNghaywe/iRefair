@@ -4816,6 +4816,7 @@ section.founder-auth input:focus-visible {
 }
 
 .ops-main {
+  position: relative;
   min-width: 0;
   padding: 4px 0;
 }
@@ -4846,6 +4847,31 @@ section.founder-auth input:focus-visible {
 .ops-backdrop.is-open {
   opacity: 1;
   pointer-events: auto;
+}
+
+.ops-nav-loading {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.25);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-radius: 20px;
+  z-index: 50;
+  animation: opsNavFadeIn 0.15s ease-out;
+}
+
+.ops-nav-loading .loading-indicator {
+  width: 32px;
+  height: 32px;
+  border-width: 3px;
+}
+
+@keyframes opsNavFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @media (max-width: 1023px) {

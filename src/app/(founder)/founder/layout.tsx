@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { usePathname } from "next/navigation";
 
 import { AppShell } from "@/components/AppShell";
@@ -57,7 +57,9 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
   const isLogin = pathname?.startsWith("/founder/login");
   const [isMobile, setIsMobile] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const sidebarRef = React.useRef<HTMLDivElement | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const sidebarRef = useRef<HTMLDivElement | null>(null);
+  const prevPathnameRef = useRef(pathname);
 
   const navItems = navItemsData.map((item) => ({
     href: item.href,
@@ -102,6 +104,20 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
     };
   }, [isMobile, sidebarOpen]);
 
+  useEffect(() => {
+    if (pathname !== prevPathnameRef.current) {
+      setIsNavigating(false);
+      prevPathnameRef.current = pathname;
+    }
+  }, [pathname]);
+
+  const handleNavItemClick = () => {
+    if (isMobile) {
+      setIsNavigating(true);
+      setSidebarOpen(false);
+    }
+  };
+
   if (isLogin) {
     return <>{children}</>;
   }
@@ -131,8 +147,16 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
             collapsed={!sidebarOpen}
             isOpen={sidebarOpen && isMobile}
             ref={sidebarRef}
+            onItemClick={handleNavItemClick}
           />
-          <section className="ops-main">{children}</section>
+          <section className="ops-main">
+            {isNavigating && isMobile && (
+              <div className="ops-nav-loading">
+                <span className="loading-indicator" />
+              </div>
+            )}
+            {children}
+          </section>
         </main>
       </div>
     </AppShell>

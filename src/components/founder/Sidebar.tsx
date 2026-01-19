@@ -18,6 +18,7 @@ type Props = {
   items: NavItem[];
   collapsed: boolean;
   isOpen?: boolean;
+  onItemClick?: () => void;
 };
 
 const sidebarLabels = {
@@ -82,7 +83,7 @@ const navIcons: Record<string, React.ReactNode> = {
   ),
 };
 
-export const Sidebar = React.forwardRef<HTMLDivElement, Props>(function Sidebar({ items, collapsed, isOpen }, ref) {
+export const Sidebar = React.forwardRef<HTMLDivElement, Props>(function Sidebar({ items, collapsed, isOpen, onItemClick }, ref) {
   const pathname = usePathname();
   const currentPath = pathname ?? "";
   const { language, setLanguage } = useLanguage();
@@ -121,6 +122,7 @@ export const Sidebar = React.forwardRef<HTMLDivElement, Props>(function Sidebar(
               href={item.href}
               className={`${styles.navLink} ${active ? styles.navLinkActive : ""}`}
               aria-current={active ? "page" : undefined}
+              onClick={onItemClick}
             >
               <span className={styles.navIcon}>{navIcons[item.iconKey || item.label.toLowerCase()]}</span>
               <span className={styles.navText}>{item.label}</span>
