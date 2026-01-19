@@ -3976,6 +3976,14 @@ section.founder-auth input:focus-visible {
   color: #cbd5e1;
 }
 
+.ops-scope .card__title {
+  color: #f8fafc;
+}
+
+.ops-scope .card .field-hint {
+  color: #cbd5e1;
+}
+
 .ops-scope .founder-topbar__search input,
 .ops-scope .founder-toolbar select,
 .ops-scope .founder-toolbar input,
