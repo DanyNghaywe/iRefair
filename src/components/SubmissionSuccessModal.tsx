@@ -9,7 +9,13 @@ type SubmissionSuccessModalProps = {
   onClose: () => void;
   email?: string;
   locale: "en" | "fr";
-  variant?: "default" | "confirmation-link" | "confirmation-link-recent";
+  variant?:
+    | "default"
+    | "confirmation-link"
+    | "confirmation-link-recent"
+    | "referrer-new"
+    | "referrer-existing"
+    | "referrer-new-company";
 };
 
 const translations = {
@@ -22,6 +28,12 @@ const translations = {
     emailSentRecent: "We already sent a confirmation link recently.",
     emailSentRecentTo: "We already sent a confirmation link recently to",
     emailSentRecentSuffix: "Please use the latest email we already sent.",
+    referrerNew:
+      "You're all set! Check your email for what to expect next.",
+    referrerExisting:
+      "We found your existing account and sent you an email with the details. Our team will review any changes you submitted.",
+    referrerNewCompany:
+      "We've added a new company to your account and sent you an email with the details. It's pending approval.",
     cantFind: "Can't find it?",
     checkSpam: "Check your Spam or Junk folder",
     markNotSpam:
@@ -37,6 +49,12 @@ const translations = {
     emailSentRecent: "Nous avons déjà envoyé un lien de confirmation récemment.",
     emailSentRecentTo: "Nous avons déjà envoyé un lien de confirmation récemment à",
     emailSentRecentSuffix: "Veuillez utiliser le dernier courriel déjà envoyé.",
+    referrerNew:
+      "Vous êtes inscrit ! Consultez vos courriels pour la suite.",
+    referrerExisting:
+      "Nous avons trouvé votre compte existant et vous avons envoyé un courriel avec les détails. Notre équipe examinera vos modifications.",
+    referrerNewCompany:
+      "Nous avons ajouté une nouvelle entreprise à votre compte et vous avons envoyé un courriel avec les détails. Elle est en attente d'approbation.",
     cantFind: "Vous ne le trouvez pas ?",
     checkSpam: "Vérifiez votre dossier Spam ou Courrier indésirable",
     markNotSpam:
@@ -165,17 +183,23 @@ export function SubmissionSuccessModal({
     }
   };
 
-  const useLatest = variant === "confirmation-link";
-  const useRecent = variant === "confirmation-link-recent";
   const confirmationMessage = (() => {
-    if (useRecent) {
-      const base = email ? `${t.emailSentRecentTo} ${email}.` : t.emailSentRecent;
-      return `${base} ${t.emailSentRecentSuffix}`;
+    switch (variant) {
+      case "confirmation-link-recent": {
+        const base = email ? `${t.emailSentRecentTo} ${email}.` : t.emailSentRecent;
+        return `${base} ${t.emailSentRecentSuffix}`;
+      }
+      case "confirmation-link":
+        return email ? `${t.emailSentLatestTo} ${email}.` : t.emailSentLatest;
+      case "referrer-new":
+        return t.referrerNew;
+      case "referrer-existing":
+        return t.referrerExisting;
+      case "referrer-new-company":
+        return t.referrerNewCompany;
+      default:
+        return email ? `${t.emailSentTo} ${email}.` : t.emailSent;
     }
-    if (useLatest) {
-      return email ? `${t.emailSentLatestTo} ${email}.` : t.emailSentLatest;
-    }
-    return email ? `${t.emailSentTo} ${email}.` : t.emailSent;
   })();
 
   const modal = (

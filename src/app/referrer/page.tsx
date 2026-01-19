@@ -296,6 +296,7 @@ export default function ReferrerPage() {
   const [workTypeSelection, setWorkTypeSelection] = useState('');
   const [iRref, setIRref] = useState<string | null>(null);
   const [isExisting, setIsExisting] = useState(false);
+  const [newCompanyAdded, setNewCompanyAdded] = useState(false);
   const confetti = useConfetti();
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState('');
@@ -518,6 +519,7 @@ export default function ReferrerPage() {
 
       setIRref(typeof data.iRref === 'string' ? data.iRref : null);
       setIsExisting(data.isExisting === true);
+      setNewCompanyAdded(data.newCompanyAdded === true);
       setStatus('ok');
       setSubmittedEmail(values.email);
       setShowSuccessModal(true);
@@ -525,6 +527,7 @@ export default function ReferrerPage() {
     } catch {
       setIRref(null);
       setIsExisting(false);
+      setNewCompanyAdded(false);
       setStatus('error');
     } finally {
       setSubmitting(false);
@@ -614,6 +617,7 @@ export default function ReferrerPage() {
                 setStatus('idle');
                 setIRref(null);
                 setIsExisting(false);
+                setNewCompanyAdded(false);
                 setCompanyIndustrySelection('');
                 setCountrySelection('');
                 setWorkTypeSelection('');
@@ -902,6 +906,13 @@ export default function ReferrerPage() {
         onClose={() => setShowSuccessModal(false)}
         email={submittedEmail}
         locale={language}
+        variant={
+          newCompanyAdded
+            ? 'referrer-new-company'
+            : isExisting
+              ? 'referrer-existing'
+              : 'referrer-new'
+        }
       />
     </AppShell>
   );
