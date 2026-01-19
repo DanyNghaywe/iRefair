@@ -13,7 +13,7 @@ import { Topbar } from "@/components/founder/Topbar";
 
 const translations = {
   en: {
-    title: "Candidates",
+    title: "Applicants",
     records: "records",
     searchPlaceholder: "Search by name, email, iRAIN...",
     allEligibility: "All eligibility",
