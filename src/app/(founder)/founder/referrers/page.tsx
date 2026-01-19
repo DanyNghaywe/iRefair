@@ -75,6 +75,7 @@ type ReferrerRecord = {
   phone: string;
   country: string;
   company: string;
+  companies?: string[];
   companyIrcrn?: string;
   companyApproval?: string;
   companyIndustry: string;
@@ -235,7 +236,18 @@ function ReferrersPageContent() {
         ),
       },
       { key: "email", label: t.email, ellipsis: true, width: "320px" },
-      { key: "company", label: t.company, sortable: true, ellipsis: true, width: "240px" },
+      {
+        key: "companies",
+        label: t.company,
+        sortable: true,
+        width: "240px",
+        render: (row) => {
+          const companies = row.companies?.length ? row.companies : row.company ? [row.company] : [];
+          if (companies.length === 0) return "-";
+          const label = companies.join(", ");
+          return <span title={label}>{label}</span>;
+        },
+      },
       { key: "companyIndustry", label: t.industry, sortable: true, ellipsis: true, width: "240px" },
       {
         key: "companyApproval",

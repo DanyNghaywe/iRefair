@@ -9,6 +9,7 @@ type SubmissionSuccessModalProps = {
   onClose: () => void;
   email?: string;
   locale: "en" | "fr";
+  variant?: "default" | "confirmation-link" | "confirmation-link-recent";
 };
 
 const translations = {
@@ -16,6 +17,11 @@ const translations = {
     title: "Submission Received!",
     emailSent: "We've sent a confirmation email to your inbox.",
     emailSentTo: "We've sent a confirmation email to",
+    emailSentLatest: "We've sent the latest confirmation link to your inbox.",
+    emailSentLatestTo: "We've sent the latest confirmation link to",
+    emailSentRecent: "We already sent a confirmation link recently.",
+    emailSentRecentTo: "We already sent a confirmation link recently to",
+    emailSentRecentSuffix: "Please use the latest email we already sent.",
     cantFind: "Can't find it?",
     checkSpam: "Check your Spam or Junk folder",
     markNotSpam:
@@ -26,6 +32,11 @@ const translations = {
     title: "Soumission reçue !",
     emailSent: "Nous avons envoyé un courriel de confirmation.",
     emailSentTo: "Nous avons envoyé un courriel de confirmation à",
+    emailSentLatest: "Nous avons envoyé le dernier lien de confirmation.",
+    emailSentLatestTo: "Nous avons envoyé le dernier lien de confirmation à",
+    emailSentRecent: "Nous avons déjà envoyé un lien de confirmation récemment.",
+    emailSentRecentTo: "Nous avons déjà envoyé un lien de confirmation récemment à",
+    emailSentRecentSuffix: "Veuillez utiliser le dernier courriel déjà envoyé.",
     cantFind: "Vous ne le trouvez pas ?",
     checkSpam: "Vérifiez votre dossier Spam ou Courrier indésirable",
     markNotSpam:
@@ -87,6 +98,7 @@ export function SubmissionSuccessModal({
   onClose,
   email,
   locale,
+  variant = "default",
 }: SubmissionSuccessModalProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const gotItBtnRef = useRef<HTMLButtonElement>(null);
@@ -153,9 +165,18 @@ export function SubmissionSuccessModal({
     }
   };
 
-  const confirmationMessage = email
-    ? `${t.emailSentTo} ${email}.`
-    : t.emailSent;
+  const useLatest = variant === "confirmation-link";
+  const useRecent = variant === "confirmation-link-recent";
+  const confirmationMessage = (() => {
+    if (useRecent) {
+      const base = email ? `${t.emailSentRecentTo} ${email}.` : t.emailSentRecent;
+      return `${base} ${t.emailSentRecentSuffix}`;
+    }
+    if (useLatest) {
+      return email ? `${t.emailSentLatestTo} ${email}.` : t.emailSentLatest;
+    }
+    return email ? `${t.emailSentTo} ${email}.` : t.emailSent;
+  })();
 
   const modal = (
     <div

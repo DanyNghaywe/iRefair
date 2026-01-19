@@ -12,6 +12,10 @@ import {
   APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
   APPLICANT_UPDATE_TOKEN_HASH_HEADER,
   APPLICANT_REGISTRATION_STATUS_HEADER,
+  APPLICANT_REMINDER_TOKEN_HASH_HEADER,
+  APPLICANT_REMINDER_SENT_AT_HEADER,
+  APPLICANT_LOCALE_HEADER,
+  LEGACY_APPLICANT_ID_HEADER,
   APPLICANT_SHEET_NAME,
   cleanupExpiredPendingApplicants,
   cleanupExpiredPendingUpdates,
@@ -73,6 +77,7 @@ const isAllowedResume = (file: File) => {
 export const runtime = "nodejs";
 
 const UPDATE_TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7;
+const RESEND_COOLDOWN_MS = 10 * 60 * 1000;
 
 const baseFromEnv =
   process.env.NEXT_PUBLIC_APP_URL ||
@@ -270,7 +275,101 @@ export async function POST(request: Request) {
     if (existingApplicant && emailMatchesExisting) {
       const registrationStatus = existingApplicant.record.registrationStatus?.trim() || "";
       if (registrationStatus === "Pending Confirmation") {
-        return NextResponse.json({ ok: true, needsEmailConfirm: true });
+        const now = Date.now();
+        const storedExpiryMs = Date.parse(existingApplicant.record.updateTokenExpiresAt || "");
+        const issuedAtMs = Number.isNaN(storedExpiryMs)
+          ? null
+          : storedExpiryMs - UPDATE_TOKEN_TTL_SECONDS * 1000;
+        const withinCooldown = issuedAtMs !== null && now - issuedAtMs < RESEND_COOLDOWN_MS;
+
+        const timestamp = new Date(now).toISOString();
+        const requiredColumns = [
+          APPLICANT_UPDATE_TOKEN_HASH_HEADER,
+          APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
+          APPLICANT_REGISTRATION_STATUS_HEADER,
+          APPLICANT_REMINDER_TOKEN_HASH_HEADER,
+          APPLICANT_REMINDER_SENT_AT_HEADER,
+          APPLICANT_LOCALE_HEADER,
+        ];
+        if (resumeFileId || resumeFileName) {
+          requiredColumns.push("Resume File Name", "Resume File ID", "Resume URL");
+        }
+        await ensureColumns(APPLICANT_SHEET_NAME, requiredColumns);
+
+        const applicantRowUpdates: Record<string, string | undefined> = {
+          iRAIN: iRain,
+          Timestamp: timestamp,
+          "First Name": firstName,
+          "Middle Name": middleName,
+          "Family Name": familyName,
+          Email: email,
+          Phone: phone,
+          "Located in Canada": locatedCanada,
+          Province: province,
+          "Work Authorization": authorizedCanada,
+          "Eligible to Move (6 Months)": eligibleMoveCanada,
+          "Country of Origin": countryOfOrigin,
+          Languages: languagesSnapshot,
+          "Languages Other": languagesOther,
+          "Industry Type": industryType,
+          "Industry Other": industryOther,
+          "Employment Status": employmentStatus,
+          [APPLICANT_REGISTRATION_STATUS_HEADER]: "Pending Confirmation",
+          // Clear reminder fields when issuing fresh token, store locale for reminder
+          [APPLICANT_REMINDER_TOKEN_HASH_HEADER]: "",
+          [APPLICANT_REMINDER_SENT_AT_HEADER]: "",
+          [APPLICANT_LOCALE_HEADER]: locale,
+        };
+
+        if (shouldAssignNewIrain && legacyApplicantId) {
+          applicantRowUpdates[LEGACY_APPLICANT_ID_HEADER] = legacyApplicantId;
+        }
+
+        if (resumeFileId || resumeFileName) {
+          applicantRowUpdates["Resume File Name"] = resumeFileName;
+          applicantRowUpdates["Resume File ID"] = resumeFileId;
+          applicantRowUpdates["Resume URL"] = "";
+        }
+
+        let confirmUrl: string | null = null;
+        if (!withinCooldown) {
+          const exp = Math.floor(now / 1000) + UPDATE_TOKEN_TTL_SECONDS;
+          const token = createApplicantUpdateToken({
+            email,
+            rowIndex: existingApplicant.rowIndex,
+            exp,
+            locale,
+          });
+          const tokenHash = hashToken(token);
+          applicantRowUpdates[APPLICANT_UPDATE_TOKEN_HASH_HEADER] = tokenHash;
+          applicantRowUpdates[APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER] = new Date(exp * 1000).toISOString();
+          const url = new URL("/api/applicant/confirm-registration", appBaseUrl);
+          url.searchParams.set("token", token);
+          confirmUrl = url.toString();
+        }
+
+        const updateResult = await updateRowById(APPLICANT_SHEET_NAME, "Email", existingApplicant.record.email, applicantRowUpdates);
+        if (!updateResult.updated) {
+          return NextResponse.json({ ok: false, error: "Failed to update pending applicant." }, { status: 500 });
+        }
+
+        if (confirmUrl) {
+          const emailTemplate = newApplicantRegistrationConfirmation({
+            firstName,
+            confirmUrl,
+            locale,
+          });
+
+          await sendMail({
+            to: email,
+            subject: emailTemplate.subject,
+            html: emailTemplate.html,
+            text: emailTemplate.text,
+          });
+        }
+
+        const confirmationEmailStatus = confirmUrl ? "sent" : "recent";
+        return NextResponse.json({ ok: true, needsEmailConfirm: true, confirmationEmailStatus });
       }
     }
 
@@ -343,7 +442,7 @@ export async function POST(request: Request) {
         text: emailTemplate.text,
       });
 
-      return NextResponse.json({ ok: true, needsEmailConfirm: true });
+      return NextResponse.json({ ok: true, needsEmailConfirm: true, confirmationEmailStatus: "sent" });
     }
 
     // For NEW applicants, require email confirmation before creating the profile
@@ -383,6 +482,9 @@ export async function POST(request: Request) {
         APPLICANT_UPDATE_TOKEN_HASH_HEADER,
         APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
         APPLICANT_REGISTRATION_STATUS_HEADER,
+        APPLICANT_REMINDER_TOKEN_HASH_HEADER,
+        APPLICANT_REMINDER_SENT_AT_HEADER,
+        APPLICANT_LOCALE_HEADER,
       ];
       if (resumeFileId || resumeFileName) {
         requiredColumns.push("Resume File Name", "Resume File ID", "Resume URL");
@@ -393,6 +495,10 @@ export async function POST(request: Request) {
         [APPLICANT_UPDATE_TOKEN_HASH_HEADER]: tokenHash,
         [APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER]: new Date(exp * 1000).toISOString(),
         [APPLICANT_REGISTRATION_STATUS_HEADER]: "Pending Confirmation",
+        // Clear reminder fields for new registration, store locale for reminder
+        [APPLICANT_REMINDER_TOKEN_HASH_HEADER]: "",
+        [APPLICANT_REMINDER_SENT_AT_HEADER]: "",
+        [APPLICANT_LOCALE_HEADER]: locale,
       };
       if (resumeFileId || resumeFileName) {
         applicantRowUpdates["Resume File Name"] = resumeFileName;
@@ -422,7 +528,7 @@ export async function POST(request: Request) {
         text: emailTemplate.text,
       });
 
-      return NextResponse.json({ ok: true, needsEmailConfirm: true });
+      return NextResponse.json({ ok: true, needsEmailConfirm: true, confirmationEmailStatus: "sent" });
     }
 
     // For existing applicants with matching email, also require confirmation before updating
@@ -494,7 +600,7 @@ export async function POST(request: Request) {
       text: emailTemplate.text,
     });
 
-    return NextResponse.json({ ok: true, needsEmailConfirm: true });
+    return NextResponse.json({ ok: true, needsEmailConfirm: true, confirmationEmailStatus: "sent" });
   } catch (error) {
     console.error("Candidate email API error", error);
     return NextResponse.json({ ok: false, error: "Failed to send email" }, { status: 500 });

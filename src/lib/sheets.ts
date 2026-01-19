@@ -11,6 +11,9 @@ export const APPLICANT_UPDATE_TOKEN_HASH_HEADER = 'Update Token Hash';
 export const APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER = 'Update Token Expires At';
 export const APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER = 'Update Pending Payload';
 export const APPLICANT_REGISTRATION_STATUS_HEADER = 'Registration Status';
+export const APPLICANT_REMINDER_TOKEN_HASH_HEADER = 'Registration Reminder Token Hash';
+export const APPLICANT_REMINDER_SENT_AT_HEADER = 'Registration Reminder Sent At';
+export const APPLICANT_LOCALE_HEADER = 'Locale';
 
 const APPLICANT_SECURITY_COLUMNS = [
   APPLICANT_SECRET_HASH_HEADER,
@@ -18,6 +21,9 @@ const APPLICANT_SECURITY_COLUMNS = [
   APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
   APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER,
   APPLICANT_REGISTRATION_STATUS_HEADER,
+  APPLICANT_REMINDER_TOKEN_HASH_HEADER,
+  APPLICANT_REMINDER_SENT_AT_HEADER,
+  APPLICANT_LOCALE_HEADER,
 ];
 
 export const APPLICANT_HEADERS = [
@@ -487,6 +493,9 @@ type ApplicantRow = {
   updateTokenExpiresAt?: string;
   updatePendingPayload?: string;
   registrationStatus?: string;
+  reminderTokenHash?: string;
+  reminderSentAt?: string;
+  locale?: string;
   resumeFileName?: string;
   resumeFileId?: string;
   resumeUrl?: string;
@@ -714,6 +723,9 @@ function buildApplicantRecordFromHeaderMap(
     updateTokenExpiresAt: getHeaderValue(headerMap, row, APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER),
     updatePendingPayload: getHeaderValue(headerMap, row, APPLICANT_UPDATE_PENDING_PAYLOAD_HEADER),
     registrationStatus: getHeaderValue(headerMap, row, APPLICANT_REGISTRATION_STATUS_HEADER) || undefined,
+    reminderTokenHash: getHeaderValue(headerMap, row, APPLICANT_REMINDER_TOKEN_HASH_HEADER) || undefined,
+    reminderSentAt: getHeaderValue(headerMap, row, APPLICANT_REMINDER_SENT_AT_HEADER) || undefined,
+    locale: getHeaderValue(headerMap, row, APPLICANT_LOCALE_HEADER) || undefined,
     resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name') || undefined,
     resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID') || undefined,
     resumeUrl: getHeaderValue(headerMap, row, 'Resume URL') || undefined,
@@ -1920,13 +1932,28 @@ export async function listReferrers(params: ReferrerListParams) {
   const companiesData = await getSheetDataWithHeaders(REFERRER_COMPANIES_SHEET_NAME);
   const companiesHeaderMap = buildHeaderMap(companiesData.headers);
   const pendingCompanyCountMap = new Map<string, number>();
+  const companyNameMap = new Map<string, string[]>();
+
+  const addCompanyName = (referrerIrref: string, companyName: string) => {
+    const trimmedName = companyName.trim();
+    if (!trimmedName) return;
+    const existing = companyNameMap.get(referrerIrref) ?? [];
+    const normalizedName = trimmedName.toLowerCase();
+    if (!existing.some((value) => value.toLowerCase() === normalizedName)) {
+      existing.push(trimmedName);
+      companyNameMap.set(referrerIrref, existing);
+    }
+  };
 
   for (const companyRow of companiesData.rows) {
-    const referrerIrref = getHeaderValue(companiesHeaderMap, companyRow, 'Referrer iRREF').toLowerCase();
+    const referrerIrref = getHeaderValue(companiesHeaderMap, companyRow, 'Referrer iRREF').trim().toLowerCase();
+    if (!referrerIrref) continue;
     const approval = getHeaderValue(companiesHeaderMap, companyRow, 'Company Approval').toLowerCase();
     const archived = getHeaderValue(companiesHeaderMap, companyRow, 'Archived');
 
     if (archived === 'true') continue;
+
+    addCompanyName(referrerIrref, getHeaderValue(companiesHeaderMap, companyRow, 'Company Name'));
     if (approval === 'pending' || approval === '') {
       pendingCompanyCountMap.set(referrerIrref, (pendingCompanyCountMap.get(referrerIrref) || 0) + 1);
     }
@@ -1939,9 +1966,11 @@ export async function listReferrers(params: ReferrerListParams) {
   const items = rows
     .map((row) => {
       const missingFields: string[] = [];
+      const irref = getHeaderValue(headerMap, row, 'iRREF');
+      const legacyCompany = getHeaderValue(headerMap, row, 'Company');
       if (!getHeaderValue(headerMap, row, 'Email')) missingFields.push('Email');
       if (!getHeaderValue(headerMap, row, 'Phone')) missingFields.push('Phone');
-      if (!getHeaderValue(headerMap, row, 'Company')) missingFields.push('Company');
+      if (!legacyCompany) missingFields.push('Company');
       if (!getHeaderValue(headerMap, row, 'Careers Portal')) missingFields.push('Careers Portal');
 
       // Check for pending updates
@@ -1958,14 +1987,25 @@ export async function listReferrers(params: ReferrerListParams) {
         }
       }
 
+      const normalizedIrref = irref.trim().toLowerCase();
+      const companies = [...(companyNameMap.get(normalizedIrref) ?? [])];
+      const trimmedLegacyCompany = legacyCompany.trim();
+      if (trimmedLegacyCompany) {
+        const hasLegacy = companies.some((value) => value.toLowerCase() === trimmedLegacyCompany.toLowerCase());
+        if (!hasLegacy) {
+          companies.push(trimmedLegacyCompany);
+        }
+      }
+
       return {
-        irref: getHeaderValue(headerMap, row, 'iRREF'),
+        irref,
         timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
         name: getHeaderValue(headerMap, row, 'Name'),
         email: getHeaderValue(headerMap, row, 'Email'),
         phone: getHeaderValue(headerMap, row, 'Phone'),
         country: getHeaderValue(headerMap, row, 'Country'),
-        company: getHeaderValue(headerMap, row, 'Company'),
+        company: legacyCompany,
+        companies,
         companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
         companyApproval: getHeaderValue(headerMap, row, 'Company Approval'),
         companyIndustry: getHeaderValue(headerMap, row, 'Company Industry'),
@@ -1975,7 +2015,7 @@ export async function listReferrers(params: ReferrerListParams) {
         portalTokenVersion: getHeaderValue(headerMap, row, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
         pendingUpdates: pendingUpdatesRaw,
         pendingUpdateCount,
-        pendingCompanyCount: pendingCompanyCountMap.get(getHeaderValue(headerMap, row, 'iRREF').toLowerCase()) || 0,
+        pendingCompanyCount: pendingCompanyCountMap.get(normalizedIrref) || 0,
         status: getHeaderValue(headerMap, row, 'Status'),
         ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
         tags: getHeaderValue(headerMap, row, 'Tags'),
@@ -1998,11 +2038,11 @@ export async function listReferrers(params: ReferrerListParams) {
           record.name,
           record.phone,
           record.country,
-          record.company,
           record.companyIndustry,
           record.workType,
           record.tags,
           record.ownerNotes,
+          ...(record.companies ?? []),
         ]
           .filter(Boolean)
           .map((value) => value.toLowerCase());
@@ -2019,8 +2059,10 @@ export async function listReferrers(params: ReferrerListParams) {
           return false;
         }
       }
-      if (companyFilter && record.company.toLowerCase().includes(companyFilter) === false) {
-        return false;
+      if (companyFilter) {
+        const companyMatches = (record.companies ?? [])
+          .some((company) => company.toLowerCase().includes(companyFilter));
+        if (!companyMatches) return false;
       }
       return true;
     });
@@ -3235,6 +3277,76 @@ export async function cleanupExpiredPendingUpdates(): Promise<{ cleared: number;
   }
 
   return { cleared, errors };
+}
+
+/**
+ * Result type for applicants eligible for reminder email.
+ */
+export type ApplicantReminderCandidate = {
+  irain: string;
+  email: string;
+  firstName: string;
+  updateTokenExpiresAt: string;
+  locale: 'en' | 'fr';
+};
+
+/**
+ * Find all pending applicants eligible for a day-5 registration reminder.
+ * Criteria:
+ * - registrationStatus === "Pending Confirmation"
+ * - updateTokenExpiresAt parses to a valid date
+ * - now >= expiresAt - 2 days (i.e., within last 2 days before expiry)
+ * - now < expiresAt (not yet expired)
+ * - reminderSentAt is empty (reminder not yet sent)
+ */
+export async function findApplicantsNeedingRegistrationReminder(): Promise<ApplicantReminderCandidate[]> {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+  await ensureColumns(APPLICANT_SHEET_NAME, APPLICANT_SECURITY_COLUMNS);
+
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME);
+  if (!headers.length) return [];
+
+  const headerMap = buildHeaderMap(headers);
+  const now = Date.now();
+  const TWO_DAYS_MS = 2 * 24 * 60 * 60 * 1000;
+
+  const candidates: ApplicantReminderCandidate[] = [];
+
+  for (const row of rows) {
+    const registrationStatus = getHeaderValue(headerMap, row, APPLICANT_REGISTRATION_STATUS_HEADER);
+    if (registrationStatus !== 'Pending Confirmation') continue;
+
+    const expiresAtRaw = getHeaderValue(headerMap, row, APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER);
+    if (!expiresAtRaw) continue;
+
+    const expiresAt = Date.parse(expiresAtRaw);
+    if (Number.isNaN(expiresAt)) continue;
+
+    // Check if within reminder window: now >= expiresAt - 2 days AND now < expiresAt
+    const reminderWindowStart = expiresAt - TWO_DAYS_MS;
+    if (now < reminderWindowStart || now >= expiresAt) continue;
+
+    // Check if reminder not already sent
+    const reminderSentAt = getHeaderValue(headerMap, row, APPLICANT_REMINDER_SENT_AT_HEADER);
+    if (reminderSentAt) continue;
+
+    const irain = getHeaderValue(headerMap, row, 'iRAIN');
+    const email = getHeaderValue(headerMap, row, 'Email');
+    const firstName = getHeaderValue(headerMap, row, 'First Name');
+    const storedLocale = getHeaderValue(headerMap, row, APPLICANT_LOCALE_HEADER);
+
+    if (!irain || !email) continue;
+
+    candidates.push({
+      irain,
+      email,
+      firstName: firstName || 'there',
+      updateTokenExpiresAt: expiresAtRaw,
+      locale: storedLocale === 'fr' ? 'fr' : 'en',
+    });
+  }
+
+  return candidates;
 }
 
 // ============================================================================
