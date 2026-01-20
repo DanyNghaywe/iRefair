@@ -542,6 +542,7 @@ const ACTIONS: ActionConfig[] = [
 const TIMEZONE_OPTIONS = getAllTimezoneOptions();
 
 const PAGE_SIZE = 10;
+const ALL_COMPANIES_VALUE = "__all__";
 
 function StatusBadge({ status, statusLabels }: { status: string; statusLabels: Record<string, string> }) {
   const normalized = status?.toLowerCase().trim() || "new";
@@ -592,7 +593,7 @@ export default function PortalClient() {
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
 
   // Company filter state
-  const [selectedCompanyId, setSelectedCompanyId] = useState<string>("");
+  const [selectedCompanyId, setSelectedCompanyId] = useState<string>(ALL_COMPANIES_VALUE);
 
   // Sorting state
   type SortColumn = "candidate" | "position" | "status";
@@ -845,7 +846,7 @@ export default function PortalClient() {
   const sortedItems = useMemo(() => {
     if (!data?.items) return [];
     // Filter by company first if a company is selected
-    const filteredItems = selectedCompanyId
+    const filteredItems = selectedCompanyId !== ALL_COMPANIES_VALUE
       ? data.items.filter((item) => item.companyId === selectedCompanyId)
       : data.items;
     return [...filteredItems].sort((a, b) => {
@@ -1098,19 +1099,24 @@ export default function PortalClient() {
           <div className="portal-table-meta">
             {/* Company filter - only show if there are multiple companies */}
             {data.companies && data.companies.length > 1 && (
-              <select
-                className="portal-company-filter"
-                value={selectedCompanyId}
-                onChange={(e) => setSelectedCompanyId(e.target.value)}
-                aria-label={t.header.filterByCompany}
-              >
-                <option value="">{t.header.allCompanies}</option>
-                {data.companies.map((company) => (
-                  <option key={company.id} value={company.id}>
-                    {company.name}
-                  </option>
-                ))}
-              </select>
+              <div className="portal-company-filter">
+                <Select
+                  id="portal-company-filter"
+                  name="portal-company-filter"
+                  value={selectedCompanyId}
+                  options={[
+                    { value: ALL_COMPANIES_VALUE, label: t.header.allCompanies },
+                    ...data.companies.map((company) => ({
+                      value: company.id,
+                      label: company.name,
+                    })),
+                  ]}
+                  placeholder={t.header.filterByCompany}
+                  onChange={(value) => {
+                    setSelectedCompanyId(Array.isArray(value) ? value[0] : value);
+                  }}
+                />
+              </div>
             )}
             <span className="portal-count-pill">{data.total} {t.table.totalLabel}</span>
             {totalPages > 1 && (
