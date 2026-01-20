@@ -586,7 +586,12 @@ export default function PortalClient() {
 
   // Dropdown state
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
-  const [dropdownPosition, setDropdownPosition] = useState<{ top?: number | "auto"; bottom?: number | "auto"; left: number } | null>(null);
+  const [dropdownPosition, setDropdownPosition] = useState<{
+    top?: number | "auto";
+    bottom?: number | "auto";
+    left: number;
+    width: number;
+  } | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   // Expanded rows state
@@ -709,20 +714,20 @@ export default function PortalClient() {
     } else {
       const button = event.currentTarget;
       const rect = button.getBoundingClientRect();
-      const menuWidth = 180;
+      const menuWidth = Math.max(rect.width, 220);
 
       // Calculate menu height: ~44px per item + 24px padding (conservative estimate)
       const enabledCount = ACTIONS.filter((a) => isActionEnabled(a, itemStatus)).length;
       const menuHeight = enabledCount * 44 + 24;
 
       const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+      const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
       const spaceBelow = viewportHeight - rect.bottom;
       const spaceAbove = rect.top;
 
-      let left = rect.right - menuWidth;
-      // Ensure menu doesn't go off the left edge
-      if (left < 8) {
-        left = 8;
+      let left = rect.left;
+      if (left + menuWidth > viewportWidth - 8) {
+        left = Math.max(8, viewportWidth - menuWidth - 8);
       }
 
       // If not enough space below but enough above, position above
@@ -731,10 +736,10 @@ export default function PortalClient() {
       if (positionAbove) {
         // Use bottom positioning so dropdown bottom aligns with button top
         const bottom = viewportHeight - rect.top;
-        setDropdownPosition({ bottom, left, top: "auto" });
+        setDropdownPosition({ bottom, left, top: "auto", width: menuWidth });
       } else {
         // Position below - dropdown top aligns with button bottom
-        setDropdownPosition({ top: rect.bottom, left, bottom: "auto" });
+        setDropdownPosition({ top: rect.bottom, left, bottom: "auto", width: menuWidth });
       }
       setOpenDropdown(itemId);
     }
@@ -1341,6 +1346,7 @@ export default function PortalClient() {
                                   >
                                     {t.table.actions}
                                     <svg
+                                      className="portal-dropdown-icon"
                                       width="12"
                                       height="12"
                                       viewBox="0 0 24 24"
@@ -1349,7 +1355,6 @@ export default function PortalClient() {
                                       strokeWidth="2"
                                       strokeLinecap="round"
                                       strokeLinejoin="round"
-                                      style={{ marginLeft: 4 }}
                                     >
                                       <polyline points="6 9 12 15 18 9" />
                                     </svg>
@@ -1371,6 +1376,7 @@ export default function PortalClient() {
                                             top: dropdownPosition.top,
                                             bottom: dropdownPosition.bottom,
                                             left: dropdownPosition.left,
+                                            width: dropdownPosition.width,
                                           }}
                                         >
                                           {ACTIONS.map((action) => {
