@@ -6413,6 +6413,10 @@ section.founder-auth input:focus-visible {
 }
 
 @media (min-width: 641px) and (max-width: 1023px) {
+  .ops-scope .ops-main {
+    padding: 16px;
+  }
+
   .founder-grid {
     grid-template-columns: repeat(2, 1fr);
   }
