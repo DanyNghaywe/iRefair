@@ -1363,7 +1363,7 @@ export default function ReferrerReviewPage() {
                                   onClick={() => handleCompanyApproval(comp.id, "approved")}
                                   disabled={isLoading}
                                 >
-                                  {isLoading ? "..." : t.buttons.approve}
+                                  {t.buttons.approve}{isLoading && "..."}
                                 </ActionBtn>
                                 <ActionBtn
                                   as="button"
@@ -1372,7 +1372,7 @@ export default function ReferrerReviewPage() {
                                   onClick={() => handleCompanyApproval(comp.id, "denied")}
                                   disabled={isLoading}
                                 >
-                                  {isLoading ? "..." : t.pendingUpdates.deny}
+                                  {t.pendingUpdates.deny}{isLoading && "..."}
                                 </ActionBtn>
                             </div>
                           )}
