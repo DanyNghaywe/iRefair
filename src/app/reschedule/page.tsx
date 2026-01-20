@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/AppShell';
 import { PublicFooter } from '@/components/PublicFooter';
@@ -35,7 +36,7 @@ const translations = {
     errorTitle: 'Error',
     loading: 'Loading...',
     loadingHint: 'Validating your reschedule link',
-    successHint: 'You can close this window.',
+    successHint: 'You can return to iRefair.',
     formTitle: 'Request to Reschedule',
     formLead: 'Would you like to request a new meeting time? The recruiter will be notified and will reach out with alternative options.',
     dateTimeLabel: 'Date & Time',
@@ -50,7 +51,7 @@ const translations = {
     selectTime: 'Select time',
     requestReschedule: 'Request Reschedule',
     changedMind: 'Changed your mind?',
-    closeWindow: 'Close this window',
+    closeWindow: 'Back to iRefair',
   },
   fr: {
     title: "Reprogrammer la réunion",
@@ -71,7 +72,7 @@ const translations = {
     errorTitle: "Erreur",
     loading: "Chargement...",
     loadingHint: "Validation de votre lien de reprogrammation",
-    successHint: "Vous pouvez fermer cette fenêtre.",
+    successHint: "Vous pouvez retourner à iRefair.",
     formTitle: "Demande de reprogrammation",
     formLead: "Souhaitez-vous demander un nouvel horaire de réunion ? Le recruteur sera notifié et vous proposera des alternatives.",
     dateTimeLabel: "Date et heure",
@@ -86,7 +87,7 @@ const translations = {
     selectTime: "Sélectionner l'heure",
     requestReschedule: "Demander la reprogrammation",
     changedMind: "Vous avez changé d'avis ?",
-    closeWindow: "Fermer cette fenêtre",
+    closeWindow: "Retour à iRefair",
   },
 };
 
@@ -358,9 +359,9 @@ function ReschedulePageContent() {
                   </ActionBtn>
                   <p className="reschedule-cancel-hint">
                     {t.changedMind}{' '}
-                    <button type="button" className="link-button" onClick={() => window.close()}>
+                    <Link href="/" className="link-button">
                       {t.closeWindow}
-                    </button>
+                    </Link>
                   </p>
                 </div>
               </form>

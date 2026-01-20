@@ -160,6 +160,7 @@ export async function POST(request: NextRequest) {
         if (referrer?.record?.email) {
           const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrerIrref);
           const portalUrl = buildReferrerPortalLink(referrerIrref, portalTokenVersion);
+          const referrerLocale = referrer.record.locale?.toLowerCase() === 'fr' ? 'fr' : 'en';
 
           const applicantName = applicant
             ? [applicant.record.firstName, applicant.record.familyName].filter(Boolean).join(' ')
@@ -174,6 +175,7 @@ export async function POST(request: NextRequest) {
             updatedFields: ['their CV'],
             resumeUrl: `https://drive.google.com/file/d/${upload.fileId}/view`,
             portalUrl,
+            locale: referrerLocale,
           });
 
           await sendMail({

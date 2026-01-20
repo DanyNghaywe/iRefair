@@ -37,7 +37,13 @@ export async function POST(_request: NextRequest, context: { params: Promise<{ i
   const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrer.record.irref);
   const portalUrl = buildReferrerPortalLink(referrer.record.irref, portalTokenVersion);
 
-  const template = meetFounderInvite(referrer.record.name, referrer.record.irref, meetLink, portalUrl);
+  const template = meetFounderInvite(
+    referrer.record.name,
+    referrer.record.irref,
+    meetLink,
+    portalUrl,
+    referrer.record.locale?.toLowerCase() === 'fr' ? 'fr' : 'en',
+  );
 
   await sendMail({
     to: referrer.record.email,

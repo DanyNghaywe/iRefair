@@ -12,6 +12,7 @@ import {
   findReferrerCompanyByName,
   listReferrerCompanies,
   updateReferrerCompanyFields,
+  updateReferrerFields,
 } from '@/lib/sheets';
 import { escapeHtml, normalizeHttpUrl } from '@/lib/validation';
 import {
@@ -115,6 +116,10 @@ export async function POST(request: Request) {
       }
 
       const referrerIrref = existingReferrer.record.irref;
+      const storedLocale = existingReferrer.record.locale?.trim().toLowerCase();
+      if (referrerIrref && storedLocale !== locale) {
+        await updateReferrerFields(referrerIrref, { locale });
+      }
       const companyIndustryResolved = resolveIndustry(companyIndustry, companyIndustryOther, companyIndustry);
 
       // Check if this company already exists for the referrer
@@ -249,6 +254,7 @@ export async function POST(request: Request) {
       careersPortal,
       workType,
       linkedin,
+      locale,
     });
 
     // Also create a company record in the new Referrer Companies sheet

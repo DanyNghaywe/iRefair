@@ -63,6 +63,7 @@ export async function POST(request: Request) {
     const iCrn = normalize(form.get('iCrn'));
     const position = normalize(form.get('position'));
     const referenceNumberInput = normalize(form.get('referenceNumber'));
+    const languageInput = normalize(form.get('language'));
     const referenceNumber =
       referenceNumberInput &&
       referenceNumberInput.toLowerCase() !== position.toLowerCase()
@@ -163,6 +164,7 @@ export async function POST(request: Request) {
           name: result.referrer.name,
           email: result.referrer.email,
           company: result.company.companyName,
+          locale: result.referrer.locale,
         };
         companyInfo = {
           id: result.company.id,
@@ -183,6 +185,7 @@ export async function POST(request: Request) {
           name: result.referrer.name,
           email: result.referrer.email,
           company: result.company.companyName,
+          locale: result.referrer.locale,
         };
         companyInfo = {
           id: result.company.id,
@@ -198,13 +201,14 @@ export async function POST(request: Request) {
             id: `legacy-${legacyResult.irref}`,
             name: legacyResult.company || '',
           };
-        } else if (process.env.APPLICATION_FALLBACK_REFERRER_EMAIL) {
-          referrer = {
-            irref: 'fallback',
-            name: process.env.APPLICATION_FALLBACK_REFERRER_NAME || 'Referrer',
-            email: process.env.APPLICATION_FALLBACK_REFERRER_EMAIL,
-          };
-        }
+      } else if (process.env.APPLICATION_FALLBACK_REFERRER_EMAIL) {
+        referrer = {
+          irref: 'fallback',
+          name: process.env.APPLICATION_FALLBACK_REFERRER_NAME || 'Referrer',
+          email: process.env.APPLICATION_FALLBACK_REFERRER_EMAIL,
+          locale: 'en',
+        };
+      }
       }
     }
 
@@ -214,6 +218,7 @@ export async function POST(request: Request) {
         { status: 404 },
       );
     }
+    const referrerLocale = referrer.locale?.toLowerCase() === 'fr' ? 'fr' : 'en';
 
     const id = await generateSubmissionId('APP');
     const fileBuffer = Buffer.from(await resumeEntry.arrayBuffer());
@@ -250,6 +255,13 @@ export async function POST(request: Request) {
       .filter(Boolean)
       .join(' ')
       .trim();
+    const applicantLocale = languageInput
+      ? languageInput.toLowerCase() === 'fr'
+        ? 'fr'
+        : 'en'
+      : applicant.locale === 'fr'
+        ? 'fr'
+        : 'en';
 
     // Check if applicant is ineligible based on location and work authorization
     const locatedCanada = applicant.locatedCanada?.toLowerCase() || '';
@@ -281,6 +293,7 @@ export async function POST(request: Request) {
       resumeFileName: resumeEntry.name,
       referenceNumber,
       portalUrl,
+      locale: referrerLocale,
     });
 
     await sendMail({
@@ -301,6 +314,7 @@ export async function POST(request: Request) {
         referenceNumber: referenceNumber || undefined,
         resumeFileName: resumeEntry.name,
         submissionId: id,
+        locale: applicantLocale,
       });
 
       await sendMail({

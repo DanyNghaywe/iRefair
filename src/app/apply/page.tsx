@@ -594,6 +594,7 @@ export default function ApplyPage() {
       formData.append('iCrn', iCrn.trim());
       formData.append('position', position.trim());
       formData.append('referenceNumber', referenceNumber.trim());
+      formData.append('language', language);
       formData.append('website', honeypot);
       if (resumeFile) {
         formData.append('resume', resumeFile);

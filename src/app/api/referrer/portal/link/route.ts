@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
       name: referrer.record.name,
       irref,
       link: portalLink,
+      locale: referrer.record.locale?.toLowerCase() === 'fr' ? 'fr' : 'en',
     });
   }
 

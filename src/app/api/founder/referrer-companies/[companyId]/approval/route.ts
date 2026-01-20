@@ -99,6 +99,7 @@ export async function POST(
           name: referrerName,
           irref: company.referrerIrref,
           link,
+          locale: referrer.record.locale?.toLowerCase() === 'fr' ? 'fr' : 'en',
         });
 
         return NextResponse.json({

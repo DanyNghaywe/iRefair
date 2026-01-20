@@ -190,6 +190,7 @@ export async function POST(request: NextRequest) {
   const referrerName = referrer.record.name || '';
   const referrerEmail = referrer.record.email || '';
   const companyName = referrer.record.company || '';
+  const referrerLocale = referrer.record.locale?.toLowerCase() === 'fr' ? 'fr' : 'en';
   const position = applicationRecord.position || '';
 
   // Business rule validations
@@ -529,6 +530,7 @@ export async function POST(request: NextRequest) {
           meetingTimezone: body.meetingTimezone || '',
           meetingUrl: patch.meetingUrl,
           portalUrl,
+          locale: referrerLocale,
         });
       } else if (action === 'CANCEL_MEETING') {
         referrerTemplate = meetingCancelledToReferrer({
@@ -538,6 +540,7 @@ export async function POST(request: NextRequest) {
           position,
           reason: notes,
           portalUrl,
+          locale: referrerLocale,
         });
       } else if (meetingWasCancelled) {
         // Meeting was cancelled due to REQUEST_CV_UPDATE, REQUEST_INFO, or CV_MISMATCH with update link
@@ -553,6 +556,7 @@ export async function POST(request: NextRequest) {
           position,
           cancelledDueToAction: actionDescriptions[action] || 'changed the application status',
           portalUrl,
+          locale: referrerLocale,
         });
       } else if (meetingCancelledDueToRejection) {
         // Meeting was cancelled due to REJECT or CV_MISMATCH without update link
@@ -567,6 +571,7 @@ export async function POST(request: NextRequest) {
           position,
           cancelledDueToAction: actionDescriptions[action] || 'changed the application status',
           portalUrl,
+          locale: referrerLocale,
         });
       }
 

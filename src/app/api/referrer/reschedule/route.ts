@@ -183,6 +183,7 @@ export async function POST(request: NextRequest) {
   const referrerName = referrer?.record?.name || '';
   const companyName = referrer?.record?.company || '';
   const position = applicationRecord.position || '';
+  const referrerLocale = referrer?.record?.locale?.toLowerCase() === 'fr' ? 'fr' : 'en';
 
   // Format original meeting datetime for email
   const originalDateTime = formatMeetingDateTime(
@@ -209,6 +210,7 @@ export async function POST(request: NextRequest) {
         reason,
         proposedTimes,
         portalUrl,
+        locale: referrerLocale,
       });
 
       await sendMail({

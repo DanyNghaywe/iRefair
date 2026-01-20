@@ -3182,8 +3182,19 @@ section.founder-auth input:focus-visible {
   position: relative;
   z-index: 20;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
+  gap: 12px;
+}
+
+.landing-language-row {
+  width: min(420px, 100%);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.landing-language-row .language-toggle {
+  margin: 0;
 }
 
 .field-label-row {
@@ -5878,6 +5889,20 @@ section.founder-auth input:focus-visible {
     overflow-y: auto;
     overflow-x: hidden;
   }
+
+  .select-panel {
+    gap: 8px;
+  }
+
+  .landing-language-row {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 900px) {
+  .landing-language-row {
+    justify-content: center;
+  }
 }
 
 @media (max-width: 720px) {
@@ -5887,6 +5912,10 @@ section.founder-auth input:focus-visible {
 
   .role-picker--fullscreen + .public-footer {
     margin-bottom: 16px;
+  }
+
+  .select-panel {
+    gap: 10px;
   }
 }
 

@@ -68,8 +68,13 @@ export const REFERRER_HEADERS = [
 ];
 export const REFERRER_PORTAL_TOKEN_VERSION_HEADER = 'Portal Token Version';
 export const REFERRER_PENDING_UPDATES_HEADER = 'Pending Updates';
+export const REFERRER_LOCALE_HEADER = 'Locale';
 export const ADMIN_TRACKING_COLUMNS = ['Status', 'Owner Notes', 'Tags', 'Last Contacted At', 'Next Action At'];
-const REFERRER_SECURITY_COLUMNS = [REFERRER_PORTAL_TOKEN_VERSION_HEADER, REFERRER_PENDING_UPDATES_HEADER];
+const REFERRER_SECURITY_COLUMNS = [
+  REFERRER_PORTAL_TOKEN_VERSION_HEADER,
+  REFERRER_PENDING_UPDATES_HEADER,
+  REFERRER_LOCALE_HEADER,
+];
 export const APPLICATION_ADMIN_COLUMNS = [
   'Status',
   'Owner Notes',
@@ -518,6 +523,7 @@ type ReferrerRow = {
   workType: string;
   linkedin: string;
   portalTokenVersion?: string;
+  locale?: string;
 };
 
 // Referrer Company - links a referrer to a company (many-to-many relationship)
@@ -554,6 +560,7 @@ export type ReferrerRecord = {
   careersPortal: string;
   workType: string;
   linkedin: string;
+  locale?: string;
   portalTokenVersion: string;
   pendingUpdates: string;
   status: string;
@@ -1192,23 +1199,27 @@ export async function appendApplicantRow(row: ApplicantRow) {
 
 export async function appendReferrerRow(row: ReferrerRow) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
-
+  const headers = await getSheetHeaders(REFERRER_SHEET_NAME);
+  const headerMap = buildHeaderMap(headers);
+  const rowValues: (string | number | null)[] = new Array(headers.length).fill('');
   const timestamp = new Date().toISOString();
-  await appendRow(REFERRER_SHEET_NAME, [
-    row.iRref,
-    timestamp,
-    row.name,
-    row.email,
-    row.phone,
-    row.country,
-    row.company,
-    row.companyIrcrn ?? '',
-    row.companyApproval ?? '',
-    row.companyIndustry,
-    row.careersPortal ?? '',
-    row.workType,
-    row.linkedin,
-  ]);
+
+  setByHeader(rowValues, headerMap, 'iRREF', row.iRref);
+  setByHeader(rowValues, headerMap, 'Timestamp', timestamp);
+  setByHeader(rowValues, headerMap, 'Name', row.name);
+  setByHeader(rowValues, headerMap, 'Email', row.email);
+  setByHeader(rowValues, headerMap, 'Phone', row.phone);
+  setByHeader(rowValues, headerMap, 'Country', row.country);
+  setByHeader(rowValues, headerMap, 'Company', row.company);
+  setByHeader(rowValues, headerMap, 'Company iRCRN', row.companyIrcrn ?? '');
+  setByHeader(rowValues, headerMap, 'Company Approval', row.companyApproval ?? '');
+  setByHeader(rowValues, headerMap, 'Company Industry', row.companyIndustry);
+  setByHeader(rowValues, headerMap, 'Careers Portal', row.careersPortal ?? '');
+  setByHeader(rowValues, headerMap, 'Work Type', row.workType);
+  setByHeader(rowValues, headerMap, 'LinkedIn', row.linkedin);
+  setByHeader(rowValues, headerMap, REFERRER_LOCALE_HEADER, row.locale ?? '');
+
+  await appendRow(REFERRER_SHEET_NAME, rowValues);
 }
 
 export async function appendApplicationRow(row: ApplicationRow) {
@@ -2031,6 +2042,7 @@ export async function listReferrers(params: ReferrerListParams) {
         careersPortal: getHeaderValue(headerMap, row, 'Careers Portal'),
         workType: getHeaderValue(headerMap, row, 'Work Type'),
         linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
+        locale: getHeaderValue(headerMap, row, REFERRER_LOCALE_HEADER),
         portalTokenVersion: getHeaderValue(headerMap, row, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
         pendingUpdates: pendingUpdatesRaw,
         pendingUpdateCount,
@@ -2181,6 +2193,7 @@ type ReferrerLookupResult = {
   phone?: string;
   company?: string;
   companyIrcrn?: string;
+  locale?: string;
   archived?: string;
 };
 
@@ -2235,6 +2248,7 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
     phone: getHeaderValue(headerMap, row, 'Phone'),
     company: getHeaderValue(headerMap, row, 'Company'),
     companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
+    locale: getHeaderValue(headerMap, row, REFERRER_LOCALE_HEADER),
     archived: getHeaderValue(headerMap, row, 'Archived'),
   });
 
@@ -2299,6 +2313,7 @@ export async function findReferrerByIrcrnStrict(ircrn: string): Promise<Referrer
     phone: getHeaderValue(headerMap, row, 'Phone'),
     company: getHeaderValue(headerMap, row, 'Company'),
     companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
+    locale: getHeaderValue(headerMap, row, REFERRER_LOCALE_HEADER),
     archived: getHeaderValue(headerMap, row, 'Archived'),
   });
 
@@ -2578,6 +2593,7 @@ type ReferrerPatch = AdminPatch & {
   careersPortal?: string;
   workType?: string;
   linkedin?: string;
+  locale?: string;
 };
 
 type ApplicationAdminPatch = {
@@ -2708,6 +2724,7 @@ export async function updateReferrerFields(irref: string, patch: ReferrerPatch) 
     'Careers Portal': patch.careersPortal,
     'Work Type': patch.workType,
     LinkedIn: patch.linkedin,
+    [REFERRER_LOCALE_HEADER]: patch.locale,
     Status: patch.status,
     'Owner Notes': patch.ownerNotes,
     Tags: patch.tags,
@@ -2903,6 +2920,7 @@ export async function getReferrerByIrref(irref: string) {
           careersPortal: getHeaderValue(headerMap, row, 'Careers Portal'),
           workType: getHeaderValue(headerMap, row, 'Work Type'),
           linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
+          locale: getHeaderValue(headerMap, row, REFERRER_LOCALE_HEADER),
           portalTokenVersion: getHeaderValue(headerMap, row, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
           pendingUpdates: getHeaderValue(headerMap, row, REFERRER_PENDING_UPDATES_HEADER),
           status: getHeaderValue(headerMap, row, 'Status'),
@@ -2965,6 +2983,7 @@ export async function getReferrerByEmail(email: string) {
           careersPortal: getHeaderValue(headerMap, row, 'Careers Portal'),
           workType: getHeaderValue(headerMap, row, 'Work Type'),
           linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
+          locale: getHeaderValue(headerMap, row, REFERRER_LOCALE_HEADER),
           portalTokenVersion: getHeaderValue(headerMap, row, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
           pendingUpdates: getHeaderValue(headerMap, row, REFERRER_PENDING_UPDATES_HEADER),
           status: getHeaderValue(headerMap, row, 'Status'),

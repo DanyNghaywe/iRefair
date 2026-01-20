@@ -945,6 +945,7 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
           if (!isIneligible && application.record.referrerIrref) {
             const referrer = await getReferrerByIrref(application.record.referrerIrref);
             if (referrer?.record?.email && referrer.record.archived?.toLowerCase() !== "true") {
+              const referrerLocale = referrer.record.locale?.toLowerCase() === "fr" ? "fr" : "en";
               let portalUrl: string | undefined;
               try {
                 const tokenVersion = await ensureReferrerPortalTokenVersion(application.record.referrerIrref);
@@ -965,7 +966,7 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
                 position: application.record.position || undefined,
                 applicationId: application.record.id,
                 portalUrl,
-                locale: finalLocale,
+                locale: referrerLocale,
               });
 
               await sendMail({
