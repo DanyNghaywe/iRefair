@@ -261,10 +261,11 @@
     padding-bottom: calc(20px + env(safe-area-inset-bottom));
     padding-left: calc(16px + env(safe-area-inset-left));
     padding-right: 16px;
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.25);
-    background: linear-gradient(150deg, rgba(30, 41, 59, 0.98), rgba(15, 23, 42, 0.98)); /* More opaque background */
+    box-shadow: 4px 0 24px rgba(15, 52, 60, 0.3);
+    background: linear-gradient(150deg, rgba(19, 80, 88, 0.95), rgba(15, 52, 60, 0.98));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
+    border-right: 1px solid rgba(122, 215, 227, 0.15);
   }
 
   .sidebar.is-open,
