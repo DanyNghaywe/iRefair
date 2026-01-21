@@ -4541,6 +4541,10 @@ section.founder-auth input:focus-visible {
   gap: 8px;
 }
 
+.founder-fieldset--spaced label {
+  margin-top: 10px;
+}
+
 .founder-fieldset label {
   color: #cbd5e1;
   font-size: 13px;

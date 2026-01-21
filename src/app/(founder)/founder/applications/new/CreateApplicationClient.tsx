@@ -620,7 +620,7 @@ export default function CreateApplicationPage() {
                     />
                     {companiesLoading ? <p className="field-hint">{t.buttons.sending}</p> : null}
                   </div>
-                  <div className="founder-fieldset">
+                  <div className="founder-fieldset founder-fieldset--spaced">
                     <label htmlFor="link-position">{t.labels.position}</label>
                     <input
                       id="link-position"
@@ -630,7 +630,7 @@ export default function CreateApplicationPage() {
                       onChange={(event) => setLinkPosition(event.target.value)}
                     />
                   </div>
-                  <div className="founder-fieldset">
+                  <div className="founder-fieldset founder-fieldset--spaced">
                     <label htmlFor="link-reference">{t.labels.referenceNumber}</label>
                     <input
                       id="link-reference"
