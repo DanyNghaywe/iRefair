@@ -2910,6 +2910,7 @@ export async function getApplicantByIrain(irain: string) {
     return {
       rowIndex: i + 2,
       record: {
+        id: getHeaderValue(headerMap, row, 'iRAIN'),
         irain: getHeaderValue(headerMap, row, 'iRAIN'),
         timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
         firstName: getHeaderValue(headerMap, row, 'First Name'),
