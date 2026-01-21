@@ -94,10 +94,7 @@ export async function POST(
     if (referrer?.record) {
       referrerEmail = referrerEmail || referrer.record.email || '';
       referrerLocale = referrer.record.locale?.toLowerCase() === 'fr' ? 'fr' : 'en';
-      referrerName = [referrer.record.firstName, referrer.record.lastName]
-        .filter(Boolean)
-        .join(' ')
-        .trim();
+      referrerName = referrer.record.name?.trim() || '';
     }
   }
 
