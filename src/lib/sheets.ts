@@ -14,6 +14,18 @@ export const APPLICANT_REGISTRATION_STATUS_HEADER = 'Registration Status';
 export const APPLICANT_REMINDER_TOKEN_HASH_HEADER = 'Registration Reminder Token Hash';
 export const APPLICANT_REMINDER_SENT_AT_HEADER = 'Registration Reminder Sent At';
 export const APPLICANT_LOCALE_HEADER = 'Locale';
+export const APPLICANT_PENDING_COMPANY_HEADER = 'Pending Company iRCRN';
+export const APPLICANT_PENDING_POSITION_HEADER = 'Pending Position';
+export const APPLICANT_PENDING_REFERENCE_HEADER = 'Pending Reference Number';
+export const APPLICANT_PENDING_CV_REQUESTED_AT_HEADER = 'Pending CV Requested At';
+export const APPLICANT_PENDING_CV_REQUEST_NOTE_HEADER = 'Pending CV Request Note';
+export const APPLICANT_PENDING_CV_TOKEN_HASH_HEADER = 'Pending CV Request Token Hash';
+export const APPLICANT_PENDING_CV_TOKEN_EXPIRES_HEADER = 'Pending CV Request Expires At';
+export const APPLICANT_TARGET_COMPANIES_HEADER = 'Target Companies';
+export const APPLICANT_HAS_POSTINGS_HEADER = 'Has Postings';
+export const APPLICANT_POSTING_NOTES_HEADER = 'Posting Notes';
+export const APPLICANT_DESIRED_ROLE_HEADER = 'Desired Role';
+export const APPLICANT_PITCH_HEADER = 'Pitch';
 
 const APPLICANT_SECURITY_COLUMNS = [
   APPLICANT_SECRET_HASH_HEADER,
@@ -24,6 +36,22 @@ const APPLICANT_SECURITY_COLUMNS = [
   APPLICANT_REMINDER_TOKEN_HASH_HEADER,
   APPLICANT_REMINDER_SENT_AT_HEADER,
   APPLICANT_LOCALE_HEADER,
+];
+const APPLICANT_PROFILE_HINT_COLUMNS = [
+  APPLICANT_TARGET_COMPANIES_HEADER,
+  APPLICANT_HAS_POSTINGS_HEADER,
+  APPLICANT_POSTING_NOTES_HEADER,
+  APPLICANT_DESIRED_ROLE_HEADER,
+  APPLICANT_PITCH_HEADER,
+];
+const APPLICANT_PENDING_CV_COLUMNS = [
+  APPLICANT_PENDING_COMPANY_HEADER,
+  APPLICANT_PENDING_POSITION_HEADER,
+  APPLICANT_PENDING_REFERENCE_HEADER,
+  APPLICANT_PENDING_CV_REQUESTED_AT_HEADER,
+  APPLICANT_PENDING_CV_REQUEST_NOTE_HEADER,
+  APPLICANT_PENDING_CV_TOKEN_HASH_HEADER,
+  APPLICANT_PENDING_CV_TOKEN_EXPIRES_HEADER,
 ];
 
 export const APPLICANT_HEADERS = [
@@ -509,6 +537,18 @@ type ApplicantRow = {
   reminderTokenHash?: string;
   reminderSentAt?: string;
   locale?: string;
+  targetCompanies?: string;
+  hasPostings?: string;
+  postingNotes?: string;
+  desiredRole?: string;
+  pitch?: string;
+  pendingCompanyIrcrn?: string;
+  pendingPosition?: string;
+  pendingReferenceNumber?: string;
+  pendingCvRequestedAt?: string;
+  pendingCvRequestNote?: string;
+  pendingCvTokenHash?: string;
+  pendingCvTokenExpiresAt?: string;
   resumeFileName?: string;
   resumeFileId?: string;
   resumeUrl?: string;
@@ -827,6 +867,18 @@ function buildApplicantRecordFromHeaderMap(
     reminderTokenHash: getHeaderValue(headerMap, row, APPLICANT_REMINDER_TOKEN_HASH_HEADER) || undefined,
     reminderSentAt: getHeaderValue(headerMap, row, APPLICANT_REMINDER_SENT_AT_HEADER) || undefined,
     locale: getHeaderValue(headerMap, row, APPLICANT_LOCALE_HEADER) || undefined,
+    targetCompanies: getHeaderValue(headerMap, row, APPLICANT_TARGET_COMPANIES_HEADER) || undefined,
+    hasPostings: getHeaderValue(headerMap, row, APPLICANT_HAS_POSTINGS_HEADER) || undefined,
+    postingNotes: getHeaderValue(headerMap, row, APPLICANT_POSTING_NOTES_HEADER) || undefined,
+    desiredRole: getHeaderValue(headerMap, row, APPLICANT_DESIRED_ROLE_HEADER) || undefined,
+    pitch: getHeaderValue(headerMap, row, APPLICANT_PITCH_HEADER) || undefined,
+    pendingCompanyIrcrn: getHeaderValue(headerMap, row, APPLICANT_PENDING_COMPANY_HEADER) || undefined,
+    pendingPosition: getHeaderValue(headerMap, row, APPLICANT_PENDING_POSITION_HEADER) || undefined,
+    pendingReferenceNumber: getHeaderValue(headerMap, row, APPLICANT_PENDING_REFERENCE_HEADER) || undefined,
+    pendingCvRequestedAt: getHeaderValue(headerMap, row, APPLICANT_PENDING_CV_REQUESTED_AT_HEADER) || undefined,
+    pendingCvRequestNote: getHeaderValue(headerMap, row, APPLICANT_PENDING_CV_REQUEST_NOTE_HEADER) || undefined,
+    pendingCvTokenHash: getHeaderValue(headerMap, row, APPLICANT_PENDING_CV_TOKEN_HASH_HEADER) || undefined,
+    pendingCvTokenExpiresAt: getHeaderValue(headerMap, row, APPLICANT_PENDING_CV_TOKEN_EXPIRES_HEADER) || undefined,
     resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name') || undefined,
     resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID') || undefined,
     resumeUrl: getHeaderValue(headerMap, row, 'Resume URL') || undefined,
@@ -1371,6 +1423,18 @@ function buildApplicantRowValues(
   setByHeader(rowValues, headerMap, 'Industry Type', row.industryType);
   setByHeader(rowValues, headerMap, 'Industry Other', row.industryOther);
   setByHeader(rowValues, headerMap, 'Employment Status', row.employmentStatus);
+  setByHeader(rowValues, headerMap, APPLICANT_TARGET_COMPANIES_HEADER, row.targetCompanies ?? '');
+  setByHeader(rowValues, headerMap, APPLICANT_HAS_POSTINGS_HEADER, row.hasPostings ?? '');
+  setByHeader(rowValues, headerMap, APPLICANT_POSTING_NOTES_HEADER, row.postingNotes ?? '');
+  setByHeader(rowValues, headerMap, APPLICANT_DESIRED_ROLE_HEADER, row.desiredRole ?? '');
+  setByHeader(rowValues, headerMap, APPLICANT_PITCH_HEADER, row.pitch ?? '');
+  setByHeader(rowValues, headerMap, APPLICANT_PENDING_COMPANY_HEADER, row.pendingCompanyIrcrn ?? '');
+  setByHeader(rowValues, headerMap, APPLICANT_PENDING_POSITION_HEADER, row.pendingPosition ?? '');
+  setByHeader(rowValues, headerMap, APPLICANT_PENDING_REFERENCE_HEADER, row.pendingReferenceNumber ?? '');
+  setByHeader(rowValues, headerMap, APPLICANT_PENDING_CV_REQUESTED_AT_HEADER, row.pendingCvRequestedAt ?? '');
+  setByHeader(rowValues, headerMap, APPLICANT_PENDING_CV_REQUEST_NOTE_HEADER, row.pendingCvRequestNote ?? '');
+  setByHeader(rowValues, headerMap, APPLICANT_PENDING_CV_TOKEN_HASH_HEADER, row.pendingCvTokenHash ?? '');
+  setByHeader(rowValues, headerMap, APPLICANT_PENDING_CV_TOKEN_EXPIRES_HEADER, row.pendingCvTokenExpiresAt ?? '');
   setByHeader(rowValues, headerMap, LEGACY_APPLICANT_ID_HEADER, legacyApplicantId ?? row.legacyApplicantId ?? '');
 
   return rowValues;
@@ -1692,7 +1756,16 @@ export async function formatSheet(sheetName: string, headers: string[]) {
 
 async function ensureAdminColumnsForSheet(sheetName: string) {
   if (sheetName === APPLICANT_SHEET_NAME) {
-    return ensureColumns(sheetName, [...ADMIN_TRACKING_COLUMNS, ...APPLICANT_SECURITY_COLUMNS, ...ARCHIVE_COLUMNS]);
+    return ensureColumns(sheetName, [
+      ...ADMIN_TRACKING_COLUMNS,
+      ...APPLICANT_SECURITY_COLUMNS,
+      ...APPLICANT_PROFILE_HINT_COLUMNS,
+      ...APPLICANT_PENDING_CV_COLUMNS,
+      ...ARCHIVE_COLUMNS,
+      'Resume File Name',
+      'Resume File ID',
+      'Resume URL',
+    ]);
   }
 
   if (sheetName === REFERRER_SHEET_NAME) {
@@ -2854,6 +2927,18 @@ export async function getApplicantByIrain(irain: string) {
         industryType: getHeaderValue(headerMap, row, 'Industry Type'),
         industryOther: getHeaderValue(headerMap, row, 'Industry Other'),
         employmentStatus: getHeaderValue(headerMap, row, 'Employment Status'),
+        targetCompanies: getHeaderValue(headerMap, row, APPLICANT_TARGET_COMPANIES_HEADER),
+        hasPostings: getHeaderValue(headerMap, row, APPLICANT_HAS_POSTINGS_HEADER),
+        postingNotes: getHeaderValue(headerMap, row, APPLICANT_POSTING_NOTES_HEADER),
+        desiredRole: getHeaderValue(headerMap, row, APPLICANT_DESIRED_ROLE_HEADER),
+        pitch: getHeaderValue(headerMap, row, APPLICANT_PITCH_HEADER),
+        pendingCompanyIrcrn: getHeaderValue(headerMap, row, APPLICANT_PENDING_COMPANY_HEADER),
+        pendingPosition: getHeaderValue(headerMap, row, APPLICANT_PENDING_POSITION_HEADER),
+        pendingReferenceNumber: getHeaderValue(headerMap, row, APPLICANT_PENDING_REFERENCE_HEADER),
+        pendingCvRequestedAt: getHeaderValue(headerMap, row, APPLICANT_PENDING_CV_REQUESTED_AT_HEADER),
+        pendingCvRequestNote: getHeaderValue(headerMap, row, APPLICANT_PENDING_CV_REQUEST_NOTE_HEADER),
+        pendingCvTokenHash: getHeaderValue(headerMap, row, APPLICANT_PENDING_CV_TOKEN_HASH_HEADER),
+        pendingCvTokenExpiresAt: getHeaderValue(headerMap, row, APPLICANT_PENDING_CV_TOKEN_EXPIRES_HEADER),
         legacyApplicantId: getHeaderValue(headerMap, row, LEGACY_APPLICANT_ID_HEADER),
         status: getHeaderValue(headerMap, row, 'Status'),
         ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
@@ -3391,6 +3476,28 @@ async function archiveRowById(
 }
 
 /**
+ * Archive an application by ID.
+ */
+export async function archiveApplicationById(
+  id: string,
+  archivedBy?: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'already_archived' | 'error' }> {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  await ensureColumns(APPLICATION_SHEET_NAME, ARCHIVE_COLUMNS);
+
+  const application = await getApplicationById(id);
+  if (!application) {
+    return { success: false, reason: 'not_found' };
+  }
+  if (application.record.archived === 'true') {
+    return { success: false, reason: 'already_archived' };
+  }
+
+  const result = await archiveRowById(APPLICATION_SHEET_NAME, 'ID', id, archivedBy);
+  return { success: result.success, reason: result.reason };
+}
+
+/**
  * Find all applications linked to an applicant by their Applicant ID.
  */
 export async function findApplicationsByApplicantId(
@@ -3541,6 +3648,35 @@ export async function findDuplicateApplication(
       rowPosition === searchPosition &&
       archived !== 'true'
     ) {
+      return getHeaderValue(headerMap, row, 'ID');
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Check if a duplicate application exists for the same applicant and company (iRCRN).
+ * Returns the existing application ID if found, null otherwise.
+ * Excludes archived applications.
+ */
+export async function findDuplicateApplicationByCompany(
+  applicantId: string,
+  iCrn: string,
+): Promise<string | null> {
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME);
+  const headerMap = buildHeaderMap(headers);
+
+  const searchApplicantId = applicantId.trim().toLowerCase();
+  const searchIcrn = iCrn.trim().toLowerCase();
+
+  for (const row of rows) {
+    const rowApplicantId = getHeaderValue(headerMap, row, 'Applicant ID').toLowerCase();
+    const rowIcrn = getHeaderValue(headerMap, row, 'iRCRN').toLowerCase();
+    const archived = getHeaderValue(headerMap, row, 'Archived');
+
+    if (rowApplicantId === searchApplicantId && rowIcrn === searchIcrn && archived !== 'true') {
       return getHeaderValue(headerMap, row, 'ID');
     }
   }

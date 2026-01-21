@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
 import { useLanguage } from "@/components/LanguageProvider";
 import { AutosaveHint } from "@/components/founder/AutosaveHint";
+import { CenteredModal } from "@/components/founder/CenteredModal";
 import { DetailPageShell } from "@/components/founder/DetailPageShell";
 import { DetailSection } from "@/components/founder/DetailSection";
 import { Skeleton, SkeletonDetailGrid, SkeletonStack } from "@/components/founder/Skeleton";
@@ -65,16 +66,26 @@ const translations = {
       meetingLink: "Meeting Link",
       status: "Status",
       internalNotes: "Internal Notes",
+      archiveReason: "Archive reason",
     },
     placeholders: {
       unassigned: "Unassigned",
       notes: "Add context, follow-ups, next steps...",
+      archiveReason: "Explain why this application should be archived.",
     },
     buttons: {
       view: "View",
       backToApplications: "Back to Applications",
       viewApplicant: "View Applicant Profile",
       viewReferrer: "View Referrer",
+      cancel: "Cancel",
+      archiveApplication: "Archive application",
+      confirmArchive: "Confirm archive",
+      archiving: "Archiving...",
+    },
+    messages: {
+      unableToArchive: "Unable to archive application.",
+      archiveReasonRequired: "Please provide a reason to archive this application.",
     },
     empty: {
       noResume: "No resume on file.",
@@ -109,6 +120,8 @@ const translations = {
         OFFER_JOB: "Offered Job",
         APPLICANT_UPDATED: "Applicant Updated Profile",
         APPLICANT_RESCHEDULED: "Applicant Requested Reschedule",
+        LINKED_BY_FOUNDER: "Linked by Founder",
+        ARCHIVED_BY_FOUNDER: "Archived by Founder",
       },
     },
   },
@@ -143,16 +156,26 @@ const translations = {
       meetingLink: "Lien de réunion",
       status: "Statut",
       internalNotes: "Notes internes",
+      archiveReason: "Raison d'archivage",
     },
     placeholders: {
       unassigned: "Non assigné",
       notes: "Ajoutez le contexte, les relances, les prochaines étapes...",
+      archiveReason: "Expliquez pourquoi archiver cette candidature.",
     },
     buttons: {
       view: "Voir",
       backToApplications: "Retour aux candidatures",
       viewApplicant: "Voir le profil du candidat",
       viewReferrer: "Voir le référent",
+      cancel: "Annuler",
+      archiveApplication: "Archiver la candidature",
+      confirmArchive: "Confirmer l'archivage",
+      archiving: "Archivage...",
+    },
+    messages: {
+      unableToArchive: "Impossible d'archiver la candidature.",
+      archiveReasonRequired: "Veuillez préciser une raison pour archiver cette candidature.",
     },
     empty: {
       noResume: "Aucun CV enregistré.",
@@ -187,6 +210,8 @@ const translations = {
         OFFER_JOB: "Offre d'emploi",
         APPLICANT_UPDATED: "Le candidat a mis à jour son profil",
         APPLICANT_RESCHEDULED: "Le candidat a demandé un report",
+        LINKED_BY_FOUNDER: "Liée par le fondateur",
+        ARCHIVED_BY_FOUNDER: "Archivée par le fondateur",
       },
     },
   },
@@ -215,6 +240,7 @@ export default function ApplicationDetailPage() {
   const applicationId = Array.isArray(rawId) ? rawId[0] : rawId;
   const cleanId = typeof applicationId === "string" ? applicationId.trim() : "";
   const { language } = useLanguage();
+  const router = useRouter();
   const t = translations[language];
   const historyLocale = language === "fr" ? "fr-CA" : "en-US";
   const actionLabels = t.actionHistory.labels as Record<string, string>;
@@ -228,6 +254,10 @@ export default function ApplicationDetailPage() {
   const [status, setStatus] = useState("");
   const [saving, setSaving] = useState(false);
   const skipAutosaveRef = useRef(true);
+  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
+  const [archiveReason, setArchiveReason] = useState("");
+  const [archiveSubmitting, setArchiveSubmitting] = useState(false);
+  const [archiveError, setArchiveError] = useState<string | null>(null);
 
   const fetchApplication = useCallback(async () => {
     if (!cleanId) return;
@@ -283,6 +313,52 @@ export default function ApplicationDetailPage() {
     setSaving(false);
   };
 
+  const openArchiveModal = () => {
+    setArchiveError(null);
+    setArchiveModalOpen(true);
+  };
+
+  const closeArchiveModal = () => {
+    setArchiveModalOpen(false);
+    setArchiveError(null);
+    setArchiveReason("");
+  };
+
+  const handleArchiveSubmit = async () => {
+    if (!application || archiveSubmitting) return;
+    const reason = archiveReason.trim();
+    if (!reason) {
+      setArchiveError(t.messages.archiveReasonRequired);
+      return;
+    }
+
+    setArchiveSubmitting(true);
+    setArchiveError(null);
+
+    try {
+      const response = await fetch(
+        `/api/founder/applications/${encodeURIComponent(application.id)}/archive`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ reason }),
+        },
+      );
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.ok) {
+        setArchiveError(data?.error || t.messages.unableToArchive);
+        return;
+      }
+      closeArchiveModal();
+      router.push("/founder/applications");
+    } catch (error) {
+      console.error("Archive application failed", error);
+      setArchiveError(t.messages.unableToArchive);
+    } finally {
+      setArchiveSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     if (!application) return;
     if (skipAutosaveRef.current) {
@@ -305,6 +381,8 @@ export default function ApplicationDetailPage() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notes, status, application?.id]);
+
+  const archiveSubmitDisabled = archiveSubmitting || !archiveReason.trim();
 
   if (!cleanId) {
     return (
@@ -566,6 +644,14 @@ export default function ApplicationDetailPage() {
               <div>
                 <AutosaveHint saving={saving} />
               </div>
+              <ActionBtn
+                as="button"
+                className="action-btn--danger"
+                onClick={openArchiveModal}
+                disabled={archiveSubmitting}
+              >
+                {t.buttons.archiveApplication}
+              </ActionBtn>
               <ActionBtn as="link" href="/founder/applications" variant="ghost">
                 &larr; {t.buttons.backToApplications}
               </ActionBtn>
@@ -598,6 +684,49 @@ export default function ApplicationDetailPage() {
           </>
         }
       />
+
+      <CenteredModal
+        open={archiveModalOpen}
+        onClose={closeArchiveModal}
+        title={t.buttons.archiveApplication}
+        subtitle={t.placeholders.archiveReason}
+        locale={language}
+        actions={
+          <>
+            <ActionBtn as="button" variant="ghost" onClick={closeArchiveModal} disabled={archiveSubmitting}>
+              {t.buttons.cancel}
+            </ActionBtn>
+            <ActionBtn
+              as="button"
+              className="action-btn--danger"
+              onClick={handleArchiveSubmit}
+              disabled={archiveSubmitDisabled}
+            >
+              {archiveSubmitting ? t.buttons.archiving : t.buttons.confirmArchive}
+            </ActionBtn>
+          </>
+        }
+      >
+        {archiveError && (
+          <div className="centered-modal__section centered-modal__section--wide">
+            <div className="status-banner status-banner--error" role="alert">
+              {archiveError}
+            </div>
+          </div>
+        )}
+        <div className="centered-modal__section centered-modal__section--wide">
+          <div className="founder-fieldset">
+            <label htmlFor="archive-reason">{t.labels.archiveReason}</label>
+            <textarea
+              id="archive-reason"
+              rows={4}
+              value={archiveReason}
+              onChange={(event) => setArchiveReason(event.target.value)}
+              placeholder={t.placeholders.archiveReason}
+            />
+          </div>
+        </div>
+      </CenteredModal>
     </div>
   );
 }

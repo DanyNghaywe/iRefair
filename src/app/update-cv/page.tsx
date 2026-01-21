@@ -36,13 +36,16 @@ const translations = {
     loadingHint: 'Validating your update link',
     successHint: 'You can close this window.',
     formLead: 'A referrer has requested an updated CV for your application.',
+    formLeadFounder: 'The iRefair founder requested an updated CV before submitting your application.',
     applicationDetails: 'Application Details',
+    requestDetails: 'Request Details',
     position: 'Position',
     company: 'Company',
     uploadLabelRequired: 'Upload your updated CV *',
     uploadHintFull: 'PDF, DOC, or DOCX (max 10MB)',
     successTitleFull: 'CV Updated Successfully',
     successMessageFull: 'Your CV has been updated and the referrer has been notified. They will review your updated CV and follow up with next steps.',
+    successMessageFullFounder: 'Your CV has been updated. The iRefair founder has been notified and will create your application.',
   },
   fr: {
     title: 'Mettre à jour votre CV',
@@ -61,13 +64,16 @@ const translations = {
     loadingHint: 'Validation de votre lien de mise à jour',
     successHint: 'Vous pouvez fermer cette fenêtre.',
     formLead: 'Un référent a demandé un CV mis à jour pour votre candidature.',
+    formLeadFounder: 'Le fondateur iRefair a demandé un CV mis à jour avant de soumettre votre candidature.',
     applicationDetails: 'Détails de la candidature',
+    requestDetails: 'Détails de la demande',
     position: 'Poste',
     company: 'Entreprise',
     uploadLabelRequired: 'Téléversez votre CV mis à jour *',
     uploadHintFull: 'PDF, DOC ou DOCX (max 10 Mo)',
     successTitleFull: 'CV mis à jour avec succès',
     successMessageFull: 'Votre CV a été mis à jour et le référent a été notifié. Il examinera votre CV mis à jour et vous contactera pour les prochaines étapes.',
+    successMessageFullFounder: 'Votre CV a été mis à jour. Le fondateur iRefair a été notifié et créera votre candidature.',
   },
 };
 
@@ -75,6 +81,8 @@ type ApplicationContext = {
   position: string;
   companyName: string;
   currentCvName: string;
+  referenceNumber?: string;
+  requestType?: 'referrer' | 'founder';
 };
 
 type PageState = 'loading' | 'form' | 'success' | 'error';
@@ -83,6 +91,7 @@ function UpdateCvPageContent() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token') || '';
   const appId = searchParams.get('appId') || '';
+  const irain = searchParams.get('irain') || '';
   const { language } = useLanguage();
   const t = translations[language];
   const formCopy = formMessages.updateCv[language];
@@ -101,7 +110,7 @@ function UpdateCvPageContent() {
   const confetti = useConfetti();
 
   useEffect(() => {
-    if (!token || !appId) {
+    if (!token || (!appId && !irain)) {
       setContextError(formCopy.errors.missingLink);
       setPageState('error');
       return;
@@ -109,7 +118,10 @@ function UpdateCvPageContent() {
 
     const fetchContext = async () => {
       try {
-        const response = await fetch(`/api/update-cv/context?token=${encodeURIComponent(token)}&appId=${encodeURIComponent(appId)}`);
+        const query = appId
+          ? `appId=${encodeURIComponent(appId)}`
+          : `irain=${encodeURIComponent(irain)}`;
+        const response = await fetch(`/api/update-cv/context?token=${encodeURIComponent(token)}&${query}`);
         const data = await response.json();
 
         if (!response.ok || !data?.ok) {
@@ -127,7 +139,7 @@ function UpdateCvPageContent() {
     };
 
     fetchContext();
-  }, [token, appId, formCopy.errors.missingLink, formCopy.errors.loadError]);
+  }, [token, appId, irain, formCopy.errors.missingLink, formCopy.errors.loadError]);
 
   const isAllowedResume = (file: File) => {
     const extension = file.name.split('.').pop()?.toLowerCase();
@@ -187,7 +199,11 @@ function UpdateCvPageContent() {
     try {
       const formData = new FormData();
       formData.append('token', token);
-      formData.append('appId', appId);
+      if (appId) {
+        formData.append('appId', appId);
+      } else {
+        formData.append('irain', irain);
+      }
       formData.append('resume', resumeFile);
 
       const response = await fetch('/api/update-cv', {
@@ -256,7 +272,11 @@ function UpdateCvPageContent() {
                 size="lg"
               />
               <h1 id="update-cv-title">{t.successTitleFull}</h1>
-              <p className="lead">{t.successMessageFull}</p>
+              <p className="lead">
+                {applicationContext?.requestType === 'founder'
+                  ? t.successMessageFullFounder
+                  : t.successMessageFull}
+              </p>
               <p className="update-cv-hint">{t.successHint}</p>
             </div>
           )}
@@ -274,19 +294,21 @@ function UpdateCvPageContent() {
                   </svg>
                 </div>
                 <h1 id="update-cv-title">{t.title}</h1>
-                <p className="lead">{t.formLead}</p>
+                <p className="lead">
+                  {applicationContext.requestType === 'founder' ? t.formLeadFounder : t.formLead}
+                </p>
               </div>
 
               <div className="update-cv-context">
-                <h2>{t.applicationDetails}</h2>
+              <h2>{applicationContext.requestType === 'founder' ? t.requestDetails : t.applicationDetails}</h2>
                 <div className="context-details">
                   <div className="context-detail">
                     <span className="context-label">{t.position}</span>
-                    <span className="context-value">{applicationContext.position || 'N/A'}</span>
+                  <span className="context-value">{applicationContext.position || 'TBD'}</span>
                   </div>
                   <div className="context-detail">
                     <span className="context-label">{t.company}</span>
-                    <span className="context-value">{applicationContext.companyName || 'N/A'}</span>
+                  <span className="context-value">{applicationContext.companyName || 'TBD'}</span>
                   </div>
                   {applicationContext.currentCvName && (
                     <div className="context-detail">

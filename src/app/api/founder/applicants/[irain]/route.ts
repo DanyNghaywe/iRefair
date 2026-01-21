@@ -1,7 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
-import { archiveApplicantByIrain, getApplicantByIrain, updateApplicantFields } from '@/lib/sheets';
+import {
+  APPLICANT_PENDING_CV_REQUESTED_AT_HEADER,
+  APPLICANT_PENDING_CV_TOKEN_EXPIRES_HEADER,
+  APPLICANT_PENDING_CV_TOKEN_HASH_HEADER,
+  APPLICANT_SHEET_NAME,
+  archiveApplicantByIrain,
+  ensureColumns,
+  getApplicantByIrain,
+  updateApplicantFields,
+  updateRowById,
+} from '@/lib/sheets';
+import { isExpired } from '@/lib/tokens';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,6 +55,27 @@ export async function GET(
     const applicant = await getApplicantByIrain(params.irain);
     if (!applicant) {
       return NextResponse.json({ ok: false, error: 'Applicant not found' }, { status: 404 });
+    }
+    if (applicant.record.pendingCvTokenHash && isExpired(applicant.record.pendingCvTokenExpiresAt)) {
+      try {
+        await ensureColumns(APPLICANT_SHEET_NAME, [
+          APPLICANT_PENDING_CV_REQUESTED_AT_HEADER,
+          APPLICANT_PENDING_CV_TOKEN_HASH_HEADER,
+          APPLICANT_PENDING_CV_TOKEN_EXPIRES_HEADER,
+        ]);
+        const result = await updateRowById(APPLICANT_SHEET_NAME, 'iRAIN', applicant.record.id, {
+          [APPLICANT_PENDING_CV_REQUESTED_AT_HEADER]: '',
+          [APPLICANT_PENDING_CV_TOKEN_HASH_HEADER]: '',
+          [APPLICANT_PENDING_CV_TOKEN_EXPIRES_HEADER]: '',
+        });
+        if (result.updated) {
+          applicant.record.pendingCvRequestedAt = '';
+          applicant.record.pendingCvTokenHash = '';
+          applicant.record.pendingCvTokenExpiresAt = '';
+        }
+      } catch (error) {
+        console.warn('Failed to clear expired pending CV token', error);
+      }
     }
     return NextResponse.json({ ok: true, item: applicant.record });
   } catch (error) {

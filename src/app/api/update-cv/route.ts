@@ -1,15 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { uploadFileToDrive } from '@/lib/drive';
 import {
+  APPLICANT_PENDING_CV_TOKEN_EXPIRES_HEADER,
+  APPLICANT_PENDING_CV_TOKEN_HASH_HEADER,
+  APPLICANT_SHEET_NAME,
+  APPLICANT_PENDING_CV_REQUESTED_AT_HEADER,
+  APPLICANT_PENDING_COMPANY_HEADER,
+  APPLICANT_PENDING_POSITION_HEADER,
+  APPLICANT_PENDING_REFERENCE_HEADER,
+  APPLICANT_PENDING_CV_REQUEST_NOTE_HEADER,
+  ensureColumns,
   getApplicationById,
   getReferrerByIrref,
+  updateRowById,
   updateApplicationAdmin,
   findApplicantByIdentifier,
 } from '@/lib/sheets';
 import { hashOpaqueToken, isExpired } from '@/lib/tokens';
 import { ensureResumeLooksLikeCv, scanBufferForViruses } from '@/lib/fileScan';
 import { sendMail } from '@/lib/mailer';
-import { applicantUpdatedToReferrer } from '@/lib/emailTemplates';
+import {
+  applicantUpdatedToReferrer,
+  founderCvReceivedToFounder,
+  founderCvUploadConfirmationToApplicant,
+} from '@/lib/emailTemplates';
 import { appendActionHistoryEntry, type ActionLogEntry } from '@/lib/actionHistory';
 import { ensureReferrerPortalTokenVersion, buildReferrerPortalLink } from '@/lib/referrerPortalLink';
 import { rateLimit, rateLimitHeaders, RATE_LIMITS } from '@/lib/rateLimit';
@@ -44,11 +58,146 @@ export async function POST(request: NextRequest) {
     const form = await request.formData();
     const token = (form.get('token') as string)?.trim() || '';
     const appId = (form.get('appId') as string)?.trim() || '';
+    const irain = (form.get('irain') as string)?.trim() || '';
     const resumeEntry = form.get('resume');
 
     // Validate required fields
-    if (!token || !appId) {
+    if (!token || (!appId && !irain)) {
       return NextResponse.json({ ok: false, error: 'Missing required fields' }, { status: 400 });
+    }
+
+    if (!appId) {
+      const applicant = await findApplicantByIdentifier(irain).catch(() => null);
+      if (!applicant?.record) {
+        return NextResponse.json({ ok: false, error: 'Applicant not found' }, { status: 404 });
+      }
+
+      if (applicant.record.archived?.toLowerCase() === 'true') {
+        return NextResponse.json(
+          { ok: false, error: 'This applicant profile has been archived and can no longer update their CV.' },
+          { status: 403 },
+        );
+      }
+
+      const storedHash = applicant.record.pendingCvTokenHash || '';
+      const storedExpiry = applicant.record.pendingCvTokenExpiresAt || '';
+
+      if (isExpired(storedExpiry)) {
+        return NextResponse.json({ ok: false, error: 'Update link has expired' }, { status: 410 });
+      }
+
+      const providedHash = hashOpaqueToken(token);
+      if (!storedHash || storedHash !== providedHash) {
+        return NextResponse.json({ ok: false, error: 'Invalid update token' }, { status: 401 });
+      }
+
+      if (!(resumeEntry instanceof File) || resumeEntry.size === 0) {
+        return NextResponse.json(
+          { ok: false, field: 'resume', error: 'Please upload your CV (PDF or DOC/DOCX, max 10MB).' },
+          { status: 400 },
+        );
+      }
+
+      if (!isAllowedResume(resumeEntry) || resumeEntry.size > MAX_RESUME_SIZE) {
+        return NextResponse.json(
+          { ok: false, field: 'resume', error: 'Please upload a PDF or DOC/DOCX file under 10MB.' },
+          { status: 400 },
+        );
+      }
+
+      const fileBuffer = Buffer.from(await resumeEntry.arrayBuffer());
+      const virusScan = await scanBufferForViruses(fileBuffer, resumeEntry.name);
+      if (!virusScan.ok) {
+        return NextResponse.json(
+          { ok: false, field: 'resume', error: virusScan.message || 'File rejected by security scan.' },
+          { status: 400 },
+        );
+      }
+
+      const cvCheck = await ensureResumeLooksLikeCv(fileBuffer, resumeEntry.type, resumeEntry.name);
+      if (!cvCheck.ok) {
+        return NextResponse.json(
+          { ok: false, field: 'resume', error: cvCheck.message || 'The file does not appear to be a valid CV/resume.' },
+          { status: 400 },
+        );
+      }
+
+      const upload = await uploadFileToDrive({
+        buffer: fileBuffer,
+        name: `${applicant.record.id}-${resumeEntry.name}`,
+        mimeType: resumeEntry.type || 'application/octet-stream',
+        folderId: process.env.GDRIVE_FOLDER_ID || '',
+      });
+
+      await ensureColumns(APPLICANT_SHEET_NAME, [
+        'Resume File Name',
+        'Resume File ID',
+        'Resume URL',
+        APPLICANT_PENDING_CV_TOKEN_HASH_HEADER,
+        APPLICANT_PENDING_CV_TOKEN_EXPIRES_HEADER,
+        APPLICANT_PENDING_COMPANY_HEADER,
+        APPLICANT_PENDING_POSITION_HEADER,
+        APPLICANT_PENDING_REFERENCE_HEADER,
+        APPLICANT_PENDING_CV_REQUESTED_AT_HEADER,
+        APPLICANT_PENDING_CV_REQUEST_NOTE_HEADER,
+      ]);
+
+      await updateRowById(APPLICANT_SHEET_NAME, 'iRAIN', applicant.record.id, {
+        'Resume File Name': resumeEntry.name,
+        'Resume File ID': upload.fileId,
+        'Resume URL': upload.webViewLink || '',
+        [APPLICANT_PENDING_CV_TOKEN_HASH_HEADER]: '',
+        [APPLICANT_PENDING_CV_TOKEN_EXPIRES_HEADER]: '',
+      });
+
+      const applicantName = [applicant.record.firstName, applicant.record.familyName]
+        .filter(Boolean)
+        .join(' ')
+        .trim();
+      const applicantLocale = applicant.record.locale?.toLowerCase() === 'fr' ? 'fr' : 'en';
+      const companyIrcrn = applicant.record.pendingCompanyIrcrn || '';
+      const position = applicant.record.pendingPosition || '';
+      const referenceNumber = applicant.record.pendingReferenceNumber || '';
+
+      const confirmationTemplate = founderCvUploadConfirmationToApplicant({
+        applicantName: applicantName || undefined,
+        companyIrcrn,
+        position,
+        referenceNumber,
+        locale: applicantLocale,
+      });
+      if (applicant.record.email) {
+        await sendMail({
+          to: applicant.record.email,
+          subject: confirmationTemplate.subject,
+          html: confirmationTemplate.html,
+          text: confirmationTemplate.text,
+        });
+      }
+
+      const founderRecipients = (process.env.FOUNDER_NOTIFICATION_EMAILS || '')
+        .split(',')
+        .map((email) => email.trim())
+        .filter(Boolean);
+      if (founderRecipients.length > 0) {
+        const founderTemplate = founderCvReceivedToFounder({
+          applicantName: applicantName || applicant.record.email || applicant.record.id,
+          applicantEmail: applicant.record.email || undefined,
+          applicantId: applicant.record.id,
+          companyIrcrn,
+          position,
+          referenceNumber,
+          resumeFileName: resumeEntry.name,
+        });
+        await sendMail({
+          to: founderRecipients.join(','),
+          subject: founderTemplate.subject,
+          html: founderTemplate.html,
+          text: founderTemplate.text,
+        });
+      }
+
+      return NextResponse.json({ ok: true });
     }
 
     // Get and validate application

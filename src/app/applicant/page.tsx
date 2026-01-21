@@ -410,6 +410,7 @@ function ApplicantPageContent() {
   const [eligibleMoveCanada, setEligibleMoveCanada] = useState('');
   const [industrySelection, setIndustrySelection] = useState('');
   const [employmentStatus, setEmploymentStatus] = useState('');
+  const [hasPostingsSelection, setHasPostingsSelection] = useState('');
 
   // Update request flow (from referrer portal)
   const updateToken = searchParams.get('updateToken') || '';
@@ -423,6 +424,10 @@ function ApplicantPageContent() {
   const t = translations[language];
   const formCopy = formMessages.applicant[language];
   const resumeRequired = !(hasUpdateRequest && updatePurpose === 'info');
+  const hasPostingsOptions = t.selects.hasPostings.map((label, index) => ({
+    value: index === 0 ? 'Yes' : 'No',
+    label,
+  }));
 
   const fieldClass = (base: string, field: string) => `${base}${errors[field] ? ' has-error' : ''}`;
 
@@ -495,6 +500,7 @@ function ApplicantPageContent() {
         if (data.eligibleMoveCanada) setEligibleMoveCanada(data.eligibleMoveCanada);
         if (data.industryType) setIndustrySelection(data.industryType);
         if (data.employmentStatus) setEmploymentStatus(data.employmentStatus);
+        if (data.hasPostings) setHasPostingsSelection(data.hasPostings);
 
         // Parse languages (stored as comma-separated string)
         if (data.languages) {
@@ -525,6 +531,10 @@ function ApplicantPageContent() {
           setInputValue('languages-other', data.languagesOther);
           setInputValue('industry-other', data.industryOther);
           setInputValue('linkedin', data.linkedin);
+          setInputValue('desired-role', data.desiredRole);
+          setInputValue('target-companies', data.targetCompanies);
+          setInputValue('posting-notes', data.postingNotes);
+          setInputValue('pitch', data.pitch);
         });
 
         setPrefillLoading(false);
@@ -627,6 +637,11 @@ function ApplicantPageContent() {
       industryType: valueOf('industry-type'),
       industryOther: valueOf('industry-other'),
       employmentStatus: valueOf('employment-status'),
+      desiredRole: valueOf('desired-role'),
+      targetCompanies: valueOf('target-companies'),
+      hasPostings: valueOf('has-postings'),
+      postingNotes: valueOf('posting-notes'),
+      pitch: valueOf('pitch'),
       countryOfOrigin: valueOf('country-of-origin'),
       phone: valueOf('phone'),
       linkedin: valueOf('linkedin'),
@@ -792,6 +807,11 @@ function ApplicantPageContent() {
     formBody.append('countryOfOrigin', values.countryOfOrigin);
     formBody.append('phone', values.phone);
     formBody.append('linkedin', values.linkedin);
+    formBody.append('desiredRole', values.desiredRole);
+    formBody.append('targetCompanies', values.targetCompanies);
+    formBody.append('hasPostings', values.hasPostings);
+    formBody.append('postingNotes', values.postingNotes);
+    formBody.append('pitch', values.pitch);
     formBody.append('website', honeypot);
     if (resumeFile) {
       formBody.append('resume', resumeFile);
@@ -963,6 +983,7 @@ function ApplicantPageContent() {
                 setEligibleMoveCanada('');
                 setIndustrySelection('');
                 setEmploymentStatus('');
+                setHasPostingsSelection('');
               }}
             >
               <div
@@ -1317,6 +1338,87 @@ function ApplicantPageContent() {
                       </p>
                     </div>
                   )}
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>{t.legends.preferences}</legend>
+                <div className="field-grid">
+                  <div className={fieldClass('field', 'desired-role')}>
+                    <label htmlFor="desired-role">
+                      {t.labels.desiredRole} <span className="optional">{t.optional}</span>
+                    </label>
+                    <input
+                      id="desired-role"
+                      name="desired-role"
+                      type="text"
+                      placeholder={t.placeholders.desiredRole}
+                      onChange={handleFieldChange('desired-role')}
+                    />
+                  </div>
+                  <div className={fieldClass('field', 'target-companies')}>
+                    <label htmlFor="target-companies">
+                      {t.labels.targetCompanies} <span className="optional">{t.optional}</span>
+                    </label>
+                    <textarea
+                      id="target-companies"
+                      name="target-companies"
+                      rows={3}
+                      placeholder={t.placeholders.targetCompanies}
+                      onChange={handleFieldChange('target-companies')}
+                    />
+                  </div>
+                  <div className={fieldClass('field', 'has-postings')}>
+                    <label htmlFor="has-postings">
+                      {t.labels.hasPostings} <span className="optional">{t.optional}</span>
+                    </label>
+                    <Select
+                      id="has-postings"
+                      name="has-postings"
+                      options={hasPostingsOptions}
+                      placeholder={t.selects.selectLabel}
+                      value={hasPostingsSelection}
+                      ariaDescribedBy="has-postings-error"
+                      ariaInvalid={Boolean(errors['has-postings'])}
+                      onChange={(value) => {
+                        setHasPostingsSelection(toSingleValue(value));
+                        clearError('has-postings');
+                      }}
+                    />
+                    <p className="field-error" id="has-postings-error" role="alert" aria-live="polite">
+                      {errors['has-postings']}
+                    </p>
+                  </div>
+                </div>
+              </fieldset>
+
+              <fieldset>
+                <legend>{t.legends.context}</legend>
+                <div className="field-grid">
+                  <div className={fieldClass('field', 'posting-notes')}>
+                    <label htmlFor="posting-notes">
+                      {t.labels.postingNotes} <span className="optional">{t.optional}</span>
+                    </label>
+                    <textarea
+                      id="posting-notes"
+                      name="posting-notes"
+                      rows={3}
+                      placeholder={t.placeholders.postingNotes}
+                      onChange={handleFieldChange('posting-notes')}
+                    />
+                  </div>
+                  <div className={fieldClass('field', 'pitch')}>
+                    <label htmlFor="pitch">
+                      {t.labels.pitch} <span className="optional">{t.optional}</span>
+                    </label>
+                    <textarea
+                      id="pitch"
+                      name="pitch"
+                      rows={3}
+                      placeholder={t.placeholders.pitch}
+                      onChange={handleFieldChange('pitch')}
+                    />
+                  </div>
                 </div>
               </fieldset>
 

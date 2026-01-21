@@ -15,6 +15,11 @@ import {
   APPLICANT_REMINDER_TOKEN_HASH_HEADER,
   APPLICANT_REMINDER_SENT_AT_HEADER,
   APPLICANT_LOCALE_HEADER,
+  APPLICANT_DESIRED_ROLE_HEADER,
+  APPLICANT_TARGET_COMPANIES_HEADER,
+  APPLICANT_HAS_POSTINGS_HEADER,
+  APPLICANT_POSTING_NOTES_HEADER,
+  APPLICANT_PITCH_HEADER,
   LEGACY_APPLICANT_ID_HEADER,
   APPLICANT_SHEET_NAME,
   cleanupExpiredPendingApplicants,
@@ -57,6 +62,11 @@ type PendingApplicantUpdatePayload = {
   industryType: string;
   industryOther: string;
   employmentStatus: string;
+  desiredRole: string;
+  targetCompanies: string;
+  hasPostings: string;
+  postingNotes: string;
+  pitch: string;
   resumeFileId?: string;
   resumeFileName?: string;
   locale: EmailLanguage;
@@ -141,6 +151,11 @@ export async function POST(request: Request) {
     const industryType = valueOf("industryType");
     const industryOther = valueOf("industryOther");
     const employmentStatus = valueOf("employmentStatus");
+    const desiredRole = valueOf("desiredRole");
+    const targetCompanies = valueOf("targetCompanies");
+    const hasPostings = valueOf("hasPostings");
+    const postingNotes = valueOf("postingNotes");
+    const pitch = valueOf("pitch");
     const languagesOther = valueOf("languagesOther");
     const language = valueOf("language").toLowerCase();
     const languagesRaw = valueOf("languages");
@@ -373,6 +388,11 @@ export async function POST(request: Request) {
           "Industry Type": industryType,
           "Industry Other": industryOther,
           "Employment Status": employmentStatus,
+          [APPLICANT_DESIRED_ROLE_HEADER]: desiredRole,
+          [APPLICANT_TARGET_COMPANIES_HEADER]: targetCompanies,
+          [APPLICANT_HAS_POSTINGS_HEADER]: hasPostings,
+          [APPLICANT_POSTING_NOTES_HEADER]: postingNotes,
+          [APPLICANT_PITCH_HEADER]: pitch,
           [APPLICANT_REGISTRATION_STATUS_HEADER]: "Pending Confirmation",
           // Clear reminder fields when issuing fresh token, store locale for reminder
           [APPLICANT_REMINDER_TOKEN_HASH_HEADER]: "",
@@ -459,6 +479,11 @@ export async function POST(request: Request) {
         industryType,
         industryOther,
         employmentStatus,
+        desiredRole,
+        targetCompanies,
+        hasPostings,
+        postingNotes,
+        pitch,
         resumeFileId,
         resumeFileName,
         locale,
@@ -532,6 +557,11 @@ export async function POST(request: Request) {
         industryType,
         industryOther,
         employmentStatus,
+        desiredRole,
+        targetCompanies,
+        hasPostings,
+        postingNotes,
+        pitch,
       });
 
       // Create confirmation token (use rowIndex 0 as placeholder for new applicants - we'll look up by email)
@@ -625,6 +655,11 @@ export async function POST(request: Request) {
       industryType,
       industryOther,
       employmentStatus,
+      desiredRole,
+      targetCompanies,
+      hasPostings,
+      postingNotes,
+      pitch,
       resumeFileId,
       resumeFileName,
       locale,

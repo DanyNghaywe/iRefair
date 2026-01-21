@@ -8,6 +8,7 @@ import { ActionBtn } from "@/components/ActionBtn";
 import { useLanguage } from "@/components/LanguageProvider";
 import { AutosaveHint } from "@/components/founder/AutosaveHint";
 import { Badge } from "@/components/founder/Badge";
+import { CenteredModal } from "@/components/founder/CenteredModal";
 import { DetailPageShell } from "@/components/founder/DetailPageShell";
 import { DetailSection } from "@/components/founder/DetailSection";
 import { Select } from "@/components/Select";
@@ -44,6 +45,18 @@ type CandidateRecord = {
   resumeFileName?: string;
   resumeFileId?: string;
   resumeUrl?: string;
+  targetCompanies?: string;
+  hasPostings?: string;
+  postingNotes?: string;
+  desiredRole?: string;
+  pitch?: string;
+  pendingCompanyIrcrn?: string;
+  pendingPosition?: string;
+  pendingReferenceNumber?: string;
+  pendingCvRequestedAt?: string;
+  pendingCvRequestNote?: string;
+  pendingCvTokenHash?: string;
+  pendingCvTokenExpiresAt?: string;
 };
 
 type ApplicationRecord = {
@@ -55,6 +68,11 @@ type ApplicationRecord = {
   referenceNumber: string;
   status: string;
   ownerNotes: string;
+};
+
+type ApprovedCompany = {
+  code: string;
+  name: string;
 };
 
 const translations = {
@@ -96,6 +114,20 @@ const translations = {
       eligibility: "Eligibility",
       currentStatus: "Current status",
       currentResume: "Current Resume",
+      company: "Approved Company",
+      position: "Position",
+      referenceNumber: "Reference Number",
+      resumeChoice: "Resume",
+      cvRequestNote: "Note to applicant",
+      pendingCv: "Pending CV request",
+      pendingCvRequestedAt: "Requested at",
+      pendingCvExpiresAt: "Expires at",
+      hints: "Applicant intake hints",
+      targetCompanies: "Target companies",
+      hasPostings: "Has postings",
+      postingNotes: "Posting notes",
+      desiredRole: "Desired role",
+      pitch: "Pitch",
     },
     placeholders: {
       select: "Select",
@@ -150,6 +182,9 @@ const translations = {
       uploading: "Uploading...",
       chooseFile: "Choose File",
       view: "View",
+      linkCompany: "Create application / Link to company",
+      createApplication: "Create application",
+      requestCv: "Request CV",
     },
     messages: {
       resumeRequestSent: "Resume request sent.",
@@ -159,9 +194,16 @@ const translations = {
       fileTooLarge: "File size exceeds 10MB limit.",
       unableToUploadResume: "Unable to upload resume.",
       resumeUploaded: "Resume uploaded successfully.",
+      applicationCreated: "Application created.",
+      cvRequestSent: "CV request sent.",
+      unableToCreateApplication: "Unable to create application.",
+      unableToRequestCv: "Unable to request CV.",
+      missingCompany: "Select an approved company.",
+      unableToLoadCompanies: "Unable to load approved companies.",
     },
     hints: {
       resumeTypes: "PDF, DOC, or DOCX. Max 10MB.",
+      tbd: "Leave blank to use TBD.",
     },
     banners: {
       archiveWarning: "This will also archive all related applications.",
@@ -176,6 +218,17 @@ const translations = {
     },
     dataQuality: {
       complete: "Complete",
+    },
+    linking: {
+      title: "Create application / Link to company",
+      subtitle: "Founder-initiated application",
+      companyPlaceholder: "Select an approved company",
+      resumeExisting: "Use existing resume",
+      resumeRequest: "Request a new resume",
+      resumeMissing: "No resume on file. A CV request is required.",
+      pendingCv: "A CV request is already pending for this applicant.",
+      requestNotePlaceholder: "Add a short note for the applicant (optional).",
+      hintsEmpty: "No intake hints available.",
     },
   },
   fr: {
@@ -216,6 +269,20 @@ const translations = {
       eligibility: "Admissibilité",
       currentStatus: "Statut actuel",
       currentResume: "CV actuel",
+      company: "Entreprise approuvée",
+      position: "Poste",
+      referenceNumber: "Numéro de référence",
+      resumeChoice: "CV",
+      cvRequestNote: "Note au candidat",
+      pendingCv: "Demande de CV en attente",
+      pendingCvRequestedAt: "Demandé le",
+      pendingCvExpiresAt: "Expire le",
+      hints: "Indices saisis par le candidat",
+      targetCompanies: "Entreprises ciblées",
+      hasPostings: "A des offres",
+      postingNotes: "Notes sur l'offre",
+      desiredRole: "Rôle souhaité",
+      pitch: "Pitch",
     },
     placeholders: {
       select: "Sélectionner",
@@ -270,6 +337,9 @@ const translations = {
       uploading: "Téléversement...",
       chooseFile: "Choisir un fichier",
       view: "Voir",
+      linkCompany: "Créer une candidature / Lier à une entreprise",
+      createApplication: "Créer la candidature",
+      requestCv: "Demander un CV",
     },
     messages: {
       resumeRequestSent: "Demande de CV envoyée.",
@@ -279,9 +349,16 @@ const translations = {
       fileTooLarge: "La taille du fichier dépasse la limite de 10 Mo.",
       unableToUploadResume: "Impossible de téléverser le CV.",
       resumeUploaded: "CV téléversé avec succès.",
+      applicationCreated: "Candidature créée.",
+      cvRequestSent: "Demande de CV envoyée.",
+      unableToCreateApplication: "Impossible de créer la candidature.",
+      unableToRequestCv: "Impossible de demander un CV.",
+      missingCompany: "Sélectionnez une entreprise approuvée.",
+      unableToLoadCompanies: "Impossible de charger les entreprises approuvées.",
     },
     hints: {
       resumeTypes: "PDF, DOC ou DOCX. Max 10 Mo.",
+      tbd: "Laisser vide pour utiliser TBD.",
     },
     banners: {
       archiveWarning: "Cela archivera également toutes les candidatures associées.",
@@ -296,6 +373,17 @@ const translations = {
     },
     dataQuality: {
       complete: "Complet",
+    },
+    linking: {
+      title: "Créer une candidature / Lier à une entreprise",
+      subtitle: "Candidature initiée par le fondateur",
+      companyPlaceholder: "Sélectionner une entreprise approuvée",
+      resumeExisting: "Utiliser le CV existant",
+      resumeRequest: "Demander un nouveau CV",
+      resumeMissing: "Aucun CV enregistré. Une demande de CV est requise.",
+      pendingCv: "Une demande de CV est déjà en attente pour ce candidat.",
+      requestNotePlaceholder: "Ajoutez une courte note au candidat (optionnel).",
+      hintsEmpty: "Aucun indice disponible.",
     },
   },
 };
@@ -422,6 +510,48 @@ const computeEligibility = (
   return { eligible, reason };
 };
 
+const isExpiredIso = (value?: string) => {
+  if (!value) return true;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return true;
+  return date.getTime() <= Date.now();
+};
+
+const splitTargetCompanies = (value: string) =>
+  value
+    .split(/[\n,;|]+/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+
+const matchApprovedCompany = (targets: string, companies: ApprovedCompany[]) => {
+  if (!targets || !companies.length) return '';
+  const tokens = splitTargetCompanies(targets);
+  const normalizedTokens = tokens.map((token) => token.toLowerCase());
+
+  for (const token of normalizedTokens) {
+    const match = companies.find((company) => {
+      const name = company.name?.toLowerCase() || '';
+      return company.code.toLowerCase() === token || (name && name === token);
+    });
+    if (match) return match.code;
+  }
+
+  for (const token of normalizedTokens) {
+    const match = companies.find((company) => {
+      const name = company.name?.toLowerCase() || '';
+      return token.includes(company.code.toLowerCase()) || (name && token.includes(name));
+    });
+    if (match) return match.code;
+  }
+
+  return '';
+};
+
+const buildNoteFromHints = (postingNotes?: string, pitch?: string) => {
+  const parts = [postingNotes, pitch].map((value) => value?.trim()).filter(Boolean);
+  return parts.join("\n\n");
+};
+
 export default function CandidateReviewPage() {
   const params = useParams();
   const rawId = params?.iRAIN ?? params?.irain;
@@ -504,6 +634,20 @@ export default function CandidateReviewPage() {
   const [pendingResumeFile, setPendingResumeFile] = useState<File | null>(null);
   const resumeInputRef = useRef<HTMLInputElement | null>(null);
 
+  // Link to company modal state
+  const [approvedCompanies, setApprovedCompanies] = useState<ApprovedCompany[]>([]);
+  const [companiesLoading, setCompaniesLoading] = useState(false);
+  const [companiesError, setCompaniesError] = useState<string | null>(null);
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [linkCompany, setLinkCompany] = useState("");
+  const [linkPosition, setLinkPosition] = useState("");
+  const [linkReferenceNumber, setLinkReferenceNumber] = useState("");
+  const [linkNote, setLinkNote] = useState("");
+  const [useExistingResume, setUseExistingResume] = useState(true);
+  const [linkSubmitting, setLinkSubmitting] = useState(false);
+  const [linkError, setLinkError] = useState<string | null>(null);
+  const linkInitRef = useRef(false);
+
   // Store original values when entering edit mode
   const originalDetailsRef = useRef<{
     firstName: string;
@@ -543,6 +687,46 @@ export default function CandidateReviewPage() {
   const statusLabels = t.statusLabels as Record<string, string>;
   const statusLabel = status ? statusLabels[status] ?? toTitleCase(status) : statusLabels.unassigned;
 
+  const companyOptions = useMemo(
+    () =>
+      approvedCompanies.map((company) => ({
+        value: company.code,
+        label: company.name ? `${company.name} (${company.code})` : company.code,
+      })),
+    [approvedCompanies],
+  );
+
+  const hasResume = Boolean(resumeFileId && resumeFileName);
+  const pendingCvRequestedAt = candidate?.pendingCvRequestedAt || "";
+  const pendingCvExpiresAt = candidate?.pendingCvTokenExpiresAt || "";
+  const pendingCvActive = Boolean(candidate?.pendingCvTokenHash) && !isExpiredIso(pendingCvExpiresAt);
+  const intakeHints = useMemo(() => {
+    if (!candidate) return [];
+    return [
+      { label: t.labels.targetCompanies, value: candidate.targetCompanies },
+      { label: t.labels.hasPostings, value: candidate.hasPostings },
+      { label: t.labels.postingNotes, value: candidate.postingNotes },
+      { label: t.labels.desiredRole, value: candidate.desiredRole },
+      { label: t.labels.pitch, value: candidate.pitch },
+    ].filter((item) => item.value);
+  }, [candidate, t.labels]);
+
+  const formatTimestamp = useCallback(
+    (value: string) => {
+      if (!value) return "";
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toLocaleString(language === "fr" ? "fr-CA" : "en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+      });
+    },
+    [language],
+  );
+
   const fetchCandidate = useCallback(async () => {
     if (!cleanIrain) return;
     setLoading(true);
@@ -572,6 +756,29 @@ export default function CandidateReviewPage() {
   useEffect(() => {
     fetchCandidate();
   }, [fetchCandidate]);
+
+  const fetchApprovedCompanies = useCallback(async () => {
+    setCompaniesLoading(true);
+    setCompaniesError(null);
+    try {
+      const response = await fetch("/api/founder/approved-companies", { cache: "no-store" });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.ok) {
+        setCompaniesError(data?.error || t.messages.unableToLoadCompanies);
+        return;
+      }
+      setApprovedCompanies(Array.isArray(data.companies) ? data.companies : []);
+    } catch (error) {
+      console.error("Failed to load approved companies", error);
+      setCompaniesError(t.messages.unableToLoadCompanies);
+    } finally {
+      setCompaniesLoading(false);
+    }
+  }, [t.messages.unableToLoadCompanies]);
+
+  useEffect(() => {
+    fetchApprovedCompanies();
+  }, [fetchApprovedCompanies]);
 
   useEffect(() => {
     if (!candidate) return;
@@ -605,6 +812,25 @@ export default function CandidateReviewPage() {
     originalDetailsRef.current = null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candidate?.irain]);
+
+  useEffect(() => {
+    if (!linkModalOpen) {
+      linkInitRef.current = false;
+      return;
+    }
+    if (!candidate || linkInitRef.current) return;
+
+    const suggestedCompany =
+      candidate.pendingCompanyIrcrn ||
+      matchApprovedCompany(candidate.targetCompanies || "", approvedCompanies);
+    setLinkCompany(suggestedCompany || "");
+    setLinkPosition(candidate.pendingPosition || candidate.desiredRole || "");
+    setLinkReferenceNumber(candidate.pendingReferenceNumber || "");
+    setLinkNote(candidate.pendingCvRequestNote || buildNoteFromHints(candidate.postingNotes, candidate.pitch));
+    setUseExistingResume(hasResume);
+    setLinkError(null);
+    linkInitRef.current = true;
+  }, [linkModalOpen, candidate, approvedCompanies, hasResume]);
 
   const fetchApplications = async (irainValue: string) => {
     setAppsLoading(true);
@@ -741,6 +967,80 @@ export default function CandidateReviewPage() {
     setEditDetails(false);
   };
 
+  const handleOpenLinkModal = () => {
+    if (!candidate) return;
+    setLinkError(null);
+    setLinkModalOpen(true);
+  };
+
+  const handleCloseLinkModal = () => {
+    setLinkModalOpen(false);
+    setLinkError(null);
+    linkInitRef.current = false;
+  };
+
+  const handleLinkSubmit = async () => {
+    if (!candidate || linkSubmitting) return;
+
+    if (pendingCvActive) {
+      setLinkError(t.linking.pendingCv);
+      return;
+    }
+
+    const companyIrcrn = linkCompany.trim();
+    if (!companyIrcrn) {
+      setLinkError(t.messages.missingCompany);
+      return;
+    }
+
+    if (useExistingResume && !hasResume) {
+      setLinkError(t.linking.resumeMissing);
+      return;
+    }
+
+    setLinkSubmitting(true);
+    setLinkError(null);
+
+    const payload: Record<string, string> = {
+      companyIrcrn,
+      position: linkPosition.trim(),
+      referenceNumber: linkReferenceNumber.trim(),
+    };
+    if (!useExistingResume) {
+      payload.note = linkNote.trim();
+    }
+
+    const endpoint = useExistingResume
+      ? `/api/founder/applicants/${encodeURIComponent(candidate.irain)}/create-application`
+      : `/api/founder/applicants/${encodeURIComponent(candidate.irain)}/request-cv`;
+
+    try {
+      const response = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok || !data?.ok) {
+        setLinkError(data?.error || (useExistingResume ? t.messages.unableToCreateApplication : t.messages.unableToRequestCv));
+        return;
+      }
+
+      setActionMessage(useExistingResume ? t.messages.applicationCreated : t.messages.cvRequestSent);
+      setActionError(null);
+      handleCloseLinkModal();
+      fetchCandidate();
+      if (candidate.irain) {
+        fetchApplications(candidate.irain);
+      }
+    } catch (error) {
+      console.error("Linking applicant failed", error);
+      setLinkError(useExistingResume ? t.messages.unableToCreateApplication : t.messages.unableToRequestCv);
+    } finally {
+      setLinkSubmitting(false);
+    }
+  };
+
   const handleRequestResume = async () => {
     if (!candidate) return;
     setActionLoading(true);
@@ -870,6 +1170,13 @@ export default function CandidateReviewPage() {
     setPendingResumeFile(null);
     setResumeError(null);
   };
+
+  const resumeModeValue = useExistingResume ? "existing" : "request";
+  const linkSubmitDisabled =
+    linkSubmitting ||
+    pendingCvActive ||
+    !linkCompany.trim() ||
+    (useExistingResume && !hasResume);
 
   if (!cleanIrain) {
     return (
@@ -1424,6 +1731,13 @@ export default function CandidateReviewPage() {
                 </ActionBtn>
                 <ActionBtn
                   as="button"
+                  variant="primary"
+                  onClick={handleOpenLinkModal}
+                >
+                  {t.buttons.linkCompany}
+                </ActionBtn>
+                <ActionBtn
+                  as="button"
                   variant="ghost"
                   onClick={handleRequestResume}
                   disabled={actionLoading}
@@ -1508,6 +1822,157 @@ export default function CandidateReviewPage() {
           </>
         }
       />
+
+      <CenteredModal
+        open={linkModalOpen}
+        onClose={handleCloseLinkModal}
+        title={t.linking.title}
+        subtitle={t.linking.subtitle}
+        locale={language}
+        actions={
+          <>
+            <ActionBtn as="button" variant="ghost" onClick={handleCloseLinkModal} disabled={linkSubmitting}>
+              {t.buttons.cancel}
+            </ActionBtn>
+            <ActionBtn
+              as="button"
+              variant="primary"
+              onClick={handleLinkSubmit}
+              disabled={linkSubmitDisabled}
+            >
+              {linkSubmitting
+                ? t.buttons.sending
+                : useExistingResume
+                  ? t.buttons.createApplication
+                  : t.buttons.requestCv}
+            </ActionBtn>
+          </>
+        }
+      >
+        {companiesError && (
+          <div className="centered-modal__section centered-modal__section--wide">
+            <div className="status-banner status-banner--error" role="alert">
+              {companiesError}
+            </div>
+          </div>
+        )}
+        {linkError && (
+          <div className="centered-modal__section centered-modal__section--wide">
+            <div className="status-banner status-banner--error" role="alert">
+              {linkError}
+            </div>
+          </div>
+        )}
+        {pendingCvActive && (
+          <div className="centered-modal__section centered-modal__section--wide">
+            <div className="status-banner status-banner--warning" role="status">
+              {t.linking.pendingCv}
+            </div>
+            <div className="centered-modal__notes-grid">
+              <div className="founder-field">
+                <span>{t.labels.pendingCvRequestedAt}</span>
+                <strong>{formatTimestamp(pendingCvRequestedAt) || "-"}</strong>
+              </div>
+              <div className="founder-field">
+                <span>{t.labels.pendingCvExpiresAt}</span>
+                <strong>{formatTimestamp(pendingCvExpiresAt) || "-"}</strong>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="centered-modal__section">
+          <h3 className="centered-modal__section-title">{t.labels.company}</h3>
+          <div className="founder-fieldset">
+            <label htmlFor="link-company">{t.labels.company}</label>
+            <Select
+              id="link-company"
+              name="link-company"
+              options={companyOptions}
+              placeholder={t.linking.companyPlaceholder}
+              value={linkCompany}
+              onChange={(value) => setLinkCompany(Array.isArray(value) ? value[0] : value)}
+            />
+            {companiesLoading ? (
+              <p className="field-hint">{t.buttons.sending}</p>
+            ) : null}
+          </div>
+          <div className="founder-fieldset">
+            <label htmlFor="link-position">{t.labels.position}</label>
+            <input
+              id="link-position"
+              type="text"
+              placeholder="TBD"
+              value={linkPosition}
+              onChange={(event) => setLinkPosition(event.target.value)}
+            />
+            <p className="field-hint">{t.hints.tbd}</p>
+          </div>
+          <div className="founder-fieldset">
+            <label htmlFor="link-reference">{t.labels.referenceNumber}</label>
+            <input
+              id="link-reference"
+              type="text"
+              placeholder="TBD"
+              value={linkReferenceNumber}
+              onChange={(event) => setLinkReferenceNumber(event.target.value)}
+            />
+            <p className="field-hint">{t.hints.tbd}</p>
+          </div>
+        </div>
+
+        <div className="centered-modal__section">
+          <h3 className="centered-modal__section-title">{t.labels.resumeChoice}</h3>
+          <div className="founder-fieldset">
+            <label htmlFor="resume-mode">{t.labels.resumeChoice}</label>
+            <select
+              id="resume-mode"
+              value={resumeModeValue}
+              onChange={(event) => setUseExistingResume(event.target.value === "existing")}
+            >
+              <option value="existing" disabled={!hasResume}>
+                {t.linking.resumeExisting}
+              </option>
+              <option value="request">{t.linking.resumeRequest}</option>
+            </select>
+            {!hasResume && <p className="field-hint">{t.linking.resumeMissing}</p>}
+          </div>
+          {resumeFileName && (
+            <div className="founder-field">
+              <span>{t.labels.currentResume}</span>
+              <strong>{resumeFileName}</strong>
+            </div>
+          )}
+          {!useExistingResume && (
+            <div className="founder-fieldset">
+              <label htmlFor="link-note">{t.labels.cvRequestNote}</label>
+              <textarea
+                id="link-note"
+                rows={3}
+                value={linkNote}
+                onChange={(event) => setLinkNote(event.target.value)}
+                placeholder={t.linking.requestNotePlaceholder}
+              />
+            </div>
+          )}
+        </div>
+
+        <div className="centered-modal__section centered-modal__section--wide">
+          <h3 className="centered-modal__section-title">{t.labels.hints}</h3>
+          {intakeHints.length ? (
+            <div className="centered-modal__notes-grid">
+              {intakeHints.map((hint) => (
+                <div key={hint.label} className="founder-field">
+                  <span>{hint.label}</span>
+                  <strong>{hint.value}</strong>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="field-hint">{t.linking.hintsEmpty}</p>
+          )}
+        </div>
+      </CenteredModal>
     </div>
   );
 }

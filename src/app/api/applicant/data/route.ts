@@ -95,6 +95,11 @@ export async function GET(request: NextRequest) {
         employmentStatus: record.employmentStatus || '',
         linkedin: record.linkedin || '',
         resumeFileName: record.resumeFileName || '',
+        desiredRole: record.desiredRole || '',
+        targetCompanies: record.targetCompanies || '',
+        hasPostings: record.hasPostings || '',
+        postingNotes: record.postingNotes || '',
+        pitch: record.pitch || '',
       },
     });
   } catch (error) {

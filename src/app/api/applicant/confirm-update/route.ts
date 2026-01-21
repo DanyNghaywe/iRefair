@@ -8,6 +8,11 @@ import {
   APPLICANT_UPDATE_TOKEN_EXPIRES_HEADER,
   APPLICANT_UPDATE_TOKEN_HASH_HEADER,
   APPLICANT_SHEET_NAME,
+  APPLICANT_DESIRED_ROLE_HEADER,
+  APPLICANT_TARGET_COMPANIES_HEADER,
+  APPLICANT_HAS_POSTINGS_HEADER,
+  APPLICANT_POSTING_NOTES_HEADER,
+  APPLICANT_PITCH_HEADER,
   LEGACY_APPLICANT_ID_HEADER,
   ensureColumns,
   getApplicantByEmail,
@@ -70,6 +75,11 @@ type PendingApplicantUpdatePayload = {
   industryType: string;
   industryOther: string;
   employmentStatus: string;
+  desiredRole: string;
+  targetCompanies: string;
+  hasPostings: string;
+  postingNotes: string;
+  pitch: string;
   resumeFileId?: string;
   resumeFileName?: string;
   locale?: EmailLanguage;
@@ -791,6 +801,11 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     "Industry Type": pending.industryType,
     "Industry Other": pending.industryOther,
     "Employment Status": pending.employmentStatus,
+    [APPLICANT_DESIRED_ROLE_HEADER]: pending.desiredRole,
+    [APPLICANT_TARGET_COMPANIES_HEADER]: pending.targetCompanies,
+    [APPLICANT_HAS_POSTINGS_HEADER]: pending.hasPostings,
+    [APPLICANT_POSTING_NOTES_HEADER]: pending.postingNotes,
+    [APPLICANT_PITCH_HEADER]: pending.pitch,
     [LEGACY_APPLICANT_ID_HEADER]: pending.legacyApplicantId,
     [APPLICANT_SECRET_HASH_HEADER]: applicantSecretHash,
     [APPLICANT_UPDATE_TOKEN_HASH_HEADER]: "",

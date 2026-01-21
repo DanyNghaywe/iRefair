@@ -1553,6 +1553,1075 @@ ${t(
   return { subject, text, html };
 }
 
+type FounderCvRequestParams = {
+  applicantName?: string;
+  applicantId: string;
+  companyName?: string;
+  companyIrcrn?: string;
+  position?: string;
+  referenceNumber?: string;
+  uploadUrl: string;
+  note?: string;
+  locale?: 'en' | 'fr';
+};
+
+export function founderCvRequestToApplicant(params: FounderCvRequestParams): TemplateResult {
+  const {
+    applicantName,
+    applicantId,
+    companyName,
+    companyIrcrn,
+    position,
+    referenceNumber,
+    uploadUrl,
+    note,
+    locale = 'en',
+  } = params;
+
+  const subject = t(
+    'Founder-initiated application: please upload your CV',
+    'Candidature initiée par le fondateur : veuillez téléverser votre CV',
+    locale,
+  );
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeApplicantId = escapeHtml(applicantId);
+  const safeCompany = companyName ? escapeHtml(companyName) : '';
+  const safeIrcrn = companyIrcrn ? escapeHtml(companyIrcrn) : '';
+  const safePosition = position ? escapeHtml(position) : 'TBD';
+  const safeReference = referenceNumber ? escapeHtml(referenceNumber) : 'TBD';
+  const safeNote = note ? escapeHtml(note) : '';
+  const normalizedUploadUrl = normalizeHttpUrl(uploadUrl) || uploadUrl;
+
+  const displayCompany = safeCompany || safeIrcrn || t('the company', "l'entreprise", locale);
+
+  const text = `${greeting}
+
+${t(
+  `The iRefair founder is preparing your application and needs your most recent CV. Please upload it using the secure link below.`,
+  `Le fondateur iRefair prépare votre candidature et a besoin de votre CV le plus récent. Veuillez le téléverser via le lien sécurisé ci-dessous.`,
+  locale,
+)}
+
+${t('Upload your CV', 'Téléverser votre CV', locale)}: ${normalizedUploadUrl}
+
+${t('Applicant ID', 'ID du candidat', locale)}: ${applicantId}
+${safeCompany ? `${t('Company', 'Entreprise', locale)}: ${companyName}` : ''}${safeIrcrn ? `\n${t('Company iRCRN', "iRCRN de l'entreprise", locale)}: ${companyIrcrn}` : ''}
+${t('Position', 'Poste', locale)}: ${safePosition}
+${t('Reference #', 'Réf. #', locale)}: ${safeReference}
+${note ? `\n${t('Note', 'Note', locale)}: ${note}` : ''}
+
+- ${t('The iRefair Team', "L'équipe iRefair", locale)}`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('CV upload requested', 'Téléversement de CV demandé', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Founder-initiated application', 'Candidature initiée par le fondateur', locale)}</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
+    <p style="margin: 0 0 18px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t(
+        `The iRefair founder is preparing your application for <strong>${displayCompany}</strong> and needs your most recent CV.`,
+        `Le fondateur iRefair prépare votre candidature pour <strong>${displayCompany}</strong> et a besoin de votre CV le plus récent.`,
+        locale,
+      )}
+    </p>
+
+    ${divider}
+
+    ${snapshotCard(t('APPLICATION SNAPSHOT', 'RÉSUMÉ DE LA CANDIDATURE', locale), [
+      [t('Applicant ID', 'ID du candidat', locale), safeApplicantId],
+      [t('Company', 'Entreprise', locale), safeCompany || safeIrcrn || t('TBD', 'TBD', locale)],
+      [t('Company iRCRN', "iRCRN de l'entreprise", locale), safeIrcrn || t('TBD', 'TBD', locale)],
+      [t('Position', 'Poste', locale), safePosition],
+      [t('Reference #', 'Réf. #', locale), safeReference],
+    ])}
+
+    ${safeNote ? `
+      <div style="margin: 16px 0 0 0; padding: 14px 16px; border-radius: 12px; border-left: 4px solid ${colors.secondary}; background: ${colors.background};">
+        <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: 700; color: ${colors.ink};">${t('Note from iRefair', "Note d'iRefair", locale)}</p>
+        <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">${safeNote}</p>
+      </div>
+    ` : ''}
+
+    <p style="margin: 22px 0 12px 0; text-align: center;">
+      ${button(t('Upload CV', 'Téléverser le CV', locale), normalizedUploadUrl, 'primary')}
+    </p>
+
+    <p style="margin: 18px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      ${t('Thank you,', 'Merci,', locale)}<br>
+      <strong>${t('The iRefair Team', "L'équipe iRefair", locale)}</strong>
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('FOUNDER-INITIATED REQUEST', 'DEMANDE INITIÉE PAR LE FONDATEUR', locale)}</div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">${t('Applicant ID', 'ID du candidat', locale)}: <strong style="color:#1f2a37;">${safeApplicantId}</strong></div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, t('Upload your CV to proceed', 'Téléversez votre CV pour continuer', locale), customHeader);
+
+  return { subject, text, html };
+}
+
+type FounderCvConfirmationParams = {
+  applicantName?: string;
+  companyIrcrn?: string;
+  position?: string;
+  referenceNumber?: string;
+  locale?: 'en' | 'fr';
+};
+
+export function founderCvUploadConfirmationToApplicant(params: FounderCvConfirmationParams): TemplateResult {
+  const { applicantName, companyIrcrn, position, referenceNumber, locale = 'en' } = params;
+
+  const subject = t(
+    'CV received - founder-initiated application',
+    'CV reçu - candidature initiée par le fondateur',
+    locale,
+  );
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safePosition = position ? escapeHtml(position) : 'TBD';
+  const safeReference = referenceNumber ? escapeHtml(referenceNumber) : 'TBD';
+  const safeIrcrn = companyIrcrn ? escapeHtml(companyIrcrn) : 'TBD';
+
+  const text = `${greeting}
+
+${t(
+  'We received your CV. The iRefair founder has been notified and will create your application next.',
+  'Nous avons bien reçu votre CV. Le fondateur iRefair a été notifié et créera votre candidature.',
+  locale,
+)}
+
+${t('Company iRCRN', "iRCRN de l'entreprise", locale)}: ${safeIrcrn}
+${t('Position', 'Poste', locale)}: ${safePosition}
+${t('Reference #', 'Réf. #', locale)}: ${safeReference}
+
+- ${t('The iRefair Team', "L'équipe iRefair", locale)}`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('CV received', 'CV reçu', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Founder-initiated application', 'Candidature initiée par le fondateur', locale)}</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
+    <p style="margin: 0 0 18px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t(
+        'We received your CV. The iRefair founder has been notified and will create your application next.',
+        'Nous avons bien reçu votre CV. Le fondateur iRefair a été notifié et créera votre candidature.',
+        locale,
+      )}
+    </p>
+
+    ${snapshotCard(t('APPLICATION SNAPSHOT', 'RÉSUMÉ DE LA CANDIDATURE', locale), [
+      [t('Company iRCRN', "iRCRN de l'entreprise", locale), safeIrcrn],
+      [t('Position', 'Poste', locale), safePosition],
+      [t('Reference #', 'Réf. #', locale), safeReference],
+    ])}
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      ${t('Thank you,', 'Merci,', locale)}<br>
+      <strong>${t('The iRefair Team', "L'équipe iRefair", locale)}</strong>
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('CV RECEIVED', 'CV REÇU', locale)}</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, t('Your CV was received', 'Votre CV a été reçu', locale), customHeader);
+
+  return { subject, text, html };
+}
+
+type FounderCvFounderNotificationParams = {
+  applicantName: string;
+  applicantEmail?: string;
+  applicantId: string;
+  companyIrcrn?: string;
+  position?: string;
+  referenceNumber?: string;
+  resumeFileName?: string;
+};
+
+export function founderCvReceivedToFounder(params: FounderCvFounderNotificationParams): TemplateResult {
+  const {
+    applicantName,
+    applicantEmail,
+    applicantId,
+    companyIrcrn,
+    position,
+    referenceNumber,
+    resumeFileName,
+  } = params;
+
+  const subject = `CV received: ${applicantName} ready for application`;
+  const safeApplicantName = escapeHtml(applicantName);
+  const safeApplicantId = escapeHtml(applicantId);
+  const safeApplicantEmail = applicantEmail ? escapeHtml(applicantEmail) : '';
+  const safeIrcrn = companyIrcrn ? escapeHtml(companyIrcrn) : 'TBD';
+  const safePosition = position ? escapeHtml(position) : 'TBD';
+  const safeReference = referenceNumber ? escapeHtml(referenceNumber) : 'TBD';
+  const safeResume = resumeFileName ? escapeHtml(resumeFileName) : 'Updated CV';
+
+  const text = `CV received for a founder-initiated application.
+
+Applicant: ${applicantName}
+Applicant ID: ${applicantId}
+Applicant email: ${applicantEmail || 'N/A'}
+Company iRCRN: ${companyIrcrn || 'TBD'}
+Position: ${safePosition}
+Reference #: ${safeReference}
+Resume: ${resumeFileName || 'Updated CV'}
+
+Create the application from the founder console when ready.`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">CV received</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Founder-initiated application ready</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      <strong>${safeApplicantName}</strong> uploaded a CV. You can now create the application from the founder console.
+    </p>
+
+    ${snapshotCard('APPLICATION SNAPSHOT', [
+      ['Applicant', safeApplicantName],
+      ['Applicant ID', safeApplicantId],
+      ['Applicant email', safeApplicantEmail || 'N/A'],
+      ['Company iRCRN', safeIrcrn],
+      ['Position', safePosition],
+      ['Reference #', safeReference],
+      ['Resume', safeResume],
+    ])}
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      The iRefair system
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">FOUNDER-INITIATED CV RECEIVED</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `CV received for ${applicantName}`, customHeader);
+
+  return { subject, text, html };
+}
+
+type FounderCvRequestSentParams = {
+  applicantName: string;
+  applicantEmail?: string;
+  applicantId: string;
+  companyIrcrn?: string;
+  position?: string;
+  referenceNumber?: string;
+  uploadUrl?: string;
+  note?: string;
+};
+
+export function founderCvRequestSentToFounder(params: FounderCvRequestSentParams): TemplateResult {
+  const {
+    applicantName,
+    applicantEmail,
+    applicantId,
+    companyIrcrn,
+    position,
+    referenceNumber,
+    uploadUrl,
+    note,
+  } = params;
+
+  const subject = `CV request sent: ${applicantName}`;
+  const safeApplicantName = escapeHtml(applicantName);
+  const safeApplicantId = escapeHtml(applicantId);
+  const safeApplicantEmail = applicantEmail ? escapeHtml(applicantEmail) : '';
+  const safeIrcrn = companyIrcrn ? escapeHtml(companyIrcrn) : 'TBD';
+  const safePosition = position ? escapeHtml(position) : 'TBD';
+  const safeReference = referenceNumber ? escapeHtml(referenceNumber) : 'TBD';
+  const safeNote = note ? escapeHtml(note) : '';
+  const normalizedUploadUrl = uploadUrl ? normalizeHttpUrl(uploadUrl) || uploadUrl : '';
+
+  const text = `Founder-initiated CV request sent.
+
+Applicant: ${applicantName}
+Applicant ID: ${applicantId}
+Applicant email: ${applicantEmail || 'N/A'}
+Company iRCRN: ${companyIrcrn || 'TBD'}
+Position: ${safePosition}
+Reference #: ${safeReference}
+Upload link: ${normalizedUploadUrl || 'N/A'}
+${note ? `Note: ${note}
+` : ''}We'll notify you when the CV is uploaded.`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">CV request sent</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Founder-initiated application</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      We sent a secure CV upload link to <strong>${safeApplicantName}</strong>. We'll notify you when the CV is uploaded.
+    </p>
+
+    ${snapshotCard('REQUEST DETAILS', [
+      ['Applicant', safeApplicantName],
+      ['Applicant ID', safeApplicantId],
+      ['Applicant email', safeApplicantEmail || 'N/A'],
+      ['Company iRCRN', safeIrcrn],
+      ['Position', safePosition],
+      ['Reference #', safeReference],
+      ['Upload link', normalizedUploadUrl ? `<a href="${escapeHtml(normalizedUploadUrl)}" style="color:${colors.primary};">${escapeHtml(normalizedUploadUrl)}</a>` : 'N/A'],
+    ])}
+
+    ${safeNote ? `
+      <div style="margin: 16px 0 0 0; padding: 14px 16px; border-radius: 12px; border-left: 4px solid ${colors.secondary}; background: ${colors.background};">
+        <p style="margin: 0 0 6px 0; font-size: 13px; font-weight: 700; color: ${colors.ink};">Note</p>
+        <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">${safeNote}</p>
+      </div>
+    ` : ''}
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      The iRefair system
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">FOUNDER-INITIATED CV REQUEST</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `CV request sent for ${applicantName}`, customHeader);
+
+  return { subject, text, html };
+}
+
+
+
+
+type FounderInitiatedApplicationApplicantParams = {
+  applicantName?: string;
+  applicantEmail?: string;
+  applicantId: string;
+  companyName?: string;
+  companyIrcrn?: string;
+  position?: string;
+  referenceNumber?: string;
+  submissionId: string;
+  locale?: 'en' | 'fr';
+};
+
+export function founderInitiatedApplicationToApplicant(
+  params: FounderInitiatedApplicationApplicantParams,
+): TemplateResult {
+  const {
+    applicantName,
+    applicantId,
+    companyName,
+    companyIrcrn,
+    position,
+    referenceNumber,
+    submissionId,
+    locale = 'en',
+  } = params;
+
+  const displayCompany = companyName || companyIrcrn || t('the company', "l'entreprise", locale);
+  const subject = t(
+    `Founder-initiated application submitted (iRefair): ${displayCompany}`,
+    `Candidature initiée par le fondateur (iRefair) : ${displayCompany}`,
+    locale,
+  );
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeApplicantId = escapeHtml(applicantId);
+  const safeCompany = displayCompany ? escapeHtml(displayCompany) : '';
+  const safeIrcrn = companyIrcrn ? escapeHtml(companyIrcrn) : t('TBD', 'TBD', locale);
+  const safePosition = position ? escapeHtml(position) : t('TBD', 'TBD', locale);
+  const safeReference = referenceNumber ? escapeHtml(referenceNumber) : t('TBD', 'TBD', locale);
+  const safeSubmissionId = escapeHtml(submissionId);
+
+  const text = `${greeting}
+
+${t(
+  `The iRefair founder has created and submitted an application on your behalf for ${displayCompany}.`,
+  `Le fondateur iRefair a créé et soumis une candidature en votre nom pour ${displayCompany}.`,
+  locale,
+)}
+
+${t('Application summary:', 'Résumé de la candidature :', locale)}
+- ${t('Submission ID', 'ID de soumission', locale)}: ${submissionId}
+- ${t('Your iRAIN', 'Votre iRAIN', locale)}: ${applicantId}
+- ${t('Company', 'Entreprise', locale)}: ${displayCompany}
+- ${t('Company iRCRN', "iRCRN de l'entreprise", locale)}: ${companyIrcrn || 'TBD'}
+- ${t('Position', 'Poste', locale)}: ${position || 'TBD'}
+- ${t('Reference #', 'Réf. #', locale)}: ${referenceNumber || 'TBD'}
+
+${t(
+  "A referrer at the company will review your profile. If there's a match, you'll be contacted by email.",
+  "Un référent de l'entreprise examinera votre profil. S'il y a correspondance, vous serez contacté par courriel.",
+  locale,
+)}
+
+- ${t('The iRefair Team', "L'équipe iRefair", locale)}`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Application created', 'Candidature créée', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Founder-initiated application', 'Candidature initiée par le fondateur', locale)}</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t(
+        `The iRefair founder has created and submitted an application on your behalf for <strong>${safeCompany}</strong>.`,
+        `Le fondateur iRefair a créé et soumis une candidature en votre nom pour <strong>${safeCompany}</strong>.`,
+        locale,
+      )}
+    </p>
+
+    ${divider}
+
+    ${snapshotCard(t('APPLICATION SUMMARY', 'RÉSUMÉ DE LA CANDIDATURE', locale), [
+      [t('Submission ID', 'ID de soumission', locale), safeSubmissionId],
+      [t('Your iRAIN', 'Votre iRAIN', locale), safeApplicantId],
+      [t('Company', 'Entreprise', locale), safeCompany],
+      [t('Company iRCRN', "iRCRN de l'entreprise", locale), safeIrcrn],
+      [t('Position', 'Poste', locale), safePosition],
+      [t('Reference #', 'Réf. #', locale), safeReference],
+    ])}
+
+    <p style="margin: 18px 0 0 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t(
+        "A referrer at the company will review your profile. If there's a match, you'll be contacted by email.",
+        "Un référent de l'entreprise examinera votre profil. S'il y a correspondance, vous serez contacté par courriel.",
+        locale,
+      )}
+    </p>
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      ${t('Thank you,', 'Merci,', locale)}<br>
+      <strong>${t('The iRefair Team', "L'équipe iRefair", locale)}</strong>
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('FOUNDER-INITIATED APPLICATION', 'CANDIDATURE INITIÉE PAR LE FONDATEUR', locale)}</div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">${t('Your iRAIN', 'Votre iRAIN', locale)}: <strong style="color:#1f2a37;">${safeApplicantId}</strong></div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, t('Founder-initiated application submitted', 'Candidature initiée par le fondateur', locale), customHeader);
+
+  return { subject, text, html };
+}
+
+type FounderInitiatedApplicationReferrerParams = {
+  referrerName?: string;
+  applicantName?: string;
+  applicantEmail?: string;
+  applicantPhone?: string;
+  applicantId: string;
+  iCrn: string;
+  companyName?: string;
+  position?: string;
+  referenceNumber?: string;
+  resumeUrl?: string;
+  resumeFileName?: string;
+  portalUrl?: string;
+  locale?: 'en' | 'fr';
+};
+
+export function founderInitiatedApplicationToReferrer(
+  params: FounderInitiatedApplicationReferrerParams,
+): TemplateResult {
+  const {
+    referrerName,
+    applicantName,
+    applicantEmail,
+    applicantPhone,
+    applicantId,
+    iCrn,
+    companyName,
+    position,
+    referenceNumber,
+    resumeUrl,
+    resumeFileName,
+    portalUrl,
+    locale = 'en',
+  } = params;
+
+  const displayCompany = companyName || iCrn;
+  const subject = t(
+    `Founder-initiated application to review: ${applicantName || 'Applicant'}`,
+    `Candidature initiée par le fondateur à examiner : ${applicantName || 'Candidat'}`,
+    locale,
+  );
+  const greeting = referrerName
+    ? t(`Hi ${referrerName},`, `Bonjour ${referrerName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = referrerName
+    ? t(`Hi ${escapeHtml(referrerName)},`, `Bonjour ${escapeHtml(referrerName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeApplicantName = applicantName ? escapeHtml(applicantName) : t('The applicant', 'Le candidat', locale);
+  const safeApplicantId = escapeHtml(applicantId);
+  const safeApplicantEmail = applicantEmail ? escapeHtml(applicantEmail) : '';
+  const safeApplicantPhone = applicantPhone ? escapeHtml(applicantPhone) : '';
+  const safeCompanyName = companyName ? escapeHtml(companyName) : escapeHtml(displayCompany);
+  const safeIrcrn = escapeHtml(iCrn);
+  const safePosition = position ? escapeHtml(position) : t('TBD', 'TBD', locale);
+  const safeReference = referenceNumber ? escapeHtml(referenceNumber) : t('TBD', 'TBD', locale);
+  const normalizedResumeUrl = resumeUrl ? normalizeHttpUrl(resumeUrl) : null;
+  const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
+  const displayResumeName = resumeFileName ? escapeHtml(resumeFileName) : t('Resume', 'CV', locale);
+
+  const text = `${greeting}
+
+${t(
+  `The iRefair founder created an application on behalf of ${applicantName || 'an applicant'} at ${displayCompany}.`,
+  `Le fondateur iRefair a créé une candidature au nom de ${applicantName || 'un candidat'} chez ${displayCompany}.`,
+  locale,
+)}
+
+${t('Applicant details:', 'Détails du candidat :', locale)}
+- ${t('Name', 'Nom', locale)}: ${applicantName || 'N/A'}
+- ${t('Applicant ID', 'ID du candidat', locale)}: ${applicantId}
+- ${t('Email', 'Courriel', locale)}: ${applicantEmail || 'N/A'}
+- ${t('Phone', 'Téléphone', locale)}: ${applicantPhone || 'N/A'}
+
+${t('Application details:', 'Détails de la candidature :', locale)}
+- ${t('Company', 'Entreprise', locale)}: ${displayCompany}
+- ${t('Company iRCRN', "iRCRN de l'entreprise", locale)}: ${iCrn}
+- ${t('Position', 'Poste', locale)}: ${position || 'TBD'}
+- ${t('Reference #', 'Réf. #', locale)}: ${referenceNumber || 'TBD'}
+- ${t('Resume', 'CV', locale)}: ${resumeFileName || 'N/A'}
+
+${normalizedPortalUrl
+  ? t(`Open your portal to review: ${normalizedPortalUrl}`, `Ouvrez votre portail pour examiner : ${normalizedPortalUrl}`, locale)
+  : t('Please log in to your portal to review this application.', 'Veuillez vous connecter à votre portail pour examiner cette candidature.', locale)}
+
+- ${t('The iRefair Team', "L'équipe iRefair", locale)}`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('New application to review', 'Nouvelle candidature à examiner', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Founder-initiated application', 'Candidature initiée par le fondateur', locale)}</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t(
+        `The iRefair founder created an application on behalf of <strong>${safeApplicantName}</strong> at <strong>${safeCompanyName}</strong>.`,
+        `Le fondateur iRefair a créé une candidature au nom de <strong>${safeApplicantName}</strong> chez <strong>${safeCompanyName}</strong>.`,
+        locale,
+      )}
+    </p>
+
+    ${divider}
+
+    <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
+      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${t('Applicant Information', 'Information sur le candidat', locale)}</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${infoRow(t('Name', 'Nom', locale), safeApplicantName)}
+        ${safeApplicantEmail ? infoRow(t('Email', 'Courriel', locale), `<a href="mailto:${safeApplicantEmail}" style="color: ${colors.primary};">${safeApplicantEmail}</a>`) : ''}
+        ${safeApplicantPhone ? infoRow(t('Phone', 'Téléphone', locale), safeApplicantPhone) : ''}
+        ${infoRow(t('Applicant ID', 'ID du candidat', locale), safeApplicantId)}
+      </table>
+    </div>
+
+    <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
+      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${t('Application Details', 'Détails de la candidature', locale)}</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${infoRow(t('Company', 'Entreprise', locale), safeCompanyName)}
+        ${infoRow(t('Company iRCRN', "iRCRN de l'entreprise", locale), safeIrcrn)}
+        ${infoRow(t('Position', 'Poste', locale), safePosition)}
+        ${infoRow(t('Reference #', 'Réf. #', locale), safeReference)}
+        ${infoRow(t('Resume', 'CV', locale), normalizedResumeUrl ? `<a href="${escapeHtml(normalizedResumeUrl)}" target="_blank" style="color: ${colors.primary};">${displayResumeName}</a>` : `<span style="color: ${colors.muted};">${t('Not provided', 'Non fourni', locale)}</span>`)}
+      </table>
+    </div>
+
+    ${normalizedResumeUrl ? `
+      <p style="margin: 12px 0; text-align: center;">
+        ${button(t('View Resume', 'Voir le CV', locale), normalizedResumeUrl, 'secondary')}
+      </p>
+    ` : ''}
+
+    ${normalizedPortalUrl ? `
+      <p style="margin: 16px 0 12px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6; text-align: center;">
+        ${t('Open your portal to review this application', 'Ouvrez votre portail pour examiner cette candidature', locale)}
+      </p>
+      <p style="margin: 0 0 16px 0; text-align: center;">
+        ${button(t('Open portal', 'Ouvrir le portail', locale), normalizedPortalUrl, 'primary')}
+      </p>
+    ` : ''}
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      ${t('Thank you,', 'Merci,', locale)}<br>
+      <strong>${t('The iRefair Team', "L'équipe iRefair", locale)}</strong>
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('FOUNDER-INITIATED APPLICATION', 'CANDIDATURE INITIÉE PAR LE FONDATEUR', locale)}</div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">${t('Company iRCRN', "iRCRN de l'entreprise", locale)}: <strong style="color:#1f2a37;">${safeIrcrn}</strong></div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, t('Founder-initiated application received', 'Candidature initiée par le fondateur', locale), customHeader);
+
+  return { subject, text, html };
+}
+
+type FounderInitiatedApplicationFounderParams = {
+  applicantName: string;
+  applicantEmail?: string;
+  applicantId: string;
+  companyName?: string;
+  companyIrcrn?: string;
+  position?: string;
+  referenceNumber?: string;
+  submissionId: string;
+  resumeFileName?: string;
+};
+
+export function founderInitiatedApplicationToFounder(
+  params: FounderInitiatedApplicationFounderParams,
+): TemplateResult {
+  const {
+    applicantName,
+    applicantEmail,
+    applicantId,
+    companyName,
+    companyIrcrn,
+    position,
+    referenceNumber,
+    submissionId,
+    resumeFileName,
+  } = params;
+
+  const subject = `Founder-initiated application created: ${applicantName}`;
+  const safeApplicantName = escapeHtml(applicantName);
+  const safeApplicantId = escapeHtml(applicantId);
+  const safeApplicantEmail = applicantEmail ? escapeHtml(applicantEmail) : '';
+  const safeCompany = companyName ? escapeHtml(companyName) : '';
+  const safeIrcrn = companyIrcrn ? escapeHtml(companyIrcrn) : 'TBD';
+  const safePosition = position ? escapeHtml(position) : 'TBD';
+  const safeReference = referenceNumber ? escapeHtml(referenceNumber) : 'TBD';
+  const safeSubmissionId = escapeHtml(submissionId);
+  const safeResume = resumeFileName ? escapeHtml(resumeFileName) : 'Resume';
+
+  const text = `Founder-initiated application created.
+
+Applicant: ${applicantName}
+Applicant ID: ${applicantId}
+Applicant email: ${applicantEmail || 'N/A'}
+Company: ${companyName || 'N/A'}
+Company iRCRN: ${companyIrcrn || 'TBD'}
+Position: ${position || 'TBD'}
+Reference #: ${referenceNumber || 'TBD'}
+Submission ID: ${submissionId}
+Resume: ${resumeFileName || 'Resume'}`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Application created</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Founder-initiated application</p>
+
+    ${snapshotCard('APPLICATION SUMMARY', [
+      ['Applicant', safeApplicantName],
+      ['Applicant ID', safeApplicantId],
+      ['Applicant email', safeApplicantEmail || 'N/A'],
+      ['Company', safeCompany || 'N/A'],
+      ['Company iRCRN', safeIrcrn],
+      ['Position', safePosition],
+      ['Reference #', safeReference],
+      ['Submission ID', safeSubmissionId],
+      ['Resume', safeResume],
+    ])}
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      The iRefair system
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">FOUNDER-INITIATED APPLICATION CREATED</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `Founder-initiated application for ${applicantName}`, customHeader);
+
+  return { subject, text, html };
+}
+
+type FounderInitiatedArchiveApplicantParams = {
+  applicantName?: string;
+  applicantId: string;
+  companyName?: string;
+  companyIrcrn?: string;
+  position?: string;
+  referenceNumber?: string;
+  submissionId: string;
+  reason: string;
+  locale?: 'en' | 'fr';
+};
+
+export function founderInitiatedApplicationArchivedToApplicant(
+  params: FounderInitiatedArchiveApplicantParams,
+): TemplateResult {
+  const {
+    applicantName,
+    applicantId,
+    companyName,
+    companyIrcrn,
+    position,
+    referenceNumber,
+    submissionId,
+    reason,
+    locale = 'en',
+  } = params;
+
+  const displayCompany = companyName || companyIrcrn || t('the company', "l'entreprise", locale);
+  const subject = t(
+    `Founder-initiated application archived: ${displayCompany}`,
+    `Candidature initiée par le fondateur archivée : ${displayCompany}`,
+    locale,
+  );
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeApplicantId = escapeHtml(applicantId);
+  const safeCompany = displayCompany ? escapeHtml(displayCompany) : '';
+  const safeIrcrn = companyIrcrn ? escapeHtml(companyIrcrn) : t('TBD', 'TBD', locale);
+  const safePosition = position ? escapeHtml(position) : t('TBD', 'TBD', locale);
+  const safeReference = referenceNumber ? escapeHtml(referenceNumber) : t('TBD', 'TBD', locale);
+  const safeSubmissionId = escapeHtml(submissionId);
+  const safeReason = escapeHtml(reason);
+
+  const text = `${greeting}
+
+${t(
+  `The iRefair founder archived this founder-initiated application for ${displayCompany}.`,
+  `Le fondateur iRefair a archivé cette candidature initiée par le fondateur pour ${displayCompany}.`,
+  locale,
+)}
+
+${t('Reason:', 'Raison :', locale)} ${reason}
+
+${t('Application summary:', 'Résumé de la candidature :', locale)}
+- ${t('Submission ID', 'ID de soumission', locale)}: ${submissionId}
+- ${t('Your iRAIN', 'Votre iRAIN', locale)}: ${applicantId}
+- ${t('Company', 'Entreprise', locale)}: ${displayCompany}
+- ${t('Company iRCRN', "iRCRN de l'entreprise", locale)}: ${companyIrcrn || 'TBD'}
+- ${t('Position', 'Poste', locale)}: ${position || 'TBD'}
+- ${t('Reference #', 'Réf. #', locale)}: ${referenceNumber || 'TBD'}
+
+- ${t('The iRefair Team', "L'équipe iRefair", locale)}`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Application archived', 'Candidature archivée', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Founder-initiated application archived', 'Candidature initiée par le fondateur archivée', locale)}</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t(
+        `The iRefair founder archived this founder-initiated application for <strong>${safeCompany}</strong>.`,
+        `Le fondateur iRefair a archivé cette candidature initiée par le fondateur pour <strong>${safeCompany}</strong>.`,
+        locale,
+      )}
+    </p>
+
+    <div style="background: ${colors.background}; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid ${colors.secondary};">
+      <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">${t('Reason', 'Raison', locale)}</p>
+      <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">${safeReason}</p>
+    </div>
+
+    ${snapshotCard(t('APPLICATION SUMMARY', 'RÉSUMÉ DE LA CANDIDATURE', locale), [
+      [t('Submission ID', 'ID de soumission', locale), safeSubmissionId],
+      [t('Your iRAIN', 'Votre iRAIN', locale), safeApplicantId],
+      [t('Company', 'Entreprise', locale), safeCompany],
+      [t('Company iRCRN', "iRCRN de l'entreprise", locale), safeIrcrn],
+      [t('Position', 'Poste', locale), safePosition],
+      [t('Reference #', 'Réf. #', locale), safeReference],
+    ])}
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      ${t('Thank you,', 'Merci,', locale)}<br>
+      <strong>${t('The iRefair Team', "L'équipe iRefair", locale)}</strong>
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('APPLICATION ARCHIVED', 'CANDIDATURE ARCHIVÉE', locale)}</div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">${t('Your iRAIN', 'Votre iRAIN', locale)}: <strong style="color:#1f2a37;">${safeApplicantId}</strong></div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, t('Application archived', 'Candidature archivée', locale), customHeader);
+
+  return { subject, text, html };
+}
+
+type FounderInitiatedArchiveReferrerParams = {
+  referrerName?: string;
+  applicantName?: string;
+  applicantEmail?: string;
+  applicantId: string;
+  companyName?: string;
+  iCrn: string;
+  position?: string;
+  referenceNumber?: string;
+  submissionId: string;
+  reason: string;
+  portalUrl?: string;
+  locale?: 'en' | 'fr';
+};
+
+export function founderInitiatedApplicationArchivedToReferrer(
+  params: FounderInitiatedArchiveReferrerParams,
+): TemplateResult {
+  const {
+    referrerName,
+    applicantName,
+    applicantEmail,
+    applicantId,
+    companyName,
+    iCrn,
+    position,
+    referenceNumber,
+    submissionId,
+    reason,
+    portalUrl,
+    locale = 'en',
+  } = params;
+
+  const displayCompany = companyName || iCrn;
+  const subject = t(
+    `Founder-initiated application archived: ${applicantName || 'Applicant'} at ${displayCompany}`,
+    `Candidature initiée par le fondateur archivée : ${applicantName || 'Candidat'} chez ${displayCompany}`,
+    locale,
+  );
+  const greeting = referrerName
+    ? t(`Hi ${referrerName},`, `Bonjour ${referrerName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = referrerName
+    ? t(`Hi ${escapeHtml(referrerName)},`, `Bonjour ${escapeHtml(referrerName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeApplicantName = applicantName ? escapeHtml(applicantName) : t('The applicant', 'Le candidat', locale);
+  const safeApplicantEmail = applicantEmail ? escapeHtml(applicantEmail) : '';
+  const safeApplicantId = escapeHtml(applicantId);
+  const safeCompany = companyName ? escapeHtml(companyName) : escapeHtml(displayCompany);
+  const safeIrcrn = escapeHtml(iCrn);
+  const safePosition = position ? escapeHtml(position) : t('TBD', 'TBD', locale);
+  const safeReference = referenceNumber ? escapeHtml(referenceNumber) : t('TBD', 'TBD', locale);
+  const safeSubmissionId = escapeHtml(submissionId);
+  const safeReason = escapeHtml(reason);
+  const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
+
+  const text = `${greeting}
+
+${t(
+  `The iRefair founder archived this founder-initiated application for ${applicantName || 'an applicant'} at ${displayCompany}.`,
+  `Le fondateur iRefair a archivé cette candidature initiée par le fondateur pour ${applicantName || 'un candidat'} chez ${displayCompany}.`,
+  locale,
+)}
+
+${t('Reason:', 'Raison :', locale)} ${reason}
+
+${t('Application summary:', 'Résumé de la candidature :', locale)}
+- ${t('Submission ID', 'ID de soumission', locale)}: ${submissionId}
+- ${t('Applicant ID', 'ID du candidat', locale)}: ${applicantId}
+- ${t('Company', 'Entreprise', locale)}: ${displayCompany}
+- ${t('Company iRCRN', "iRCRN de l'entreprise", locale)}: ${iCrn}
+- ${t('Position', 'Poste', locale)}: ${position || 'TBD'}
+- ${t('Reference #', 'Réf. #', locale)}: ${referenceNumber || 'TBD'}
+
+${normalizedPortalUrl
+  ? t(`Open your portal: ${normalizedPortalUrl}`, `Ouvrez votre portail : ${normalizedPortalUrl}`, locale)
+  : t('Please log in to your portal for the latest updates.', 'Veuillez vous connecter à votre portail pour les dernières mises à jour.', locale)}
+
+- ${t('The iRefair Team', "L'équipe iRefair", locale)}`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Application archived', 'Candidature archivée', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Founder-initiated application archived', 'Candidature initiée par le fondateur archivée', locale)}</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t(
+        `The iRefair founder archived this founder-initiated application for <strong>${safeApplicantName}</strong> at <strong>${safeCompany}</strong>.`,
+        `Le fondateur iRefair a archivé cette candidature initiée par le fondateur pour <strong>${safeApplicantName}</strong> chez <strong>${safeCompany}</strong>.`,
+        locale,
+      )}
+    </p>
+
+    <div style="background: ${colors.background}; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid ${colors.secondary};">
+      <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">${t('Reason', 'Raison', locale)}</p>
+      <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">${safeReason}</p>
+    </div>
+
+    <div style="background: ${colors.background}; padding: 20px; border-radius: 12px; margin: 16px 0;">
+      <p style="margin: 0 0 12px 0; color: ${colors.ink}; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">${t('Application Details', 'Détails de la candidature', locale)}</p>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        ${infoRow(t('Applicant', 'Candidat', locale), safeApplicantName)}
+        ${safeApplicantEmail ? infoRow(t('Email', 'Courriel', locale), `<a href="mailto:${safeApplicantEmail}" style="color: ${colors.primary};">${safeApplicantEmail}</a>`) : ''}
+        ${infoRow(t('Applicant ID', 'ID du candidat', locale), safeApplicantId)}
+        ${infoRow(t('Company', 'Entreprise', locale), safeCompany)}
+        ${infoRow(t('Company iRCRN', "iRCRN de l'entreprise", locale), safeIrcrn)}
+        ${infoRow(t('Position', 'Poste', locale), safePosition)}
+        ${infoRow(t('Reference #', 'Réf. #', locale), safeReference)}
+        ${infoRow(t('Submission ID', 'ID de soumission', locale), safeSubmissionId)}
+      </table>
+    </div>
+
+    ${normalizedPortalUrl ? `
+      <p style="margin: 16px 0 12px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6; text-align: center;">
+        ${t('Open your portal for the latest updates', 'Ouvrez votre portail pour les dernières mises à jour', locale)}
+      </p>
+      <p style="margin: 0 0 16px 0; text-align: center;">
+        ${button(t('Open portal', 'Ouvrir le portail', locale), normalizedPortalUrl, 'primary')}
+      </p>
+    ` : ''}
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      ${t('Thank you,', 'Merci,', locale)}<br>
+      <strong>${t('The iRefair Team', "L'équipe iRefair", locale)}</strong>
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('APPLICATION ARCHIVED', 'CANDIDATURE ARCHIVÉE', locale)}</div>
+      <div style="font-size:13px;color:#1f2a37;margin-top:10px;">${t('Company iRCRN', "iRCRN de l'entreprise", locale)}: <strong style="color:#1f2a37;">${safeIrcrn}</strong></div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, t('Application archived', 'Candidature archivée', locale), customHeader);
+
+  return { subject, text, html };
+}
+
+type FounderInitiatedArchiveFounderParams = {
+  applicantName: string;
+  applicantEmail?: string;
+  applicantId: string;
+  companyName?: string;
+  companyIrcrn?: string;
+  position?: string;
+  referenceNumber?: string;
+  submissionId: string;
+  reason: string;
+  referrerIrref?: string;
+  referrerEmail?: string;
+};
+
+export function founderInitiatedApplicationArchivedToFounder(
+  params: FounderInitiatedArchiveFounderParams,
+): TemplateResult {
+  const {
+    applicantName,
+    applicantEmail,
+    applicantId,
+    companyName,
+    companyIrcrn,
+    position,
+    referenceNumber,
+    submissionId,
+    reason,
+    referrerIrref,
+    referrerEmail,
+  } = params;
+
+  const subject = `Application archived: ${applicantName}`;
+  const safeApplicantName = escapeHtml(applicantName);
+  const safeApplicantId = escapeHtml(applicantId);
+  const safeApplicantEmail = applicantEmail ? escapeHtml(applicantEmail) : '';
+  const safeCompany = companyName ? escapeHtml(companyName) : '';
+  const safeIrcrn = companyIrcrn ? escapeHtml(companyIrcrn) : 'TBD';
+  const safePosition = position ? escapeHtml(position) : 'TBD';
+  const safeReference = referenceNumber ? escapeHtml(referenceNumber) : 'TBD';
+  const safeSubmissionId = escapeHtml(submissionId);
+  const safeReason = escapeHtml(reason);
+  const safeReferrer = referrerIrref ? escapeHtml(referrerIrref) : '';
+  const safeReferrerEmail = referrerEmail ? escapeHtml(referrerEmail) : '';
+
+  const text = `Founder-initiated application archived.
+
+Applicant: ${applicantName}
+Applicant ID: ${applicantId}
+Applicant email: ${applicantEmail || 'N/A'}
+Company: ${companyName || 'N/A'}
+Company iRCRN: ${companyIrcrn || 'TBD'}
+Position: ${position || 'TBD'}
+Reference #: ${referenceNumber || 'TBD'}
+Submission ID: ${submissionId}
+Referrer iRREF: ${referrerIrref || 'N/A'}
+Referrer email: ${referrerEmail || 'N/A'}
+Reason: ${reason}`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">Application archived</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">Founder-initiated application correction</p>
+
+    <div style="background: ${colors.background}; padding: 16px; border-radius: 12px; margin: 0 0 16px 0; border-left: 4px solid ${colors.secondary};">
+      <p style="margin: 0 0 6px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">Reason</p>
+      <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">${safeReason}</p>
+    </div>
+
+    ${snapshotCard('APPLICATION SUMMARY', [
+      ['Applicant', safeApplicantName],
+      ['Applicant ID', safeApplicantId],
+      ['Applicant email', safeApplicantEmail || 'N/A'],
+      ['Company', safeCompany || 'N/A'],
+      ['Company iRCRN', safeIrcrn],
+      ['Position', safePosition],
+      ['Reference #', safeReference],
+      ['Submission ID', safeSubmissionId],
+      ['Referrer iRREF', safeReferrer || 'N/A'],
+      ['Referrer email', safeReferrerEmail || 'N/A'],
+    ])}
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      The iRefair system
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">FOUNDER-INITIATED APPLICATION ARCHIVED</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, `Application archived for ${applicantName}`, customHeader);
+
+  return { subject, text, html };
+}
 export function matchIntro(
   applicantName: string,
   referrerName: string,
