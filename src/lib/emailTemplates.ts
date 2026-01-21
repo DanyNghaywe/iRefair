@@ -842,6 +842,7 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
     company,
     careersPortal,
     industry,
+    type,
     locale = 'en',
   } = params;
 
