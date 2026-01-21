@@ -2928,6 +2928,7 @@ export async function getApplicantByIrain(irain: string) {
         industryType: getHeaderValue(headerMap, row, 'Industry Type'),
         industryOther: getHeaderValue(headerMap, row, 'Industry Other'),
         employmentStatus: getHeaderValue(headerMap, row, 'Employment Status'),
+        locale: getHeaderValue(headerMap, row, APPLICANT_LOCALE_HEADER),
         targetCompanies: getHeaderValue(headerMap, row, APPLICANT_TARGET_COMPANIES_HEADER),
         hasPostings: getHeaderValue(headerMap, row, APPLICANT_HAS_POSTINGS_HEADER),
         postingNotes: getHeaderValue(headerMap, row, APPLICANT_POSTING_NOTES_HEADER),
