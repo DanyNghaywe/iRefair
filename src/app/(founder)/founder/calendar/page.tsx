@@ -55,6 +55,7 @@ export default function CalendarPage() {
 
   useEffect(() => {
     // Set initial time on client
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentTime(new Date());
 
     // Update every minute

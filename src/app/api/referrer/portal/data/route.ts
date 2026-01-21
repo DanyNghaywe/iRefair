@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
   let payload;
   try {
     payload = verifyReferrerToken(token);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ ok: false, error: 'Invalid or expired token' }, { status: 401 });
   }
 

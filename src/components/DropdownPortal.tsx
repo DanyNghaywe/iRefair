@@ -51,6 +51,7 @@ export function DropdownPortal({
 
   // Ensure we only render portal on client
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 

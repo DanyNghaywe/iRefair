@@ -17,8 +17,6 @@ import {
   updateReferrerCompanyApproval,
   updateRowById,
 } from '@/lib/sheets';
-import { jobOpeningsUrl } from '@/lib/urls';
-import { normalizeHttpUrl } from '@/lib/validation';
 
 export const dynamic = 'force-dynamic';
 

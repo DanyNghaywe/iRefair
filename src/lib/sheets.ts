@@ -113,7 +113,6 @@ export const REFERRER_COMPANIES_HEADERS = [
 const IRCRN_REGEX = /^iRCRN(\d{10})$/i;
 const IRAIN_REGEX = /^iRAIN(\d{10})$/i;
 const IRREF_REGEX = /^iRREF(\d{10})$/i;
-const REFERRER_LEGACY_PREFIX = 'Referrers_Legacy_';
 
 export function isIrain(value: string) {
   return IRAIN_REGEX.test(value.trim());
@@ -183,6 +182,13 @@ function toColumnLetter(index: number) {
     n = Math.floor(n / 26) - 1;
   }
   return letters;
+}
+
+function buildSheetRange(sheetName: string, range?: string) {
+  const escapedName = sheetName.replace(/'/g, "''");
+  const needsQuotes = /[^A-Za-z0-9_]/.test(escapedName);
+  const base = needsQuotes ? `'${escapedName}'` : escapedName;
+  return range ? `${base}!${range}` : base;
 }
 
 const CANDIDATE_LAST_COLUMN_LETTER = toColumnLetter(APPLICANT_HEADERS.length - 1);
@@ -697,6 +703,68 @@ async function getSheetDataWithHeaders(sheetName: string): Promise<{
     sheetDataInFlight.delete(sheetName);
   }
 }
+
+async function getSheetDataWithHeadersBatch(
+  sheetNames: string[],
+): Promise<Record<string, SheetData>> {
+  const uniqueSheets = [...new Set(sheetNames)];
+  const results: Record<string, SheetData> = {};
+  const now = Date.now();
+  const needsFetch: string[] = [];
+
+  for (const sheetName of uniqueSheets) {
+    if (SHEET_DATA_CACHE_TTL_MS > 0) {
+      const cached = sheetDataCache.get(sheetName);
+      if (cached && now - cached.fetchedAt < SHEET_DATA_CACHE_TTL_MS) {
+        results[sheetName] = { headers: cached.headers, rows: cached.rows };
+        if (cached.headers.length) {
+          headersCache.set(sheetName, cached.headers);
+        }
+        continue;
+      }
+    }
+    needsFetch.push(sheetName);
+  }
+
+  if (!needsFetch.length) {
+    return results;
+  }
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+  const response = await sheets.spreadsheets.values.batchGet({
+    spreadsheetId,
+    ranges: needsFetch.map((sheetName) => buildSheetRange(sheetName)),
+    majorDimension: 'ROWS',
+  });
+
+  const valueRanges = response.data.valueRanges ?? [];
+  for (let index = 0; index < needsFetch.length; index++) {
+    const sheetName = needsFetch[index];
+    const valueRange = valueRanges[index];
+    const allRows = valueRange?.values ?? [];
+    const headers = (allRows[0] ?? []).map((value) => String(value));
+    const data: SheetData = {
+      headers,
+      rows: allRows.slice(1),
+    };
+    results[sheetName] = data;
+    if (headers.length) {
+      headersCache.set(sheetName, headers);
+    }
+    if (SHEET_DATA_CACHE_TTL_MS > 0 && (data.headers.length || data.rows.length)) {
+      sheetDataCache.set(sheetName, { ...data, fetchedAt: Date.now() });
+    }
+  }
+
+  for (const sheetName of uniqueSheets) {
+    if (!results[sheetName]) {
+      results[sheetName] = { headers: [], rows: [] };
+    }
+  }
+
+  return results;
+}
 const SHEET_BY_PREFIX: Record<SubmissionPrefix, string> = {
   CAND: APPLICANT_SHEET_NAME,
   REF: REFERRER_SHEET_NAME,
@@ -725,33 +793,6 @@ function cellValue(row: (string | number | null | undefined)[], index: number) {
   const value = row[index];
   if (value === undefined || value === null) return '';
   return unescapeSheetsFormula(String(value).trim());
-}
-
-function buildApplicantRecordFromRow(row: (string | number | null | undefined)[]): ApplicantRow & {
-  timestamp: string;
-  legacyApplicantId: string;
-} {
-  return {
-    id: cellValue(row, 0),
-    timestamp: cellValue(row, 1),
-    firstName: cellValue(row, 2),
-    middleName: cellValue(row, 3),
-    familyName: cellValue(row, 4),
-    email: cellValue(row, 5),
-    phone: cellValue(row, 6),
-    locatedCanada: cellValue(row, 7),
-    province: cellValue(row, 8),
-    authorizedCanada: cellValue(row, 9),
-    eligibleMoveCanada: cellValue(row, 10),
-    countryOfOrigin: cellValue(row, 11),
-    languages: cellValue(row, 12),
-    languagesOther: cellValue(row, 13),
-    industryType: cellValue(row, 14),
-    industryOther: cellValue(row, 15),
-    employmentStatus: cellValue(row, 16),
-    linkedin: cellValue(row, 18),
-    legacyApplicantId: cellValue(row, LEGACY_APPLICANT_ID_COLUMN_INDEX),
-  };
 }
 
 function buildApplicantRecordFromHeaderMap(
@@ -1932,16 +1973,20 @@ export async function listApplicants(params: ApplicantListParams) {
 export async function listReferrers(params: ReferrerListParams) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
   await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN', 'Company Approval', REFERRER_PENDING_UPDATES_HEADER]);
+  await ensureHeaders(REFERRER_COMPANIES_SHEET_NAME, REFERRER_COMPANIES_HEADERS);
 
-  // Use cached headers + single data fetch
-  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_SHEET_NAME);
+  // Fetch referrers + companies together to reduce round-trips
+  const batchData = await getSheetDataWithHeadersBatch([
+    REFERRER_SHEET_NAME,
+    REFERRER_COMPANIES_SHEET_NAME,
+  ]);
+  const { headers, rows } = batchData[REFERRER_SHEET_NAME];
   if (!headers.length) return { total: 0, items: [] as unknown[] };
 
   const headerMap = buildHeaderMap(headers);
 
   // Fetch referrer companies to count pending companies per referrer
-  await ensureHeaders(REFERRER_COMPANIES_SHEET_NAME, REFERRER_COMPANIES_HEADERS);
-  const companiesData = await getSheetDataWithHeaders(REFERRER_COMPANIES_SHEET_NAME);
+  const companiesData = batchData[REFERRER_COMPANIES_SHEET_NAME];
   const companiesHeaderMap = buildHeaderMap(companiesData.headers);
   const pendingCompanyCountMap = new Map<string, number>();
   const companyNameMap = new Map<string, string[]>();
@@ -2130,6 +2175,48 @@ export async function listApprovedReferrerCompanies(): Promise<CompanyRow[]> {
   }
 
   return items;
+}
+
+export async function getFounderStatsCounts(date: Date): Promise<{
+  applicants: number;
+  referrers: number;
+  applications: number;
+}> {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+  const response = await sheets.spreadsheets.values.batchGet({
+    spreadsheetId,
+    ranges: [
+      buildSheetRange(APPLICANT_SHEET_NAME, 'A:A'),
+      buildSheetRange(REFERRER_SHEET_NAME, 'A:A'),
+      buildSheetRange(APPLICATION_SHEET_NAME, 'B:B'),
+    ],
+    majorDimension: 'COLUMNS',
+  });
+
+  const valueRanges = response.data.valueRanges ?? [];
+  const applicantsColumn = (valueRanges[0]?.values?.[0] ?? []) as (string | number)[];
+  const referrersColumn = (valueRanges[1]?.values?.[0] ?? []) as (string | number)[];
+  const applicationsColumn = (valueRanges[2]?.values?.[0] ?? []) as (string | number)[];
+
+  const applicants = Math.max(0, applicantsColumn.length - 1);
+  const referrers = Math.max(0, referrersColumn.length - 1);
+
+  let applications = 0;
+  for (let i = 1; i < applicationsColumn.length; i++) {
+    const value = applicationsColumn[i];
+    const ts = Array.isArray(value) ? String(value[0] ?? '') : String(value ?? '');
+    const parsed = Date.parse(ts);
+    if (!Number.isNaN(parsed) && parsed >= date.getTime()) {
+      applications += 1;
+    }
+  }
+
+  return { applicants, referrers, applications };
 }
 
 export async function countRowsInSheet(sheetName: string): Promise<number> {

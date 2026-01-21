@@ -106,6 +106,7 @@ export default function FounderLayout({ children }: { children: React.ReactNode 
 
   useEffect(() => {
     if (pathname !== prevPathnameRef.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setIsNavigating(false);
       prevPathnameRef.current = pathname;
     }

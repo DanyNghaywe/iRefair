@@ -146,7 +146,6 @@ type ApplicantRegistrationParams = {
   industry: string;
   languages: string;
   applicantKey?: string;
-  isUpdate?: boolean;
   statusNote?: string;
   locale?: 'en' | 'fr';
 };
@@ -160,7 +159,6 @@ export function applicantRegistrationConfirmation(params: ApplicantRegistrationP
     industry,
     languages,
     applicantKey,
-    isUpdate = false,
     statusNote,
     locale = 'en',
   } = params;
@@ -844,10 +842,6 @@ export function referrerRegistrationConfirmation(params: ReferrerRegistrationPar
     company,
     careersPortal,
     industry,
-    roles,
-    regions,
-    type,
-    slots,
     locale = 'en',
   } = params;
 
@@ -2125,7 +2119,7 @@ type RejectionParams = {
 };
 
 export function rejectionToApplicant(params: RejectionParams): TemplateResult {
-  const { applicantName, referrerName, companyName, position, locale = 'en' } = params;
+  const { applicantName, companyName, position, locale = 'en' } = params;
 
   const greeting = applicantName
     ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
@@ -2683,7 +2677,6 @@ export function rescheduleRequestToReferrer(params: RescheduleRequestParams): Te
     referrerName,
     applicantName,
     applicantEmail,
-    companyName,
     position,
     originalDateTime,
     reason,
@@ -3069,7 +3062,6 @@ export function meetingCancelledToReferrer(params: MeetingCancelledToReferrerPar
   const {
     referrerName,
     applicantName,
-    companyName,
     position,
     reason,
     cancelledDueToAction,

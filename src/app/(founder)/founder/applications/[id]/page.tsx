@@ -264,6 +264,7 @@ export default function ApplicationDetailPage() {
     setNotes(application.ownerNotes || "");
     setStatus((application.status || "").toLowerCase());
     skipAutosaveRef.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [application?.id]);
 
   const updateLocalApplication = (patch: Partial<ApplicationRecord>) => {

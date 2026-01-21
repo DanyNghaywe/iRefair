@@ -126,7 +126,6 @@ export function HiringCompaniesClient({ mergedCompanies }: Props) {
   const { language, setLanguage, withLanguage } = useLanguage();
   const [currentPage, setCurrentPage] = useState(1);
   const [warningOpen, setWarningOpen] = useState(false);
-  const [selectedCompanyName, setSelectedCompanyName] = useState('');
   const [selectedCareersUrl, setSelectedCareersUrl] = useState('');
   const [modalKey, setModalKey] = useState(0);
 
@@ -138,8 +137,7 @@ export function HiringCompaniesClient({ mergedCompanies }: Props) {
     return mergedCompanies.slice(startIndex, startIndex + PAGE_SIZE);
   }, [mergedCompanies, validPage]);
 
-  const handleOpenCareersClick = (companyName: string, careersUrl: string) => {
-    setSelectedCompanyName(companyName);
+  const handleOpenCareersClick = (careersUrl: string) => {
     setSelectedCareersUrl(careersUrl);
     setModalKey((k) => k + 1);
     setWarningOpen(true);
@@ -147,7 +145,6 @@ export function HiringCompaniesClient({ mergedCompanies }: Props) {
 
   const handleCloseWarning = () => {
     setWarningOpen(false);
-    setSelectedCompanyName('');
     setSelectedCareersUrl('');
   };
 
@@ -216,7 +213,7 @@ export function HiringCompaniesClient({ mergedCompanies }: Props) {
                               type="button"
                               className="hiring-link hiring-link--btn"
                               aria-label={t.openCareersAriaLabel(company.name)}
-                              onClick={() => handleOpenCareersClick(company.name, careersUrl)}
+                              onClick={() => handleOpenCareersClick(careersUrl)}
                             >
                               {t.openCareers}
                             </button>
@@ -298,7 +295,6 @@ export function HiringCompaniesClient({ mergedCompanies }: Props) {
         key={modalKey}
         open={warningOpen}
         onClose={handleCloseWarning}
-        companyName={selectedCompanyName}
         careersUrl={selectedCareersUrl}
       />
     </AppShell>

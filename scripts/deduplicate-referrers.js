@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const { google } = require('googleapis');
 
 const REFERRER_SHEET_NAME = 'Referrers';

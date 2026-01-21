@@ -66,14 +66,17 @@ export function DatePicker({
 
   // Client-side mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
   // Update view when value changes externally
   useEffect(() => {
-    if (selectedDate) {
-      setViewMonth(selectedDate.getMonth());
-      setViewYear(selectedDate.getFullYear());
+    if (value) {
+      const nextDate = new Date(value + 'T00:00:00');
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setViewMonth(nextDate.getMonth());
+      setViewYear(nextDate.getFullYear());
     }
   }, [value]);
 
@@ -326,7 +329,7 @@ export function DatePicker({
           </div>
 
           <div className={styles.days}>
-            {calendarDays.map((item, index) => {
+            {calendarDays.map((item) => {
               if (item.type !== 'current') {
                 return (
                   <div key={`${item.type}-${item.day}`} className={`${styles.day} ${styles.dayOutside}`}>

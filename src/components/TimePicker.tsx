@@ -84,6 +84,7 @@ export function TimePicker({
 
   // Client-side mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -134,6 +135,7 @@ export function TimePicker({
       if (selectedEl) {
         selectedEl.scrollIntoView({ block: 'center' });
       }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setHighlightedIndex(selectedIndex);
     } else if (isOpen) {
       setHighlightedIndex(0);

@@ -44,6 +44,7 @@ export function CenteredModal({
   const labels = ariaLabels[locale];
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 

@@ -129,8 +129,10 @@ export function Confetti({
   const [mounted, setMounted] = useState(false);
   const startTimeRef = useRef<number | null>(null);
   const frameRef = useRef<number | null>(null);
+  const animateRef = useRef<() => void>(() => undefined);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -142,13 +144,17 @@ export function Confetti({
     setElapsed(newElapsed);
 
     if (newElapsed < duration) {
-      frameRef.current = requestAnimationFrame(animate);
+      frameRef.current = requestAnimationFrame(() => animateRef.current());
     } else {
       setPieces([]);
       startTimeRef.current = null;
       onComplete?.();
     }
   }, [duration, onComplete]);
+
+  useEffect(() => {
+    animateRef.current = animate;
+  }, [animate]);
 
   useEffect(() => {
     if (!active || !mounted) return;
@@ -162,10 +168,11 @@ export function Confetti({
       generatePiece(i, originPx, spread, colors)
     );
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPieces(newPieces);
     setElapsed(0);
     startTimeRef.current = performance.now();
-    frameRef.current = requestAnimationFrame(animate);
+    frameRef.current = requestAnimationFrame(() => animateRef.current());
 
     return () => {
       if (frameRef.current) {

@@ -10,7 +10,7 @@ import {
 import { normalizePortalTokenVersion, verifyReferrerToken } from '@/lib/referrerPortalToken';
 import { sendMail } from '@/lib/mailer';
 import { getReferrerPortalToken } from '@/lib/referrerPortalAuth';
-import { isValidTimezone, formatMeetingDateTime } from '@/lib/timezone';
+import { isValidTimezone } from '@/lib/timezone';
 import { createOpaqueToken, hashOpaqueToken } from '@/lib/tokens';
 import { appendActionHistoryEntry, type ActionLogEntry } from '@/lib/actionHistory';
 import {

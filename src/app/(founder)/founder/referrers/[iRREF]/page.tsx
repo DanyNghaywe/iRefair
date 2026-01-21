@@ -784,6 +784,7 @@ export default function ReferrerReviewPage() {
     setRejectConfirm(false);
     skipAutosaveRef.current = true;
     originalDetailsRef.current = null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [referrer?.irref]);
 
   const updateLocal = (patch: Partial<ReferrerRecord>) => {

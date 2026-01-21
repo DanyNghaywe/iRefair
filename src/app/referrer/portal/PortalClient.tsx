@@ -1479,7 +1479,7 @@ export default function PortalClient() {
                                                   )}
                                                 </div>
                                                 {entry.notes && (
-                                                  <div className="portal-timeline-notes">"{entry.notes}"</div>
+                                                  <div className="portal-timeline-notes">&quot;{entry.notes}&quot;</div>
                                                 )}
                                               </div>
                                             </li>

@@ -536,7 +536,7 @@ function ApplicantPageContent() {
     };
 
     fetchPrefillData();
-  }, [hasUpdateRequest, updateToken, updateAppId]);
+  }, [formCopy.errors.prefillLoadFailed, hasUpdateRequest, updateToken, updateAppId]);
 
   const handleFieldChange = (field: string) => () => clearError(field);
   const handleLinkedInChange = () => {

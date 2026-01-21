@@ -11,7 +11,6 @@ import {
   findApplicantByIdentifier,
   findDuplicateApplication,
   findReferrerByIrcrn,
-  findReferrerByIrcrnStrict,
   findReferrerCompanyByIrcrnStrict,
   generateSubmissionId,
   isIrain,

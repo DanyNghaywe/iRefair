@@ -30,7 +30,6 @@ const translations = {
 type CareersWarningModalProps = {
   open: boolean;
   onClose: () => void;
-  companyName: string;
   careersUrl: string;
 };
 
@@ -65,7 +64,6 @@ function WarningIcon() {
 export function CareersWarningModal({
   open,
   onClose,
-  companyName,
   careersUrl,
 }: CareersWarningModalProps) {
   const router = useRouter();

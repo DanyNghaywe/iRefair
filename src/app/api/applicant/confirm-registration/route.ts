@@ -24,8 +24,6 @@ import {
 } from "@/lib/applicantUpdateToken";
 import { applicantRegistrationConfirmation, applicantIneligibleNotification } from "@/lib/emailTemplates";
 
-type EmailLanguage = "en" | "fr";
-
 const successPageHtml = `<!DOCTYPE html>
 <html lang="{{lang}}">
 <head>

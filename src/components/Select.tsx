@@ -89,6 +89,7 @@ export function Select({
 
   // Client-side mount detection for portal
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 

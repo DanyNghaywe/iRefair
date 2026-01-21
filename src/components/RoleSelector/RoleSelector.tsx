@@ -66,6 +66,26 @@ export function RoleSelector() {
 
   const selectedRole = roles[selectedIndex];
 
+  const handleSelect = useCallback(
+    (index: number) => {
+      setSelectedIndex(index);
+      setIsOpen(false);
+      setFocusedIndex(-1);
+      startNavigation(roles[index].href);
+      router.push(roles[index].href);
+    },
+    [router, startNavigation, roles]
+  );
+
+  const handleToggle = useCallback(() => {
+    setIsOpen((prev) => {
+      if (!prev) {
+        setFocusedIndex(selectedIndex);
+      }
+      return !prev;
+    });
+  }, [selectedIndex]);
+
   // Close on outside click
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -116,7 +136,7 @@ export function RoleSelector() {
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, focusedIndex, roles.length]);
+  }, [isOpen, focusedIndex, roles.length, handleSelect]);
 
   // Focus management
   useEffect(() => {
@@ -125,26 +145,6 @@ export function RoleSelector() {
       items[focusedIndex]?.focus();
     }
   }, [isOpen, focusedIndex]);
-
-  const handleToggle = useCallback(() => {
-    setIsOpen((prev) => {
-      if (!prev) {
-        setFocusedIndex(selectedIndex);
-      }
-      return !prev;
-    });
-  }, [selectedIndex]);
-
-  const handleSelect = useCallback(
-    (index: number) => {
-      setSelectedIndex(index);
-      setIsOpen(false);
-      setFocusedIndex(-1);
-      startNavigation(roles[index].href);
-      router.push(roles[index].href);
-    },
-    [router, startNavigation, roles]
-  );
 
   const menuClasses = [
     "role-selector",

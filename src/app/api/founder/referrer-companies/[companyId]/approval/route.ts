@@ -10,7 +10,6 @@ import {
   getReferrerCompanyById,
   getReferrerByIrref,
   updateCompanyApproval,
-  hasApprovedCompany,
 } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
@@ -84,10 +83,6 @@ export async function POST(
     // C) If newly approved and this is the referrer's first approved company, send portal link email
     if (approval === 'approved' && prevApproval !== 'approved') {
       // Check if this is the first approved company for this referrer
-      const hadApprovedCompanyBefore = await hasApprovedCompany(company.referrerIrref);
-      // Since we just approved this one, check if there were any before
-      // Actually, hasApprovedCompany will now return true since we just approved this one
-      // We need to check if this was the first approval - use wasFirstApproval flag
       const isFirstCompanyApproval = result.wasFirstApproval;
 
       try {

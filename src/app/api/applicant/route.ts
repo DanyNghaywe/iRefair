@@ -29,8 +29,7 @@ import {
   updateRowById,
   upsertApplicantRow,
 } from "@/lib/sheets";
-import { jobOpeningsUrl } from "@/lib/urls";
-import { escapeHtml, normalizeHttpUrl } from "@/lib/validation";
+import { normalizeHttpUrl } from "@/lib/validation";
 import {
   createApplicantUpdateToken,
   hashToken,
@@ -208,14 +207,6 @@ export async function POST(request: Request) {
     }
 
     const notProvided = locale === "fr" ? "Non fourni" : "Not provided";
-    const normalizeYesNo = (value: string) => {
-      const trimmed = value.trim();
-      if (!trimmed) return "";
-      const lowered = trimmed.toLowerCase();
-      if (lowered === "yes" || lowered === "oui") return locale === "fr" ? "Oui" : "Yes";
-      if (lowered === "no" || lowered === "non") return locale === "fr" ? "Non" : "No";
-      return trimmed;
-    };
 
     // Check for existing applicant using 2-of-3 matching (name, email, phone)
     let existingApplicant = await findExistingApplicant(firstName, familyName, email, phone);
@@ -264,7 +255,6 @@ export async function POST(request: Request) {
       );
     }
 
-    const isExistingApplicant = existingApplicant !== null;
     const existingId = existingApplicant?.record.id || "";
     const shouldAssignNewIrain = Boolean(existingApplicant) && !isIrain(existingId);
 
@@ -282,9 +272,6 @@ export async function POST(request: Request) {
     const legacyApplicantId = shouldAssignNewIrain
       ? existingApplicant?.record.legacyApplicantId || existingId || undefined
       : undefined;
-    const isIneligible =
-      (locatedCanada.toLowerCase() === "no" && eligibleMoveCanada.toLowerCase() === "no") ||
-      (locatedCanada.toLowerCase() === "yes" && authorizedCanada.toLowerCase() === "no");
     let resumeFileId: string | undefined;
     let resumeFileName: string | undefined;
 
@@ -325,32 +312,6 @@ export async function POST(request: Request) {
       resumeFileId = upload.fileId;
       resumeFileName = resumeEntry.name;
     }
-
-    const locationSnapshot = (() => {
-      if (locatedCanada === "Yes" || locatedCanada === "yes") return province ? `Canada - ${province}` : "Canada";
-      if ((locatedCanada === "No" || locatedCanada === "no") && countryOfOrigin) return countryOfOrigin;
-      return countryOfOrigin || notProvided;
-    })();
-
-    const authorizationSnapshot = (() => {
-      if (locatedCanada === "Yes" || locatedCanada === "yes") return normalizeYesNo(authorizedCanada) || notProvided;
-      if (locatedCanada === "No" || locatedCanada === "no") {
-        const eligibility = normalizeYesNo(eligibleMoveCanada) || eligibleMoveCanada;
-        if (eligibility) {
-          return locale === "fr"
-            ? `Eligible pour s'installer/travailler dans 6 mois : ${eligibility}`
-            : `Eligible to move/work in 6 months: ${eligibility}`;
-        }
-        return notProvided;
-      }
-      const fallback = normalizeYesNo(authorizedCanada) || normalizeYesNo(eligibleMoveCanada);
-      return fallback || notProvided;
-    })();
-
-    const industrySnapshot = (() => {
-      if (industryType === "Other" && industryOther) return industryOther;
-      return industryType || notProvided;
-    })();
 
     const languagesSnapshot = (() => {
       const baseList = languagesRaw

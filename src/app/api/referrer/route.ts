@@ -10,11 +10,10 @@ import {
   appendReferrerCompanyRow,
   generateReferrerCompanyId,
   findReferrerCompanyByName,
-  listReferrerCompanies,
   updateReferrerCompanyFields,
   updateReferrerFields,
 } from '@/lib/sheets';
-import { escapeHtml, normalizeHttpUrl } from '@/lib/validation';
+import { normalizeHttpUrl } from '@/lib/validation';
 import {
   referrerRegistrationConfirmation,
   referrerAlreadyExistsEmail,

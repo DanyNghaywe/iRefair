@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
@@ -114,10 +114,11 @@ function ArchivedReferrersContent() {
 
   // Reset to page 1 when search changes
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
   }, [search]);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams();
     params.set("limit", String(PAGE_SIZE));
@@ -131,14 +132,14 @@ function ArchivedReferrersContent() {
       setTotal(data.total ?? 0);
     }
     setLoading(false);
-  };
+  }, [currentPage, search]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [search, currentPage]);
+  }, [fetchData]);
 
-  const handleRestore = async (irref: string) => {
+  const handleRestore = useCallback(async (irref: string) => {
     setActionLoading(irref);
     setError(null);
     try {
@@ -155,9 +156,9 @@ function ArchivedReferrersContent() {
       setError(t.errors.restoreFailed);
     }
     setActionLoading(null);
-  };
+  }, [fetchData, t]);
 
-  const handlePermanentDelete = async (irref: string) => {
+  const handlePermanentDelete = useCallback(async (irref: string) => {
     if (!confirm(t.errors.deleteConfirm)) {
       return;
     }
@@ -177,7 +178,7 @@ function ArchivedReferrersContent() {
       setError(t.errors.deleteFailed);
     }
     setActionLoading(null);
-  };
+  }, [fetchData, t]);
 
   const columns = useMemo<OpsColumn<ArchivedReferrer>[]>(
     () => [
@@ -248,7 +249,7 @@ function ArchivedReferrersContent() {
         ),
       },
     ],
-    [actionLoading, t],
+    [actionLoading, handlePermanentDelete, handleRestore, t],
   );
 
   return (

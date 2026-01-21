@@ -603,6 +603,7 @@ export default function CandidateReviewPage() {
     setResumeSuccess(null);
     skipAutosaveRef.current = true;
     originalDetailsRef.current = null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candidate?.irain]);
 
   const fetchApplications = async (irainValue: string) => {
