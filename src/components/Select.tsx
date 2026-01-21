@@ -36,6 +36,7 @@ type SelectProps = {
   value?: string;
   values?: string[];
   multi?: boolean;
+  preferNative?: boolean;
   required?: boolean;
   ariaDescribedBy?: string;
   ariaInvalid?: boolean;
@@ -53,6 +54,7 @@ export function Select({
   value,
   values,
   multi = false,
+  preferNative = true,
   required,
   ariaDescribedBy,
   ariaInvalid,
@@ -82,7 +84,7 @@ export function Select({
   const resolvedSelectedValue = isControlledSingle ? value : selectedValue;
   const resolvedSelectedValues = isControlledMulti ? values ?? [] : selectedValues;
   const selectedIndex = normalizedOptions.findIndex((opt) => opt.value === resolvedSelectedValue);
-  const shouldUseNative = !multi && prefersNative;
+  const shouldUseNative = !multi && prefersNative && preferNative;
 
   const DROPDOWN_OFFSET = 8;
   const DROPDOWN_MAX_HEIGHT = 260;

@@ -2972,13 +2972,13 @@ button.disclaimer,
   max-height: 85dvh;
   display: flex;
   flex-direction: column;
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.12));
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow: 0 18px 44px rgba(15, 23, 42, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.24);
+  background: linear-gradient(165deg, rgba(15, 30, 45, 0.97), rgba(10, 20, 35, 0.98));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
   border-radius: 20px;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  color: var(--ink);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  color: #f8fafc;
   overflow: hidden;
   z-index: 1;
 }
@@ -2998,7 +2998,7 @@ button.disclaimer,
   font-size: var(--font-size-xs);
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: rgba(15, 23, 42, 0.8);
+  color: rgba(203, 213, 225, 0.9);
   font-weight: 700;
 }
 
@@ -3014,20 +3014,20 @@ button.disclaimer,
   justify-content: space-between;
   gap: 16px;
   padding: 20px 22px;
-  border-bottom: 1px solid rgba(15, 23, 42, 0.12);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .centered-modal__title {
   margin: 0;
   font-size: var(--font-size-xl);
   font-weight: 700;
-  color: var(--ink);
+  color: #f8fafc;
 }
 
 .centered-modal__subtitle {
   margin: 4px 0 0 0;
   font-size: var(--font-size-xs);
-  color: rgba(15, 23, 42, 0.6);
+  color: #cbd5e1;
 }
 
 .centered-modal__body {
@@ -3035,7 +3035,7 @@ button.disclaimer,
   overflow-y: auto;
   overflow-x: hidden;
   min-height: 0;
-  scrollbar-color: rgba(15, 23, 42, 0.35) transparent;
+  scrollbar-color: rgba(255, 255, 255, 0.2) transparent;
 }
 
 .centered-modal__body::-webkit-scrollbar {
@@ -3047,7 +3047,7 @@ button.disclaimer,
 }
 
 .centered-modal__body::-webkit-scrollbar-thumb {
-  background: rgba(15, 23, 42, 0.3);
+  background: rgba(255, 255, 255, 0.15);
   border-radius: 999px;
   border: 3px solid transparent;
   background-clip: padding-box;
@@ -3064,14 +3064,14 @@ button.disclaimer,
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 12px 22px;
-  border-top: 1px solid rgba(15, 23, 42, 0.12);
-  background: rgba(255, 255, 255, 0.8);
+  padding: 16px 22px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .centered-modal__footer-meta {
   font-size: var(--font-size-xs);
-  color: rgba(15, 23, 42, 0.6);
+  color: #cbd5e1;
 }
 
 .centered-modal__footer-actions {
@@ -3082,8 +3082,10 @@ button.disclaimer,
 }
 
 .centered-modal .founder-field {
-  background: linear-gradient(150deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.18));
-  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 12px 14px;
 }
 
 .centered-modal .founder-field span {
@@ -3096,17 +3098,47 @@ button.disclaimer,
 
 .centered-modal .founder-fieldset label {
   color: #cbd5e1;
+  font-weight: 500;
 }
 
 .centered-modal .founder-fieldset select,
 .centered-modal .founder-fieldset input,
 .centered-modal .founder-fieldset textarea {
-  background: rgba(255, 255, 255, 0.32);
-  border: none;
-  box-shadow: inset 0 0 0 0 rgba(255, 255, 255, 0);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  color: #0f172a;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: #f8fafc;
+  padding: 10px 14px;
+}
+
+.centered-modal .founder-fieldset select:focus,
+.centered-modal .founder-fieldset input:focus,
+.centered-modal .founder-fieldset textarea:focus {
+  outline: none;
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.centered-modal .field-hint {
+  color: rgba(203, 213, 225, 0.7);
+}
+
+.centered-modal .status-banner {
+  color: #f8fafc;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  width: 100%;
+}
+
+.centered-modal .status-banner--error {
+  color: #fca5a5;
+  background: rgba(220, 38, 38, 0.15);
+}
+
+.centered-modal .status-banner--warning {
+  color: #fcd34d;
+  background: rgba(245, 158, 11, 0.15);
 }
 
 /* FOUNDER LOGIN */

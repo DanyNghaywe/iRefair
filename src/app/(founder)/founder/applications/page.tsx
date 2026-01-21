@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { ActionBtn } from "@/components/ActionBtn";
 import { useLanguage } from "@/components/LanguageProvider";
 import { Badge } from "@/components/founder/Badge";
 import { EmptyState } from "@/components/founder/EmptyState";
@@ -24,6 +25,7 @@ const translations = {
     position: "Position",
     status: "Status",
     unassigned: "Unassigned",
+    createApplication: "Create application",
     emptyTitle: "No applications yet",
     emptyDescription: "Applications will appear here when candidates submit their resumes for positions. Try adjusting your filters or check back later.",
   },
@@ -40,6 +42,7 @@ const translations = {
     position: "Poste",
     status: "Statut",
     unassigned: "Non assigné",
+    createApplication: "Creer la candidature",
     emptyTitle: "Aucune candidature",
     emptyDescription: "Les candidatures apparaîtront ici lorsque les candidats soumettront leurs CV pour des postes. Essayez d'ajuster vos filtres ou revenez plus tard.",
   },
@@ -198,6 +201,11 @@ export default function ApplicationsPage() {
         searchValue={searchInput}
         searchPlaceholder={t.searchPlaceholder}
         onSearchChange={setSearchInput}
+        actions={
+          <ActionBtn as="link" href="/founder/applications/new" variant="primary" size="sm">
+            {t.createApplication}
+          </ActionBtn>
+        }
       />
 
       <FilterBar filters={filters} />
@@ -211,6 +219,8 @@ export default function ApplicationsPage() {
             variant="applications"
             title={t.emptyTitle}
             description={t.emptyDescription}
+            actionLabel={t.createApplication}
+            actionHref="/founder/applications/new"
           />
         }
         onRowClick={handleRowClick}

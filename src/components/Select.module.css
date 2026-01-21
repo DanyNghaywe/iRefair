@@ -80,8 +80,8 @@
 }
 
 .isPlaceholder {
-  color: var(--picker-placeholder-color, rgba(93, 97, 116, 0.9));
-  font-weight: 600;
+  color: inherit;
+  font-weight: inherit;
 }
 
 .chevron {
@@ -168,9 +168,9 @@
 }
 
 .optionSelected {
-  font-weight: 700;
+  font-weight: 400;
   background: rgba(var(--accent-primary-rgb), 0.18);
-  color: var(--accent-primary);
+  color: var(--ink);
 }
 
 .chips {
