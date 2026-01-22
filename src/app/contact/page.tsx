@@ -51,7 +51,7 @@ export default function ContactPage() {
             <section>
               <h3>{t.emailTitle}</h3>
               <p className="legal-contact">
-                {t.emailText} <a href="mailto:irefair.andbeyondconsulting@gmail.com">irefair.andbeyondconsulting@gmail.com</a>.
+                {t.emailText} <a href="mailto:irefair@andbeyondca.com">irefair@andbeyondca.com</a>.
               </p>
             </section>
 

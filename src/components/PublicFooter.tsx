@@ -35,7 +35,7 @@ export function PublicFooter() {
         </div>
         <div className="public-footer__contact">
           <span className="public-footer__label">{t.contactLabel}</span>
-          <a href="mailto:irefair.andbeyondconsulting@gmail.com">irefair.andbeyondconsulting@gmail.com</a>
+          <a href="mailto:irefair@andbeyondca.com">irefair@andbeyondca.com</a>
         </div>
       </div>
       <p className="public-footer__meta">{t.meta}</p>

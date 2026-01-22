@@ -73,7 +73,7 @@ export default function TermsPage() {
             <section>
               <h3>{t.questionsTitle}</h3>
               <p className="legal-contact">
-                {t.questionsText} <a href="mailto:irefair.andbeyondconsulting@gmail.com">irefair.andbeyondconsulting@gmail.com</a>.
+                {t.questionsText} <a href="mailto:irefair@andbeyondca.com">irefair@andbeyondca.com</a>.
               </p>
             </section>
           </div>

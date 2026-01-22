@@ -75,7 +75,7 @@ export default function PrivacyPage() {
             <section>
               <h3>{t.contactTitle}</h3>
               <p className="legal-contact">
-                {t.contactText} <a href="mailto:irefair.andbeyondconsulting@gmail.com">irefair.andbeyondconsulting@gmail.com</a> {t.contactSuffix}
+                {t.contactText} <a href="mailto:irefair@andbeyondca.com">irefair@andbeyondca.com</a> {t.contactSuffix}
               </p>
             </section>
           </div>
