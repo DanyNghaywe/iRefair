@@ -7016,13 +7016,17 @@ a,
 }
 
 /* Touch-optimized scrolling */
-.hiring-table-wrapper,
 .ops-table-scroll,
 .founder-drawer__body,
 .centered-modal__body,
 .role-select__options {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+}
+
+.hiring-table-scroll {
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
 }
 
 /* Touch-active states for interactive elements */
