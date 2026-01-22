@@ -500,7 +500,7 @@ const errorPageHtml = `<!DOCTYPE html>
       <p>{{description}}</p>
       <div class="error-msg">{{errorMessage}}</div>
     </div>
-    <p class="footer">{{needHelp}} <a href="mailto:irefair.andbeyondconsulting@gmail.com">{{contactSupport}}</a></p>
+    <p class="footer">{{needHelp}} <a href="mailto:irefair@andbeyondca.com">{{contactSupport}}</a></p>
   </div>
 </body>
 </html>`;

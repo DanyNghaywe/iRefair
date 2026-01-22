@@ -9,6 +9,7 @@ Set these environment variables for Gmail SMTP:
 - `SMTP_FROM_NAME` (optional, defaults to `iRefair`)
 
 Emails are sent via `src/lib/mailer.ts` and the candidate confirmation API is at `src/app/api/candidate/route.ts`.
+User-facing support contact shown in pages/templates is `irefair@andbeyondca.com`.
 
 ## Google Sheets storage
 
