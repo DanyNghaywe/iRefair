@@ -35,6 +35,7 @@
 
 .portal-meta__item {
   margin: 0;
+  min-width: 0;
 }
 
 .portal-meta dt {
@@ -50,6 +51,8 @@
   margin: 4px 0 0;
   font-weight: 600;
   color: #ffffff;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .portal-state {
