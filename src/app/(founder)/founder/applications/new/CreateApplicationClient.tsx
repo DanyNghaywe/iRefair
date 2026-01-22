@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { type ChangeEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -20,6 +20,7 @@ type CandidateRecord = {
   phone: string;
   resumeFileName?: string;
   resumeFileId?: string;
+  resumeUrl?: string;
   targetCompanies?: string;
   desiredRole?: string;
   pendingCompanyIrcrn?: string;
@@ -34,6 +35,8 @@ type ApprovedCompany = {
   code: string;
   name: string;
 };
+
+type ResumeMode = "existing" | "request" | "upload";
 
 const translations = {
   en: {
@@ -63,6 +66,11 @@ const translations = {
     buttons: {
       createApplication: "Create application",
       requestCv: "Request CV",
+      uploadResume: "Upload resume",
+      replaceResume: "Replace resume",
+      chooseFile: "Choose File",
+      submit: "Upload",
+      uploading: "Uploading...",
       cancel: "Cancel",
       sending: "Sending...",
       changeApplicant: "Change applicant",
@@ -82,7 +90,12 @@ const translations = {
       unableToLoadCompanies: "Unable to load approved companies.",
       missingCompany: "Select an approved company.",
       resumeMissing: "No resume on file. A CV request is required.",
+      resumeUploadRequired: "Upload a resume to continue.",
       pendingCv: "A CV request is already pending for this applicant.",
+      resumeUploaded: "Resume uploaded successfully.",
+      invalidFileType: "Please upload a PDF, DOC, or DOCX file.",
+      fileTooLarge: "File size exceeds 10MB limit.",
+      unableToUploadResume: "Unable to upload resume.",
       applicationCreated: "Application created.",
       cvRequestSent: "CV request sent.",
       unableToCreateApplication: "Unable to create application.",
@@ -94,6 +107,8 @@ const translations = {
     hints: {
       resumeExisting: "Use existing resume",
       resumeRequest: "Request a new resume",
+      resumeUpload: "Upload a resume",
+      resumeTypes: "PDF, DOC, or DOCX. Max 10MB.",
     },
   },
   fr: {
@@ -123,6 +138,11 @@ const translations = {
     buttons: {
       createApplication: "Creer la candidature",
       requestCv: "Demander un CV",
+      uploadResume: "Televerser le CV",
+      replaceResume: "Remplacer le CV",
+      chooseFile: "Choisir un fichier",
+      submit: "Televerser",
+      uploading: "Televersement...",
       cancel: "Annuler",
       sending: "Envoi...",
       changeApplicant: "Changer de candidat",
@@ -142,7 +162,12 @@ const translations = {
       unableToLoadCompanies: "Impossible de charger les entreprises approuvees.",
       missingCompany: "Selectionnez une entreprise approuvee.",
       resumeMissing: "Aucun CV enregistre. Une demande de CV est requise.",
+      resumeUploadRequired: "Televersez un CV pour continuer.",
       pendingCv: "Une demande de CV est deja en attente pour ce candidat.",
+      resumeUploaded: "CV televerse avec succes.",
+      invalidFileType: "Veuillez televerser un fichier PDF, DOC ou DOCX.",
+      fileTooLarge: "La taille du fichier depasse la limite de 10 Mo.",
+      unableToUploadResume: "Impossible de televerser le CV.",
       applicationCreated: "Candidature creee.",
       cvRequestSent: "Demande de CV envoyee.",
       unableToCreateApplication: "Impossible de creer la candidature.",
@@ -154,6 +179,8 @@ const translations = {
     hints: {
       resumeExisting: "Utiliser le CV existant",
       resumeRequest: "Demander un nouveau CV",
+      resumeUpload: "Televerser un CV",
+      resumeTypes: "PDF, DOC ou DOCX. Max 10 Mo.",
     },
   },
 };
@@ -224,10 +251,15 @@ export default function CreateApplicationPage() {
   const [linkCompany, setLinkCompany] = useState("");
   const [linkPosition, setLinkPosition] = useState("");
   const [linkReferenceNumber, setLinkReferenceNumber] = useState("");
-  const [useExistingResume, setUseExistingResume] = useState(true);
+  const [resumeMode, setResumeMode] = useState<ResumeMode>("existing");
   const [linkSubmitting, setLinkSubmitting] = useState(false);
   const [linkError, setLinkError] = useState<string | null>(null);
   const [linkSuccess, setLinkSuccess] = useState<string | null>(null);
+  const [resumeUploading, setResumeUploading] = useState(false);
+  const [resumeError, setResumeError] = useState<string | null>(null);
+  const [resumeSuccess, setResumeSuccess] = useState<string | null>(null);
+  const [pendingResumeFile, setPendingResumeFile] = useState<File | null>(null);
+  const resumeInputRef = useRef<HTMLInputElement | null>(null);
   const linkInitRef = useRef(false);
   const lastApplicantRef = useRef("");
 
@@ -240,6 +272,10 @@ export default function CreateApplicationPage() {
     if (!candidate) return "";
     return [candidate.firstName, candidate.middleName, candidate.familyName].filter(Boolean).join(" ").trim();
   }, [candidate]);
+
+  const updateLocalCandidate = useCallback((updates: Partial<CandidateRecord>) => {
+    setCandidate((prev) => (prev ? { ...prev, ...updates } : prev));
+  }, []);
 
   const companyOptions = useMemo(
     () =>
@@ -256,8 +292,9 @@ export default function CreateApplicationPage() {
       options.push({ value: "existing", label: t.hints.resumeExisting });
     }
     options.push({ value: "request", label: t.hints.resumeRequest });
+    options.push({ value: "upload", label: t.hints.resumeUpload });
     return options;
-  }, [hasResume, t.hints.resumeExisting, t.hints.resumeRequest]);
+  }, [hasResume, t.hints.resumeExisting, t.hints.resumeRequest, t.hints.resumeUpload]);
 
   const formatTimestamp = useCallback(
     (value: string) => {
@@ -333,10 +370,10 @@ export default function CreateApplicationPage() {
   }, [candidate]);
 
   useEffect(() => {
-    if (!hasResume && useExistingResume) {
-      setUseExistingResume(false);
+    if (!hasResume && resumeMode === "existing") {
+      setResumeMode("request");
     }
-  }, [hasResume, useExistingResume]);
+  }, [hasResume, resumeMode]);
 
   useEffect(() => {
     const isReady = search.length >= SEARCH_MIN_LENGTH;
@@ -405,7 +442,11 @@ export default function CreateApplicationPage() {
       setLinkCompany("");
       setLinkPosition("");
       setLinkReferenceNumber("");
-      setUseExistingResume(true);
+      setResumeMode("existing");
+      setResumeUploading(false);
+      setPendingResumeFile(null);
+      setResumeError(null);
+      setResumeSuccess(null);
       setLinkError(null);
       setLinkSuccess(null);
       linkInitRef.current = false;
@@ -419,7 +460,11 @@ export default function CreateApplicationPage() {
     setLinkCompany(suggestedCompany || "");
     setLinkPosition(candidate.pendingPosition || candidate.desiredRole || "");
     setLinkReferenceNumber(candidate.pendingReferenceNumber || "");
-    setUseExistingResume(hasResume);
+    setResumeMode(hasResume ? "existing" : "request");
+    setPendingResumeFile(null);
+    setResumeError(null);
+    setResumeSuccess(null);
+    setResumeUploading(false);
     setLinkError(null);
     linkInitRef.current = true;
   }, [candidate, approvedCompanies, hasResume]);
@@ -429,6 +474,81 @@ export default function CreateApplicationPage() {
     setSearchInput("");
     setSearch("");
     setSearchResults([]);
+    setResumeMode("existing");
+    setResumeUploading(false);
+    setPendingResumeFile(null);
+    setResumeError(null);
+    setResumeSuccess(null);
+  };
+
+  const handleResumeFileSelect = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !candidate) return;
+
+    // Reset input so same file can be selected again
+    event.target.value = "";
+
+    const extension = file.name.split(".").pop()?.toLowerCase();
+    const allowedExtensions = ["pdf", "doc", "docx"];
+    if (!extension || !allowedExtensions.includes(extension)) {
+      setResumeError(t.messages.invalidFileType);
+      return;
+    }
+
+    const maxSize = 10 * 1024 * 1024; // 10MB
+    if (file.size > maxSize) {
+      setResumeError(t.messages.fileTooLarge);
+      return;
+    }
+
+    setResumeError(null);
+    setResumeSuccess(null);
+    setPendingResumeFile(file);
+  };
+
+  const handleResumeUploadSubmit = async () => {
+    if (!pendingResumeFile || !candidate) return;
+
+    setResumeUploading(true);
+    setResumeError(null);
+    setResumeSuccess(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("resume", pendingResumeFile);
+
+      const response = await fetch(
+        `/api/founder/applicants/${encodeURIComponent(candidate.irain)}/resume`,
+        { method: "POST", body: formData },
+      );
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok || !data?.ok) {
+        setResumeError(data?.error || t.messages.unableToUploadResume);
+      } else {
+        const resumeFileName = data.resumeFileName || pendingResumeFile.name;
+        updateLocalCandidate({
+          resumeFileName,
+          resumeFileId: data.resumeFileId,
+          resumeUrl: data.resumeUrl,
+        });
+        setResumeSuccess(t.messages.resumeUploaded);
+        setPendingResumeFile(null);
+        setResumeMode("existing");
+        setLinkError(null);
+      }
+    } catch (error) {
+      console.error("Resume upload failed", error);
+      setResumeError(t.messages.unableToUploadResume);
+    } finally {
+      setResumeUploading(false);
+    }
+  };
+
+  const handleResumeUploadCancel = () => {
+    setPendingResumeFile(null);
+    setResumeError(null);
   };
 
   const handleLinkSubmit = async () => {
@@ -445,7 +565,12 @@ export default function CreateApplicationPage() {
       return;
     }
 
-    if (useExistingResume && !hasResume) {
+    if (resumeMode === "upload") {
+      setLinkError(t.messages.resumeUploadRequired);
+      return;
+    }
+
+    if (resumeMode === "existing" && !hasResume) {
       setLinkError(t.messages.resumeMissing);
       return;
     }
@@ -460,7 +585,8 @@ export default function CreateApplicationPage() {
       referenceNumber: linkReferenceNumber.trim(),
     };
 
-    const endpoint = useExistingResume
+    const usingExistingResume = resumeMode === "existing";
+    const endpoint = usingExistingResume
       ? `/api/founder/applicants/${encodeURIComponent(candidate.irain)}/create-application`
       : `/api/founder/applicants/${encodeURIComponent(candidate.irain)}/request-cv`;
 
@@ -473,15 +599,15 @@ export default function CreateApplicationPage() {
         body: JSON.stringify(payload),
       });
       const data = await response.json().catch(() => ({}));
-      if (!response.ok || !data?.ok) {
-        setLinkError(
-          data?.error ||
-            (useExistingResume ? t.messages.unableToCreateApplication : t.messages.unableToRequestCv),
-        );
-        return;
-      }
+        if (!response.ok || !data?.ok) {
+          setLinkError(
+            data?.error ||
+            (usingExistingResume ? t.messages.unableToCreateApplication : t.messages.unableToRequestCv),
+          );
+          return;
+        }
 
-      if (useExistingResume) {
+      if (usingExistingResume) {
         nextApplicationId = data?.id || null;
         if (!nextApplicationId) {
           setLinkSuccess(t.messages.applicationCreated);
@@ -492,7 +618,7 @@ export default function CreateApplicationPage() {
       }
     } catch (error) {
       console.error("Linking applicant failed", error);
-      setLinkError(useExistingResume ? t.messages.unableToCreateApplication : t.messages.unableToRequestCv);
+      setLinkError(usingExistingResume ? t.messages.unableToCreateApplication : t.messages.unableToRequestCv);
     } finally {
       setLinkSubmitting(false);
     }
@@ -502,13 +628,15 @@ export default function CreateApplicationPage() {
     }
   };
 
-  const resumeModeValue = useExistingResume ? "existing" : "request";
+  const resumeModeValue = resumeMode;
   const linkSubmitDisabled =
     linkSubmitting ||
+    resumeUploading ||
     pendingCvActive ||
     !candidate ||
     !linkCompany.trim() ||
-    (useExistingResume && !hasResume);
+    resumeMode === "upload" ||
+    (resumeMode === "existing" && !hasResume);
 
   const cancelHref =
     fromApplicant && candidate?.irain
@@ -668,16 +796,93 @@ export default function CreateApplicationPage() {
                       options={resumeOptions}
                       value={resumeModeValue}
                       preferNative={false}
-                      onChange={(value) =>
-                        setUseExistingResume((Array.isArray(value) ? value[0] : value) === "existing")
-                      }
+                      onChange={(value) => {
+                        const nextMode = (Array.isArray(value) ? value[0] : value) as ResumeMode;
+                        setResumeMode(nextMode);
+                        setLinkError(null);
+                        setResumeError(null);
+                        setResumeSuccess(null);
+                        if (nextMode !== "upload") {
+                          setPendingResumeFile(null);
+                        }
+                      }}
                     />
-                    {!hasResume ? <p className="field-hint">{t.messages.resumeMissing}</p> : null}
+                    {!hasResume && resumeMode !== "upload" ? (
+                      <p className="field-hint">{t.messages.resumeMissing}</p>
+                    ) : null}
+                    {resumeMode === "upload" ? (
+                      <p className="field-hint">{t.messages.resumeUploadRequired}</p>
+                    ) : null}
                   </div>
                   {candidate.resumeFileName ? (
-                    <div className="founder-field">
+                    <div className="founder-field founder-field--spaced">
                       <span>{t.labels.currentResume}</span>
                       <strong>{candidate.resumeFileName}</strong>
+                    </div>
+                  ) : null}
+                  {resumeMode === "upload" ? (
+                    <div className="founder-fieldset founder-fieldset--spaced">
+                      <label htmlFor="resume-upload">
+                        {hasResume ? t.buttons.replaceResume : t.buttons.uploadResume}
+                      </label>
+                      <div className="file-upload">
+                        <input
+                          ref={resumeInputRef}
+                          id="resume-upload"
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          className="file-input"
+                          onChange={handleResumeFileSelect}
+                          disabled={resumeUploading}
+                        />
+                        {pendingResumeFile ? (
+                          <div
+                            style={{ display: "flex", alignItems: "center", gap: "var(--gap)", flexWrap: "wrap" }}
+                          >
+                            <span style={{ fontStyle: "italic" }}>{pendingResumeFile.name}</span>
+                            <div style={{ display: "flex", gap: "0.5rem" }}>
+                              <ActionBtn
+                                as="button"
+                                variant="primary"
+                                size="sm"
+                                onClick={handleResumeUploadSubmit}
+                                disabled={resumeUploading}
+                              >
+                                {resumeUploading ? t.buttons.uploading : t.buttons.submit}
+                              </ActionBtn>
+                              <ActionBtn
+                                as="button"
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleResumeUploadCancel}
+                                disabled={resumeUploading}
+                              >
+                                {t.buttons.cancel}
+                              </ActionBtn>
+                            </div>
+                          </div>
+                        ) : (
+                          <ActionBtn
+                            as="button"
+                            variant="ghost"
+                            onClick={() => resumeInputRef.current?.click()}
+                            disabled={resumeUploading}
+                          >
+                            {t.buttons.chooseFile}
+                          </ActionBtn>
+                        )}
+                      </div>
+                      <p className="field-hint">{t.hints.resumeTypes}</p>
+                      {resumeError ? (
+                        <div className="status-banner status-banner--error" role="alert">
+                          {resumeError}
+                        </div>
+                      ) : null}
+                    </div>
+                  ) : null}
+                  {resumeSuccess ? (
+                    <div className="status-banner status-banner--ok" role="status">
+                      {resumeSuccess}
                     </div>
                   ) : null}
                 </DetailSection>
@@ -693,13 +898,13 @@ export default function CreateApplicationPage() {
         sidebar={
           <DetailSection title={t.sections.actions} className="referrer-review__decision">
             <div className="flow-stack">
-              <ActionBtn as="button" variant="primary" onClick={handleLinkSubmit} disabled={linkSubmitDisabled}>
-                {linkSubmitting
-                  ? t.buttons.sending
-                  : useExistingResume
-                    ? t.buttons.createApplication
-                    : t.buttons.requestCv}
-              </ActionBtn>
+                <ActionBtn as="button" variant="primary" onClick={handleLinkSubmit} disabled={linkSubmitDisabled}>
+                  {linkSubmitting
+                    ? t.buttons.sending
+                    : resumeMode === "request"
+                      ? t.buttons.requestCv
+                      : t.buttons.createApplication}
+                </ActionBtn>
               <ActionBtn as="link" href={cancelHref} variant="ghost">
                 {cancelLabel}
               </ActionBtn>

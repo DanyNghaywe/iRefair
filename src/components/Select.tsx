@@ -24,6 +24,7 @@ type DropdownPosition = {
   top: number;
   left: number;
   width: number;
+  maxHeight: number;
   direction: 'down' | 'up';
 };
 
@@ -106,23 +107,28 @@ export function Select({
 
     // Decide direction: prefer below, flip up if not enough space
     const direction: 'down' | 'up' =
-      spaceBelow >= Math.min(DROPDOWN_MAX_HEIGHT, spaceBelow) || spaceBelow >= spaceAbove ? 'down' : 'up';
+      spaceBelow >= DROPDOWN_MAX_HEIGHT || spaceBelow >= spaceAbove ? 'down' : 'up';
+
+    const availableSpace = direction === 'down' ? spaceBelow : spaceAbove;
+    const maxHeight = Math.max(0, Math.min(DROPDOWN_MAX_HEIGHT, availableSpace));
 
     let top: number;
     if (direction === 'down') {
       top = triggerRect.bottom + DROPDOWN_OFFSET;
     } else {
-      const listHeight = listRef.current?.offsetHeight || DROPDOWN_MAX_HEIGHT;
-      top = triggerRect.top - DROPDOWN_OFFSET - Math.min(listHeight, DROPDOWN_MAX_HEIGHT);
+      const listHeight = listRef.current?.offsetHeight || maxHeight || DROPDOWN_MAX_HEIGHT;
+      top = triggerRect.top - DROPDOWN_OFFSET - Math.min(listHeight, maxHeight || DROPDOWN_MAX_HEIGHT);
     }
 
     // Clamp to viewport bounds with padding
-    top = Math.max(8, top);
+    const maxTop = Math.max(8, viewportHeight - (maxHeight || DROPDOWN_MAX_HEIGHT) - 8);
+    top = Math.max(8, Math.min(top, maxTop));
 
     setDropdownPosition({
       top,
       left: triggerRect.left,
       width: triggerRect.width,
+      maxHeight,
       direction,
     });
   };
@@ -483,6 +489,7 @@ export function Select({
             top: dropdownPosition?.top ?? 0,
             left: dropdownPosition?.left ?? 0,
             width: dropdownPosition?.width ?? 'auto',
+            maxHeight: dropdownPosition?.maxHeight ?? DROPDOWN_MAX_HEIGHT,
             visibility: dropdownPosition ? 'visible' : 'hidden',
           }}
           data-direction={dropdownPosition?.direction}

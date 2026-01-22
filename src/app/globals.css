@@ -4525,6 +4525,10 @@ section.founder-auth input:focus-visible {
   background: rgba(255, 255, 255, 0.06);
 }
 
+.founder-field--spaced {
+  margin-top: 10px;
+}
+
 .founder-field span {
   color: #cbd5e1;
   font-size: 13px;
