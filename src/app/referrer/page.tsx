@@ -376,7 +376,7 @@ export default function ReferrerPage() {
   };
 
   const renderConsentPoint = (point: string) => {
-    const email = 'irefair.andbeyondconsulting@gmail.com';
+    const email = 'irefair@andbeyondca.com';
     const linkTextEn = 'contacting us via email';
     const linkTextFr = 'nous contactant par courriel';
     const linkStyle = { color: '#063770', textDecoration: 'underline', fontWeight: 600 };
