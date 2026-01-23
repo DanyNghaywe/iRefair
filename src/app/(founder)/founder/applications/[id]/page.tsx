@@ -839,7 +839,7 @@ export default function ApplicationDetailPage() {
               <div>
                 <AutosaveHint saving={saving} />
               </div>
-              <div className="flow-stack">
+              <div className="flow-stack flow-stack--tight">
                 {editDetails ? (
                   <>
                     <ActionBtn as="button" variant="primary" onClick={handleSaveEdit} disabled={saving}>

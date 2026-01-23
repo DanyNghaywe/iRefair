@@ -948,6 +948,10 @@ body:has(.board--transparent) {
   gap: 16px;
 }
 
+.flow-stack--tight {
+  gap: 12px;
+}
+
 .lead {
   margin: 0;
   color: #fff;
