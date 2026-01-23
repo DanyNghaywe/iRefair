@@ -855,34 +855,35 @@ export default function ApplicationDetailPage() {
                   </ActionBtn>
                 )}
               </div>
-              {deleteConfirm ? (
-                <>
-                  <ActionBtn
-                    as="button"
-                    className="action-btn--danger"
-                    onClick={handleDelete}
-                    disabled={deleteLoading}
-                  >
-                    {deleteLoading ? t.buttons.archiving : t.buttons.confirmArchive}
-                  </ActionBtn>
+              {!editDetails &&
+                (deleteConfirm ? (
+                  <>
+                    <ActionBtn
+                      as="button"
+                      className="action-btn--danger"
+                      onClick={handleDelete}
+                      disabled={deleteLoading}
+                    >
+                      {deleteLoading ? t.buttons.archiving : t.buttons.confirmArchive}
+                    </ActionBtn>
+                    <ActionBtn
+                      as="button"
+                      variant="ghost"
+                      onClick={() => setDeleteConfirm(false)}
+                      disabled={deleteLoading}
+                    >
+                      {t.buttons.cancel}
+                    </ActionBtn>
+                  </>
+                ) : (
                   <ActionBtn
                     as="button"
                     variant="ghost"
-                    onClick={() => setDeleteConfirm(false)}
-                    disabled={deleteLoading}
+                    onClick={() => setDeleteConfirm(true)}
                   >
-                    {t.buttons.cancel}
+                    {t.buttons.archiveApplication}
                   </ActionBtn>
-                </>
-              ) : (
-                <ActionBtn
-                  as="button"
-                  variant="ghost"
-                  onClick={() => setDeleteConfirm(true)}
-                >
-                  {t.buttons.archiveApplication}
-                </ActionBtn>
-              )}
+                ))}
               {actionError && (
                 <div className="status-banner status-banner--error" role="alert">
                   {actionError}

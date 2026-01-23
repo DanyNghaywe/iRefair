@@ -1496,59 +1496,67 @@ export default function CandidateReviewPage() {
                     {t.buttons.editDetails}
                   </ActionBtn>
                 )}
-                <ActionBtn
-                  as="button"
-                  variant={status === "reviewed" ? "ghost" : "primary"}
-                  onClick={handleMarkReviewed}
-                  disabled={status === "reviewed"}
-                >
-                  {status === "reviewed" ? t.buttons.reviewed : t.buttons.markReviewed}
-                </ActionBtn>
-                <ActionBtn
-                  as="link"
-                  href={`/founder/applications/new?applicant=${encodeURIComponent(candidate.irain)}&from=applicant`}
-                  variant="primary"
-                >
-                  {t.buttons.linkCompany}
-                </ActionBtn>
-                <ActionBtn
-                  as="button"
-                  variant="ghost"
-                  onClick={handleRequestResume}
-                  disabled={actionLoading}
-                >
-                  {actionLoading ? t.buttons.sending : t.buttons.requestResume}
-                </ActionBtn>
-                {deleteConfirm ? (
+                {!editDetails && (
                   <>
-                    <div className="status-banner status-banner--warning" role="alert" style={{ marginBottom: "8px" }}>
-                      {t.banners.archiveWarning}
-                    </div>
                     <ActionBtn
                       as="button"
-                      className="action-btn--danger"
-                      onClick={handleDelete}
-                      disabled={deleteLoading}
+                      variant={status === "reviewed" ? "ghost" : "primary"}
+                      onClick={handleMarkReviewed}
+                      disabled={status === "reviewed"}
                     >
-                      {deleteLoading ? t.buttons.archiving : t.buttons.confirmArchive}
+                      {status === "reviewed" ? t.buttons.reviewed : t.buttons.markReviewed}
+                    </ActionBtn>
+                    <ActionBtn
+                      as="link"
+                      href={`/founder/applications/new?applicant=${encodeURIComponent(candidate.irain)}&from=applicant`}
+                      variant="primary"
+                    >
+                      {t.buttons.linkCompany}
                     </ActionBtn>
                     <ActionBtn
                       as="button"
                       variant="ghost"
-                      onClick={() => setDeleteConfirm(false)}
-                      disabled={deleteLoading}
+                      onClick={handleRequestResume}
+                      disabled={actionLoading}
                     >
-                      {t.buttons.cancel}
+                      {actionLoading ? t.buttons.sending : t.buttons.requestResume}
                     </ActionBtn>
+                    {deleteConfirm ? (
+                      <>
+                        <div
+                          className="status-banner status-banner--warning"
+                          role="alert"
+                          style={{ marginBottom: "8px" }}
+                        >
+                          {t.banners.archiveWarning}
+                        </div>
+                        <ActionBtn
+                          as="button"
+                          className="action-btn--danger"
+                          onClick={handleDelete}
+                          disabled={deleteLoading}
+                        >
+                          {deleteLoading ? t.buttons.archiving : t.buttons.confirmArchive}
+                        </ActionBtn>
+                        <ActionBtn
+                          as="button"
+                          variant="ghost"
+                          onClick={() => setDeleteConfirm(false)}
+                          disabled={deleteLoading}
+                        >
+                          {t.buttons.cancel}
+                        </ActionBtn>
+                      </>
+                    ) : (
+                      <ActionBtn
+                        as="button"
+                        variant="ghost"
+                        onClick={() => setDeleteConfirm(true)}
+                      >
+                        {t.buttons.archiveApplicant}
+                      </ActionBtn>
+                    )}
                   </>
-                ) : (
-                  <ActionBtn
-                    as="button"
-                    variant="ghost"
-                    onClick={() => setDeleteConfirm(true)}
-                  >
-                    {t.buttons.archiveApplicant}
-                  </ActionBtn>
                 )}
               </div>
               <div>

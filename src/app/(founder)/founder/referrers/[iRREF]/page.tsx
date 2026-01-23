@@ -1684,7 +1684,7 @@ export default function ReferrerReviewPage() {
                     )}
                   </>
                 )}
-                {approvalValue !== "pending" && (
+                {!editDetails && approvalValue !== "pending" && (
                   <>
                     {deleteConfirm ? (
                       <>
