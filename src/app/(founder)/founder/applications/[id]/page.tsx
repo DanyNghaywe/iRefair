@@ -6,7 +6,6 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { ActionBtn } from "@/components/ActionBtn";
 import { useLanguage } from "@/components/LanguageProvider";
 import { AutosaveHint } from "@/components/founder/AutosaveHint";
-import { CenteredModal } from "@/components/founder/CenteredModal";
 import { DetailPageShell } from "@/components/founder/DetailPageShell";
 import { DetailSection } from "@/components/founder/DetailSection";
 import { Skeleton, SkeletonDetailGrid, SkeletonStack } from "@/components/founder/Skeleton";
@@ -332,10 +331,9 @@ export default function ApplicationDetailPage() {
     meetingTimezone: string;
     meetingUrl: string;
   } | null>(null);
-  const [archiveModalOpen, setArchiveModalOpen] = useState(false);
-  const [archiveReason, setArchiveReason] = useState("");
-  const [archiveSubmitting, setArchiveSubmitting] = useState(false);
-  const [archiveError, setArchiveError] = useState<string | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const fetchApplication = useCallback(async () => {
     if (!cleanId) return;
@@ -451,27 +449,11 @@ export default function ApplicationDetailPage() {
     setEditDetails(false);
   };
 
-  const openArchiveModal = () => {
-    setArchiveError(null);
-    setArchiveModalOpen(true);
-  };
+  const handleDelete = async () => {
+    if (!application || deleteLoading) return;
 
-  const closeArchiveModal = () => {
-    setArchiveModalOpen(false);
-    setArchiveError(null);
-    setArchiveReason("");
-  };
-
-  const handleArchiveSubmit = async () => {
-    if (!application || archiveSubmitting) return;
-    const reason = archiveReason.trim();
-    if (!reason) {
-      setArchiveError(t.messages.archiveReasonRequired);
-      return;
-    }
-
-    setArchiveSubmitting(true);
-    setArchiveError(null);
+    setDeleteLoading(true);
+    setActionError(null);
 
     try {
       const response = await fetch(
@@ -479,21 +461,20 @@ export default function ApplicationDetailPage() {
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ reason }),
+          body: JSON.stringify({}),
         },
       );
       const data = await response.json().catch(() => ({}));
       if (!response.ok || !data?.ok) {
-        setArchiveError(data?.error || t.messages.unableToArchive);
+        setActionError(data?.error || t.messages.unableToArchive);
         return;
       }
-      closeArchiveModal();
       router.push("/founder/applications");
     } catch (error) {
       console.error("Archive application failed", error);
-      setArchiveError(t.messages.unableToArchive);
+      setActionError(t.messages.unableToArchive);
     } finally {
-      setArchiveSubmitting(false);
+      setDeleteLoading(false);
     }
   };
 
@@ -519,8 +500,6 @@ export default function ApplicationDetailPage() {
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notes, status, application?.id]);
-
-  const archiveSubmitDisabled = archiveSubmitting || !archiveReason.trim();
 
   if (!cleanId) {
     return (
@@ -876,14 +855,39 @@ export default function ApplicationDetailPage() {
                   </ActionBtn>
                 )}
               </div>
-              <ActionBtn
-                as="button"
-                className="action-btn--danger"
-                onClick={openArchiveModal}
-                disabled={archiveSubmitting}
-              >
-                {t.buttons.archiveApplication}
-              </ActionBtn>
+              {deleteConfirm ? (
+                <>
+                  <ActionBtn
+                    as="button"
+                    className="action-btn--danger"
+                    onClick={handleDelete}
+                    disabled={deleteLoading}
+                  >
+                    {deleteLoading ? t.buttons.archiving : t.buttons.confirmArchive}
+                  </ActionBtn>
+                  <ActionBtn
+                    as="button"
+                    variant="ghost"
+                    onClick={() => setDeleteConfirm(false)}
+                    disabled={deleteLoading}
+                  >
+                    {t.buttons.cancel}
+                  </ActionBtn>
+                </>
+              ) : (
+                <ActionBtn
+                  as="button"
+                  variant="ghost"
+                  onClick={() => setDeleteConfirm(true)}
+                >
+                  {t.buttons.archiveApplication}
+                </ActionBtn>
+              )}
+              {actionError && (
+                <div className="status-banner status-banner--error" role="alert">
+                  {actionError}
+                </div>
+              )}
               <ActionBtn as="link" href="/founder/applications" variant="ghost">
                 &larr; {t.buttons.backToApplications}
               </ActionBtn>
@@ -917,48 +921,6 @@ export default function ApplicationDetailPage() {
         }
       />
 
-      <CenteredModal
-        open={archiveModalOpen}
-        onClose={closeArchiveModal}
-        title={t.buttons.archiveApplication}
-        subtitle={t.placeholders.archiveReason}
-        locale={language}
-        actions={
-          <>
-            <ActionBtn as="button" variant="ghost" onClick={closeArchiveModal} disabled={archiveSubmitting}>
-              {t.buttons.cancel}
-            </ActionBtn>
-            <ActionBtn
-              as="button"
-              className="action-btn--danger"
-              onClick={handleArchiveSubmit}
-              disabled={archiveSubmitDisabled}
-            >
-              {archiveSubmitting ? t.buttons.archiving : t.buttons.confirmArchive}
-            </ActionBtn>
-          </>
-        }
-      >
-        {archiveError && (
-          <div className="centered-modal__section centered-modal__section--wide">
-            <div className="status-banner status-banner--error" role="alert">
-              {archiveError}
-            </div>
-          </div>
-        )}
-        <div className="centered-modal__section centered-modal__section--wide">
-          <div className="founder-fieldset">
-            <label htmlFor="archive-reason">{t.labels.archiveReason}</label>
-            <textarea
-              id="archive-reason"
-              rows={4}
-              value={archiveReason}
-              onChange={(event) => setArchiveReason(event.target.value)}
-              placeholder={t.placeholders.archiveReason}
-            />
-          </div>
-        </div>
-      </CenteredModal>
     </div>
   );
 }

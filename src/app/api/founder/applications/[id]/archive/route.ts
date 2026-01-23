@@ -41,9 +41,6 @@ export async function POST(
 
   const body: RequestBody = await request.json().catch(() => ({}));
   const reason = String(body.reason || '').trim();
-  if (!reason) {
-    return NextResponse.json({ ok: false, error: 'Reason is required.' }, { status: 400 });
-  }
 
   const application = await getApplicationById(params.id);
   if (!application) {
@@ -70,7 +67,7 @@ export async function POST(
     timestamp: new Date().toISOString(),
     performedBy: 'founder',
     performedByEmail: founderEmail || undefined,
-    notes: reason,
+    notes: reason || undefined,
   };
   const updatedActionHistory = appendActionHistoryEntry(application.record.actionHistory || '', actionEntry);
   await updateApplicationAdmin(application.record.id, { actionHistory: updatedActionHistory });
