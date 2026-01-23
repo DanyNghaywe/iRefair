@@ -166,11 +166,11 @@ export function isIrref(value: string) {
  * - "CV not matching requirements" -> "cv mismatch"
  * - "CV needs adjustments" -> "cv update requested"
  * - "CV missing information" -> "info requested"
- * - "He interviewed" -> "interviewed"
- * - "He got the job" -> "job offered"
+ * - "He interviewed" -> "met with referrer"
+ * - "He got the job" -> "landed job"
  *
  * New statuses will be stored as readable lowercase values like:
- * 'new', 'meeting scheduled', 'needs reschedule', 'interviewed', 'job offered', etc.
+ * 'new', 'meeting scheduled', 'needs reschedule', 'met with referrer', 'job offered', 'landed job', etc.
  */
 export function normalizeStatus(raw?: string): string {
   if (!raw || typeof raw !== 'string') {
@@ -189,9 +189,11 @@ export function normalizeStatus(raw?: string): string {
     'cv not matching requirements': 'cv mismatch',
     'cv needs adjustments': 'cv update requested',
     'cv missing information': 'info requested',
-    'he interviewed': 'interviewed',
-    'he got the job': 'job offered',
-    'hired': 'job offered', // backward compatibility
+    'he interviewed': 'met with referrer',
+    interviewed: 'met with referrer',
+    'he got the job': 'landed job',
+    hired: 'landed job', // backward compatibility
+    'sent cv to hr': 'submitted cv to hr',
   };
 
   const lowerTrimmed = trimmed.toLowerCase();

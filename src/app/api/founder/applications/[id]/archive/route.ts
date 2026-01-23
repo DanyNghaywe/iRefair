@@ -84,7 +84,7 @@ export async function POST(
   const applicantEmail = applicant?.record.email || '';
   const applicantLocale = applicant?.record.locale?.toLowerCase() === 'fr' ? 'fr' : 'en';
 
-  let referrerIrref = application.record.referrerIrref || '';
+  const referrerIrref = application.record.referrerIrref || '';
   let referrerEmail = application.record.referrerEmail || '';
   let referrerLocale: 'en' | 'fr' = 'en';
   let referrerName = '';

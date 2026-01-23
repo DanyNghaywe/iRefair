@@ -3593,26 +3593,46 @@ export function interviewCompletedToApplicant(params: InterviewCompletedParams):
   const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', 'l\'entreprise', locale);
   const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
 
-  const subject = t(`Interview completed: ${position || 'Your application'}`, `Entrevue terminée: ${position || 'Votre candidature'}`, locale);
+  const subject = t(
+    `Referrer meeting completed: ${position || 'Your application'}`,
+    `Rencontre avec le référent terminée: ${position || 'Votre candidature'}`,
+    locale
+  );
 
   const text = `${greeting}
 
-${t(`Thank you for completing your interview for ${position || 'the position'} at ${companyName || 'the company'}.`, `Merci d'avoir complété votre entrevue pour ${position || 'le poste'} chez ${companyName || 'l\'entreprise'}.`, locale)}
+${t(
+  `Thank you for meeting with the referrer for ${position || 'the position'} at ${companyName || 'the company'}.`,
+  `Merci d'avoir rencontré le référent pour ${position || 'le poste'} chez ${companyName || "l'entreprise"}.`,
+  locale
+)}
 
-${t("The referrer will be reviewing your interview and will follow up with next steps. We'll keep you posted on any updates.", "Le parrain examinera votre entrevue et vous informera des prochaines étapes. Nous vous tiendrons informé de toute mise à jour.", locale)}
+${t(
+  "The referrer will follow up with next steps. We'll keep you posted on any updates.",
+  "Le référent vous informera des prochaines étapes. Nous vous tiendrons informé de toute mise à jour.",
+  locale
+)}
 
 - ${t('The iRefair Team', 'L\'équipe iRefair', locale)}`;
 
   const content = `
-    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Interview completed', 'Entrevue terminée', locale)}</h1>
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Referrer meeting completed', 'Rencontre avec le référent terminée', locale)}</h1>
     <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Thank you for your time', 'Merci pour votre temps', locale)}</p>
 
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      ${t(`Thank you for completing your interview for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong>.`, `Merci d'avoir complété votre entrevue pour <strong>${safePosition}</strong> chez <strong>${safeCompanyName}</strong>.`, locale)}
+      ${t(
+        `Thank you for meeting with the referrer for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong>.`,
+        `Merci d'avoir rencontré le référent pour <strong>${safePosition}</strong> chez <strong>${safeCompanyName}</strong>.`,
+        locale
+      )}
     </p>
     <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
-      ${t("The referrer will be reviewing your interview and will follow up with next steps. We'll keep you posted on any updates.", "Le parrain examinera votre entrevue et vous informera des prochaines étapes. Nous vous tiendrons informé de toute mise à jour.", locale)}
+      ${t(
+        "The referrer will follow up with next steps. We'll keep you posted on any updates.",
+        "Le référent vous informera des prochaines étapes. Nous vous tiendrons informé de toute mise à jour.",
+        locale
+      )}
     </p>
 
     <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
@@ -3624,11 +3644,15 @@ ${t("The referrer will be reviewing your interview and will follow up with next 
   const customHeader = `
     <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
       <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
-      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('INTERVIEW COMPLETED', 'ENTREVUE TERMINÉE', locale)}</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('REFERRER MEETING COMPLETED', 'RENCONTRE AVEC LE RÉFÉRENT TERMINÉE', locale)}</div>
     </div>
   `;
 
-  const html = emailWrapper(content, t('Your interview has been completed', 'Votre entrevue est terminée', locale), customHeader);
+  const html = emailWrapper(
+    content,
+    t('Your meeting with the referrer is complete', 'Votre rencontre avec le référent est terminée', locale),
+    customHeader
+  );
 
   return { subject, text, html };
 }
@@ -3723,6 +3747,532 @@ ${t('The iRefair Team', "L'équipe iRefair", locale)}`;
   return { subject, text, html };
 }
 
+
+
+type ApplicantStatusUpdateParams = {
+  applicantName?: string;
+  companyName?: string;
+  position?: string;
+  reason?: string;
+  locale?: 'en' | 'fr';
+};
+
+export function submittedCvToHrToApplicant(params: ApplicantStatusUpdateParams): TemplateResult {
+  const { applicantName, companyName, position, locale = 'en' } = params;
+
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', "l'entreprise", locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
+
+  const subject = t(
+    `Update: CV submitted to HR for ${position || 'your application'}`,
+    `Mise à jour : CV transmis aux RH pour ${position || 'votre candidature'}`,
+    locale
+  );
+
+  const text = `${greeting}
+
+${t(
+  `Your CV for ${position || 'the position'} at ${companyName || 'the company'} has been submitted to HR. We'll keep you posted on the next steps.`,
+  `Votre CV pour ${position || 'le poste'} chez ${companyName || "l'entreprise"} a été transmis aux RH. Nous vous tiendrons informé des prochaines étapes.`,
+  locale
+)}
+
+- ${t('The iRefair Team', "L'équipe iRefair", locale)}`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('CV submitted to HR', 'CV transmis aux RH', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Your application has moved to HR review', 'Votre candidature est passée en revue par les RH', locale)}</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t(
+        `Your CV for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong> has been submitted to HR.`,
+        `Votre CV pour <strong>${safePosition}</strong> chez <strong>${safeCompanyName}</strong> a été transmis aux RH.`,
+        locale
+      )}
+    </p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t('We will keep you posted on the next steps.', 'Nous vous tiendrons informé des prochaines étapes.', locale)}
+    </p>
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      ${t('Best regards,', 'Cordialement,', locale)}<br>
+      <strong>${t('The iRefair Team', "L'équipe iRefair", locale)}</strong>
+    </p>
+  `;
+
+  const customHeader = `
+      <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('HR UPDATE', 'MISE À JOUR RH', locale)}</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, t('CV submitted to HR', 'CV transmis aux RH', locale), customHeader);
+
+  return { subject, text, html };
+}
+
+export function hrInterviewsInProgressToApplicant(params: ApplicantStatusUpdateParams): TemplateResult {
+  const { applicantName, companyName, position, locale = 'en' } = params;
+
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', "l'entreprise", locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
+
+  const subject = t(
+    `Update: HR interviews in progress for ${position || 'your application'}`,
+    `Mise à jour : entretiens RH en cours pour ${position || 'votre candidature'}`,
+    locale
+  );
+
+  const text = `${greeting}
+
+${t(
+  `HR is currently conducting interviews for ${position || 'the position'} at ${companyName || 'the company'}. We'll keep you posted on any updates.`,
+  `Les RH mènent actuellement des entretiens pour ${position || 'le poste'} chez ${companyName || "l'entreprise"}. Nous vous tiendrons informé de toute mise à jour.`,
+  locale
+)}
+
+- ${t('The iRefair Team', "L'équipe iRefair", locale)}`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('HR interviews in progress', 'Entretiens RH en cours', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Your application is in active review', "Votre candidature est en cours d'examen", locale)}</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t(
+        `HR is currently conducting interviews for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong>.`,
+        `Les RH mènent actuellement des entretiens pour <strong>${safePosition}</strong> chez <strong>${safeCompanyName}</strong>.`,
+        locale
+      )}
+    </p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t('We will keep you posted on any updates.', 'Nous vous tiendrons informé de toute mise à jour.', locale)}
+    </p>
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      ${t('Best regards,', 'Cordialement,', locale)}<br>
+      <strong>${t('The iRefair Team', "L'équipe iRefair", locale)}</strong>
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('HR UPDATE', 'MISE À JOUR RH', locale)}</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, t('HR interviews in progress', 'Entretiens RH en cours', locale), customHeader);
+
+  return { subject, text, html };
+}
+
+export function hrDeclinedToApplicant(params: ApplicantStatusUpdateParams): TemplateResult {
+  const { applicantName, companyName, position, locale = 'en' } = params;
+
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', "l'entreprise", locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
+
+  const subject = t(
+    `Update on your application for ${position || 'the position'}`,
+    `Mise à jour de votre candidature pour ${position || 'le poste'}`,
+    locale
+  );
+
+  const text = `${greeting}
+
+${t(
+  `HR has decided not to proceed with your application for ${position || 'the position'} at ${companyName || 'the company'}.`,
+  `Les RH ont décidé de ne pas poursuivre votre candidature pour ${position || 'le poste'} chez ${companyName || "l'entreprise"}.`,
+  locale
+)}
+
+${t('We appreciate your interest and encourage you to explore other opportunities on iRefair.', "Nous apprécions votre intérêt et vous encourageons à explorer d'autres opportunités sur iRefair.", locale)}
+
+- ${t('The iRefair Team', "L'équipe iRefair", locale)}`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Application update', 'Mise à jour de candidature', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('HR has completed their review', 'Les RH ont terminé leur examen', locale)}</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t(
+        `HR has decided not to proceed with your application for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong>.`,
+        `Les RH ont décidé de ne pas poursuivre votre candidature pour <strong>${safePosition}</strong> chez <strong>${safeCompanyName}</strong>.`,
+        locale
+      )}
+    </p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t('We appreciate your interest and encourage you to explore other opportunities on iRefair.', "Nous apprécions votre intérêt et vous encourageons à explorer d'autres opportunités sur iRefair.", locale)}
+    </p>
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      ${t('Best regards,', 'Cordialement,', locale)}<br>
+      <strong>${t('The iRefair Team', "L'équipe iRefair", locale)}</strong>
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('APPLICATION UPDATE', 'MISE À JOUR DE CANDIDATURE', locale)}</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, t('Update on your application', 'Mise à jour de votre candidature', locale), customHeader);
+
+  return { subject, text, html };
+}
+
+export function anotherApplicantBetterFitToApplicant(params: ApplicantStatusUpdateParams): TemplateResult {
+  const { applicantName, companyName, position, locale = 'en' } = params;
+
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', "l'entreprise", locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
+
+  const subject = t(
+    `Update on your application for ${position || 'the position'}`,
+    `Mise à jour de votre candidature pour ${position || 'le poste'}`,
+    locale
+  );
+
+  const text = `${greeting}
+
+${t(
+  `Another applicant was a better fit for ${position || 'the position'} at ${companyName || 'the company'}.`,
+  `Un autre candidat correspondait mieux pour ${position || 'le poste'} chez ${companyName || "l'entreprise"}.`,
+  locale
+)}
+
+${t('Thank you for your interest and time.', 'Merci pour votre intérêt et votre temps.', locale)}
+
+- ${t('The iRefair Team', "L'équipe iRefair", locale)}`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Application update', 'Mise à jour de candidature', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Decision update', 'Mise à jour de décision', locale)}</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t(
+        `Another applicant was a better fit for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong>.`,
+        `Un autre candidat correspondait mieux pour <strong>${safePosition}</strong> chez <strong>${safeCompanyName}</strong>.`,
+        locale
+      )}
+    </p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t('Thank you for your interest and time.', 'Merci pour votre intérêt et votre temps.', locale)}
+    </p>
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      ${t('Best regards,', 'Cordialement,', locale)}<br>
+      <strong>${t('The iRefair Team', "L'équipe iRefair", locale)}</strong>
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('APPLICATION UPDATE', 'MISE À JOUR DE CANDIDATURE', locale)}</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, t('Update on your application', 'Mise à jour de votre candidature', locale), customHeader);
+
+  return { subject, text, html };
+}
+
+export function applicantNoLongerInterestedToApplicant(params: ApplicantStatusUpdateParams): TemplateResult {
+  const { applicantName, companyName, position, locale = 'en' } = params;
+
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', "l'entreprise", locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
+
+  const subject = t(
+    `Your application has been closed: ${position || 'your application'}`,
+    `Votre candidature a été clôturée : ${position || 'votre candidature'}`,
+    locale
+  );
+
+  const text = `${greeting}
+
+${t(
+  `We have closed your application for ${position || 'the position'} at ${companyName || 'the company'} because you indicated you are no longer interested.`,
+  `Nous avons clôturé votre candidature pour ${position || 'le poste'} chez ${companyName || "l'entreprise"} car vous avez indiqué ne plus être intéressé.`,
+  locale
+)}
+
+${t('If this is a mistake, please reply to this email.', "Si c'est une erreur, veuillez répondre à cet e-mail.", locale)}
+
+- ${t('The iRefair Team', "L'équipe iRefair", locale)}`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Application closed', 'Candidature clôturée', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('You are no longer interested', "Vous n'êtes plus intéressé", locale)}</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t(
+        `We have closed your application for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong> because you indicated you are no longer interested.`,
+        `Nous avons clôturé votre candidature pour <strong>${safePosition}</strong> chez <strong>${safeCompanyName}</strong> car vous avez indiqué ne plus être intéressé.`,
+        locale
+      )}
+    </p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t('If this is a mistake, please reply to this email.', "Si c'est une erreur, veuillez répondre à cet e-mail.", locale)}
+    </p>
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      ${t('Best regards,', 'Cordialement,', locale)}<br>
+      <strong>${t('The iRefair Team', "L'équipe iRefair", locale)}</strong>
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('APPLICATION UPDATE', 'MISE À JOUR DE CANDIDATURE', locale)}</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, t('Application closed', 'Candidature clôturée', locale), customHeader);
+
+  return { subject, text, html };
+}
+
+export function applicantDecidedNotToMoveForwardToApplicant(params: ApplicantStatusUpdateParams): TemplateResult {
+  const { applicantName, companyName, position, locale = 'en' } = params;
+
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', "l'entreprise", locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
+
+  const subject = t(
+    `Your application has been closed: ${position || 'your application'}`,
+    `Votre candidature a été clôturée : ${position || 'votre candidature'}`,
+    locale
+  );
+
+  const text = `${greeting}
+
+${t(
+  `We have closed your application for ${position || 'the position'} at ${companyName || 'the company'} because you decided not to move forward.`,
+  `Nous avons clôturé votre candidature pour ${position || 'le poste'} chez ${companyName || "l'entreprise"} car vous avez décidé de ne pas poursuivre.`,
+  locale
+)}
+
+${t('If this is a mistake, please reply to this email.', "Si c'est une erreur, veuillez répondre à cet e-mail.", locale)}
+
+- ${t('The iRefair Team', "L'équipe iRefair", locale)}`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Application closed', 'Candidature clôturée', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('You chose not to move forward', 'Vous avez choisi de ne pas poursuivre', locale)}</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t(
+        `We have closed your application for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong> because you decided not to move forward.`,
+        `Nous avons clôturé votre candidature pour <strong>${safePosition}</strong> chez <strong>${safeCompanyName}</strong> car vous avez décidé de ne pas poursuivre.`,
+        locale
+      )}
+    </p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t('If this is a mistake, please reply to this email.', "Si c'est une erreur, veuillez répondre à cet e-mail.", locale)}
+    </p>
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      ${t('Best regards,', 'Cordialement,', locale)}<br>
+      <strong>${t('The iRefair Team', "L'équipe iRefair", locale)}</strong>
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('APPLICATION UPDATE', 'MISE À JOUR DE CANDIDATURE', locale)}</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, t('Application closed', 'Candidature clôturée', locale), customHeader);
+
+  return { subject, text, html };
+}
+
+export function candidateAcceptedOfferToApplicant(params: ApplicantStatusUpdateParams): TemplateResult {
+  const { applicantName, companyName, position, locale = 'en' } = params;
+
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', "l'entreprise", locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
+
+  const subject = t(
+    `Offer accepted: ${position || 'your application'}`,
+    `Offre acceptée : ${position || 'votre candidature'}`,
+    locale
+  );
+
+  const text = `${greeting}
+
+${t(
+  `Your offer for ${position || 'the position'} at ${companyName || 'the company'} has been marked as accepted. Congratulations!`,
+  `Votre offre pour ${position || 'le poste'} chez ${companyName || "l'entreprise"} a été marquée comme acceptée. Félicitations !`,
+  locale
+)}
+
+${t('We will follow up with any next steps if needed.', 'Nous vous contacterons pour les prochaines étapes si besoin.', locale)}
+
+- ${t('The iRefair Team', "L'équipe iRefair", locale)}`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Offer accepted', 'Offre acceptée', locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Congratulations!', 'Félicitations !', locale)}</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t(
+        `Your offer for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong> has been marked as accepted.`,
+        `Votre offre pour <strong>${safePosition}</strong> chez <strong>${safeCompanyName}</strong> a été marquée comme acceptée.`,
+        locale
+      )}
+    </p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t('We will follow up with any next steps if needed.', 'Nous vous contacterons pour les prochaines étapes si besoin.', locale)}
+    </p>
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      ${t('Best regards,', 'Cordialement,', locale)}<br>
+      <strong>${t('The iRefair Team', "L'équipe iRefair", locale)}</strong>
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('OFFER ACCEPTED', 'OFFRE ACCEPTÉE', locale)}</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, t('Offer accepted', 'Offre acceptée', locale), customHeader);
+
+  return { subject, text, html };
+}
+
+export function candidateDidNotAcceptOfferToApplicant(params: ApplicantStatusUpdateParams): TemplateResult {
+  const { applicantName, companyName, position, reason, locale = 'en' } = params;
+
+  const greeting = applicantName
+    ? t(`Hi ${applicantName},`, `Bonjour ${applicantName},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const greetingHtml = applicantName
+    ? t(`Hi ${escapeHtml(applicantName)},`, `Bonjour ${escapeHtml(applicantName)},`, locale)
+    : t('Hi,', 'Bonjour,', locale);
+  const safeCompanyName = companyName ? escapeHtml(companyName) : t('the company', "l'entreprise", locale);
+  const safePosition = position ? escapeHtml(position) : t('the position', 'le poste', locale);
+  const safeReason = reason ? escapeHtml(reason) : '';
+
+  const subject = t(
+    `Offer update: ${position || 'your application'}`,
+    `Mise à jour de l'offre : ${position || 'votre candidature'}`,
+    locale
+  );
+
+  const text = `${greeting}
+
+${t(
+  `Your offer for ${position || 'the position'} at ${companyName || 'the company'} has been marked as not accepted.`,
+  `Votre offre pour ${position || 'le poste'} chez ${companyName || "l'entreprise"} a été marquée comme non acceptée.`,
+  locale
+)}${reason ? `
+
+${t('Reason', 'Raison', locale)}: ${reason}` : ''}
+
+${t('If this is a mistake, please reply to this email.', "Si c'est une erreur, veuillez répondre à cet e-mail.", locale)}
+
+- ${t('The iRefair Team', "L'équipe iRefair", locale)}`;
+
+  const content = `
+    <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: ${colors.ink};">${t('Offer update', "Mise à jour de l'offre", locale)}</h1>
+    <p style="margin: 0 0 24px 0; color: ${colors.muted}; font-size: 15px;">${t('Offer not accepted', 'Offre non acceptée', locale)}</p>
+
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">${greetingHtml}</p>
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t(
+        `Your offer for <strong>${safePosition}</strong> at <strong>${safeCompanyName}</strong> has been marked as not accepted.`,
+        `Votre offre pour <strong>${safePosition}</strong> chez <strong>${safeCompanyName}</strong> a été marquée comme non acceptée.`,
+        locale
+      )}
+    </p>
+    ${safeReason ? `
+      <div style="background: ${colors.background}; padding: 16px; border-radius: 12px; margin: 16px 0; border-left: 4px solid ${colors.secondary};">
+        <p style="margin: 0 0 8px 0; color: ${colors.ink}; font-size: 14px; font-weight: 600;">${t('Reason', 'Raison', locale)}:</p>
+        <p style="margin: 0; color: ${colors.ink}; font-size: 14px; line-height: 1.6;">${safeReason}</p>
+      </div>
+    ` : ''}
+    <p style="margin: 0 0 16px 0; color: ${colors.ink}; font-size: 15px; line-height: 1.6;">
+      ${t('If this is a mistake, please reply to this email.', "Si c'est une erreur, veuillez répondre à cet e-mail.", locale)}
+    </p>
+
+    <p style="margin: 24px 0 0 0; color: ${colors.ink}; font-size: 15px;">
+      ${t('Best regards,', 'Cordialement,', locale)}<br>
+      <strong>${t('The iRefair Team', "L'équipe iRefair", locale)}</strong>
+    </p>
+  `;
+
+  const customHeader = `
+    <div style="padding:22px 28px;background:#f8fafc;border-bottom:1px solid #e6e9f0;">
+      <div style="font-size:22px;font-weight:700;color:#2f5fb3;">iRefair</div>
+      <div style="font-size:11px;letter-spacing:0.14em;text-transform:uppercase;color:#5c6675;margin-top:8px;">${t('OFFER UPDATE', "MISE À JOUR DE L'OFFRE", locale)}</div>
+    </div>
+  `;
+
+  const html = emailWrapper(content, t('Offer update', "Mise à jour de l'offre", locale), customHeader);
+
+  return { subject, text, html };
+}
 type ProposedTime = {
   date: string;
   time: string;

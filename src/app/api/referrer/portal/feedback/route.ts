@@ -22,6 +22,14 @@ import {
   infoRequestToApplicant,
   interviewCompletedToApplicant,
   jobOfferToApplicant,
+  submittedCvToHrToApplicant,
+  hrInterviewsInProgressToApplicant,
+  hrDeclinedToApplicant,
+  anotherApplicantBetterFitToApplicant,
+  applicantNoLongerInterestedToApplicant,
+  applicantDecidedNotToMoveForwardToApplicant,
+  candidateAcceptedOfferToApplicant,
+  candidateDidNotAcceptOfferToApplicant,
   meetingScheduledToReferrer,
   meetingCancelledToReferrer,
 } from '@/lib/emailTemplates';
@@ -34,23 +42,37 @@ type FeedbackAction =
   | 'SCHEDULE_MEETING'
   | 'CANCEL_MEETING'
   | 'REJECT'
-  | 'RESCIND_REJECTION'
   | 'CV_MISMATCH'
   | 'REQUEST_CV_UPDATE'
   | 'REQUEST_INFO'
   | 'MARK_INTERVIEWED'
-  | 'OFFER_JOB';
+  | 'SUBMIT_CV_TO_HR'
+  | 'HR_INTERVIEWS'
+  | 'HR_DECIDED_NOT_TO_PROCEED'
+  | 'HR_PROVIDED_OFFER'
+  | 'APPLICANT_NO_LONGER_INTERESTED'
+  | 'APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD'
+  | 'ANOTHER_APPLICANT_BETTER_FIT'
+  | 'CANDIDATE_ACCEPTED_OFFER'
+  | 'CANDIDATE_DID_NOT_ACCEPT_OFFER';
 
 const VALID_ACTIONS: FeedbackAction[] = [
   'SCHEDULE_MEETING',
   'CANCEL_MEETING',
   'REJECT',
-  'RESCIND_REJECTION',
   'CV_MISMATCH',
   'REQUEST_CV_UPDATE',
   'REQUEST_INFO',
   'MARK_INTERVIEWED',
-  'OFFER_JOB',
+  'SUBMIT_CV_TO_HR',
+  'HR_INTERVIEWS',
+  'HR_DECIDED_NOT_TO_PROCEED',
+  'HR_PROVIDED_OFFER',
+  'APPLICANT_NO_LONGER_INTERESTED',
+  'APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD',
+  'ANOTHER_APPLICANT_BETTER_FIT',
+  'CANDIDATE_ACCEPTED_OFFER',
+  'CANDIDATE_DID_NOT_ACCEPT_OFFER',
 ];
 
 type FeedbackPayload = {
@@ -78,8 +100,6 @@ function getStatusForAction(action: FeedbackAction): string {
       return 'new';
     case 'REJECT':
       return 'not a good fit';
-    case 'RESCIND_REJECTION':
-      return 'new';
     case 'CV_MISMATCH':
       return 'cv mismatch';
     case 'REQUEST_CV_UPDATE':
@@ -87,11 +107,108 @@ function getStatusForAction(action: FeedbackAction): string {
     case 'REQUEST_INFO':
       return 'info requested';
     case 'MARK_INTERVIEWED':
-      return 'interviewed';
-    case 'OFFER_JOB':
+      return 'met with referrer';
+    case 'SUBMIT_CV_TO_HR':
+      return 'submitted cv to hr';
+    case 'HR_INTERVIEWS':
+      return 'interviews being conducted';
+    case 'HR_DECIDED_NOT_TO_PROCEED':
+      return 'hr decided not to proceed';
+    case 'HR_PROVIDED_OFFER':
       return 'job offered';
+    case 'APPLICANT_NO_LONGER_INTERESTED':
+      return 'applicant no longer interested';
+    case 'APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD':
+      return 'applicant decided not to move forward';
+    case 'ANOTHER_APPLICANT_BETTER_FIT':
+      return 'another applicant was a better fit';
+    case 'CANDIDATE_ACCEPTED_OFFER':
+      return 'landed job';
+    case 'CANDIDATE_DID_NOT_ACCEPT_OFFER':
+      return 'candidate did not accept offer';
     default:
       return 'new';
+  }
+}
+
+const TERMINAL_STATUSES = new Set([
+  'not a good fit',
+  'cv mismatch',
+  'applicant no longer interested',
+  'applicant decided not to move forward',
+  'hr decided not to proceed',
+  'another applicant was a better fit',
+  'candidate did not accept offer',
+  'landed job',
+  'ineligible',
+]);
+
+const PRE_MEETING_STATUSES = new Set([
+  'new',
+  'meeting requested',
+  'meeting scheduled',
+  'needs reschedule',
+]);
+
+const POST_MEETING_BASE_STATUSES = new Set([
+  'met with referrer',
+  'cv updated',
+  'info updated',
+]);
+
+const HR_STATUSES = new Set([
+  'submitted cv to hr',
+  'interviews being conducted',
+]);
+
+const POST_MEETING_ACTION_STATUSES = new Set([
+  ...POST_MEETING_BASE_STATUSES,
+  ...HR_STATUSES,
+]);
+
+function isActionAllowed(action: FeedbackAction, status: string): boolean {
+  const normalized = status?.toLowerCase().trim() || 'new';
+
+  if (TERMINAL_STATUSES.has(normalized)) return false;
+
+  if (normalized === 'job offered') {
+    return action === 'CANDIDATE_ACCEPTED_OFFER' || action === 'CANDIDATE_DID_NOT_ACCEPT_OFFER';
+  }
+
+  switch (action) {
+    case 'SCHEDULE_MEETING':
+      return normalized === 'new' || normalized === 'meeting requested' || normalized === 'needs reschedule';
+    case 'CANCEL_MEETING':
+      return normalized === 'meeting scheduled';
+    case 'MARK_INTERVIEWED':
+      return normalized === 'meeting scheduled' || normalized === 'meeting requested';
+    case 'REQUEST_INFO':
+      return PRE_MEETING_STATUSES.has(normalized);
+    case 'CV_MISMATCH':
+      return PRE_MEETING_STATUSES.has(normalized);
+    case 'REQUEST_CV_UPDATE':
+      return PRE_MEETING_STATUSES.has(normalized) || POST_MEETING_ACTION_STATUSES.has(normalized);
+    case 'REJECT':
+      return PRE_MEETING_STATUSES.has(normalized) || POST_MEETING_ACTION_STATUSES.has(normalized);
+    case 'APPLICANT_NO_LONGER_INTERESTED':
+      return POST_MEETING_ACTION_STATUSES.has(normalized);
+    case 'SUBMIT_CV_TO_HR':
+      return POST_MEETING_BASE_STATUSES.has(normalized);
+    case 'HR_INTERVIEWS':
+      return normalized === 'submitted cv to hr';
+    case 'HR_PROVIDED_OFFER':
+      return normalized === 'submitted cv to hr' || normalized === 'interviews being conducted';
+    case 'HR_DECIDED_NOT_TO_PROCEED':
+      return normalized === 'submitted cv to hr' || normalized === 'interviews being conducted';
+    case 'APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD':
+      return HR_STATUSES.has(normalized);
+    case 'ANOTHER_APPLICANT_BETTER_FIT':
+      return normalized === 'interviews being conducted';
+    case 'CANDIDATE_ACCEPTED_OFFER':
+    case 'CANDIDATE_DID_NOT_ACCEPT_OFFER':
+      return normalized === 'job offered';
+    default:
+      return false;
   }
 }
 
@@ -194,63 +311,18 @@ export async function POST(request: NextRequest) {
   const position = applicationRecord.position || '';
 
   // Business rule validations
-  if (currentStatus === 'job offered') {
-    if (action !== 'OFFER_JOB') {
-      return NextResponse.json(
-        { ok: false, error: 'This application already has a job offer.' },
-        { status: 400 },
-      );
-    }
-    // Idempotent OFFER_JOB - just return success
-    return NextResponse.json({ ok: true, status: 'job offered' });
-  }
-
-  if (currentStatus === 'not a good fit') {
-    if (action !== 'RESCIND_REJECTION') {
-      return NextResponse.json(
-        { ok: false, error: 'This application has already been rejected.' },
-        { status: 400 },
-      );
-    }
-  }
-
-  if (currentStatus === 'cv mismatch') {
-    if (action !== 'RESCIND_REJECTION') {
-      return NextResponse.json(
-        { ok: false, error: 'This application has been marked as CV mismatch.' },
-        { status: 400 },
-      );
-    }
-  }
-
-  if (action === 'RESCIND_REJECTION' && currentStatus !== 'not a good fit' && currentStatus !== 'cv mismatch') {
+  if (!isActionAllowed(action, currentStatus)) {
     return NextResponse.json(
-      { ok: false, error: 'Can only rescind rejection when application is rejected or marked as CV mismatch.' },
+      { ok: false, error: 'This action is not allowed for the current application status.' },
       { status: 400 },
     );
   }
 
-  if (action === 'OFFER_JOB' && currentStatus !== 'interviewed') {
+  if (action === 'CANDIDATE_DID_NOT_ACCEPT_OFFER' && !notes) {
     return NextResponse.json(
-      { ok: false, error: 'Cannot offer job until the applicant has been interviewed.' },
+      { ok: false, error: 'Please provide a reason for the offer being declined.' },
       { status: 400 },
     );
-  }
-
-  if (action === 'CANCEL_MEETING' && currentStatus !== 'meeting scheduled') {
-    return NextResponse.json(
-      { ok: false, error: 'No meeting is currently scheduled to cancel.' },
-      { status: 400 },
-    );
-  }
-
-  if (action === 'MARK_INTERVIEWED') {
-    if (currentStatus !== 'meeting scheduled' && currentStatus !== 'meeting requested') {
-      return NextResponse.json(
-        { ok: false, error: 'Can only mark as interviewed after a meeting was scheduled or requested.' },
-        { status: 400 },
-      );
-    }
   }
 
   // Action-specific validations and processing
@@ -347,11 +419,22 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Track if meeting was cancelled due to rejection or CV mismatch (for referrer email)
+  // Track if meeting was cancelled due to a decline action (for referrer email)
   let meetingCancelledDueToRejection = false;
 
-  // If rejecting or marking CV mismatch (without update link) while meeting is scheduled, cancel the meeting
-  if (currentStatus === 'meeting scheduled' && (action === 'REJECT' || (action === 'CV_MISMATCH' && !body.includeUpdateLink))) {
+  // If declining while meeting is scheduled, cancel the meeting
+  if (
+    currentStatus === 'meeting scheduled'
+    && (
+      action === 'REJECT'
+      || action === 'APPLICANT_NO_LONGER_INTERESTED'
+      || action === 'APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD'
+      || action === 'HR_DECIDED_NOT_TO_PROCEED'
+      || action === 'ANOTHER_APPLICANT_BETTER_FIT'
+      || action === 'CANDIDATE_DID_NOT_ACCEPT_OFFER'
+      || (action === 'CV_MISMATCH' && !body.includeUpdateLink)
+    )
+  ) {
     patch.meetingDate = '';
     patch.meetingTime = '';
     patch.meetingTimezone = '';
@@ -480,13 +563,79 @@ export async function POST(request: NextRequest) {
           });
           break;
 
-        case 'OFFER_JOB':
+        case 'SUBMIT_CV_TO_HR':
+          template = submittedCvToHrToApplicant({
+            applicantName,
+            companyName,
+            position,
+            locale: referrerLocale,
+          });
+          break;
+        case 'HR_INTERVIEWS':
+          template = hrInterviewsInProgressToApplicant({
+            applicantName,
+            companyName,
+            position,
+            locale: referrerLocale,
+          });
+          break;
+        case 'HR_DECIDED_NOT_TO_PROCEED':
+          template = hrDeclinedToApplicant({
+            applicantName,
+            companyName,
+            position,
+            locale: referrerLocale,
+          });
+          break;
+        case 'HR_PROVIDED_OFFER':
           template = jobOfferToApplicant({
             applicantName,
             referrerName,
             companyName,
             position,
             message: notes,
+            locale: referrerLocale,
+          });
+          break;
+        case 'APPLICANT_NO_LONGER_INTERESTED':
+          template = applicantNoLongerInterestedToApplicant({
+            applicantName,
+            companyName,
+            position,
+            locale: referrerLocale,
+          });
+          break;
+        case 'APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD':
+          template = applicantDecidedNotToMoveForwardToApplicant({
+            applicantName,
+            companyName,
+            position,
+            locale: referrerLocale,
+          });
+          break;
+        case 'ANOTHER_APPLICANT_BETTER_FIT':
+          template = anotherApplicantBetterFitToApplicant({
+            applicantName,
+            companyName,
+            position,
+            locale: referrerLocale,
+          });
+          break;
+        case 'CANDIDATE_ACCEPTED_OFFER':
+          template = candidateAcceptedOfferToApplicant({
+            applicantName,
+            companyName,
+            position,
+            locale: referrerLocale,
+          });
+          break;
+        case 'CANDIDATE_DID_NOT_ACCEPT_OFFER':
+          template = candidateDidNotAcceptOfferToApplicant({
+            applicantName,
+            companyName,
+            position,
+            reason: notes,
+            locale: referrerLocale,
           });
           break;
       }
@@ -559,10 +708,15 @@ export async function POST(request: NextRequest) {
           locale: referrerLocale,
         });
       } else if (meetingCancelledDueToRejection) {
-        // Meeting was cancelled due to REJECT or CV_MISMATCH without update link
+        // Meeting was cancelled due to a decline action
         const actionDescriptions: Record<string, string> = {
           REJECT: 'rejected the application',
           CV_MISMATCH: 'marked the CV as a mismatch',
+          APPLICANT_NO_LONGER_INTERESTED: 'marked the applicant as no longer interested',
+          APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD: 'noted the applicant decided not to move forward',
+          HR_DECIDED_NOT_TO_PROCEED: 'noted HR decided not to proceed',
+          ANOTHER_APPLICANT_BETTER_FIT: 'noted another applicant was a better fit',
+          CANDIDATE_DID_NOT_ACCEPT_OFFER: 'noted the candidate did not accept the offer',
         };
         referrerTemplate = meetingCancelledToReferrer({
           referrerName,
@@ -589,8 +743,8 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Referral reward notification for OFFER_JOB
-  if (action === 'OFFER_JOB') {
+  // Referral reward notification for HR_PROVIDED_OFFER
+  if (action === 'HR_PROVIDED_OFFER') {
     const rewardRecipient =
       process.env.REFERRAL_REWARD_EMAIL || process.env.FOUNDER_EMAIL || process.env.SMTP_FROM_EMAIL;
     if (rewardRecipient) {

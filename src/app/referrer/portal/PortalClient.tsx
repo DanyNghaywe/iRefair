@@ -62,8 +62,12 @@ const translations: Record<
       meetingUrlPlaceholder: string;
       notes: string;
       notesPlaceholder: string;
+      reason: string;
+      reasonPlaceholder: string;
       includeUpdateLink: string;
       missingFields: string;
+      reasonRequired: string;
+      reasonRequiredMessage: string;
     };
     empty: {
       title: string;
@@ -151,9 +155,18 @@ const translations: Record<
       "meeting requested": "Meeting Requested",
       "meeting scheduled": "Meeting Scheduled",
       "needs reschedule": "Needs Reschedule",
-      interviewed: "Interviewed",
+      "met with referrer": "Met with Referrer",
+      interviewed: "Met with Referrer",
+      "submitted cv to hr": "Submitted CV to HR",
+      "interviews being conducted": "Interviews Being Conducted",
       "job offered": "Job Offered",
+      "landed job": "Landed Job",
       "not a good fit": "Not a Good Fit",
+      "applicant no longer interested": "Applicant No Longer Interested",
+      "applicant decided not to move forward": "Applicant Decided Not to Move Forward",
+      "hr decided not to proceed": "HR Decided Not to Proceed",
+      "another applicant was a better fit": "Another Applicant Was a Better Fit",
+      "candidate did not accept offer": "Candidate Did Not Accept Offer",
       "cv mismatch": "CV Mismatch",
       "cv update requested": "CV Update Requested",
       "cv updated": "CV Updated",
@@ -165,49 +178,81 @@ const translations: Record<
       SCHEDULE_MEETING: "Schedule Meeting",
       CANCEL_MEETING: "Cancel Meeting",
       REJECT: "Not a Good Fit",
-      RESCIND_REJECTION: "Rescind Rejection",
       CV_MISMATCH: "CV Doesn't Match",
       REQUEST_CV_UPDATE: "Request CV Update",
       REQUEST_INFO: "Missing Information",
-      MARK_INTERVIEWED: "Mark Interviewed with Referrer",
-      OFFER_JOB: "Offer Job",
+      MARK_INTERVIEWED: "Mark Met with Referrer",
+      SUBMIT_CV_TO_HR: "Submitted CV to HR",
+      HR_INTERVIEWS: "Interviews being conducted",
+      HR_DECIDED_NOT_TO_PROCEED: "HR decided not to proceed",
+      HR_PROVIDED_OFFER: "HR provided offer",
+      APPLICANT_NO_LONGER_INTERESTED: "Applicant no longer interested",
+      APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD: "Applicant decided not to move forward",
+      ANOTHER_APPLICANT_BETTER_FIT: "Another applicant was a better fit",
+      CANDIDATE_ACCEPTED_OFFER: "Candidate accepted offer",
+      CANDIDATE_DID_NOT_ACCEPT_OFFER: "Candidate did not accept offer",
       CV_UPDATED: "CV Updated",
       APPLICANT_UPDATED: "Applicant Updated Profile",
+      RESCIND_REJECTION: "Rescind Rejection",
     },
     modalTitles: {
       SCHEDULE_MEETING: "Schedule Meeting",
       CANCEL_MEETING: "Cancel Meeting",
       REJECT: "Not a Good Fit",
-      RESCIND_REJECTION: "Rescind Rejection",
       CV_MISMATCH: "CV Doesn't Match",
       REQUEST_CV_UPDATE: "Request CV Update",
       REQUEST_INFO: "Request Information",
-      MARK_INTERVIEWED: "Mark Interviewed with Referrer",
-      OFFER_JOB: "Offer Job",
+      MARK_INTERVIEWED: "Mark Met with Referrer",
+      SUBMIT_CV_TO_HR: "Submitted CV to HR",
+      HR_INTERVIEWS: "Interviews being conducted",
+      HR_DECIDED_NOT_TO_PROCEED: "HR decided not to proceed",
+      HR_PROVIDED_OFFER: "HR provided offer",
+      APPLICANT_NO_LONGER_INTERESTED: "Applicant no longer interested",
+      APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD: "Applicant decided not to move forward",
+      ANOTHER_APPLICANT_BETTER_FIT: "Another applicant was a better fit",
+      CANDIDATE_ACCEPTED_OFFER: "Candidate accepted offer",
+      CANDIDATE_DID_NOT_ACCEPT_OFFER: "Candidate did not accept offer",
+      RESCIND_REJECTION: "Rescind Rejection",
       default: "Confirm Action",
     },
     modalDescriptions: {
       SCHEDULE_MEETING: "Schedule a meeting with this candidate. They will receive an email with the details.",
       CANCEL_MEETING: "Cancel the scheduled meeting. The candidate will be notified.",
       REJECT: "Mark this candidate as not a good fit. They will receive a polite rejection email.",
-      RESCIND_REJECTION: "Undo the rejection and give this candidate another chance. Their status will be reset to New.",
       CV_MISMATCH: "The CV doesn't match your requirements. The candidate will receive feedback.",
       REQUEST_CV_UPDATE: "Request the candidate to update their CV. They will receive a link to make changes.",
       REQUEST_CV_UPDATE_MEETING_WARNING: "A meeting is scheduled with this candidate. Requesting a CV update will cancel the meeting. You can reschedule after reviewing the updated CV.",
       REQUEST_INFO: "Request additional information from the candidate.",
-      MARK_INTERVIEWED: "Mark this candidate as interviewed with the referrer. They will receive a confirmation.",
-      OFFER_JOB: "Offer this candidate the job! They will receive the good news.",
+      MARK_INTERVIEWED: "Mark that this candidate met with the referrer. They will receive a confirmation.",
+      SUBMIT_CV_TO_HR: "Confirm that the candidate CV has been submitted to HR. They will be notified.",
+      HR_INTERVIEWS: "Mark that HR interviews are currently being conducted.",
+      HR_DECIDED_NOT_TO_PROCEED: "HR has decided not to proceed with this candidate. They will be notified.",
+      HR_PROVIDED_OFFER: "HR has provided an offer. The candidate will be notified.",
+      APPLICANT_NO_LONGER_INTERESTED: "Mark that the applicant is no longer interested. They will be notified.",
+      APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD: "The applicant decided not to move forward. They will be notified.",
+      ANOTHER_APPLICANT_BETTER_FIT: "Another applicant was a better fit. This candidate will be notified.",
+      CANDIDATE_ACCEPTED_OFFER: "Mark that the candidate accepted the offer. This will close the application.",
+      CANDIDATE_DID_NOT_ACCEPT_OFFER: "Mark that the candidate did not accept the offer. A reason is required.",
+      RESCIND_REJECTION: "Undo the rejection and give this candidate another chance. Their status will be reset to New.",
     },
     successMessages: {
       SCHEDULE_MEETING: "Meeting scheduled and candidate notified.",
       CANCEL_MEETING: "Meeting cancelled and candidate notified.",
       REJECT: "Candidate marked as not a good fit.",
-      RESCIND_REJECTION: "Rejection rescinded. Candidate is back under consideration.",
       CV_MISMATCH: "CV feedback sent to candidate.",
       REQUEST_CV_UPDATE: "CV update request sent to candidate.",
       REQUEST_INFO: "Information request sent to candidate.",
-      MARK_INTERVIEWED: "Candidate marked as interviewed with the referrer.",
-      OFFER_JOB: "Job offer sent to candidate!",
+      MARK_INTERVIEWED: "Candidate marked as met with the referrer.",
+      SUBMIT_CV_TO_HR: "CV submitted to HR and candidate notified.",
+      HR_INTERVIEWS: "HR interview stage started.",
+      HR_DECIDED_NOT_TO_PROCEED: "HR decline sent to candidate.",
+      HR_PROVIDED_OFFER: "Offer sent to candidate.",
+      APPLICANT_NO_LONGER_INTERESTED: "Candidate marked as no longer interested.",
+      APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD: "Candidate marked as not moving forward.",
+      ANOTHER_APPLICANT_BETTER_FIT: "Candidate notified about the decision.",
+      CANDIDATE_ACCEPTED_OFFER: "Candidate marked as accepted offer.",
+      CANDIDATE_DID_NOT_ACCEPT_OFFER: "Candidate marked as declined offer.",
+      RESCIND_REJECTION: "Rejection rescinded. Candidate is back under consideration.",
       default: "Action completed successfully.",
     },
     modal: {
@@ -221,8 +266,12 @@ const translations: Record<
       meetingUrlPlaceholder: "https://zoom.us/j/...",
       notes: "Notes (optional)",
       notesPlaceholder: "Add any notes or feedback...",
+      reason: "Reason (required)",
+      reasonPlaceholder: "Add the reason the candidate did not accept the offer...",
       includeUpdateLink: "Include link for candidate to update their CV",
       missingFields: "Please fill in date, time, timezone, and meeting URL.",
+      reasonRequired: "Reason required",
+      reasonRequiredMessage: "Please provide the reason the candidate did not accept the offer.",
     },
     empty: {
       title: "No applications assigned",
@@ -309,9 +358,18 @@ const translations: Record<
       "meeting requested": "Réunion demandée",
       "meeting scheduled": "Réunion planifiée",
       "needs reschedule": "À replanifier",
-      interviewed: "Entretien effectué",
+      "met with referrer": "Rencontré avec le référent",
+      interviewed: "Rencontré avec le référent",
+      "submitted cv to hr": "CV transmis aux RH",
+      "interviews being conducted": "Entretiens en cours",
       "job offered": "Offre d'emploi",
+      "landed job": "Poste accepté",
       "not a good fit": "Profil non retenu",
+      "applicant no longer interested": "Le candidat n'est plus intéressé",
+      "applicant decided not to move forward": "Le candidat a décidé de ne pas poursuivre",
+      "hr decided not to proceed": "Les RH ont décidé de ne pas poursuivre",
+      "another applicant was a better fit": "Un autre candidat correspondait mieux",
+      "candidate did not accept offer": "Le candidat n'a pas accepté l'offre",
       "cv mismatch": "CV inadapté",
       "cv update requested": "Mise à jour CV demandée",
       "cv updated": "CV mis à jour",
@@ -323,49 +381,81 @@ const translations: Record<
       SCHEDULE_MEETING: "Planifier une réunion",
       CANCEL_MEETING: "Annuler la réunion",
       REJECT: "Profil non retenu",
-      RESCIND_REJECTION: "Annuler le refus",
       CV_MISMATCH: "CV non conforme",
       REQUEST_CV_UPDATE: "Demander mise à jour CV",
       REQUEST_INFO: "Informations manquantes",
-      MARK_INTERVIEWED: "Marquer comme interviewé avec le référent",
-      OFFER_JOB: "Proposer le poste",
+      MARK_INTERVIEWED: "Marquer comme rencontré avec le référent",
+      SUBMIT_CV_TO_HR: "CV transmis aux RH",
+      HR_INTERVIEWS: "Entretiens en cours",
+      HR_DECIDED_NOT_TO_PROCEED: "Les RH ont décidé de ne pas poursuivre",
+      HR_PROVIDED_OFFER: "Les RH ont proposé une offre",
+      APPLICANT_NO_LONGER_INTERESTED: "Le candidat n'est plus intéressé",
+      APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD: "Le candidat a décidé de ne pas poursuivre",
+      ANOTHER_APPLICANT_BETTER_FIT: "Un autre candidat correspondait mieux",
+      CANDIDATE_ACCEPTED_OFFER: "Le candidat a accepté l'offre",
+      CANDIDATE_DID_NOT_ACCEPT_OFFER: "Le candidat n'a pas accepté l'offre",
       CV_UPDATED: "CV mis à jour",
       APPLICANT_UPDATED: "Profil candidat mis a jour",
+      RESCIND_REJECTION: "Annuler le refus",
     },
     modalTitles: {
       SCHEDULE_MEETING: "Planifier une réunion",
       CANCEL_MEETING: "Annuler la réunion",
       REJECT: "Profil non retenu",
-      RESCIND_REJECTION: "Annuler le refus",
       CV_MISMATCH: "CV non conforme",
       REQUEST_CV_UPDATE: "Demander mise à jour CV",
       REQUEST_INFO: "Demander des informations",
-      MARK_INTERVIEWED: "Marquer comme interviewé avec le référent",
-      OFFER_JOB: "Proposer le poste",
+      MARK_INTERVIEWED: "Marquer comme rencontré avec le référent",
+      SUBMIT_CV_TO_HR: "CV transmis aux RH",
+      HR_INTERVIEWS: "Entretiens en cours",
+      HR_DECIDED_NOT_TO_PROCEED: "Les RH ont décidé de ne pas poursuivre",
+      HR_PROVIDED_OFFER: "Les RH ont proposé une offre",
+      APPLICANT_NO_LONGER_INTERESTED: "Le candidat n'est plus intéressé",
+      APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD: "Le candidat a décidé de ne pas poursuivre",
+      ANOTHER_APPLICANT_BETTER_FIT: "Un autre candidat correspondait mieux",
+      CANDIDATE_ACCEPTED_OFFER: "Le candidat a accepté l'offre",
+      CANDIDATE_DID_NOT_ACCEPT_OFFER: "Le candidat n'a pas accepté l'offre",
+      RESCIND_REJECTION: "Annuler le refus",
       default: "Confirmer l'action",
     },
     modalDescriptions: {
       SCHEDULE_MEETING: "Planifiez une réunion avec ce candidat. Il recevra un e-mail avec les détails.",
       CANCEL_MEETING: "Annulez la réunion prévue. Le candidat sera informé.",
       REJECT: "Marquez ce candidat comme non retenu. Il recevra un e-mail de refus courtois.",
-      RESCIND_REJECTION: "Annulez le refus et donnez une autre chance à ce candidat. Son statut sera réinitialisé à Nouveau.",
       CV_MISMATCH: "Le CV ne correspond pas à vos exigences. Le candidat recevra un retour.",
       REQUEST_CV_UPDATE: "Demandez au candidat de mettre à jour son CV. Il recevra un lien pour effectuer les modifications.",
       REQUEST_CV_UPDATE_MEETING_WARNING: "Une réunion est prévue avec ce candidat. Demander une mise à jour du CV annulera la réunion. Vous pourrez replanifier après avoir examiné le CV mis à jour.",
       REQUEST_INFO: "Demandez des informations supplémentaires au candidat.",
-      MARK_INTERVIEWED: "Marquez ce candidat comme ayant passé l'entretien avec le référent. Il recevra une confirmation.",
-      OFFER_JOB: "Proposez le poste à ce candidat ! Il recevra la bonne nouvelle.",
+      MARK_INTERVIEWED: "Marquez ce candidat comme ayant rencontré le référent. Il recevra une confirmation.",
+      SUBMIT_CV_TO_HR: "Confirmez que le CV a été transmis aux RH. Le candidat sera informé.",
+      HR_INTERVIEWS: "Marquez que les entretiens RH sont en cours.",
+      HR_DECIDED_NOT_TO_PROCEED: "Les RH ont décidé de ne pas poursuivre. Le candidat sera informé.",
+      HR_PROVIDED_OFFER: "Les RH ont fait une offre. Le candidat sera informé.",
+      APPLICANT_NO_LONGER_INTERESTED: "Marquez que le candidat n'est plus intéressé. Il sera informé.",
+      APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD: "Le candidat a décidé de ne pas poursuivre. Il sera informé.",
+      ANOTHER_APPLICANT_BETTER_FIT: "Un autre candidat correspondait mieux. Le candidat sera informé.",
+      CANDIDATE_ACCEPTED_OFFER: "Marquez que le candidat a accepté l'offre. Cela clôturera la candidature.",
+      CANDIDATE_DID_NOT_ACCEPT_OFFER: "Marquez que le candidat n'a pas accepté l'offre. Une raison est requise.",
+      RESCIND_REJECTION: "Annulez le refus et donnez une autre chance à ce candidat. Son statut sera réinitialisé à Nouveau.",
     },
     successMessages: {
       SCHEDULE_MEETING: "Réunion planifiée et candidat informé.",
       CANCEL_MEETING: "Réunion annulée et candidat informé.",
       REJECT: "Candidat marqué comme non retenu.",
-      RESCIND_REJECTION: "Refus annulé. Le candidat est de nouveau pris en considération.",
       CV_MISMATCH: "Retour sur le CV envoyé au candidat.",
       REQUEST_CV_UPDATE: "Demande de mise à jour du CV envoyée au candidat.",
       REQUEST_INFO: "Demande d'informations envoyée au candidat.",
-      MARK_INTERVIEWED: "Candidat marqué comme interviewé avec le référent.",
-      OFFER_JOB: "Offre d'emploi envoyée au candidat !",
+      MARK_INTERVIEWED: "Candidat marqué comme rencontré avec le référent.",
+      SUBMIT_CV_TO_HR: "CV transmis aux RH et candidat informé.",
+      HR_INTERVIEWS: "Entretiens RH en cours.",
+      HR_DECIDED_NOT_TO_PROCEED: "Refus RH envoyé au candidat.",
+      HR_PROVIDED_OFFER: "Offre envoyée au candidat.",
+      APPLICANT_NO_LONGER_INTERESTED: "Candidat marqué comme non intéressé.",
+      APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD: "Candidat marqué comme ne poursuivant pas.",
+      ANOTHER_APPLICANT_BETTER_FIT: "Décision communiquée au candidat.",
+      CANDIDATE_ACCEPTED_OFFER: "Candidat marqué comme ayant accepté l'offre.",
+      CANDIDATE_DID_NOT_ACCEPT_OFFER: "Candidat marqué comme ayant refusé l'offre.",
+      RESCIND_REJECTION: "Refus annulé. Le candidat est de nouveau pris en considération.",
       default: "Action effectuée avec succès.",
     },
     modal: {
@@ -379,8 +469,12 @@ const translations: Record<
       meetingUrlPlaceholder: "https://zoom.us/j/...",
       notes: "Notes (optionnel)",
       notesPlaceholder: "Ajoutez des notes ou commentaires...",
+      reason: "Raison (requise)",
+      reasonPlaceholder: "Ajoutez la raison pour laquelle le candidat n'a pas accepté l'offre...",
       includeUpdateLink: "Inclure un lien pour que le candidat mette à jour son CV",
       missingFields: "Veuillez remplir la date, l'heure, le fuseau horaire et l'URL de la réunion.",
+      reasonRequired: "Raison requise",
+      reasonRequiredMessage: "Veuillez indiquer la raison pour laquelle le candidat n'a pas accepté l'offre.",
     },
     empty: {
       title: "Aucune candidature assignée",
@@ -499,44 +593,98 @@ type FeedbackAction =
   | "SCHEDULE_MEETING"
   | "CANCEL_MEETING"
   | "REJECT"
-  | "RESCIND_REJECTION"
   | "CV_MISMATCH"
   | "REQUEST_CV_UPDATE"
   | "REQUEST_INFO"
   | "MARK_INTERVIEWED"
-  | "OFFER_JOB";
-
-type ActionConfig = {
-  code: FeedbackAction;
-  enabledStatuses?: string[];
-  disabledStatuses?: string[];
-};
+  | "SUBMIT_CV_TO_HR"
+  | "HR_INTERVIEWS"
+  | "HR_DECIDED_NOT_TO_PROCEED"
+  | "HR_PROVIDED_OFFER"
+  | "APPLICANT_NO_LONGER_INTERESTED"
+  | "APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD"
+  | "ANOTHER_APPLICANT_BETTER_FIT"
+  | "CANDIDATE_ACCEPTED_OFFER"
+  | "CANDIDATE_DID_NOT_ACCEPT_OFFER";
 
 const STATUS_VARIANTS: Record<string, "info" | "success" | "warning" | "error" | "neutral"> = {
   new: "info",
   "meeting requested": "info",
   "meeting scheduled": "success",
   "needs reschedule": "warning",
+  "met with referrer": "success",
   interviewed: "success",
+  "submitted cv to hr": "info",
+  "interviews being conducted": "info",
   "job offered": "success",
+  "landed job": "success",
   "not a good fit": "error",
+  "applicant no longer interested": "error",
+  "applicant decided not to move forward": "error",
+  "hr decided not to proceed": "error",
+  "another applicant was a better fit": "error",
+  "candidate did not accept offer": "error",
   "cv mismatch": "warning",
   "cv update requested": "warning",
+  "cv updated": "info",
   "info requested": "warning",
+  "info updated": "info",
   ineligible: "error",
 };
 
-const ACTIONS: ActionConfig[] = [
-  { code: "SCHEDULE_MEETING", disabledStatuses: ["job offered", "not a good fit", "cv mismatch", "meeting scheduled", "ineligible"] },
-  { code: "CANCEL_MEETING", enabledStatuses: ["meeting scheduled"] },
-  { code: "REJECT", disabledStatuses: ["job offered", "not a good fit", "cv mismatch", "ineligible"] },
-  { code: "RESCIND_REJECTION", enabledStatuses: ["not a good fit", "cv mismatch"] },
-  { code: "CV_MISMATCH", disabledStatuses: ["job offered", "not a good fit", "cv mismatch", "ineligible"] },
-  { code: "REQUEST_CV_UPDATE", disabledStatuses: ["job offered", "not a good fit", "cv mismatch", "ineligible"] },
-  { code: "REQUEST_INFO", disabledStatuses: ["job offered", "not a good fit", "cv mismatch", "ineligible"] },
-  { code: "MARK_INTERVIEWED", enabledStatuses: ["meeting scheduled", "meeting requested"] },
-  { code: "OFFER_JOB", enabledStatuses: ["interviewed"] },
+const ACTIONS: FeedbackAction[] = [
+  "SCHEDULE_MEETING",
+  "CANCEL_MEETING",
+  "MARK_INTERVIEWED",
+  "SUBMIT_CV_TO_HR",
+  "HR_INTERVIEWS",
+  "HR_PROVIDED_OFFER",
+  "CANDIDATE_ACCEPTED_OFFER",
+  "CANDIDATE_DID_NOT_ACCEPT_OFFER",
+  "REQUEST_CV_UPDATE",
+  "REQUEST_INFO",
+  "REJECT",
+  "CV_MISMATCH",
+  "APPLICANT_NO_LONGER_INTERESTED",
+  "HR_DECIDED_NOT_TO_PROCEED",
+  "APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD",
+  "ANOTHER_APPLICANT_BETTER_FIT",
 ];
+
+const TERMINAL_STATUSES = new Set([
+  "not a good fit",
+  "cv mismatch",
+  "applicant no longer interested",
+  "applicant decided not to move forward",
+  "hr decided not to proceed",
+  "another applicant was a better fit",
+  "candidate did not accept offer",
+  "landed job",
+  "ineligible",
+]);
+
+const PRE_MEETING_STATUSES = new Set([
+  "new",
+  "meeting requested",
+  "meeting scheduled",
+  "needs reschedule",
+]);
+
+const POST_MEETING_BASE_STATUSES = new Set([
+  "met with referrer",
+  "cv updated",
+  "info updated",
+]);
+
+const HR_STATUSES = new Set([
+  "submitted cv to hr",
+  "interviews being conducted",
+]);
+
+const POST_MEETING_ACTION_STATUSES = new Set([
+  ...POST_MEETING_BASE_STATUSES,
+  ...HR_STATUSES,
+]);
 
 // Get all available IANA timezones with formatted labels
 const TIMEZONE_OPTIONS = getAllTimezoneOptions();
@@ -774,6 +922,10 @@ export default function PortalClient() {
         return;
       }
     }
+    if (modalAction === "CANDIDATE_DID_NOT_ACCEPT_OFFER" && !notes.trim()) {
+      toast.error(t.modal.reasonRequired, t.modal.reasonRequiredMessage);
+      return;
+    }
 
     setSubmitting(true);
     try {
@@ -839,13 +991,50 @@ export default function PortalClient() {
   };
 
 
-  const isActionEnabled = (action: ActionConfig, status: string): boolean => {
+  const isActionEnabled = (action: FeedbackAction, status: string): boolean => {
     const normalized = status?.toLowerCase().trim() || "new";
-    if (normalized === "job offered" && action.code !== "OFFER_JOB") return false;
-    if (normalized === "ineligible") return false; // No actions available for ineligible applicants
-    if (action.enabledStatuses) return action.enabledStatuses.includes(normalized);
-    if (action.disabledStatuses) return !action.disabledStatuses.includes(normalized);
-    return true;
+
+    if (TERMINAL_STATUSES.has(normalized)) return false;
+
+    if (normalized === "job offered") {
+      return action === "CANDIDATE_ACCEPTED_OFFER" || action === "CANDIDATE_DID_NOT_ACCEPT_OFFER";
+    }
+
+    switch (action) {
+      case "SCHEDULE_MEETING":
+        return normalized === "new" || normalized === "meeting requested" || normalized === "needs reschedule";
+      case "CANCEL_MEETING":
+        return normalized === "meeting scheduled";
+      case "MARK_INTERVIEWED":
+        return normalized === "meeting scheduled" || normalized === "meeting requested";
+      case "REQUEST_INFO":
+        return PRE_MEETING_STATUSES.has(normalized);
+      case "CV_MISMATCH":
+        return PRE_MEETING_STATUSES.has(normalized);
+      case "REQUEST_CV_UPDATE":
+        return PRE_MEETING_STATUSES.has(normalized) || POST_MEETING_ACTION_STATUSES.has(normalized);
+      case "REJECT":
+        return PRE_MEETING_STATUSES.has(normalized) || POST_MEETING_ACTION_STATUSES.has(normalized);
+      case "APPLICANT_NO_LONGER_INTERESTED":
+        return POST_MEETING_ACTION_STATUSES.has(normalized);
+      case "SUBMIT_CV_TO_HR":
+        return POST_MEETING_BASE_STATUSES.has(normalized);
+      case "HR_INTERVIEWS":
+        return normalized === "submitted cv to hr";
+      case "HR_PROVIDED_OFFER":
+        return normalized === "submitted cv to hr" || normalized === "interviews being conducted";
+      case "HR_DECIDED_NOT_TO_PROCEED":
+        return normalized === "submitted cv to hr" || normalized === "interviews being conducted";
+      case "APPLICANT_DECIDED_NOT_TO_MOVE_FORWARD":
+        return HR_STATUSES.has(normalized);
+    case "ANOTHER_APPLICANT_BETTER_FIT":
+      return normalized === "interviews being conducted";
+    case "CANDIDATE_ACCEPTED_OFFER":
+    case "CANDIDATE_DID_NOT_ACCEPT_OFFER":
+      return normalized === "job offered";
+      default:
+        return false;
+    }
   };
 
   const sortedItems = useMemo(() => {
@@ -1384,13 +1573,13 @@ export default function PortalClient() {
                                             if (!enabled) return null;
                                             return (
                                               <button
-                                                key={action.code}
+                                                key={action}
                                                 type="button"
                                                 className="portal-dropdown-item"
-                                                onClick={() => openModal(item, action.code)}
+                                                onClick={() => openModal(item, action)}
                                                 role="menuitem"
                                               >
-                                                {t.actionLabels[action.code]}
+                                                {t.actionLabels[action]}
                                               </button>
                                             );
                                           })}
@@ -1450,11 +1639,14 @@ export default function PortalClient() {
                                     </div>
                                   </div>
                                   {/* Action History */}
-                                  {item.actionHistory && item.actionHistory.length > 0 && (
+                                  {item.actionHistory && item.actionHistory.some((entry) => entry.action !== "OFFER_JOB") && (
                                     <div className="portal-history">
                                       <h4 className="portal-history-title">{t.history.title}</h4>
                                       <ul className="portal-timeline">
-                                        {[...item.actionHistory].reverse().map((entry, idx) => {
+                                        {[...item.actionHistory]
+                                          .filter((entry) => entry.action !== "OFFER_JOB")
+                                          .reverse()
+                                          .map((entry, idx) => {
                                           const actionLabel = t.actionLabels[entry.action] || entry.action;
                                           const date = new Date(entry.timestamp);
                                           const dateStr = date.toLocaleDateString(language === "fr" ? "fr-CA" : "en-CA", {
@@ -1646,13 +1838,19 @@ export default function PortalClient() {
             )}
 
             <div className="portal-modal-field portal-modal-field--full">
-              <label htmlFor="notes">{t.modal.notes}</label>
+              <label htmlFor="notes">
+                {modalAction === "CANDIDATE_DID_NOT_ACCEPT_OFFER" ? t.modal.reason : t.modal.notes}
+              </label>
               <textarea
                 id="notes"
                 rows={3}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder={t.modal.notesPlaceholder}
+                placeholder={
+                  modalAction === "CANDIDATE_DID_NOT_ACCEPT_OFFER"
+                    ? t.modal.reasonPlaceholder
+                    : t.modal.notesPlaceholder
+                }
               />
             </div>
           </div>
