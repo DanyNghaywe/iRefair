@@ -3912,6 +3912,18 @@ section.founder-auth input:focus-visible {
   isolation: isolate;
 }
 
+.founder-topbar__back {
+  display: inline-block;
+  color: #cbd5e1;
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.15s ease;
+}
+
+.founder-topbar__back:hover {
+  color: #f8fafc;
+}
+
 .founder-topbar__titles h1 {
   margin: 0;
   font-size: var(--font-size-h2);
