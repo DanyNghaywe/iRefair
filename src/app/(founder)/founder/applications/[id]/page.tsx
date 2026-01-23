@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 
 import { ActionBtn } from "@/components/ActionBtn";
 import { useLanguage } from "@/components/LanguageProvider";
@@ -82,6 +82,9 @@ const translations = {
       archiveApplication: "Archive application",
       confirmArchive: "Confirm archive",
       archiving: "Archiving...",
+      editDetails: "Edit details",
+      save: "Save",
+      saving: "Saving...",
     },
     messages: {
       unableToArchive: "Unable to archive application.",
@@ -191,6 +194,9 @@ const translations = {
       archiveApplication: "Archiver la candidature",
       confirmArchive: "Confirmer l'archivage",
       archiving: "Archivage...",
+      editDetails: "Modifier les détails",
+      save: "Enregistrer",
+      saving: "Enregistrement...",
     },
     messages: {
       unableToArchive: "Impossible d'archiver la candidature.",
@@ -288,6 +294,8 @@ export default function ApplicationDetailPage() {
   const rawId = params?.id;
   const applicationId = Array.isArray(rawId) ? rawId[0] : rawId;
   const cleanId = typeof applicationId === "string" ? applicationId.trim() : "";
+  const searchParams = useSearchParams();
+  const initialEdit = searchParams?.get("edit") === "1";
   const { language } = useLanguage();
   const router = useRouter();
   const t = translations[language];
@@ -298,11 +306,32 @@ export default function ApplicationDetailPage() {
   const [application, setApplication] = useState<ApplicationRecord | null>(null);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
+  const [editDetails, setEditDetails] = useState(initialEdit);
 
   const [notes, setNotes] = useState("");
   const [status, setStatus] = useState("");
+  const [iCrn, setICrn] = useState("");
+  const [position, setPosition] = useState("");
+  const [referenceNumber, setReferenceNumber] = useState("");
+  const [referrerIrref, setReferrerIrref] = useState("");
+  const [meetingDate, setMeetingDate] = useState("");
+  const [meetingTime, setMeetingTime] = useState("");
+  const [meetingTimezone, setMeetingTimezone] = useState("");
+  const [meetingUrl, setMeetingUrl] = useState("");
   const [saving, setSaving] = useState(false);
   const skipAutosaveRef = useRef(true);
+
+  // Store original values when entering edit mode
+  const originalDetailsRef = useRef<{
+    iCrn: string;
+    position: string;
+    referenceNumber: string;
+    referrerIrref: string;
+    meetingDate: string;
+    meetingTime: string;
+    meetingTimezone: string;
+    meetingUrl: string;
+  } | null>(null);
   const [archiveModalOpen, setArchiveModalOpen] = useState(false);
   const [archiveReason, setArchiveReason] = useState("");
   const [archiveSubmitting, setArchiveSubmitting] = useState(false);
@@ -342,7 +371,16 @@ export default function ApplicationDetailPage() {
     if (!application) return;
     setNotes(application.ownerNotes || "");
     setStatus((application.status || "").toLowerCase());
+    setICrn(application.iCrn || "");
+    setPosition(application.position || "");
+    setReferenceNumber(application.referenceNumber || "");
+    setReferrerIrref(application.referrerIrref || "");
+    setMeetingDate(application.meetingDate || "");
+    setMeetingTime(application.meetingTime || "");
+    setMeetingTimezone(application.meetingTimezone || "");
+    setMeetingUrl(application.meetingUrl || "");
     skipAutosaveRef.current = true;
+    originalDetailsRef.current = null;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [application?.id]);
 
@@ -360,6 +398,57 @@ export default function ApplicationDetailPage() {
     });
     updateLocalApplication(patch as Partial<ApplicationRecord>);
     setSaving(false);
+  };
+
+  const handleStartEdit = () => {
+    originalDetailsRef.current = {
+      iCrn,
+      position,
+      referenceNumber,
+      referrerIrref,
+      meetingDate,
+      meetingTime,
+      meetingTimezone,
+      meetingUrl,
+    };
+    setEditDetails(true);
+  };
+
+  const handleCancelEdit = () => {
+    if (originalDetailsRef.current) {
+      setICrn(originalDetailsRef.current.iCrn);
+      setPosition(originalDetailsRef.current.position);
+      setReferenceNumber(originalDetailsRef.current.referenceNumber);
+      setReferrerIrref(originalDetailsRef.current.referrerIrref);
+      setMeetingDate(originalDetailsRef.current.meetingDate);
+      setMeetingTime(originalDetailsRef.current.meetingTime);
+      setMeetingTimezone(originalDetailsRef.current.meetingTimezone);
+      setMeetingUrl(originalDetailsRef.current.meetingUrl);
+    }
+    originalDetailsRef.current = null;
+    setEditDetails(false);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!application) return;
+    const patch: Record<string, string> = {};
+    const addIfChanged = (key: string, value: string, current: string) => {
+      if (value !== current) patch[key] = value;
+    };
+    addIfChanged("iCrn", iCrn, application.iCrn || "");
+    addIfChanged("position", position, application.position || "");
+    addIfChanged("referenceNumber", referenceNumber, application.referenceNumber || "");
+    addIfChanged("referrerIrref", referrerIrref, application.referrerIrref || "");
+    addIfChanged("meetingDate", meetingDate, application.meetingDate || "");
+    addIfChanged("meetingTime", meetingTime, application.meetingTime || "");
+    addIfChanged("meetingTimezone", meetingTimezone, application.meetingTimezone || "");
+    addIfChanged("meetingUrl", meetingUrl, application.meetingUrl || "");
+
+    if (Object.keys(patch).length) {
+      await patchApplication(patch);
+    }
+    originalDetailsRef.current = null;
+    setEditDetails(false);
   };
 
   const openArchiveModal = () => {
@@ -509,11 +598,29 @@ export default function ApplicationDetailPage() {
                 </div>
                 <div className="field">
                   <label htmlFor="app-ircrn">{t.labels.ircrn}</label>
-                  <input id="app-ircrn" type="text" value={application.iCrn || "-"} readOnly tabIndex={-1} />
+                  {editDetails ? (
+                    <input
+                      id="app-ircrn"
+                      type="text"
+                      value={iCrn}
+                      onChange={(event) => setICrn(event.target.value)}
+                    />
+                  ) : (
+                    <input id="app-ircrn" type="text" value={iCrn || "-"} readOnly tabIndex={-1} />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="app-position">{t.labels.position}</label>
-                  <input id="app-position" type="text" value={application.position || "-"} readOnly tabIndex={-1} />
+                  {editDetails ? (
+                    <input
+                      id="app-position"
+                      type="text"
+                      value={position}
+                      onChange={(event) => setPosition(event.target.value)}
+                    />
+                  ) : (
+                    <input id="app-position" type="text" value={position || "-"} readOnly tabIndex={-1} />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="app-applicant">{t.labels.applicant}</label>
@@ -527,23 +634,41 @@ export default function ApplicationDetailPage() {
                 </div>
                 <div className="field">
                   <label htmlFor="app-referrer">{t.labels.referrer}</label>
-                  <input
-                    id="app-referrer"
-                    type="text"
-                    value={application.referrerIrref || "-"}
-                    readOnly
-                    tabIndex={-1}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="app-referrer"
+                      type="text"
+                      value={referrerIrref}
+                      onChange={(event) => setReferrerIrref(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="app-referrer"
+                      type="text"
+                      value={referrerIrref || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="app-reference">{t.labels.referenceNumber}</label>
-                  <input
-                    id="app-reference"
-                    type="text"
-                    value={application.referenceNumber || "-"}
-                    readOnly
-                    tabIndex={-1}
-                  />
+                  {editDetails ? (
+                    <input
+                      id="app-reference"
+                      type="text"
+                      value={referenceNumber}
+                      onChange={(event) => setReferenceNumber(event.target.value)}
+                    />
+                  ) : (
+                    <input
+                      id="app-reference"
+                      type="text"
+                      value={referenceNumber || "-"}
+                      readOnly
+                      tabIndex={-1}
+                    />
+                  )}
                 </div>
                 <div className="field">
                   <label htmlFor="app-timestamp">{t.labels.submitted}</label>
@@ -585,33 +710,75 @@ export default function ApplicationDetailPage() {
               )}
             </DetailSection>
 
-            {application.meetingDate && (
+            {(application.meetingDate || editDetails) && (
               <DetailSection title={t.sections.meeting}>
                 <div className="field-grid field-grid--two">
                   <div className="field">
-                    <label htmlFor="app-meeting-datetime">{t.labels.dateTime}</label>
-                    <input
-                      id="app-meeting-datetime"
-                      type="text"
-                      value={
-                        formatMeetingDateTime(
-                          application.meetingDate,
-                          application.meetingTime,
-                          application.meetingTimezone,
-                        ) || `${application.meetingDate} ${application.meetingTime}`
-                      }
-                      readOnly
-                      tabIndex={-1}
-                    />
+                    <label htmlFor="app-meeting-date">{t.labels.dateTime}</label>
+                    {editDetails ? (
+                      <input
+                        id="app-meeting-date"
+                        type="date"
+                        value={meetingDate}
+                        onChange={(event) => setMeetingDate(event.target.value)}
+                      />
+                    ) : (
+                      <input
+                        id="app-meeting-date"
+                        type="text"
+                        value={
+                          formatMeetingDateTime(
+                            application.meetingDate,
+                            application.meetingTime,
+                            application.meetingTimezone,
+                          ) || `${application.meetingDate} ${application.meetingTime}`
+                        }
+                        readOnly
+                        tabIndex={-1}
+                      />
+                    )}
                   </div>
-                  {application.meetingUrl && (
+                  {editDetails && (
                     <div className="field">
-                      <label>{t.labels.meetingLink}</label>
+                      <label htmlFor="app-meeting-time">Time</label>
+                      <input
+                        id="app-meeting-time"
+                        type="time"
+                        value={meetingTime}
+                        onChange={(event) => setMeetingTime(event.target.value)}
+                      />
+                    </div>
+                  )}
+                  {editDetails && (
+                    <div className="field">
+                      <label htmlFor="app-meeting-timezone">Timezone</label>
+                      <input
+                        id="app-meeting-timezone"
+                        type="text"
+                        value={meetingTimezone}
+                        onChange={(event) => setMeetingTimezone(event.target.value)}
+                        placeholder="e.g. America/Toronto"
+                      />
+                    </div>
+                  )}
+                  <div className="field">
+                    <label htmlFor="app-meeting-url">{t.labels.meetingLink}</label>
+                    {editDetails ? (
+                      <input
+                        id="app-meeting-url"
+                        type="url"
+                        value={meetingUrl}
+                        onChange={(event) => setMeetingUrl(event.target.value)}
+                        placeholder="https://..."
+                      />
+                    ) : application.meetingUrl ? (
                       <a href={application.meetingUrl} target="_blank" rel="noopener noreferrer">
                         {application.meetingUrl}
                       </a>
-                    </div>
-                  )}
+                    ) : (
+                      <input id="app-meeting-url" type="text" value="-" readOnly tabIndex={-1} />
+                    )}
+                  </div>
                 </div>
               </DetailSection>
             )}
@@ -692,6 +859,22 @@ export default function ApplicationDetailPage() {
               </div>
               <div>
                 <AutosaveHint saving={saving} />
+              </div>
+              <div className="flow-stack">
+                {editDetails ? (
+                  <>
+                    <ActionBtn as="button" variant="primary" onClick={handleSaveEdit} disabled={saving}>
+                      {saving ? t.buttons.saving : t.buttons.save}
+                    </ActionBtn>
+                    <ActionBtn as="button" variant="ghost" onClick={handleCancelEdit} disabled={saving}>
+                      {t.buttons.cancel}
+                    </ActionBtn>
+                  </>
+                ) : (
+                  <ActionBtn as="button" variant="ghost" onClick={handleStartEdit}>
+                    {t.buttons.editDetails}
+                  </ActionBtn>
+                )}
               </div>
               <ActionBtn
                 as="button"

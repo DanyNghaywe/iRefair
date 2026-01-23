@@ -28,6 +28,7 @@ const translations = {
     createApplication: "Create application",
     emptyTitle: "No applications yet",
     emptyDescription: "Applications will appear here when candidates submit their resumes for positions. Try adjusting your filters or check back later.",
+    quickEdit: "Quick edit",
   },
   fr: {
     title: "Candidatures",
@@ -45,8 +46,20 @@ const translations = {
     createApplication: "Creer la candidature",
     emptyTitle: "Aucune candidature",
     emptyDescription: "Les candidatures apparaîtront ici lorsque les candidats soumettront leurs CV pour des postes. Essayez d'ajuster vos filtres ou revenez plus tard.",
+    quickEdit: "Modification rapide",
   },
 };
+
+function PencilIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      <path
+        fill="currentColor"
+        d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25Zm2.92 2.83H5v-.92l8.06-8.06.92.92L5.92 20.08ZM20.71 7.04a1 1 0 0 0 0-1.41L18.37 3.29a1 1 0 0 0-1.41 0l-1.35 1.35 3.75 3.75 1.35-1.35Z"
+      />
+    </svg>
+  );
+}
 
 type ApplicationRecord = {
   id: string;
@@ -176,6 +189,32 @@ export default function ApplicationsPage() {
         width: "180px",
         align: "center",
         render: (row: ApplicationRecord) => <Badge tone="neutral">{row.status || t.unassigned}</Badge>,
+      },
+      {
+        key: "quickEdit",
+        label: "",
+        width: "72px",
+        align: "right",
+        render: (row: ApplicationRecord) => {
+          const id = row.id?.trim();
+          if (!id) return null;
+          const href = `/founder/applications/${encodeURIComponent(id)}?edit=1`;
+          return (
+            <ActionBtn
+              as="link"
+              href={href}
+              variant="ghost"
+              size="sm"
+              title={t.quickEdit}
+              aria-label={t.quickEdit}
+              className="founder-quick-edit-btn"
+              data-no-row-click
+              onClick={(event) => event.stopPropagation()}
+            >
+              <PencilIcon />
+            </ActionBtn>
+          );
+        },
       },
     ],
     [t],
