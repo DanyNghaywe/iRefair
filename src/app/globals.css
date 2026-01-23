@@ -447,6 +447,7 @@ h3 {
 .background-hero {
   position: fixed;
   inset: 0;
+  height: var(--visual-viewport-height, 100vh);
   z-index: 0;
   pointer-events: none;
   background: radial-gradient(ellipse at 50% 32%, rgba(223, 243, 248, 0.54) 0%, rgba(19, 80, 88, 0.62) 44%, #0b2b32 100%);
@@ -7015,7 +7016,6 @@ a,
 }
 
 /* Touch-optimized scrolling */
-.hiring-table-wrapper,
 .ops-table-scroll,
 .founder-drawer__body,
 .centered-modal__body,
@@ -7024,8 +7024,17 @@ a,
   overscroll-behavior: contain;
 }
 
+.hiring-table-scroll {
+  overscroll-behavior-x: contain;
+  overscroll-behavior-y: auto;
+}
+
 /* Touch-active states for interactive elements */
 @media (hover: none) and (pointer: coarse) {
+  body {
+    background-attachment: scroll;
+  }
+
   .btn:active,
   .select-trigger:active,
   .role-select__option:active,

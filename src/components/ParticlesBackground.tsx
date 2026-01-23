@@ -29,14 +29,16 @@ export function ParticlesBackground({ className }: { className?: string }) {
     if (!context) return undefined;
 
     const particles: Particle[] = [];
-    const devicePixelRatio = window.devicePixelRatio || 1;
+    let devicePixelRatio = window.devicePixelRatio || 1;
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const visualViewport = window.visualViewport;
     let reducedMotion = prefersReducedMotion.matches;
     let isVisible = !document.hidden;
     let isRunning = false;
     let width = 0;
     let height = 0;
     let animationFrameId = 0;
+    let resizeRaf = 0;
     let particleCount = PARTICLE_COUNT;
     let maxDistance = MAX_DISTANCE;
     let linkOpacityBase = 0.6;
@@ -72,10 +74,33 @@ export function ParticlesBackground({ className }: { className?: string }) {
       }
     };
 
+    const getViewportSize = () => {
+      if (visualViewport) {
+        return {
+          width: Math.round(visualViewport.width),
+          height: Math.round(visualViewport.height),
+        };
+      }
+      return {
+        width: window.innerWidth,
+        height: window.innerHeight,
+      };
+    };
+
     const resize = () => {
       syncSettings();
-      width = window.innerWidth;
-      height = window.innerHeight;
+      const viewport = getViewportSize();
+      const screenHeight = window.screen?.height ?? viewport.height;
+      const paddedHeight = Math.max(viewport.height, screenHeight);
+      const nextDevicePixelRatio = window.devicePixelRatio || 1;
+
+      if (viewport.width === width && paddedHeight === height && nextDevicePixelRatio === devicePixelRatio) {
+        return;
+      }
+
+      width = viewport.width;
+      height = paddedHeight;
+      devicePixelRatio = nextDevicePixelRatio;
 
       canvas.style.width = `${width}px`;
       canvas.style.height = `${height}px`;
@@ -84,12 +109,22 @@ export function ParticlesBackground({ className }: { className?: string }) {
 
       context.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
 
+      document.documentElement.style.setProperty('--visual-viewport-height', `${height}px`);
+
       syncParticleCount();
       particles.forEach((particle) => {
         particle.x = Math.min(Math.max(particle.x, 0), width);
         particle.y = Math.min(Math.max(particle.y, 0), height);
       });
       renderFrame(false);
+    };
+
+    const scheduleResize = () => {
+      if (resizeRaf) return;
+      resizeRaf = window.requestAnimationFrame(() => {
+        resizeRaf = 0;
+        resize();
+      });
     };
 
     const renderFrame = (animate: boolean) => {
@@ -194,13 +229,25 @@ export function ParticlesBackground({ className }: { className?: string }) {
     } else {
       startAnimation();
     }
-    window.addEventListener('resize', resize);
+    window.addEventListener('resize', scheduleResize);
+    if (visualViewport) {
+      visualViewport.addEventListener('resize', scheduleResize);
+      visualViewport.addEventListener('scroll', scheduleResize);
+    }
     document.addEventListener('visibilitychange', handleVisibilityChange);
     addListener(prefersReducedMotion, handleReducedMotionChange);
 
     return () => {
       stopAnimation();
-      window.removeEventListener('resize', resize);
+      if (resizeRaf) {
+        window.cancelAnimationFrame(resizeRaf);
+        resizeRaf = 0;
+      }
+      window.removeEventListener('resize', scheduleResize);
+      if (visualViewport) {
+        visualViewport.removeEventListener('resize', scheduleResize);
+        visualViewport.removeEventListener('scroll', scheduleResize);
+      }
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       removeListener(prefersReducedMotion, handleReducedMotionChange);
     };
