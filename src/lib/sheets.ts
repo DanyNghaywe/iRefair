@@ -3806,12 +3806,19 @@ export async function archiveReferrerByIrref(
  * List only archived applicants.
  */
 export async function listArchivedApplicants(params: Omit<ApplicantListParams, 'includeArchived'>) {
-  const result = await listApplicants({ ...params, includeArchived: true });
+  // Fetch ALL items (no pagination) so we can filter for archived first, then paginate
+  const result = await listApplicants({ ...params, includeArchived: true, limit: 0 });
   const items = result.items as Array<{ archived?: string }>;
   const archivedItems = items.filter((item) => item.archived === 'true');
+
+  // Apply pagination after filtering for archived
+  const safeOffset = params.offset && params.offset > 0 ? params.offset : 0;
+  const safeLimit = params.limit && params.limit > 0 ? params.limit : DEFAULT_LIMIT;
+  const paginatedItems = archivedItems.slice(safeOffset, safeOffset + safeLimit);
+
   return {
     total: archivedItems.length,
-    items: archivedItems,
+    items: paginatedItems,
   };
 }
 
@@ -3819,12 +3826,19 @@ export async function listArchivedApplicants(params: Omit<ApplicantListParams, '
  * List only archived referrers.
  */
 export async function listArchivedReferrers(params: Omit<ReferrerListParams, 'includeArchived'>) {
-  const result = await listReferrers({ ...params, includeArchived: true });
+  // Fetch ALL items (no pagination) so we can filter for archived first, then paginate
+  const result = await listReferrers({ ...params, includeArchived: true, limit: 0 });
   const items = result.items as Array<{ archived?: string }>;
   const archivedItems = items.filter((item) => item.archived === 'true');
+
+  // Apply pagination after filtering for archived
+  const safeOffset = params.offset && params.offset > 0 ? params.offset : 0;
+  const safeLimit = params.limit && params.limit > 0 ? params.limit : DEFAULT_LIMIT;
+  const paginatedItems = archivedItems.slice(safeOffset, safeOffset + safeLimit);
+
   return {
     total: archivedItems.length,
-    items: archivedItems,
+    items: paginatedItems,
   };
 }
 
@@ -3832,11 +3846,18 @@ export async function listArchivedReferrers(params: Omit<ReferrerListParams, 'in
  * List only archived applications.
  */
 export async function listArchivedApplications(params: Omit<ApplicationListParams, 'includeArchived'>) {
-  const result = await listApplications({ ...params, includeArchived: true });
+  // Fetch ALL items (no pagination) so we can filter for archived first, then paginate
+  const result = await listApplications({ ...params, includeArchived: true, limit: 0 });
   const archivedItems = result.items.filter((item) => item.archived === 'true');
+
+  // Apply pagination after filtering for archived
+  const safeOffset = params.offset && params.offset > 0 ? params.offset : 0;
+  const safeLimit = params.limit && params.limit > 0 ? params.limit : DEFAULT_LIMIT;
+  const paginatedItems = archivedItems.slice(safeOffset, safeOffset + safeLimit);
+
   return {
     total: archivedItems.length,
-    items: archivedItems,
+    items: paginatedItems,
   };
 }
 
