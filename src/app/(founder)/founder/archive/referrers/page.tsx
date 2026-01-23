@@ -44,7 +44,7 @@ const translations = {
       restoreFailed: "Failed to restore referrer",
       deleteFailed: "Failed to delete referrer",
       deleteConfirm:
-        "Are you sure you want to permanently delete this referrer? This cannot be undone.",
+        "Are you sure you want to permanently delete this referrer and all their applications? This cannot be undone.",
     },
     searchPlaceholder: "Search archived referrers...",
     empty: {
@@ -75,7 +75,7 @@ const translations = {
       restoreFailed: "Échec de la restauration du référent",
       deleteFailed: "Échec de la suppression du référent",
       deleteConfirm:
-        "Êtes-vous sûr de vouloir supprimer définitivement ce référent ? Cette action est irréversible.",
+        "Êtes-vous sûr de vouloir supprimer définitivement ce référent et toutes ses candidatures ? Cette action est irréversible.",
     },
     searchPlaceholder: "Rechercher des référents archivés...",
     empty: {

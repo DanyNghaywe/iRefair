@@ -3910,10 +3910,13 @@ export async function restoreReferrerByIrref(
 
 /**
  * Restore an archived application.
+ * Only allows restoration if:
+ * - The application's referrer exists and is not archived (if the application has a referrer)
+ * - The application's applicant exists and is not archived
  */
 export async function restoreApplicationById(
   id: string,
-): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
+): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'referrer_archived' | 'applicant_archived' | 'error' }> {
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
   await ensureColumns(APPLICATION_SHEET_NAME, ARCHIVE_COLUMNS);
 
@@ -3924,6 +3927,24 @@ export async function restoreApplicationById(
 
   if (application.record.archived !== 'true') {
     return { success: false, reason: 'not_archived' };
+  }
+
+  // Check if the application has a referrer and if so, ensure the referrer exists and is not archived
+  const referrerIrref = application.record.referrerIrref;
+  if (referrerIrref) {
+    const referrer = await getReferrerByIrref(referrerIrref);
+    if (!referrer || referrer.record.archived === 'true') {
+      return { success: false, reason: 'referrer_archived' };
+    }
+  }
+
+  // Check if the applicant exists and is not archived
+  const applicantId = application.record.applicantId;
+  if (applicantId) {
+    const applicant = await getApplicantByIrain(applicantId);
+    if (!applicant || applicant.record.archived === 'true') {
+      return { success: false, reason: 'applicant_archived' };
+    }
   }
 
   try {
@@ -3946,11 +3967,13 @@ export async function restoreApplicationById(
 
 /**
  * Permanently delete an archived applicant (hard delete from sheet).
+ * Also deletes all applications linked to this applicant.
  */
 export async function permanentlyDeleteApplicant(
   irain: string,
-): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
+): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error'; deletedApplications?: number }> {
   await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
 
   const applicant = await getApplicantByIrain(irain);
   if (!applicant) {
@@ -3961,17 +3984,68 @@ export async function permanentlyDeleteApplicant(
     return { success: false, reason: 'not_archived' };
   }
 
-  // Use the existing hard delete function
-  return deleteApplicantByIrain(irain);
+  // Find all applications linked to this applicant (including archived ones)
+  const applications = await findApplicationsByApplicantId(irain, true);
+
+  // Delete applications in reverse order of rowIndex to avoid index shifting issues
+  const sortedApplications = [...applications].sort((a, b) => b.rowIndex - a.rowIndex);
+
+  let deletedApplications = 0;
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  // Get the sheetId for the Applications sheet
+  const doc = await sheets.spreadsheets.get({ spreadsheetId });
+  const appSheet = doc.data.sheets?.find(
+    (sheet) => sheet.properties?.title === APPLICATION_SHEET_NAME,
+  );
+  const appSheetId = appSheet?.properties?.sheetId;
+
+  if (appSheetId !== undefined && sortedApplications.length > 0) {
+    try {
+      // Delete all applications in a single batch request (in reverse order)
+      const deleteRequests = sortedApplications.map((app) => ({
+        deleteDimension: {
+          range: {
+            sheetId: appSheetId,
+            dimension: 'ROWS' as const,
+            startIndex: app.rowIndex - 1,
+            endIndex: app.rowIndex,
+          },
+        },
+      }));
+
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: { requests: deleteRequests },
+      });
+
+      invalidateSheetDataCache(APPLICATION_SHEET_NAME);
+      deletedApplications = sortedApplications.length;
+    } catch (error) {
+      console.error('Error deleting applicant applications', error);
+      return { success: false, reason: 'error' };
+    }
+  }
+
+  // Now delete the applicant
+  const result = await deleteApplicantByIrain(irain);
+  if (!result.success) {
+    return result;
+  }
+
+  return { success: true, deletedApplications };
 }
 
 /**
  * Permanently delete an archived referrer (hard delete from sheet).
+ * Also deletes all applications linked to this referrer.
  */
 export async function permanentlyDeleteReferrer(
   irref: string,
-): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
+): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error'; deletedApplications?: number }> {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
 
   const referrer = await getReferrerByIrref(irref);
   if (!referrer) {
@@ -3982,8 +4056,57 @@ export async function permanentlyDeleteReferrer(
     return { success: false, reason: 'not_archived' };
   }
 
-  // Use the existing hard delete function
-  return deleteReferrerByIrref(irref);
+  // Find all applications linked to this referrer (including archived ones)
+  const applications = await findApplicationsByReferrerIrref(irref, true);
+
+  // Delete applications in reverse order of rowIndex to avoid index shifting issues
+  const sortedApplications = [...applications].sort((a, b) => b.rowIndex - a.rowIndex);
+
+  let deletedApplications = 0;
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  // Get the sheetId for the Applications sheet
+  const doc = await sheets.spreadsheets.get({ spreadsheetId });
+  const appSheet = doc.data.sheets?.find(
+    (sheet) => sheet.properties?.title === APPLICATION_SHEET_NAME,
+  );
+  const appSheetId = appSheet?.properties?.sheetId;
+
+  if (appSheetId !== undefined && sortedApplications.length > 0) {
+    try {
+      // Delete all applications in a single batch request (in reverse order)
+      const deleteRequests = sortedApplications.map((app) => ({
+        deleteDimension: {
+          range: {
+            sheetId: appSheetId,
+            dimension: 'ROWS' as const,
+            startIndex: app.rowIndex - 1,
+            endIndex: app.rowIndex,
+          },
+        },
+      }));
+
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: { requests: deleteRequests },
+      });
+
+      invalidateSheetDataCache(APPLICATION_SHEET_NAME);
+      deletedApplications = sortedApplications.length;
+    } catch (error) {
+      console.error('Error deleting referrer applications', error);
+      return { success: false, reason: 'error' };
+    }
+  }
+
+  // Now delete the referrer
+  const result = await deleteReferrerByIrref(irref);
+  if (!result.success) {
+    return result;
+  }
+
+  return { success: true, deletedApplications };
 }
 
 /**

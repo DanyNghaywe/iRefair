@@ -44,7 +44,7 @@ const translations = {
       restoreFailed: "Failed to restore applicant",
       deleteFailed: "Failed to delete applicant",
       deleteConfirm:
-        "Are you sure you want to permanently delete this applicant? This cannot be undone.",
+        "Are you sure you want to permanently delete this applicant and all their applications? This cannot be undone.",
     },
     searchPlaceholder: "Search archived applicants...",
     empty: {
@@ -74,7 +74,7 @@ const translations = {
       restoreFailed: "Échec de la restauration du candidat",
       deleteFailed: "Échec de la suppression du candidat",
       deleteConfirm:
-        "Êtes-vous sûr de vouloir supprimer définitivement ce candidat ? Cette action est irréversible.",
+        "Êtes-vous sûr de vouloir supprimer définitivement ce candidat et toutes ses candidatures ? Cette action est irréversible.",
     },
     searchPlaceholder: "Rechercher des candidats archivés...",
     empty: {

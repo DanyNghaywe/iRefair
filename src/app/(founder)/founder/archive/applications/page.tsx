@@ -45,6 +45,10 @@ const translations = {
       deleteFailed: "Failed to delete application",
       deleteConfirm:
         "Are you sure you want to permanently delete this application? This cannot be undone.",
+      referrerArchived:
+        "Cannot restore application: the referrer is archived or deleted. Restore the referrer first.",
+      applicantArchived:
+        "Cannot restore application: the applicant is archived or deleted. Restore the applicant first.",
     },
     searchPlaceholder: "Search archived applications...",
     empty: {
@@ -76,6 +80,10 @@ const translations = {
       deleteFailed: "Échec de la suppression de la candidature",
       deleteConfirm:
         "Êtes-vous sûr de vouloir supprimer définitivement cette candidature ? Cette action est irréversible.",
+      referrerArchived:
+        "Impossible de restaurer la candidature : le référent est archivé ou supprimé. Restaurez d'abord le référent.",
+      applicantArchived:
+        "Impossible de restaurer la candidature : le candidat est archivé ou supprimé. Restaurez d'abord le candidat.",
     },
     searchPlaceholder: "Rechercher des candidatures archivées...",
     empty: {

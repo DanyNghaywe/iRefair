@@ -26,6 +26,18 @@ export async function POST(
       if (result.reason === 'not_archived') {
         return NextResponse.json({ ok: false, error: 'Application is not archived' }, { status: 400 });
       }
+      if (result.reason === 'referrer_archived') {
+        return NextResponse.json(
+          { ok: false, error: 'Cannot restore application: the referrer is archived or deleted. Restore the referrer first.' },
+          { status: 400 },
+        );
+      }
+      if (result.reason === 'applicant_archived') {
+        return NextResponse.json(
+          { ok: false, error: 'Cannot restore application: the applicant is archived or deleted. Restore the applicant first.' },
+          { status: 400 },
+        );
+      }
       return NextResponse.json({ ok: false, error: 'Unable to restore application.' }, { status: 500 });
     }
     return NextResponse.json({ ok: true });
