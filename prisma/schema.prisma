@@ -1,0 +1,35 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+model Sheet {
+  name      String    @id
+  headers   Json
+  keyHeader String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  rows      SheetRow[]
+}
+
+model SheetRow {
+  sheetName String
+  key       String
+  rowIndex  Int?
+  values    Json
+  hash      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?
+
+  sheet Sheet @relation(fields: [sheetName], references: [name], onDelete: Cascade)
+
+  @@id([sheetName, key])
+  @@index([sheetName])
+  @@index([sheetName, rowIndex])
+}

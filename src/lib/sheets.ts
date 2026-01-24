@@ -1,6 +1,7 @@
 import { type CompanyRow } from '@/lib/hiringCompanies';
+import { db } from '@/lib/db';
 import { google } from 'googleapis';
-import { randomUUID } from 'crypto';
+import { createHash, randomUUID } from 'crypto';
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
@@ -638,6 +639,7 @@ type ApplicationRow = {
 let sheetsClient: ReturnType<typeof google.sheets> | null = null;
 const headersInitialized = new Set<string>();
 const headersCache = new Map<string, string[]>();
+const dbHeadersCache = new Map<string, string[]>();
 type SheetRows = (string | number | null | undefined)[][];
 type SheetData = { headers: string[]; rows: SheetRows };
 type SheetDataCacheEntry = SheetData & { fetchedAt: number };
@@ -652,14 +654,183 @@ const SHEET_DATA_CACHE_TTL_MS = (() => {
 const sheetDataCache = new Map<string, SheetDataCacheEntry>();
 const sheetDataInFlight = new Map<string, Promise<SheetData>>();
 
+const SHEET_DB_ENABLED = Boolean(process.env.DATABASE_URL);
+const SHEET_DB_READS_ENABLED = SHEET_DB_ENABLED;
+const SHEET_KEY_HEADERS: Record<string, string> = {
+  [APPLICANT_SHEET_NAME]: 'iRAIN',
+  [REFERRER_SHEET_NAME]: 'iRREF',
+  [APPLICATION_SHEET_NAME]: 'ID',
+  [REFERRER_COMPANIES_SHEET_NAME]: 'ID',
+};
+
+type SheetDataSource = 'sheets' | 'db';
+type SheetReadOptions = { source?: SheetDataSource; allowSheetFallback?: boolean };
+
+function makeCacheKey(sheetName: string, source: SheetDataSource) {
+  return `${source}:${sheetName}`;
+}
+
 function invalidateSheetDataCache(sheetName?: string) {
   if (sheetName) {
-    sheetDataCache.delete(sheetName);
-    sheetDataInFlight.delete(sheetName);
+    sheetDataCache.delete(makeCacheKey(sheetName, 'sheets'));
+    sheetDataCache.delete(makeCacheKey(sheetName, 'db'));
+    sheetDataInFlight.delete(makeCacheKey(sheetName, 'sheets'));
+    sheetDataInFlight.delete(makeCacheKey(sheetName, 'db'));
     return;
   }
   sheetDataCache.clear();
   sheetDataInFlight.clear();
+}
+
+function getSheetKeyHeader(sheetName: string, headers: string[]) {
+  return SHEET_KEY_HEADERS[sheetName] || headers[0] || '';
+}
+
+function normalizeRowValues(headers: string[], row: SheetRows[number]) {
+  return headers.map((_, index) => {
+    const value = row?.[index];
+    if (value === null || value === undefined) return '';
+    return String(value);
+  });
+}
+
+function computeRowHash(values: string[]) {
+  return createHash('sha256').update(JSON.stringify(values)).digest('hex');
+}
+
+function buildRowKey(value: string, rowIndex: number) {
+  const trimmed = value.trim();
+  if (trimmed) return trimmed;
+  return `__row_${rowIndex}`;
+}
+
+async function upsertDbSheetHeaders(sheetName: string, headers: string[]) {
+  if (!SHEET_DB_ENABLED) return;
+  const keyHeader = getSheetKeyHeader(sheetName, headers);
+  if (!keyHeader) return;
+  await db.sheet.upsert({
+    where: { name: sheetName },
+    create: { name: sheetName, headers, keyHeader },
+    update: { headers, keyHeader },
+  });
+  dbHeadersCache.set(sheetName, headers);
+}
+
+async function getDbSheetHeaders(sheetName: string): Promise<string[]> {
+  const cached = dbHeadersCache.get(sheetName);
+  if (cached) return cached;
+  if (!SHEET_DB_ENABLED) return [];
+  const sheet = await db.sheet.findUnique({
+    where: { name: sheetName },
+    select: { headers: true },
+  });
+  if (!sheet?.headers) return [];
+  const headers = Array.isArray(sheet.headers) ? (sheet.headers as string[]) : [];
+  if (headers.length) {
+    dbHeadersCache.set(sheetName, headers);
+  }
+  return headers;
+}
+
+async function getDbSheetData(sheetName: string): Promise<SheetData> {
+  if (!SHEET_DB_ENABLED) return { headers: [], rows: [] };
+  const headers = await getDbSheetHeaders(sheetName);
+  if (!headers.length) return { headers: [], rows: [] };
+  const rows = await db.sheetRow.findMany({
+    where: { sheetName, deletedAt: null },
+    orderBy: [{ rowIndex: 'asc' }, { key: 'asc' }],
+    select: { values: true },
+  });
+  return {
+    headers,
+    rows: rows.map((row) => (Array.isArray(row.values) ? row.values : []) as SheetRows[number]),
+  };
+}
+
+async function upsertDbRowFromValues(
+  sheetName: string,
+  headers: string[],
+  rowValues: SheetRows[number],
+  rowIndex?: number,
+): Promise<void> {
+  if (!SHEET_DB_ENABLED) return;
+  if (!headers.length) return;
+  const normalizedValues = normalizeRowValues(headers, rowValues);
+  const keyHeader = getSheetKeyHeader(sheetName, headers);
+  const keyIndex = headerIndex(headers, keyHeader);
+  const rawKey = keyIndex >= 0 ? normalizedValues[keyIndex] ?? '' : '';
+  const safeRowIndex = Number.isFinite(rowIndex) ? Number(rowIndex) : 0;
+  const key = buildRowKey(rawKey || '', safeRowIndex || 0);
+  const hash = computeRowHash(normalizedValues);
+
+  await db.sheetRow.upsert({
+    where: { sheetName_key: { sheetName, key } },
+    create: {
+      sheetName,
+      key,
+      rowIndex: Number.isFinite(rowIndex) ? Number(rowIndex) : null,
+      values: normalizedValues,
+      hash,
+      deletedAt: null,
+    },
+    update: {
+      rowIndex: Number.isFinite(rowIndex) ? Number(rowIndex) : null,
+      values: normalizedValues,
+      hash,
+      deletedAt: null,
+    },
+  });
+}
+
+async function deleteDbRows(sheetName: string, keys: string[]) {
+  if (!SHEET_DB_ENABLED) return;
+  if (!keys.length) return;
+  await db.sheetRow.deleteMany({
+    where: { sheetName, key: { in: keys } },
+  });
+}
+
+async function syncDbRowFromSheets(
+  sheetName: string,
+  headers: string[],
+  rowIndex: number,
+): Promise<void> {
+  if (!SHEET_DB_ENABLED) return;
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+  if (!headers.length) return;
+  const lastCol = toColumnLetter(headers.length - 1);
+  const rowRange = `${sheetName}!A${rowIndex}:${lastCol}${rowIndex}`;
+  const rowResponse = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: rowRange,
+    majorDimension: 'ROWS',
+  });
+  const rowValues = rowResponse.data.values?.[0] ?? [];
+  const normalizedValues = normalizeRowValues(headers, rowValues);
+  const keyHeader = getSheetKeyHeader(sheetName, headers);
+  const keyIndex = headerIndex(headers, keyHeader);
+  const rawKey = keyIndex >= 0 ? normalizedValues[keyIndex] ?? '' : '';
+  const key = buildRowKey(rawKey || '', rowIndex);
+  const hash = computeRowHash(normalizedValues);
+
+  await db.sheetRow.upsert({
+    where: { sheetName_key: { sheetName, key } },
+    create: {
+      sheetName,
+      key,
+      rowIndex,
+      values: normalizedValues,
+      hash,
+      deletedAt: null,
+    },
+    update: {
+      rowIndex,
+      values: normalizedValues,
+      hash,
+      deletedAt: null,
+    },
+  });
 }
 
 /**
@@ -687,24 +858,47 @@ async function getCachedHeaders(sheetName: string): Promise<string[]> {
  * Fetch sheet data with headers, using a short in-memory cache when configured.
  * Returns both headers and data rows, using cached headers when available.
  */
-async function getSheetDataWithHeaders(sheetName: string): Promise<{
+async function getSheetDataWithHeaders(
+  sheetName: string,
+  options: { source?: SheetDataSource; bypassCache?: boolean; allowSheetFallback?: boolean } = {},
+): Promise<{
   headers: string[];
   rows: SheetRows;
 }> {
-  if (SHEET_DATA_CACHE_TTL_MS > 0) {
-    const cached = sheetDataCache.get(sheetName);
+  const source: SheetDataSource =
+    options.source || (SHEET_DB_READS_ENABLED ? 'db' : 'sheets');
+  const allowSheetFallback = options.allowSheetFallback ?? true;
+  const cacheKey = makeCacheKey(sheetName, source);
+
+  if (!options.bypassCache && SHEET_DATA_CACHE_TTL_MS > 0) {
+    const cached = sheetDataCache.get(cacheKey);
     if (cached && Date.now() - cached.fetchedAt < SHEET_DATA_CACHE_TTL_MS) {
-      if (cached.headers.length) {
+      if (cached.headers.length && source === 'sheets') {
         headersCache.set(sheetName, cached.headers);
+      }
+      if (cached.headers.length && source === 'db') {
+        dbHeadersCache.set(sheetName, cached.headers);
       }
       return { headers: cached.headers, rows: cached.rows };
     }
   }
 
-  const inFlight = sheetDataInFlight.get(sheetName);
+  const inFlight = sheetDataInFlight.get(cacheKey);
   if (inFlight) return inFlight;
 
   const fetchPromise = (async () => {
+    if (source === 'db') {
+      const data = await getDbSheetData(sheetName);
+      if (!data.headers.length && allowSheetFallback) {
+        return getSheetDataWithHeaders(sheetName, {
+          source: 'sheets',
+          bypassCache: options.bypassCache,
+          allowSheetFallback: false,
+        });
+      }
+      return data;
+    }
+
     const spreadsheetId = getSpreadsheetIdOrThrow();
     const sheets = getSheetsClient();
 
@@ -734,29 +928,46 @@ async function getSheetDataWithHeaders(sheetName: string): Promise<{
     };
   })();
 
-  sheetDataInFlight.set(sheetName, fetchPromise);
+  sheetDataInFlight.set(cacheKey, fetchPromise);
   try {
     const data = await fetchPromise;
-    if (SHEET_DATA_CACHE_TTL_MS > 0 && (data.headers.length || data.rows.length)) {
-      sheetDataCache.set(sheetName, { ...data, fetchedAt: Date.now() });
+    if (!options.bypassCache && SHEET_DATA_CACHE_TTL_MS > 0 && (data.headers.length || data.rows.length)) {
+      sheetDataCache.set(cacheKey, { ...data, fetchedAt: Date.now() });
     }
     return data;
   } finally {
-    sheetDataInFlight.delete(sheetName);
+    sheetDataInFlight.delete(cacheKey);
   }
 }
 
 async function getSheetDataWithHeadersBatch(
   sheetNames: string[],
+  options: { source?: SheetDataSource; bypassCache?: boolean } = {},
 ): Promise<Record<string, SheetData>> {
+  const source: SheetDataSource =
+    options.source || (SHEET_DB_READS_ENABLED ? 'db' : 'sheets');
   const uniqueSheets = [...new Set(sheetNames)];
   const results: Record<string, SheetData> = {};
+
+  if (source === 'db') {
+    await Promise.all(
+      uniqueSheets.map(async (sheetName) => {
+        results[sheetName] = await getSheetDataWithHeaders(sheetName, {
+          source: 'db',
+          bypassCache: options.bypassCache,
+        });
+      }),
+    );
+    return results;
+  }
+
   const now = Date.now();
   const needsFetch: string[] = [];
 
   for (const sheetName of uniqueSheets) {
-    if (SHEET_DATA_CACHE_TTL_MS > 0) {
-      const cached = sheetDataCache.get(sheetName);
+    const cacheKey = makeCacheKey(sheetName, 'sheets');
+    if (!options.bypassCache && SHEET_DATA_CACHE_TTL_MS > 0) {
+      const cached = sheetDataCache.get(cacheKey);
       if (cached && now - cached.fetchedAt < SHEET_DATA_CACHE_TTL_MS) {
         results[sheetName] = { headers: cached.headers, rows: cached.rows };
         if (cached.headers.length) {
@@ -794,8 +1005,8 @@ async function getSheetDataWithHeadersBatch(
     if (headers.length) {
       headersCache.set(sheetName, headers);
     }
-    if (SHEET_DATA_CACHE_TTL_MS > 0 && (data.headers.length || data.rows.length)) {
-      sheetDataCache.set(sheetName, { ...data, fetchedAt: Date.now() });
+    if (!options.bypassCache && SHEET_DATA_CACHE_TTL_MS > 0 && (data.headers.length || data.rows.length)) {
+      sheetDataCache.set(makeCacheKey(sheetName, 'sheets'), { ...data, fetchedAt: Date.now() });
     }
   }
 
@@ -1105,6 +1316,10 @@ export async function ensureHeaders(
     await ensureColumns(APPLICANT_SHEET_NAME, ['LinkedIn']);
   }
   await ensureAdminColumnsForSheet(sheetName);
+  const syncedHeaders = await getCachedHeaders(sheetName);
+  if (syncedHeaders.length) {
+    await upsertDbSheetHeaders(sheetName, syncedHeaders);
+  }
   return { created: createdSheet };
 }
 
@@ -1135,6 +1350,14 @@ function sanitizeSheetsCell(value: string | number | null | undefined): string |
   return escapeSheetsFormula(value);
 }
 
+function parseRowIndexFromRange(range?: string | null) {
+  if (!range) return null;
+  const match = range.match(/!([A-Z]+)(\d+)(?::[A-Z]+\d+)?$/i);
+  if (!match) return null;
+  const row = Number.parseInt(match[2], 10);
+  return Number.isFinite(row) ? row : null;
+}
+
 async function appendRow(sheetName: string, values: (string | number | null)[]) {
   const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
   if (!spreadsheetId) {
@@ -1142,7 +1365,7 @@ async function appendRow(sheetName: string, values: (string | number | null)[]) 
   }
 
   const sheets = getSheetsClient();
-  await sheets.spreadsheets.values.append({
+  const response = await sheets.spreadsheets.values.append({
     spreadsheetId,
     range: `${sheetName}!A1`,
     valueInputOption: 'RAW',
@@ -1152,6 +1375,15 @@ async function appendRow(sheetName: string, values: (string | number | null)[]) 
     },
   });
   invalidateSheetDataCache(sheetName);
+  if (SHEET_DB_ENABLED) {
+    const headers = await getCachedHeaders(sheetName);
+    const rowIndex = parseRowIndexFromRange(response.data.updates?.updatedRange);
+    if (headers.length && rowIndex) {
+      await syncDbRowFromSheets(sheetName, headers, rowIndex);
+    } else if (headers.length) {
+      await upsertDbRowFromValues(sheetName, headers, values, rowIndex ?? undefined);
+    }
+  }
 }
 
 function buildSubmissionId(prefix: SubmissionPrefix) {
@@ -1743,6 +1975,10 @@ export async function migrateLegacyApplicantIds() {
     console.error('Applicant sheet formatting failed after migration (non-fatal):', error);
   }
 
+  if (SHEET_DB_ENABLED) {
+    await syncSheetsToDatabase();
+  }
+
   return {
     migrated: updates.length,
     updates,
@@ -1819,6 +2055,8 @@ export async function ensureColumns(
   } catch (error) {
     console.error('Sheet formatting failed (non-fatal):', error);
   }
+
+  await upsertDbSheetHeaders(sheetName, updatedHeaders);
 
   return { appended: missing, headers: updatedHeaders };
 }
@@ -2261,30 +2499,17 @@ export async function getFounderStatsCounts(date: Date): Promise<{
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
 
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-  const response = await sheets.spreadsheets.values.batchGet({
-    spreadsheetId,
-    ranges: [
-      buildSheetRange(APPLICANT_SHEET_NAME, 'A:A'),
-      buildSheetRange(REFERRER_SHEET_NAME, 'A:A'),
-      buildSheetRange(APPLICATION_SHEET_NAME, 'B:B'),
-    ],
-    majorDimension: 'COLUMNS',
-  });
+  const applicantData = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME);
+  const referrerData = await getSheetDataWithHeaders(REFERRER_SHEET_NAME);
+  const applicationData = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME);
 
-  const valueRanges = response.data.valueRanges ?? [];
-  const applicantsColumn = (valueRanges[0]?.values?.[0] ?? []) as (string | number)[];
-  const referrersColumn = (valueRanges[1]?.values?.[0] ?? []) as (string | number)[];
-  const applicationsColumn = (valueRanges[2]?.values?.[0] ?? []) as (string | number)[];
-
-  const applicants = Math.max(0, applicantsColumn.length - 1);
-  const referrers = Math.max(0, referrersColumn.length - 1);
+  const applicants = applicantData.rows.length;
+  const referrers = referrerData.rows.length;
 
   let applications = 0;
-  for (let i = 1; i < applicationsColumn.length; i++) {
-    const value = applicationsColumn[i];
-    const ts = Array.isArray(value) ? String(value[0] ?? '') : String(value ?? '');
+  const headerMap = buildHeaderMap(applicationData.headers);
+  for (const row of applicationData.rows) {
+    const ts = getHeaderValue(headerMap, row, 'Timestamp');
     const parsed = Date.parse(ts);
     if (!Number.isNaN(parsed) && parsed >= date.getTime()) {
       applications += 1;
@@ -2296,32 +2521,17 @@ export async function getFounderStatsCounts(date: Date): Promise<{
 
 export async function countRowsInSheet(sheetName: string): Promise<number> {
   await ensureHeaders(sheetName, sheetName === APPLICATION_SHEET_NAME ? APPLICATION_HEADERS : []);
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-  const column = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${sheetName}!A:A`,
-    majorDimension: 'COLUMNS',
-  });
-  const rows = column.data.values?.[0] ?? [];
-  const count = Math.max(0, rows.length - 1);
-  return count;
+  const { rows } = await getSheetDataWithHeaders(sheetName);
+  return rows.length;
 }
 
 export async function countApplicationsSince(date: Date): Promise<number> {
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-  const column = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: `${APPLICATION_SHEET_NAME}!B:B`,
-    majorDimension: 'COLUMNS',
-  });
-  const rows = column.data.values?.[0] ?? [];
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME);
+  const headerMap = buildHeaderMap(headers);
   let count = 0;
-  for (let i = 1; i < rows.length; i++) {
-    const value = rows[i];
-    const ts = Array.isArray(value) ? String(value[0] ?? '') : String(value ?? '');
+  for (const row of rows) {
+    const ts = getHeaderValue(headerMap, row, 'Timestamp');
     const parsed = Date.parse(ts);
     if (!Number.isNaN(parsed) && parsed >= date.getTime()) {
       count += 1;
@@ -2553,10 +2763,10 @@ export async function listApplications(
   };
 }
 
-export async function getApplicationById(id: string) {
+export async function getApplicationById(id: string, options: SheetReadOptions = {}) {
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
   await ensureColumns(APPLICATION_SHEET_NAME, ['Resume File ID']);
-  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME);
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME, options);
   if (!headers.length) return null;
 
   const headerMap = buildHeaderMap(headers);
@@ -2769,6 +2979,11 @@ export async function updateRowById(
   });
 
   invalidateSheetDataCache(sheetName);
+  if (SHEET_DB_ENABLED) {
+    const normalizedHeaders = headers.map((value) => String(value));
+    await upsertDbSheetHeaders(sheetName, normalizedHeaders);
+    await syncDbRowFromSheets(sheetName, normalizedHeaders, rowIndex);
+  }
   return { updated: true };
 }
 
@@ -2877,9 +3092,9 @@ export async function updateApplicationAdmin(id: string, patch: ApplicationAdmin
   });
 }
 
-export async function getApplicantByIrain(irain: string) {
+export async function getApplicantByIrain(irain: string, options: SheetReadOptions = {}) {
   await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
-  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME);
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME, options);
   if (!headers.length) return null;
 
   const normalized = irain.trim().toLowerCase();
@@ -2967,10 +3182,10 @@ export async function getApplicantByIrain(irain: string) {
   return null;
 }
 
-export async function getReferrerByIrref(irref: string) {
+export async function getReferrerByIrref(irref: string, options: SheetReadOptions = {}) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
   await ensureColumns(REFERRER_SHEET_NAME, REFERRER_SECURITY_COLUMNS);
-  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_SHEET_NAME);
+  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_SHEET_NAME, options);
   if (!headers.length) return null;
 
   const headerMap = buildHeaderMap(headers);
@@ -3012,10 +3227,10 @@ export async function getReferrerByIrref(irref: string) {
   return null;
 }
 
-export async function getReferrerByEmail(email: string) {
+export async function getReferrerByEmail(email: string, options: SheetReadOptions = {}) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
   await ensureColumns(REFERRER_SHEET_NAME, REFERRER_SECURITY_COLUMNS);
-  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_SHEET_NAME);
+  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_SHEET_NAME, options);
   if (!headers.length) return null;
 
   const normalizedEmail = email.trim().toLowerCase();
@@ -3171,7 +3386,7 @@ export async function deleteReferrerByIrref(
 ): Promise<{ success: boolean; reason?: 'not_found' | 'error' }> {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
 
-  const referrer = await getReferrerByIrref(irref);
+  const referrer = await getReferrerByIrref(irref, { source: 'sheets' });
   if (!referrer) {
     return { success: false, reason: 'not_found' };
   }
@@ -3213,6 +3428,7 @@ export async function deleteReferrerByIrref(
     });
 
     invalidateSheetDataCache(REFERRER_SHEET_NAME);
+    await deleteDbRows(REFERRER_SHEET_NAME, [irref]);
     return { success: true };
   } catch (error) {
     console.error('Error deleting referrer row', error);
@@ -3225,7 +3441,7 @@ export async function deleteApplicantByIrain(
 ): Promise<{ success: boolean; reason?: 'not_found' | 'error' }> {
   await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
 
-  const applicant = await getApplicantByIrain(irain);
+  const applicant = await getApplicantByIrain(irain, { source: 'sheets' });
   if (!applicant) {
     return { success: false, reason: 'not_found' };
   }
@@ -3267,6 +3483,7 @@ export async function deleteApplicantByIrain(
     });
 
     invalidateSheetDataCache(APPLICANT_SHEET_NAME);
+    await deleteDbRows(APPLICANT_SHEET_NAME, [irain]);
     return { success: true };
   } catch (error) {
     console.error('Error deleting applicant row', error);
@@ -3507,9 +3724,10 @@ export async function archiveApplicationById(
 export async function findApplicationsByApplicantId(
   applicantId: string,
   includeArchived: boolean = false,
+  options: SheetReadOptions = {},
 ): Promise<Array<{ id: string; rowIndex: number }>> {
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
-  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME);
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME, options);
   const headerMap = buildHeaderMap(headers);
 
   const results: Array<{ id: string; rowIndex: number }> = [];
@@ -3694,9 +3912,10 @@ export async function findDuplicateApplicationByCompany(
 export async function findApplicationsByReferrerIrref(
   referrerIrref: string,
   includeArchived: boolean = false,
+  options: SheetReadOptions = {},
 ): Promise<Array<{ id: string; rowIndex: number }>> {
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
-  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME);
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME, options);
   const headerMap = buildHeaderMap(headers);
 
   const results: Array<{ id: string; rowIndex: number }> = [];
@@ -3996,7 +4215,7 @@ export async function permanentlyDeleteApplicant(
   await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
 
-  const applicant = await getApplicantByIrain(irain);
+  const applicant = await getApplicantByIrain(irain, { source: 'sheets' });
   if (!applicant) {
     return { success: false, reason: 'not_found' };
   }
@@ -4006,7 +4225,7 @@ export async function permanentlyDeleteApplicant(
   }
 
   // Find all applications linked to this applicant (including archived ones)
-  const applications = await findApplicationsByApplicantId(irain, true);
+  const applications = await findApplicationsByApplicantId(irain, true, { source: 'sheets' });
 
   // Delete applications in reverse order of rowIndex to avoid index shifting issues
   const sortedApplications = [...applications].sort((a, b) => b.rowIndex - a.rowIndex);
@@ -4042,6 +4261,7 @@ export async function permanentlyDeleteApplicant(
       });
 
       invalidateSheetDataCache(APPLICATION_SHEET_NAME);
+      await deleteDbRows(APPLICATION_SHEET_NAME, applications.map((app) => app.id));
       deletedApplications = sortedApplications.length;
     } catch (error) {
       console.error('Error deleting applicant applications', error);
@@ -4068,7 +4288,7 @@ export async function permanentlyDeleteReferrer(
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
 
-  const referrer = await getReferrerByIrref(irref);
+  const referrer = await getReferrerByIrref(irref, { source: 'sheets' });
   if (!referrer) {
     return { success: false, reason: 'not_found' };
   }
@@ -4078,7 +4298,7 @@ export async function permanentlyDeleteReferrer(
   }
 
   // Find all applications linked to this referrer (including archived ones)
-  const applications = await findApplicationsByReferrerIrref(irref, true);
+  const applications = await findApplicationsByReferrerIrref(irref, true, { source: 'sheets' });
 
   // Delete applications in reverse order of rowIndex to avoid index shifting issues
   const sortedApplications = [...applications].sort((a, b) => b.rowIndex - a.rowIndex);
@@ -4114,6 +4334,7 @@ export async function permanentlyDeleteReferrer(
       });
 
       invalidateSheetDataCache(APPLICATION_SHEET_NAME);
+      await deleteDbRows(APPLICATION_SHEET_NAME, applications.map((app) => app.id));
       deletedApplications = sortedApplications.length;
     } catch (error) {
       console.error('Error deleting referrer applications', error);
@@ -4138,7 +4359,7 @@ export async function permanentlyDeleteApplication(
 ): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
 
-  const application = await getApplicationById(id);
+  const application = await getApplicationById(id, { source: 'sheets' });
   if (!application) {
     return { success: false, reason: 'not_found' };
   }
@@ -4182,6 +4403,7 @@ export async function permanentlyDeleteApplication(
     });
 
     invalidateSheetDataCache(APPLICATION_SHEET_NAME);
+    await deleteDbRows(APPLICATION_SHEET_NAME, [id]);
     return { success: true };
   } catch (error) {
     console.error('Error permanently deleting application', error);
@@ -4624,4 +4846,136 @@ export async function findReferrerCompanyByName(
   }
 
   return null;
+}
+
+// ============================================================================
+// Database Sync (Sheets -> Postgres)
+// ============================================================================
+
+type SheetSyncResult = {
+  sheetName: string;
+  created: number;
+  updated: number;
+  deleted: number;
+  skipped: number;
+};
+
+export async function syncSheetsToDatabase(): Promise<{
+  ok: boolean;
+  syncedAt: string;
+  results: SheetSyncResult[];
+  error?: string;
+}> {
+  if (!SHEET_DB_ENABLED) {
+    return {
+      ok: false,
+      syncedAt: new Date().toISOString(),
+      results: [],
+      error: 'DATABASE_URL is not configured.',
+    };
+  }
+
+  const sheetNames = Object.keys(SHEET_KEY_HEADERS);
+  const results: SheetSyncResult[] = [];
+
+  for (const sheetName of sheetNames) {
+    const { headers, rows } = await getSheetDataWithHeaders(sheetName, {
+      source: 'sheets',
+      bypassCache: true,
+    });
+
+    if (!headers.length) {
+      results.push({ sheetName, created: 0, updated: 0, deleted: 0, skipped: 0 });
+      continue;
+    }
+
+    await upsertDbSheetHeaders(sheetName, headers);
+
+    const keyHeader = getSheetKeyHeader(sheetName, headers);
+    const keyIndex = headerIndex(headers, keyHeader);
+
+    const existingRows = await db.sheetRow.findMany({
+      where: { sheetName },
+      select: { key: true, hash: true, rowIndex: true },
+    });
+    const existingMap = new Map(
+      existingRows.map((row) => [row.key, { hash: row.hash, rowIndex: row.rowIndex }]),
+    );
+
+    const seenKeys = new Set<string>();
+    const upserts = [];
+    let created = 0;
+    let updated = 0;
+    let skipped = 0;
+
+    for (let index = 0; index < rows.length; index++) {
+      const row = rows[index] ?? [];
+      const rowIndex = index + 2;
+      const normalizedValues = normalizeRowValues(headers, row);
+      const rawKey = keyIndex >= 0 ? normalizedValues[keyIndex] ?? '' : '';
+      let key = buildRowKey(rawKey || '', rowIndex);
+      if (seenKeys.has(key)) {
+        key = `${key}__dup_${rowIndex}`;
+      }
+      seenKeys.add(key);
+      const hash = computeRowHash(normalizedValues);
+      const existing = existingMap.get(key);
+
+      if (!existing) {
+        created += 1;
+      } else if (existing.hash !== hash || existing.rowIndex !== rowIndex) {
+        updated += 1;
+      } else {
+        skipped += 1;
+        continue;
+      }
+
+      upserts.push(
+        db.sheetRow.upsert({
+          where: { sheetName_key: { sheetName, key } },
+          create: {
+            sheetName,
+            key,
+            rowIndex,
+            values: normalizedValues,
+            hash,
+            deletedAt: null,
+          },
+          update: {
+            rowIndex,
+            values: normalizedValues,
+            hash,
+            deletedAt: null,
+          },
+        }),
+      );
+    }
+
+    const missingKeys = existingRows
+      .map((row) => row.key)
+      .filter((key) => !seenKeys.has(key));
+
+    if (upserts.length) {
+      const chunkSize = 200;
+      for (let start = 0; start < upserts.length; start += chunkSize) {
+        const slice = upserts.slice(start, start + chunkSize);
+        await db.$transaction(slice);
+      }
+    }
+
+    let deleted = 0;
+    if (missingKeys.length) {
+      await deleteDbRows(sheetName, missingKeys);
+      deleted = missingKeys.length;
+    }
+
+    invalidateSheetDataCache(sheetName);
+    results.push({ sheetName, created, updated, deleted, skipped });
+  }
+
+  return {
+    ok: true,
+    syncedAt: new Date().toISOString(),
+    results,
+  };
 }
