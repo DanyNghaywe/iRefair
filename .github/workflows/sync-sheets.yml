@@ -11,6 +11,6 @@ jobs:
     steps:
       - name: Trigger sync endpoint
         run: |
-          curl -fsS -X POST \
+          curl -fsS \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
             "https://irefair.andbeyondca.com/api/cron/sync-sheets"
