@@ -664,7 +664,11 @@ const SHEET_KEY_HEADERS: Record<string, string> = {
 };
 
 type SheetDataSource = 'sheets' | 'db';
-type SheetReadOptions = { source?: SheetDataSource; allowSheetFallback?: boolean };
+type SheetReadOptions = {
+  source?: SheetDataSource;
+  allowSheetFallback?: boolean;
+  bypassCache?: boolean;
+};
 
 function makeCacheKey(sheetName: string, source: SheetDataSource) {
   return `${source}:${sheetName}`;
@@ -716,26 +720,22 @@ async function upsertDbSheetHeaders(sheetName: string, headers: string[]) {
   dbHeadersCache.set(sheetName, headers);
 }
 
-async function getDbSheetHeaders(sheetName: string): Promise<string[]> {
-  const cached = dbHeadersCache.get(sheetName);
-  if (cached) return cached;
-  if (!SHEET_DB_ENABLED) return [];
-  const sheet = await db.sheet.findUnique({
+async function markSheetSynced(sheetName: string) {
+  if (!SHEET_DB_ENABLED) return;
+  await db.sheet.update({
     where: { name: sheetName },
-    select: { headers: true },
+    data: { syncedAt: new Date() },
   });
-  if (!sheet?.headers) return [];
-  const headers = Array.isArray(sheet.headers) ? (sheet.headers as string[]) : [];
-  if (headers.length) {
-    dbHeadersCache.set(sheetName, headers);
-  }
-  return headers;
 }
 
 async function getDbSheetData(sheetName: string): Promise<SheetData> {
   if (!SHEET_DB_ENABLED) return { headers: [], rows: [] };
-  const headers = await getDbSheetHeaders(sheetName);
-  if (!headers.length) return { headers: [], rows: [] };
+  const sheet = await db.sheet.findUnique({
+    where: { name: sheetName },
+    select: { headers: true, syncedAt: true },
+  });
+  const headers = Array.isArray(sheet?.headers) ? (sheet?.headers as string[]) : [];
+  if (!headers.length || !sheet?.syncedAt) return { headers: [], rows: [] };
   const rows = await db.sheetRow.findMany({
     where: { sheetName, deletedAt: null },
     orderBy: [{ rowIndex: 'asc' }, { key: 'asc' }],
@@ -1676,7 +1676,10 @@ function buildApplicantRowValues(
 
 async function findApplicantRowByEmail(email: string) {
   const normalizedEmail = email.trim().toLowerCase();
-  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME);
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME, {
+    source: 'sheets',
+    bypassCache: true,
+  });
   if (!headers.length) return null;
 
   const emailIndex = headerIndex(headers, 'Email');
@@ -1825,7 +1828,10 @@ export async function findExistingApplicant(
 
   await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
   await ensureColumns(APPLICANT_SHEET_NAME, APPLICANT_SECURITY_COLUMNS);
-  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME);
+  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME, {
+    source: 'sheets',
+    bypassCache: true,
+  });
   if (!headers.length) return null;
 
   const firstNameIdx = headerIndex(headers, 'First Name');
@@ -2941,10 +2947,12 @@ export async function updateRowById(
   const rows = column.data.values?.[0] ?? [];
   const normalizedId = idValue.trim().toLowerCase();
   let rowIndex = -1;
+  let existingIdValue = '';
   for (let i = 1; i < rows.length; i++) {
     const value = String(rows[i] ?? '').trim().toLowerCase();
     if (value === normalizedId) {
       rowIndex = i + 1; // 1-based for sheets
+      existingIdValue = String(rows[i] ?? '');
       break;
     }
   }
@@ -2983,6 +2991,15 @@ export async function updateRowById(
     const normalizedHeaders = headers.map((value) => String(value));
     await upsertDbSheetHeaders(sheetName, normalizedHeaders);
     await syncDbRowFromSheets(sheetName, normalizedHeaders, rowIndex);
+    const nextIdValue = patchByHeaderName[idHeaderName];
+    if (nextIdValue !== undefined) {
+      const oldKey = buildRowKey(existingIdValue, rowIndex);
+      const sanitizedNext = sanitizeSheetsCell(nextIdValue);
+      const newKey = buildRowKey(String(sanitizedNext), rowIndex);
+      if (oldKey !== newKey) {
+        await deleteDbRows(sheetName, [oldKey]);
+      }
+    }
   }
   return { updated: true };
 }
@@ -4969,6 +4986,7 @@ export async function syncSheetsToDatabase(): Promise<{
       deleted = missingKeys.length;
     }
 
+    await markSheetSynced(sheetName);
     invalidateSheetDataCache(sheetName);
     results.push({ sheetName, created, updated, deleted, skipped });
   }

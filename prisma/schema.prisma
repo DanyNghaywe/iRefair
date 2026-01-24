@@ -12,6 +12,7 @@ model Sheet {
   name      String    @id
   headers   Json
   keyHeader String
+  syncedAt  DateTime?
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   rows      SheetRow[]
