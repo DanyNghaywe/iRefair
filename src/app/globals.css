@@ -3946,6 +3946,12 @@ section.founder-auth input:focus-visible {
   gap: 12px;
 }
 
+.founder-topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .founder-topbar__search input {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.15);
