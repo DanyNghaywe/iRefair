@@ -20,6 +20,7 @@ const translations = {
     syncing: "Syncing...",
     syncSuccess: "Synced",
     syncError: "Sync failed",
+    openSheets: "Open Sheets",
   },
   fr: {
     title: "Console Ops",
@@ -33,6 +34,7 @@ const translations = {
     syncing: "Synchronisation...",
     syncSuccess: "Synchronis??",
     syncError: "??chec de sync",
+    openSheets: "Ouvrir Sheets",
   },
 };
 
@@ -114,6 +116,14 @@ export default function FounderDashboard() {
         subtitle={t.subtitle}
         actions={
           <div className="founder-topbar__actions">
+            <a
+              className="founder-button founder-button--ghost"
+              href="/api/founder/sheets"
+              target="_blank"
+              rel="noreferrer"
+            >
+              {t.openSheets}
+            </a>
             <button
               className="founder-button founder-button--ghost"
               type="button"
