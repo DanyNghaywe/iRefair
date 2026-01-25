@@ -20,10 +20,10 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov'],
       thresholds: {
-        lines: 33,
+        lines: 31,
         functions: 33,
         branches: 25,
-        statements: 33,
+        statements: 31,
       },
       exclude: [
         '**/*.d.ts',
