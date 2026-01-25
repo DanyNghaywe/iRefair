@@ -2,6 +2,7 @@ import { type CompanyRow } from '@/lib/hiringCompanies';
 import { db } from '@/lib/db';
 import { google } from 'googleapis';
 import { createHash, randomUUID } from 'crypto';
+import { after } from 'next/server';
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
@@ -638,11 +639,13 @@ type ApplicationRow = {
 
 let sheetsClient: ReturnType<typeof google.sheets> | null = null;
 const headersInitialized = new Set<string>();
+const dbHeadersInitialized = new Set<string>();
 const headersCache = new Map<string, string[]>();
 const dbHeadersCache = new Map<string, string[]>();
 type SheetRows = (string | number | null | undefined)[][];
 type SheetData = { headers: string[]; rows: SheetRows };
 type SheetDataCacheEntry = SheetData & { fetchedAt: number };
+type SheetRowWithIndex = { values: SheetRows[number]; rowIndex: number };
 
 const SHEET_DATA_CACHE_TTL_MS = (() => {
   const rawTtl = process.env.GOOGLE_SHEETS_CACHE_TTL_MS;
@@ -654,7 +657,54 @@ const SHEET_DATA_CACHE_TTL_MS = (() => {
 const sheetDataCache = new Map<string, SheetDataCacheEntry>();
 const sheetDataInFlight = new Map<string, Promise<SheetData>>();
 
+type SheetTask = () => Promise<void>;
+const sheetTaskQueue = new Map<string, Promise<void>>();
+
+function runInBackground(task: SheetTask, label: string) {
+  const run = async () => {
+    try {
+      await task();
+    } catch (error) {
+      console.error(`Background task failed (${label})`, error);
+    }
+  };
+
+  try {
+    if (typeof after === 'function') {
+      after(run);
+      return;
+    }
+  } catch (error) {
+    console.error(`Unable to schedule background task (${label})`, error);
+  }
+
+  void run();
+}
+
+function enqueueSheetTask(sheetName: string, task: SheetTask, label: string) {
+  const previous = sheetTaskQueue.get(sheetName) ?? Promise.resolve();
+  const next = previous
+    .catch(() => undefined)
+    .then(task)
+    .catch((error) => {
+      console.error(`Sheet task failed (${label})`, error);
+    })
+    .finally(() => {
+      if (sheetTaskQueue.get(sheetName) === next) {
+        sheetTaskQueue.delete(sheetName);
+      }
+    });
+  sheetTaskQueue.set(sheetName, next);
+}
+
+function scheduleSheetTask(sheetName: string, task: SheetTask, label: string) {
+  runInBackground(() => enqueueSheetTask(sheetName, task, label), label);
+}
+
 const SHEET_DB_ENABLED = Boolean(process.env.DATABASE_URL);
+const SHEET_DB_PRIMARY =
+  SHEET_DB_ENABLED &&
+  !['false', '0', 'no'].includes((process.env.SHEET_DB_PRIMARY || '').toLowerCase());
 const SHEET_DB_READS_ENABLED = SHEET_DB_ENABLED;
 const SHEET_KEY_HEADERS: Record<string, string> = {
   [APPLICANT_SHEET_NAME]: 'iRAIN',
@@ -663,11 +713,22 @@ const SHEET_KEY_HEADERS: Record<string, string> = {
   [REFERRER_COMPANIES_SHEET_NAME]: 'ID',
 };
 
+function getDefaultHeadersForSheet(sheetName: string): string[] {
+  if (sheetName === APPLICANT_SHEET_NAME) return APPLICANT_HEADERS;
+  if (sheetName === REFERRER_SHEET_NAME) return REFERRER_HEADERS;
+  if (sheetName === APPLICATION_SHEET_NAME) return APPLICATION_HEADERS;
+  if (sheetName === REFERRER_COMPANIES_SHEET_NAME) return REFERRER_COMPANIES_HEADERS;
+  return [];
+}
+
 type SheetDataSource = 'sheets' | 'db';
 type SheetReadOptions = {
   source?: SheetDataSource;
   allowSheetFallback?: boolean;
   bypassCache?: boolean;
+};
+type SheetWriteOptions = {
+  source?: SheetDataSource;
 };
 
 function makeCacheKey(sheetName: string, source: SheetDataSource) {
@@ -708,6 +769,28 @@ function buildRowKey(value: string, rowIndex: number) {
   return `__row_${rowIndex}`;
 }
 
+async function getNextDbRowIndex(sheetName: string): Promise<number> {
+  if (!SHEET_DB_ENABLED) return 2;
+  const aggregate = await db.sheetRow.aggregate({
+    where: { sheetName },
+    _max: { rowIndex: true },
+  });
+  const max = aggregate._max.rowIndex;
+  return Number.isFinite(max) ? Number(max) + 1 : 2;
+}
+
+async function markSheetUpdated(sheetName: string, headers?: string[]) {
+  if (!SHEET_DB_ENABLED) return;
+  const effectiveHeaders = headers ?? (await getCachedHeaders(sheetName, 'db'));
+  if (!effectiveHeaders.length) return;
+  const keyHeader = getSheetKeyHeader(sheetName, effectiveHeaders);
+  await db.sheet.upsert({
+    where: { name: sheetName },
+    create: { name: sheetName, headers: effectiveHeaders, keyHeader, syncedAt: new Date() },
+    update: { syncedAt: new Date() },
+  });
+}
+
 async function upsertDbSheetHeaders(sheetName: string, headers: string[]) {
   if (!SHEET_DB_ENABLED) return;
   const keyHeader = getSheetKeyHeader(sheetName, headers);
@@ -735,7 +818,12 @@ async function getDbSheetData(sheetName: string): Promise<SheetData> {
     select: { headers: true, syncedAt: true },
   });
   const headers = Array.isArray(sheet?.headers) ? (sheet?.headers as string[]) : [];
-  if (!headers.length || !sheet?.syncedAt) return { headers: [], rows: [] };
+  if (headers.length) {
+    dbHeadersCache.set(sheetName, headers);
+  }
+  if (!headers.length || (!sheet?.syncedAt && !SHEET_DB_PRIMARY)) {
+    return { headers: [], rows: [] };
+  }
   const rows = await db.sheetRow.findMany({
     where: { sheetName, deletedAt: null },
     orderBy: [{ rowIndex: 'asc' }, { key: 'asc' }],
@@ -837,7 +925,25 @@ async function syncDbRowFromSheets(
  * Get cached headers for a sheet, or fetch them if not cached.
  * This reduces redundant API calls when listing data.
  */
-async function getCachedHeaders(sheetName: string): Promise<string[]> {
+async function getCachedHeaders(
+  sheetName: string,
+  source: SheetDataSource = SHEET_DB_PRIMARY ? 'db' : 'sheets',
+): Promise<string[]> {
+  if (source === 'db') {
+    const cached = dbHeadersCache.get(sheetName);
+    if (cached) return cached;
+    if (!SHEET_DB_ENABLED) return [];
+    const sheet = await db.sheet.findUnique({
+      where: { name: sheetName },
+      select: { headers: true },
+    });
+    const headers = Array.isArray(sheet?.headers) ? (sheet?.headers as string[]) : [];
+    if (headers.length) {
+      dbHeadersCache.set(sheetName, headers);
+    }
+    return headers;
+  }
+
   const cached = headersCache.get(sheetName);
   if (cached) return cached;
 
@@ -903,7 +1009,7 @@ async function getSheetDataWithHeaders(
     const sheets = getSheetsClient();
 
     // Get headers (from cache if available) to determine column range
-    const headers = await getCachedHeaders(sheetName);
+    const headers = await getCachedHeaders(sheetName, 'sheets');
     if (!headers.length) {
       return { headers: [], rows: [] };
     }
@@ -938,6 +1044,54 @@ async function getSheetDataWithHeaders(
   } finally {
     sheetDataInFlight.delete(cacheKey);
   }
+}
+
+async function getSheetDataWithRowIndex(
+  sheetName: string,
+  options: SheetReadOptions = {},
+): Promise<{ headers: string[]; rows: SheetRowWithIndex[] }> {
+  const source: SheetDataSource =
+    options.source || (SHEET_DB_READS_ENABLED ? 'db' : 'sheets');
+  const allowSheetFallback = options.allowSheetFallback ?? true;
+
+  if (source === 'db') {
+    const headers = await getCachedHeaders(sheetName, 'db');
+    if (!headers.length && allowSheetFallback) {
+      return getSheetDataWithRowIndex(sheetName, {
+        ...options,
+        source: 'sheets',
+        allowSheetFallback: false,
+      });
+    }
+    if (!headers.length || !SHEET_DB_ENABLED) {
+      return { headers: [], rows: [] };
+    }
+
+    const rows = await db.sheetRow.findMany({
+      where: { sheetName, deletedAt: null },
+      orderBy: [{ rowIndex: 'asc' }, { key: 'asc' }],
+      select: { values: true, rowIndex: true },
+    });
+
+    return {
+      headers,
+      rows: rows.map((row, index) => {
+        const values = Array.isArray(row.values) ? (row.values as SheetRows[number]) : [];
+        const rowIndex = Number.isFinite(row.rowIndex) ? Number(row.rowIndex) : index + 2;
+        return { values, rowIndex };
+      }),
+    };
+  }
+
+  const { headers, rows } = await getSheetDataWithHeaders(sheetName, {
+    ...options,
+    source: 'sheets',
+    allowSheetFallback: false,
+  });
+  return {
+    headers,
+    rows: rows.map((values, index) => ({ values, rowIndex: index + 2 })),
+  };
 }
 
 async function getSheetDataWithHeadersBatch(
@@ -1153,11 +1307,57 @@ export async function ensureHeaders(
   sheetName: string,
   headers: string[],
   force = false,
+  options: SheetWriteOptions = {},
 ): Promise<{ created: boolean }> {
-  if (!force && headersInitialized.has(sheetName)) {
-    await ensureAdminColumnsForSheet(sheetName);
+  const source = options.source ?? (SHEET_DB_PRIMARY ? 'db' : 'sheets');
+
+  if (source === 'db') {
+    if (!force && dbHeadersInitialized.has(sheetName)) {
+      await ensureAdminColumnsForSheet(sheetName, { source: 'db' });
+      if (sheetName === APPLICANT_SHEET_NAME) {
+        await ensureColumns(APPLICANT_SHEET_NAME, ['LinkedIn'], { source: 'db' });
+      }
+      return { created: false };
+    }
+
+    const normalizedHeaders = headers.map((header) => String(header));
+    const existing = await getCachedHeaders(sheetName, 'db');
+    const baseHeaders =
+      existing.length ? existing : normalizedHeaders.length ? normalizedHeaders : getDefaultHeadersForSheet(sheetName);
+    let created = false;
+
+    if (!existing.length || force) {
+      if (baseHeaders.length) {
+        await upsertDbSheetHeaders(sheetName, baseHeaders);
+        dbHeadersCache.set(sheetName, baseHeaders);
+        await markSheetUpdated(sheetName, baseHeaders);
+        created = !existing.length;
+      }
+    }
+
+    dbHeadersInitialized.add(sheetName);
+    await ensureAdminColumnsForSheet(sheetName, { source: 'db' });
     if (sheetName === APPLICANT_SHEET_NAME) {
-      await ensureColumns(APPLICANT_SHEET_NAME, ['LinkedIn']);
+      await ensureColumns(APPLICANT_SHEET_NAME, ['LinkedIn'], { source: 'db' });
+    }
+
+    if (SHEET_DB_PRIMARY && baseHeaders.length) {
+      scheduleSheetTask(
+        sheetName,
+        async () => {
+          await ensureHeaders(sheetName, baseHeaders, force, { source: 'sheets' });
+        },
+        `ensureHeaders:${sheetName}`,
+      );
+    }
+
+    return { created };
+  }
+
+  if (!force && headersInitialized.has(sheetName)) {
+    await ensureAdminColumnsForSheet(sheetName, { source: 'sheets' });
+    if (sheetName === APPLICANT_SHEET_NAME) {
+      await ensureColumns(APPLICANT_SHEET_NAME, ['LinkedIn'], { source: 'sheets' });
     }
     return { created: false };
   }
@@ -1308,16 +1508,16 @@ export async function ensureHeaders(
   }
   headersInitialized.add(sheetName);
   // Cache the headers to avoid redundant fetches in list functions
-  const finalHeaders = await getCachedHeaders(sheetName);
+  const finalHeaders = await getCachedHeaders(sheetName, 'sheets');
   if (finalHeaders.length) {
     headersCache.set(sheetName, finalHeaders);
   }
   if (sheetName === APPLICANT_SHEET_NAME) {
-    await ensureColumns(APPLICANT_SHEET_NAME, ['LinkedIn']);
+    await ensureColumns(APPLICANT_SHEET_NAME, ['LinkedIn'], { source: 'sheets' });
   }
-  await ensureAdminColumnsForSheet(sheetName);
-  const syncedHeaders = await getCachedHeaders(sheetName);
-  if (syncedHeaders.length) {
+  await ensureAdminColumnsForSheet(sheetName, { source: 'sheets' });
+  const syncedHeaders = await getCachedHeaders(sheetName, 'sheets');
+  if (syncedHeaders.length && SHEET_DB_ENABLED && !SHEET_DB_PRIMARY) {
     await upsertDbSheetHeaders(sheetName, syncedHeaders);
   }
   return { created: createdSheet };
@@ -1358,7 +1558,7 @@ function parseRowIndexFromRange(range?: string | null) {
   return Number.isFinite(row) ? row : null;
 }
 
-async function appendRow(sheetName: string, values: (string | number | null)[]) {
+async function appendRowInSheets(sheetName: string, values: (string | number | null)[]) {
   const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
   if (!spreadsheetId) {
     throw new Error('Missing Google Sheets spreadsheet ID. Please set GOOGLE_SHEETS_SPREADSHEET_ID.');
@@ -1375,7 +1575,7 @@ async function appendRow(sheetName: string, values: (string | number | null)[]) 
     },
   });
   invalidateSheetDataCache(sheetName);
-  if (SHEET_DB_ENABLED) {
+  if (SHEET_DB_ENABLED && !SHEET_DB_PRIMARY) {
     const headers = await getCachedHeaders(sheetName);
     const rowIndex = parseRowIndexFromRange(response.data.updates?.updatedRange);
     if (headers.length && rowIndex) {
@@ -1383,6 +1583,59 @@ async function appendRow(sheetName: string, values: (string | number | null)[]) 
     } else if (headers.length) {
       await upsertDbRowFromValues(sheetName, headers, values, rowIndex ?? undefined);
     }
+  }
+}
+
+async function appendRow(
+  sheetName: string,
+  values: (string | number | null)[],
+  options: SheetWriteOptions = {},
+) {
+  const source = options.source ?? (SHEET_DB_PRIMARY ? 'db' : 'sheets');
+
+  if (source === 'sheets') {
+    return appendRowInSheets(sheetName, values);
+  }
+
+  let headers = await getCachedHeaders(sheetName, 'db');
+  if (!headers.length) {
+    const defaults = getDefaultHeadersForSheet(sheetName);
+    headers = defaults.length ? defaults : headers;
+  }
+  if (!headers.length && values.length) {
+    headers = values.map((_, index) => `Column ${index + 1}`);
+  }
+
+  if (headers.length && headers.length < values.length) {
+    const padded = [...headers];
+    for (let i = headers.length; i < values.length; i += 1) {
+      padded.push(`Column ${i + 1}`);
+    }
+    headers = padded;
+  }
+
+  if (headers.length) {
+    await upsertDbSheetHeaders(sheetName, headers);
+    dbHeadersCache.set(sheetName, headers);
+  }
+
+  const rowIndex = await getNextDbRowIndex(sheetName);
+  await upsertDbRowFromValues(sheetName, headers, values, rowIndex);
+  invalidateSheetDataCache(sheetName);
+  await markSheetUpdated(sheetName, headers);
+
+  if (SHEET_DB_PRIMARY) {
+    const headersSnapshot = headers;
+    scheduleSheetTask(
+      sheetName,
+      async () => {
+        if (headersSnapshot.length) {
+          await ensureHeaders(sheetName, headersSnapshot, false, { source: 'sheets' });
+        }
+        await appendRowInSheets(sheetName, values);
+      },
+      `appendRow:${sheetName}`,
+    );
   }
 }
 
@@ -1395,6 +1648,9 @@ function buildSubmissionId(prefix: SubmissionPrefix) {
 
 async function fetchExistingSubmissionIds(prefix: SubmissionPrefix) {
   const sheetName = SHEET_BY_PREFIX[prefix];
+  if (SHEET_DB_PRIMARY && SHEET_DB_ENABLED) {
+    return fetchExistingSubmissionIdsFromDb(sheetName, prefix);
+  }
   const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
   if (!spreadsheetId) {
     throw new Error('Missing Google Sheets spreadsheet ID. Please set GOOGLE_SHEETS_SPREADSHEET_ID.');
@@ -1419,6 +1675,54 @@ async function fetchExistingSubmissionIds(prefix: SubmissionPrefix) {
       `Unable to verify submission ID uniqueness for sheet "${sheetName}". Original error: ${message}`,
     );
   }
+}
+
+async function fetchExistingSubmissionIdsFromDb(sheetName: string, prefix: SubmissionPrefix) {
+  const headers = await getCachedHeaders(sheetName, 'db');
+  if (!headers.length || !SHEET_DB_ENABLED) return new Set<string>();
+  const keyHeader = getSheetKeyHeader(sheetName, headers);
+  const idIndex = headerIndex(headers, keyHeader || headers[0] || '');
+  const rows = await db.sheetRow.findMany({
+    where: { sheetName, deletedAt: null },
+    select: { values: true },
+  });
+  const results = new Set<string>();
+  for (const row of rows) {
+    const values = Array.isArray(row.values) ? (row.values as SheetRows[number]) : [];
+    const value = cellValue(values, idIndex >= 0 ? idIndex : 0);
+    if (value && value.toUpperCase().startsWith(`${prefix}-`)) {
+      results.add(value.trim());
+    }
+  }
+  return results;
+}
+
+async function getMaxNumericIdFromDb(
+  sheetName: string,
+  headerName: string,
+  regex: RegExp,
+): Promise<number> {
+  if (!SHEET_DB_ENABLED) return 0;
+  const headers = await getCachedHeaders(sheetName, 'db');
+  if (!headers.length) return 0;
+  const columnIndex = headerIndex(headers, headerName);
+  if (columnIndex < 0) return 0;
+  const rows = await db.sheetRow.findMany({
+    where: { sheetName, deletedAt: null },
+    select: { values: true },
+  });
+  let max = 0;
+  for (const row of rows) {
+    const values = Array.isArray(row.values) ? (row.values as SheetRows[number]) : [];
+    const value = cellValue(values, columnIndex);
+    const match = regex.exec(String(value).trim());
+    if (!match) continue;
+    const parsed = Number.parseInt(match[1], 10);
+    if (!Number.isNaN(parsed) && parsed > max) {
+      max = parsed;
+    }
+  }
+  return max;
 }
 
 async function getMaxIrcrnFromReferrers(spreadsheetId: string) {
@@ -1552,18 +1856,31 @@ export async function generateSubmissionId(prefix: SubmissionPrefix) {
 }
 
 export async function generateIRAIN(): Promise<string> {
+  if (SHEET_DB_PRIMARY && SHEET_DB_ENABLED) {
+    const next = (await getMaxNumericIdFromDb(APPLICANT_SHEET_NAME, 'iRAIN', IRAIN_REGEX)) + 1;
+    return formatIrainNumber(next);
+  }
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const next = (await findMaxIrainInSheets(spreadsheetId)) + 1;
   return formatIrainNumber(next);
 }
 
 export async function generateIRREF(): Promise<string> {
+  if (SHEET_DB_PRIMARY && SHEET_DB_ENABLED) {
+    const next = (await getMaxNumericIdFromDb(REFERRER_SHEET_NAME, 'iRREF', IRREF_REGEX)) + 1;
+    return `iRREF${String(next).padStart(10, '0')}`;
+  }
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const next = (await getMaxExistingIrrefNumber(spreadsheetId)) + 1;
   return `iRREF${String(next).padStart(10, '0')}`;
 }
 
 export async function generateIRCRN(): Promise<string> {
+  if (SHEET_DB_PRIMARY && SHEET_DB_ENABLED) {
+    const maxReferrers = await getMaxNumericIdFromDb(REFERRER_SHEET_NAME, 'Company iRCRN', IRCRN_REGEX);
+    const next = maxReferrers + 1;
+    return `iRCRN${String(next).padStart(10, '0')}`;
+  }
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const maxReferrers = await getMaxIrcrnFromReferrers(spreadsheetId);
   const next = maxReferrers + 1;
@@ -1676,8 +1993,9 @@ function buildApplicantRowValues(
 
 async function findApplicantRowByEmail(email: string) {
   const normalizedEmail = email.trim().toLowerCase();
-  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME, {
-    source: 'sheets',
+  const source: SheetDataSource = SHEET_DB_PRIMARY ? 'db' : 'sheets';
+  const { headers, rows } = await getSheetDataWithRowIndex(APPLICANT_SHEET_NAME, {
+    source,
     bypassCache: true,
   });
   if (!headers.length) return null;
@@ -1686,14 +2004,20 @@ async function findApplicantRowByEmail(email: string) {
   const idIndex = headerIndex(headers, 'iRAIN');
   const legacyIndex = headerIndex(headers, LEGACY_APPLICANT_ID_HEADER);
 
-  for (let index = 0; index < rows.length; index++) {
-    const row = rows[index] ?? [];
-    const rowEmail = cellValue(row, emailIndex === -1 ? APPLICANT_EMAIL_COLUMN_INDEX : emailIndex).toLowerCase();
+  for (const row of rows) {
+    const values = row.values ?? [];
+    const rowEmail = cellValue(
+      values,
+      emailIndex === -1 ? APPLICANT_EMAIL_COLUMN_INDEX : emailIndex,
+    ).toLowerCase();
     if (rowEmail && rowEmail === normalizedEmail) {
       return {
-        rowIndex: index + 2, // 1-based for Google Sheets + header row
-        id: cellValue(row, idIndex === -1 ? 0 : idIndex),
-        legacyApplicantId: cellValue(row, legacyIndex === -1 ? LEGACY_APPLICANT_ID_COLUMN_INDEX : legacyIndex),
+        rowIndex: row.rowIndex,
+        id: cellValue(values, idIndex === -1 ? 0 : idIndex),
+        legacyApplicantId: cellValue(
+          values,
+          legacyIndex === -1 ? LEGACY_APPLICANT_ID_COLUMN_INDEX : legacyIndex,
+        ),
       };
     }
   }
@@ -1707,7 +2031,7 @@ export async function findApplicantByIdentifier(identifier: string): Promise<App
 
   await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
   await ensureColumns(APPLICANT_SHEET_NAME, APPLICANT_SECURITY_COLUMNS);
-  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME);
+  const { headers, rows } = await getSheetDataWithRowIndex(APPLICANT_SHEET_NAME);
   if (!headers.length) return null;
 
   const searchByIrain = isIrain(searchValue);
@@ -1716,15 +2040,18 @@ export async function findApplicantByIdentifier(identifier: string): Promise<App
   const legacyIndex = headerIndex(headers, LEGACY_APPLICANT_ID_HEADER);
   const headerMap = buildHeaderMap(headers);
 
-  for (let index = 0; index < rows.length; index++) {
-    const row = rows[index] ?? [];
-    const irain = cellValue(row, irainIndex === -1 ? 0 : irainIndex).toLowerCase();
-    const legacy = cellValue(row, legacyIndex === -1 ? LEGACY_APPLICANT_ID_COLUMN_INDEX : legacyIndex).toLowerCase();
+  for (const row of rows) {
+    const values = row.values ?? [];
+    const irain = cellValue(values, irainIndex === -1 ? 0 : irainIndex).toLowerCase();
+    const legacy = cellValue(
+      values,
+      legacyIndex === -1 ? LEGACY_APPLICANT_ID_COLUMN_INDEX : legacyIndex,
+    ).toLowerCase();
     const matches = searchByIrain ? irain === normalized : legacy === normalized;
     if (matches) {
       return {
-        rowIndex: index + 2,
-        record: buildApplicantRecordFromHeaderMap(headerMap, row),
+        rowIndex: row.rowIndex,
+        record: buildApplicantRecordFromHeaderMap(headerMap, values),
       };
     }
   }
@@ -1738,19 +2065,22 @@ export async function getApplicantByEmail(email: string): Promise<ApplicantLooku
 
   await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
   await ensureColumns(APPLICANT_SHEET_NAME, APPLICANT_SECURITY_COLUMNS);
-  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME);
+  const { headers, rows } = await getSheetDataWithRowIndex(APPLICANT_SHEET_NAME);
   if (!headers.length) return null;
 
   const emailIndex = headerIndex(headers, 'Email');
   const headerMap = buildHeaderMap(headers);
 
-  for (let index = 0; index < rows.length; index++) {
-    const row = rows[index] ?? [];
-    const rowEmail = cellValue(row, emailIndex === -1 ? APPLICANT_EMAIL_COLUMN_INDEX : emailIndex).toLowerCase();
+  for (const row of rows) {
+    const values = row.values ?? [];
+    const rowEmail = cellValue(
+      values,
+      emailIndex === -1 ? APPLICANT_EMAIL_COLUMN_INDEX : emailIndex,
+    ).toLowerCase();
     if (rowEmail && rowEmail === normalizedEmail) {
       return {
-        rowIndex: index + 2,
-        record: buildApplicantRecordFromHeaderMap(headerMap, row),
+        rowIndex: row.rowIndex,
+        record: buildApplicantRecordFromHeaderMap(headerMap, values),
       };
     }
   }
@@ -1763,6 +2093,21 @@ export async function getApplicantByRowIndex(rowIndex: number): Promise<Applican
 
   await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
   await ensureColumns(APPLICANT_SHEET_NAME, APPLICANT_SECURITY_COLUMNS);
+  if (SHEET_DB_PRIMARY && SHEET_DB_ENABLED) {
+    const headers = await getCachedHeaders(APPLICANT_SHEET_NAME, 'db');
+    if (!headers.length) return null;
+    const row = await db.sheetRow.findFirst({
+      where: { sheetName: APPLICANT_SHEET_NAME, rowIndex, deletedAt: null },
+      select: { values: true },
+    });
+    if (!row) return null;
+    const headerMap = buildHeaderMap(headers);
+    const values = Array.isArray(row.values) ? (row.values as SheetRows[number]) : [];
+    return {
+      rowIndex,
+      record: buildApplicantRecordFromHeaderMap(headerMap, values),
+    };
+  }
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const sheets = getSheetsClient();
 
@@ -1828,8 +2173,9 @@ export async function findExistingApplicant(
 
   await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
   await ensureColumns(APPLICANT_SHEET_NAME, APPLICANT_SECURITY_COLUMNS);
-  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME, {
-    source: 'sheets',
+  const source: SheetDataSource = SHEET_DB_PRIMARY ? 'db' : 'sheets';
+  const { headers, rows } = await getSheetDataWithRowIndex(APPLICANT_SHEET_NAME, {
+    source,
     bypassCache: true,
   });
   if (!headers.length) return null;
@@ -1840,14 +2186,17 @@ export async function findExistingApplicant(
   const phoneIdx = headerIndex(headers, 'Phone');
   const headerMap = buildHeaderMap(headers);
 
-  for (let index = 0; index < rows.length; index++) {
-    const row = rows[index] ?? [];
-    if (!row.length) continue;
+  for (const row of rows) {
+    const values = row.values ?? [];
+    if (!values.length) continue;
 
-    const rowEmail = cellValue(row, emailIdx === -1 ? APPLICANT_EMAIL_COLUMN_INDEX : emailIdx).toLowerCase();
-    const rowPhone = normalizePhoneForMatch(cellValue(row, phoneIdx === -1 ? 6 : phoneIdx));
-    const rowFirstName = cellValue(row, firstNameIdx === -1 ? 2 : firstNameIdx).toLowerCase();
-    const rowFamilyName = cellValue(row, familyNameIdx === -1 ? 4 : familyNameIdx).toLowerCase();
+    const rowEmail = cellValue(
+      values,
+      emailIdx === -1 ? APPLICANT_EMAIL_COLUMN_INDEX : emailIdx,
+    ).toLowerCase();
+    const rowPhone = normalizePhoneForMatch(cellValue(values, phoneIdx === -1 ? 6 : phoneIdx));
+    const rowFirstName = cellValue(values, firstNameIdx === -1 ? 2 : firstNameIdx).toLowerCase();
+    const rowFamilyName = cellValue(values, familyNameIdx === -1 ? 4 : familyNameIdx).toLowerCase();
 
     // Check how many fields match
     let matchCount = 0;
@@ -1867,8 +2216,8 @@ export async function findExistingApplicant(
     // If at least 2 of 3 match, this is an existing candidate
     if (matchCount >= 2) {
       return {
-        rowIndex: index + 2, // 1-indexed for Sheets API + header row
-        record: buildApplicantRecordFromHeaderMap(headerMap, row),
+        rowIndex: row.rowIndex,
+        record: buildApplicantRecordFromHeaderMap(headerMap, values),
       };
     }
   }
@@ -1879,9 +2228,11 @@ export async function findExistingApplicant(
 export async function upsertApplicantRow(row: ApplicantRow) {
   await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
 
-  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
-  if (!spreadsheetId) {
-    throw new Error('Missing Google Sheets spreadsheet ID. Please set GOOGLE_SHEETS_SPREADSHEET_ID.');
+  if (!SHEET_DB_PRIMARY) {
+    const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID;
+    if (!spreadsheetId) {
+      throw new Error('Missing Google Sheets spreadsheet ID. Please set GOOGLE_SHEETS_SPREADSHEET_ID.');
+    }
   }
 
   const headers = await getCachedHeaders(APPLICANT_SHEET_NAME);
@@ -1998,7 +2349,7 @@ export async function formatSheet(sheetName: string, headers: string[]) {
   await applyProSheetFormatting(sheetName, headers);
 }
 
-async function ensureAdminColumnsForSheet(sheetName: string) {
+async function ensureAdminColumnsForSheet(sheetName: string, options: SheetWriteOptions = {}) {
   if (sheetName === APPLICANT_SHEET_NAME) {
     return ensureColumns(sheetName, [
       ...ADMIN_TRACKING_COLUMNS,
@@ -2009,15 +2360,15 @@ async function ensureAdminColumnsForSheet(sheetName: string) {
       'Resume File Name',
       'Resume File ID',
       'Resume URL',
-    ]);
+    ], options);
   }
 
   if (sheetName === REFERRER_SHEET_NAME) {
-    return ensureColumns(sheetName, [...ADMIN_TRACKING_COLUMNS, ...REFERRER_SECURITY_COLUMNS, ...ARCHIVE_COLUMNS]);
+    return ensureColumns(sheetName, [...ADMIN_TRACKING_COLUMNS, ...REFERRER_SECURITY_COLUMNS, ...ARCHIVE_COLUMNS], options);
   }
 
   if (sheetName === APPLICATION_SHEET_NAME) {
-    return ensureColumns(sheetName, [...APPLICATION_ADMIN_COLUMNS, ...ARCHIVE_COLUMNS]);
+    return ensureColumns(sheetName, [...APPLICATION_ADMIN_COLUMNS, ...ARCHIVE_COLUMNS], options);
   }
 
   return { appended: [], headers: [] };
@@ -2026,15 +2377,53 @@ async function ensureAdminColumnsForSheet(sheetName: string) {
 export async function ensureColumns(
   sheetName: string,
   requiredHeaders: string[],
+  options: SheetWriteOptions = {},
 ): Promise<{ appended: string[]; headers: string[] }> {
+  const source = options.source ?? (SHEET_DB_PRIMARY ? 'db' : 'sheets');
+
   if (!requiredHeaders.length) {
-    return { appended: [], headers: headersCache.get(sheetName) ?? [] };
+    const headers =
+      source === 'db'
+        ? await getCachedHeaders(sheetName, 'db')
+        : await getCachedHeaders(sheetName, 'sheets');
+    return { appended: [], headers };
   }
 
-  // Use cached headers if available, otherwise fetch
-  const existingHeaders = await getCachedHeaders(sheetName);
+  if (source === 'db') {
+    const existingHeaders = await getCachedHeaders(sheetName, 'db');
+    const baseHeaders =
+      existingHeaders.length ? existingHeaders : getDefaultHeadersForSheet(sheetName);
+    const headerSeed = baseHeaders.length ? baseHeaders : requiredHeaders;
+    const existingSet = new Set(headerSeed.map((header) => header.trim()));
+    const missing = requiredHeaders.filter((header) => !existingSet.has(header.trim()));
+
+    if (!missing.length) {
+      return { appended: [], headers: headerSeed };
+    }
+
+    const updatedHeaders = [...headerSeed, ...missing];
+    await upsertDbSheetHeaders(sheetName, updatedHeaders);
+    dbHeadersCache.set(sheetName, updatedHeaders);
+    invalidateSheetDataCache(sheetName);
+    await markSheetUpdated(sheetName, updatedHeaders);
+
+    if (SHEET_DB_PRIMARY) {
+      scheduleSheetTask(
+        sheetName,
+        async () => {
+          await ensureColumns(sheetName, requiredHeaders, { source: 'sheets' });
+        },
+        `ensureColumns:${sheetName}`,
+      );
+    }
+
+    return { appended: missing, headers: updatedHeaders };
+  }
+
+  // Sheets-backed path
+  const existingHeaders = await getCachedHeaders(sheetName, 'sheets');
   const existingSet = new Set(existingHeaders.map((header) => header.trim()));
-  const missing = requiredHeaders.filter((header) => !existingSet.has(header));
+  const missing = requiredHeaders.filter((header) => !existingSet.has(header.trim()));
 
   if (!missing.length) {
     return { appended: [], headers: existingHeaders };
@@ -2062,7 +2451,9 @@ export async function ensureColumns(
     console.error('Sheet formatting failed (non-fatal):', error);
   }
 
-  await upsertDbSheetHeaders(sheetName, updatedHeaders);
+  if (SHEET_DB_ENABLED && !SHEET_DB_PRIMARY) {
+    await upsertDbSheetHeaders(sheetName, updatedHeaders);
+  }
 
   return { appended: missing, headers: updatedHeaders };
 }
@@ -2163,7 +2554,13 @@ function setByHeader(
 
 async function getSheetHeaders(sheetName: string): Promise<string[]> {
   const headers = await getCachedHeaders(sheetName);
-  return headers.map((h) => String(h ?? '').trim());
+  const normalized = headers.map((h) => String(h ?? '').trim());
+  const hasAny = normalized.some((value) => value !== '');
+  if (!hasAny) {
+    const defaults = getDefaultHeadersForSheet(sheetName);
+    return defaults.length ? defaults : normalized;
+  }
+  return normalized;
 }
 
 function paginate<T>(items: T[], offset?: number, limit?: number) {
@@ -2772,43 +3169,43 @@ export async function listApplications(
 export async function getApplicationById(id: string, options: SheetReadOptions = {}) {
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
   await ensureColumns(APPLICATION_SHEET_NAME, ['Resume File ID']);
-  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME, options);
+  const { headers, rows } = await getSheetDataWithRowIndex(APPLICATION_SHEET_NAME, options);
   if (!headers.length) return null;
 
   const headerMap = buildHeaderMap(headers);
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i] ?? [];
-    const value = cellValue(row, 0).toLowerCase();
+  for (const row of rows) {
+    const values = row.values ?? [];
+    const value = cellValue(values, 0).toLowerCase();
     if (value === id.trim().toLowerCase()) {
       return {
-        rowIndex: i + 2,
+        rowIndex: row.rowIndex,
         record: {
-          id: getHeaderValue(headerMap, row, 'ID'),
-          timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
-          applicantId: getHeaderValue(headerMap, row, 'Applicant ID'),
-          iCrn: getHeaderValue(headerMap, row, 'iRCRN'),
-          position: getHeaderValue(headerMap, row, 'Position'),
-          referenceNumber: getHeaderValue(headerMap, row, 'Reference Number'),
-          resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name'),
-          resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID'),
-          referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
-          referrerEmail: getHeaderValue(headerMap, row, 'Referrer Email'),
-          referrerCompanyId: getHeaderValue(headerMap, row, 'Referrer Company ID'),
-          status: getHeaderValue(headerMap, row, 'Status'),
-          ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
-          meetingDate: getHeaderValue(headerMap, row, 'Meeting Date'),
-          meetingTime: getHeaderValue(headerMap, row, 'Meeting Time'),
-          meetingTimezone: getHeaderValue(headerMap, row, 'Meeting Timezone'),
-          meetingUrl: getHeaderValue(headerMap, row, 'Meeting URL'),
-          actionHistory: getHeaderValue(headerMap, row, 'Action History'),
-          rescheduleTokenHash: getHeaderValue(headerMap, row, 'Reschedule Token Hash'),
-          rescheduleTokenExpiresAt: getHeaderValue(headerMap, row, 'Reschedule Token Expires At'),
-          updateRequestTokenHash: getHeaderValue(headerMap, row, 'Update Request Token Hash'),
-          updateRequestExpiresAt: getHeaderValue(headerMap, row, 'Update Request Expires At'),
-          updateRequestPurpose: getHeaderValue(headerMap, row, 'Update Request Purpose'),
-          archived: getHeaderValue(headerMap, row, 'Archived'),
-          archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt'),
-          archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy'),
+          id: getHeaderValue(headerMap, values, 'ID'),
+          timestamp: getHeaderValue(headerMap, values, 'Timestamp'),
+          applicantId: getHeaderValue(headerMap, values, 'Applicant ID'),
+          iCrn: getHeaderValue(headerMap, values, 'iRCRN'),
+          position: getHeaderValue(headerMap, values, 'Position'),
+          referenceNumber: getHeaderValue(headerMap, values, 'Reference Number'),
+          resumeFileName: getHeaderValue(headerMap, values, 'Resume File Name'),
+          resumeFileId: getHeaderValue(headerMap, values, 'Resume File ID'),
+          referrerIrref: getHeaderValue(headerMap, values, 'Referrer iRREF'),
+          referrerEmail: getHeaderValue(headerMap, values, 'Referrer Email'),
+          referrerCompanyId: getHeaderValue(headerMap, values, 'Referrer Company ID'),
+          status: getHeaderValue(headerMap, values, 'Status'),
+          ownerNotes: getHeaderValue(headerMap, values, 'Owner Notes'),
+          meetingDate: getHeaderValue(headerMap, values, 'Meeting Date'),
+          meetingTime: getHeaderValue(headerMap, values, 'Meeting Time'),
+          meetingTimezone: getHeaderValue(headerMap, values, 'Meeting Timezone'),
+          meetingUrl: getHeaderValue(headerMap, values, 'Meeting URL'),
+          actionHistory: getHeaderValue(headerMap, values, 'Action History'),
+          rescheduleTokenHash: getHeaderValue(headerMap, values, 'Reschedule Token Hash'),
+          rescheduleTokenExpiresAt: getHeaderValue(headerMap, values, 'Reschedule Token Expires At'),
+          updateRequestTokenHash: getHeaderValue(headerMap, values, 'Update Request Token Hash'),
+          updateRequestExpiresAt: getHeaderValue(headerMap, values, 'Update Request Expires At'),
+          updateRequestPurpose: getHeaderValue(headerMap, values, 'Update Request Purpose'),
+          archived: getHeaderValue(headerMap, values, 'Archived'),
+          archivedAt: getHeaderValue(headerMap, values, 'ArchivedAt'),
+          archivedBy: getHeaderValue(headerMap, values, 'ArchivedBy'),
         },
       };
     }
@@ -2818,41 +3215,41 @@ export async function getApplicationById(id: string, options: SheetReadOptions =
 
 export async function findApplicationByRescheduleTokenHash(tokenHash: string) {
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
-  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME);
+  const { headers, rows } = await getSheetDataWithRowIndex(APPLICATION_SHEET_NAME);
   if (!headers.length) return null;
 
   const normalizedHash = tokenHash.trim().toLowerCase();
   const headerMap = buildHeaderMap(headers);
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i] ?? [];
-    const rowHash = getHeaderValue(headerMap, row, 'Reschedule Token Hash').toLowerCase();
+  for (const row of rows) {
+    const values = row.values ?? [];
+    const rowHash = getHeaderValue(headerMap, values, 'Reschedule Token Hash').toLowerCase();
     if (rowHash && rowHash === normalizedHash) {
       return {
-        rowIndex: i + 2,
+        rowIndex: row.rowIndex,
         record: {
-          id: getHeaderValue(headerMap, row, 'ID'),
-          timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
-          applicantId: getHeaderValue(headerMap, row, 'Applicant ID'),
-          iCrn: getHeaderValue(headerMap, row, 'iRCRN'),
-          position: getHeaderValue(headerMap, row, 'Position'),
-          referenceNumber: getHeaderValue(headerMap, row, 'Reference Number'),
-          resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name'),
-          resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID'),
-          referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
-          referrerEmail: getHeaderValue(headerMap, row, 'Referrer Email'),
-          status: getHeaderValue(headerMap, row, 'Status'),
-          ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
-          meetingDate: getHeaderValue(headerMap, row, 'Meeting Date'),
-          meetingTime: getHeaderValue(headerMap, row, 'Meeting Time'),
-          meetingTimezone: getHeaderValue(headerMap, row, 'Meeting Timezone'),
-          meetingUrl: getHeaderValue(headerMap, row, 'Meeting URL'),
-          actionHistory: getHeaderValue(headerMap, row, 'Action History'),
-          rescheduleTokenHash: getHeaderValue(headerMap, row, 'Reschedule Token Hash'),
-          rescheduleTokenExpiresAt: getHeaderValue(headerMap, row, 'Reschedule Token Expires At'),
-          updateRequestTokenHash: getHeaderValue(headerMap, row, 'Update Request Token Hash'),
-          updateRequestExpiresAt: getHeaderValue(headerMap, row, 'Update Request Expires At'),
-          updateRequestPurpose: getHeaderValue(headerMap, row, 'Update Request Purpose'),
-          archived: getHeaderValue(headerMap, row, 'Archived'),
+          id: getHeaderValue(headerMap, values, 'ID'),
+          timestamp: getHeaderValue(headerMap, values, 'Timestamp'),
+          applicantId: getHeaderValue(headerMap, values, 'Applicant ID'),
+          iCrn: getHeaderValue(headerMap, values, 'iRCRN'),
+          position: getHeaderValue(headerMap, values, 'Position'),
+          referenceNumber: getHeaderValue(headerMap, values, 'Reference Number'),
+          resumeFileName: getHeaderValue(headerMap, values, 'Resume File Name'),
+          resumeFileId: getHeaderValue(headerMap, values, 'Resume File ID'),
+          referrerIrref: getHeaderValue(headerMap, values, 'Referrer iRREF'),
+          referrerEmail: getHeaderValue(headerMap, values, 'Referrer Email'),
+          status: getHeaderValue(headerMap, values, 'Status'),
+          ownerNotes: getHeaderValue(headerMap, values, 'Owner Notes'),
+          meetingDate: getHeaderValue(headerMap, values, 'Meeting Date'),
+          meetingTime: getHeaderValue(headerMap, values, 'Meeting Time'),
+          meetingTimezone: getHeaderValue(headerMap, values, 'Meeting Timezone'),
+          meetingUrl: getHeaderValue(headerMap, values, 'Meeting URL'),
+          actionHistory: getHeaderValue(headerMap, values, 'Action History'),
+          rescheduleTokenHash: getHeaderValue(headerMap, values, 'Reschedule Token Hash'),
+          rescheduleTokenExpiresAt: getHeaderValue(headerMap, values, 'Reschedule Token Expires At'),
+          updateRequestTokenHash: getHeaderValue(headerMap, values, 'Update Request Token Hash'),
+          updateRequestExpiresAt: getHeaderValue(headerMap, values, 'Update Request Expires At'),
+          updateRequestPurpose: getHeaderValue(headerMap, values, 'Update Request Purpose'),
+          archived: getHeaderValue(headerMap, values, 'Archived'),
         },
       };
     }
@@ -2917,7 +3314,7 @@ type ApplicationAdminPatch = {
   resumeFileName?: string;
 };
 
-export async function updateRowById(
+async function updateRowByIdInSheets(
   sheetName: string,
   idHeaderName: string,
   idValue: string,
@@ -2987,7 +3384,7 @@ export async function updateRowById(
   });
 
   invalidateSheetDataCache(sheetName);
-  if (SHEET_DB_ENABLED) {
+  if (SHEET_DB_ENABLED && !SHEET_DB_PRIMARY) {
     const normalizedHeaders = headers.map((value) => String(value));
     await upsertDbSheetHeaders(sheetName, normalizedHeaders);
     await syncDbRowFromSheets(sheetName, normalizedHeaders, rowIndex);
@@ -3001,6 +3398,124 @@ export async function updateRowById(
       }
     }
   }
+  return { updated: true };
+}
+
+export async function updateRowById(
+  sheetName: string,
+  idHeaderName: string,
+  idValue: string,
+  patchByHeaderName: Record<string, string | undefined>,
+  options: SheetWriteOptions = {},
+): Promise<{ updated: boolean; reason?: 'not_found' | 'no_changes' }> {
+  const source = options.source ?? (SHEET_DB_PRIMARY ? 'db' : 'sheets');
+
+  if (source === 'sheets') {
+    return updateRowByIdInSheets(sheetName, idHeaderName, idValue, patchByHeaderName);
+  }
+
+  let headers = await getCachedHeaders(sheetName, 'db');
+  if (!headers.length) {
+    const defaults = getDefaultHeadersForSheet(sheetName);
+    headers = defaults.length ? defaults : headers;
+    if (headers.length) {
+      await upsertDbSheetHeaders(sheetName, headers);
+      dbHeadersCache.set(sheetName, headers);
+    }
+  }
+
+  const headerMap = buildHeaderMap(headers);
+  const idIndex = headerIndex(headers, idHeaderName);
+  if (idIndex === -1) {
+    throw new Error(`Header "${idHeaderName}" not found in sheet ${sheetName}`);
+  }
+
+  const normalizedId = idValue.trim().toLowerCase();
+  const rows = await db.sheetRow.findMany({
+    where: { sheetName, deletedAt: null },
+    select: { key: true, rowIndex: true, values: true },
+  });
+
+  const match = rows.find((row) => {
+    const values = Array.isArray(row.values) ? (row.values as SheetRows[number]) : [];
+    const value = cellValue(values, idIndex).toLowerCase();
+    return value === normalizedId;
+  });
+
+  if (!match) {
+    return { updated: false, reason: 'not_found' };
+  }
+
+  const existingValues = Array.isArray(match.values) ? (match.values as SheetRows[number]) : [];
+  const normalizedValues = normalizeRowValues(headers, existingValues);
+  let hasChanges = false;
+
+  for (const [header, value] of Object.entries(patchByHeaderName)) {
+    if (value === undefined) continue;
+    const index = headerMap.get(header);
+    if (index === undefined) continue;
+    const nextValue = String(value ?? '');
+    if (normalizedValues[index] !== nextValue) {
+      normalizedValues[index] = nextValue;
+      hasChanges = true;
+    }
+  }
+
+  if (!hasChanges) {
+    return { updated: false, reason: 'no_changes' };
+  }
+
+  const keyHeader = getSheetKeyHeader(sheetName, headers);
+  const keyIndex = headerIndex(headers, keyHeader);
+  const rawKey = keyIndex >= 0 ? normalizedValues[keyIndex] ?? '' : '';
+  const rowIndex = Number.isFinite(match.rowIndex) ? Number(match.rowIndex) : await getNextDbRowIndex(sheetName);
+  const newKey = buildRowKey(rawKey || '', rowIndex);
+  const hash = computeRowHash(normalizedValues);
+
+  if (newKey === match.key) {
+    await db.sheetRow.update({
+      where: { sheetName_key: { sheetName, key: match.key } },
+      data: { values: normalizedValues, hash, rowIndex, deletedAt: null },
+    });
+  } else {
+    await db.$transaction([
+      db.sheetRow.delete({ where: { sheetName_key: { sheetName, key: match.key } } }),
+      db.sheetRow.create({
+        data: {
+          sheetName,
+          key: newKey,
+          rowIndex,
+          values: normalizedValues,
+          hash,
+          deletedAt: null,
+        },
+      }),
+    ]);
+  }
+
+  invalidateSheetDataCache(sheetName);
+  await markSheetUpdated(sheetName, headers);
+
+  if (SHEET_DB_PRIMARY) {
+    const patchHeaders = Object.keys(patchByHeaderName).filter(
+      (header) => patchByHeaderName[header] !== undefined,
+    );
+    const headersSnapshot = headers;
+    scheduleSheetTask(
+      sheetName,
+      async () => {
+        if (headersSnapshot.length) {
+          await ensureHeaders(sheetName, headersSnapshot, false, { source: 'sheets' });
+        }
+        if (patchHeaders.length) {
+          await ensureColumns(sheetName, patchHeaders, { source: 'sheets' });
+        }
+        await updateRowByIdInSheets(sheetName, idHeaderName, idValue, patchByHeaderName);
+      },
+      `updateRowById:${sheetName}`,
+    );
+  }
+
   return { updated: true };
 }
 
@@ -3111,16 +3626,16 @@ export async function updateApplicationAdmin(id: string, patch: ApplicationAdmin
 
 export async function getApplicantByIrain(irain: string, options: SheetReadOptions = {}) {
   await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
-  const { headers, rows } = await getSheetDataWithHeaders(APPLICANT_SHEET_NAME, options);
+  const { headers, rows } = await getSheetDataWithRowIndex(APPLICANT_SHEET_NAME, options);
   if (!headers.length) return null;
 
   const normalized = irain.trim().toLowerCase();
   const irainIndex = headerIndex(headers, 'iRAIN');
   const headerMap = buildHeaderMap(headers);
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i] ?? [];
-    const rawValue = cellValue(row, irainIndex === -1 ? 0 : irainIndex).toLowerCase();
+  for (const row of rows) {
+    const values = row.values ?? [];
+    const rawValue = cellValue(values, irainIndex === -1 ? 0 : irainIndex).toLowerCase();
     if (rawValue !== normalized) continue;
 
     const locatedCanada = getHeaderValue(headerMap, row, 'Located in Canada');
@@ -3142,56 +3657,56 @@ export async function getApplicantByIrain(irain: string, options: SheetReadOptio
     }
 
     return {
-      rowIndex: i + 2,
+      rowIndex: row.rowIndex,
       record: {
-        id: getHeaderValue(headerMap, row, 'iRAIN'),
-        irain: getHeaderValue(headerMap, row, 'iRAIN'),
-        timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
-        firstName: getHeaderValue(headerMap, row, 'First Name'),
-        middleName: getHeaderValue(headerMap, row, 'Middle Name'),
-        familyName: getHeaderValue(headerMap, row, 'Family Name'),
-        email: getHeaderValue(headerMap, row, 'Email'),
-        phone: getHeaderValue(headerMap, row, 'Phone'),
+        id: getHeaderValue(headerMap, values, 'iRAIN'),
+        irain: getHeaderValue(headerMap, values, 'iRAIN'),
+        timestamp: getHeaderValue(headerMap, values, 'Timestamp'),
+        firstName: getHeaderValue(headerMap, values, 'First Name'),
+        middleName: getHeaderValue(headerMap, values, 'Middle Name'),
+        familyName: getHeaderValue(headerMap, values, 'Family Name'),
+        email: getHeaderValue(headerMap, values, 'Email'),
+        phone: getHeaderValue(headerMap, values, 'Phone'),
         locatedCanada,
-        province: getHeaderValue(headerMap, row, 'Province'),
-        workAuthorization: getHeaderValue(headerMap, row, 'Work Authorization'),
+        province: getHeaderValue(headerMap, values, 'Province'),
+        workAuthorization: getHeaderValue(headerMap, values, 'Work Authorization'),
         eligibleMoveCanada: eligibleMove,
-        countryOfOrigin: getHeaderValue(headerMap, row, 'Country of Origin'),
-        languages: getHeaderValue(headerMap, row, 'Languages'),
-        languagesOther: getHeaderValue(headerMap, row, 'Languages Other'),
-        industryType: getHeaderValue(headerMap, row, 'Industry Type'),
-        industryOther: getHeaderValue(headerMap, row, 'Industry Other'),
-        employmentStatus: getHeaderValue(headerMap, row, 'Employment Status'),
-        locale: getHeaderValue(headerMap, row, APPLICANT_LOCALE_HEADER),
-        targetCompanies: getHeaderValue(headerMap, row, APPLICANT_TARGET_COMPANIES_HEADER),
-        hasPostings: getHeaderValue(headerMap, row, APPLICANT_HAS_POSTINGS_HEADER),
-        postingNotes: getHeaderValue(headerMap, row, APPLICANT_POSTING_NOTES_HEADER),
-        desiredRole: getHeaderValue(headerMap, row, APPLICANT_DESIRED_ROLE_HEADER),
-        pitch: getHeaderValue(headerMap, row, APPLICANT_PITCH_HEADER),
-        pendingCompanyIrcrn: getHeaderValue(headerMap, row, APPLICANT_PENDING_COMPANY_HEADER),
-        pendingPosition: getHeaderValue(headerMap, row, APPLICANT_PENDING_POSITION_HEADER),
-        pendingReferenceNumber: getHeaderValue(headerMap, row, APPLICANT_PENDING_REFERENCE_HEADER),
-        pendingCvRequestedAt: getHeaderValue(headerMap, row, APPLICANT_PENDING_CV_REQUESTED_AT_HEADER),
-        pendingCvRequestNote: getHeaderValue(headerMap, row, APPLICANT_PENDING_CV_REQUEST_NOTE_HEADER),
-        pendingCvTokenHash: getHeaderValue(headerMap, row, APPLICANT_PENDING_CV_TOKEN_HASH_HEADER),
-        pendingCvTokenExpiresAt: getHeaderValue(headerMap, row, APPLICANT_PENDING_CV_TOKEN_EXPIRES_HEADER),
-        legacyApplicantId: getHeaderValue(headerMap, row, LEGACY_APPLICANT_ID_HEADER),
-        status: getHeaderValue(headerMap, row, 'Status'),
-        ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
-        tags: getHeaderValue(headerMap, row, 'Tags'),
-        lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
-        nextActionAt: getHeaderValue(headerMap, row, 'Next Action At'),
+        countryOfOrigin: getHeaderValue(headerMap, values, 'Country of Origin'),
+        languages: getHeaderValue(headerMap, values, 'Languages'),
+        languagesOther: getHeaderValue(headerMap, values, 'Languages Other'),
+        industryType: getHeaderValue(headerMap, values, 'Industry Type'),
+        industryOther: getHeaderValue(headerMap, values, 'Industry Other'),
+        employmentStatus: getHeaderValue(headerMap, values, 'Employment Status'),
+        locale: getHeaderValue(headerMap, values, APPLICANT_LOCALE_HEADER),
+        targetCompanies: getHeaderValue(headerMap, values, APPLICANT_TARGET_COMPANIES_HEADER),
+        hasPostings: getHeaderValue(headerMap, values, APPLICANT_HAS_POSTINGS_HEADER),
+        postingNotes: getHeaderValue(headerMap, values, APPLICANT_POSTING_NOTES_HEADER),
+        desiredRole: getHeaderValue(headerMap, values, APPLICANT_DESIRED_ROLE_HEADER),
+        pitch: getHeaderValue(headerMap, values, APPLICANT_PITCH_HEADER),
+        pendingCompanyIrcrn: getHeaderValue(headerMap, values, APPLICANT_PENDING_COMPANY_HEADER),
+        pendingPosition: getHeaderValue(headerMap, values, APPLICANT_PENDING_POSITION_HEADER),
+        pendingReferenceNumber: getHeaderValue(headerMap, values, APPLICANT_PENDING_REFERENCE_HEADER),
+        pendingCvRequestedAt: getHeaderValue(headerMap, values, APPLICANT_PENDING_CV_REQUESTED_AT_HEADER),
+        pendingCvRequestNote: getHeaderValue(headerMap, values, APPLICANT_PENDING_CV_REQUEST_NOTE_HEADER),
+        pendingCvTokenHash: getHeaderValue(headerMap, values, APPLICANT_PENDING_CV_TOKEN_HASH_HEADER),
+        pendingCvTokenExpiresAt: getHeaderValue(headerMap, values, APPLICANT_PENDING_CV_TOKEN_EXPIRES_HEADER),
+        legacyApplicantId: getHeaderValue(headerMap, values, LEGACY_APPLICANT_ID_HEADER),
+        status: getHeaderValue(headerMap, values, 'Status'),
+        ownerNotes: getHeaderValue(headerMap, values, 'Owner Notes'),
+        tags: getHeaderValue(headerMap, values, 'Tags'),
+        lastContactedAt: getHeaderValue(headerMap, values, 'Last Contacted At'),
+        nextActionAt: getHeaderValue(headerMap, values, 'Next Action At'),
         eligibility: {
           eligible,
           reason: eligibilityReason,
         },
         missingFields,
-        resumeFileName: getHeaderValue(headerMap, row, 'Resume File Name') || undefined,
-        resumeFileId: getHeaderValue(headerMap, row, 'Resume File ID') || undefined,
-        resumeUrl: getHeaderValue(headerMap, row, 'Resume URL') || undefined,
-        archived: getHeaderValue(headerMap, row, 'Archived'),
-        archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt'),
-        archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy'),
+        resumeFileName: getHeaderValue(headerMap, values, 'Resume File Name') || undefined,
+        resumeFileId: getHeaderValue(headerMap, values, 'Resume File ID') || undefined,
+        resumeUrl: getHeaderValue(headerMap, values, 'Resume URL') || undefined,
+        archived: getHeaderValue(headerMap, values, 'Archived'),
+        archivedAt: getHeaderValue(headerMap, values, 'ArchivedAt'),
+        archivedBy: getHeaderValue(headerMap, values, 'ArchivedBy'),
       },
     };
   }
@@ -3202,41 +3717,41 @@ export async function getApplicantByIrain(irain: string, options: SheetReadOptio
 export async function getReferrerByIrref(irref: string, options: SheetReadOptions = {}) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
   await ensureColumns(REFERRER_SHEET_NAME, REFERRER_SECURITY_COLUMNS);
-  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_SHEET_NAME, options);
+  const { headers, rows } = await getSheetDataWithRowIndex(REFERRER_SHEET_NAME, options);
   if (!headers.length) return null;
 
   const headerMap = buildHeaderMap(headers);
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i] ?? [];
-    const value = cellValue(row, 0).toLowerCase();
+  for (const row of rows) {
+    const values = row.values ?? [];
+    const value = cellValue(values, 0).toLowerCase();
     if (value === irref.trim().toLowerCase()) {
       return {
-        rowIndex: i + 2,
+        rowIndex: row.rowIndex,
         record: {
-          irref: getHeaderValue(headerMap, row, 'iRREF'),
-          timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
-          name: getHeaderValue(headerMap, row, 'Name'),
-          email: getHeaderValue(headerMap, row, 'Email'),
-          phone: getHeaderValue(headerMap, row, 'Phone'),
-          country: getHeaderValue(headerMap, row, 'Country'),
-          company: getHeaderValue(headerMap, row, 'Company'),
-          companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
-          companyApproval: getHeaderValue(headerMap, row, 'Company Approval'),
-          companyIndustry: getHeaderValue(headerMap, row, 'Company Industry'),
-          careersPortal: getHeaderValue(headerMap, row, 'Careers Portal'),
-          workType: getHeaderValue(headerMap, row, 'Work Type'),
-          linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
-          locale: getHeaderValue(headerMap, row, REFERRER_LOCALE_HEADER),
-          portalTokenVersion: getHeaderValue(headerMap, row, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
-          pendingUpdates: getHeaderValue(headerMap, row, REFERRER_PENDING_UPDATES_HEADER),
-          status: getHeaderValue(headerMap, row, 'Status'),
-          ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
-          tags: getHeaderValue(headerMap, row, 'Tags'),
-          lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
-          nextActionAt: getHeaderValue(headerMap, row, 'Next Action At'),
-          archived: getHeaderValue(headerMap, row, 'Archived'),
-          archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt'),
-          archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy'),
+          irref: getHeaderValue(headerMap, values, 'iRREF'),
+          timestamp: getHeaderValue(headerMap, values, 'Timestamp'),
+          name: getHeaderValue(headerMap, values, 'Name'),
+          email: getHeaderValue(headerMap, values, 'Email'),
+          phone: getHeaderValue(headerMap, values, 'Phone'),
+          country: getHeaderValue(headerMap, values, 'Country'),
+          company: getHeaderValue(headerMap, values, 'Company'),
+          companyIrcrn: getHeaderValue(headerMap, values, 'Company iRCRN'),
+          companyApproval: getHeaderValue(headerMap, values, 'Company Approval'),
+          companyIndustry: getHeaderValue(headerMap, values, 'Company Industry'),
+          careersPortal: getHeaderValue(headerMap, values, 'Careers Portal'),
+          workType: getHeaderValue(headerMap, values, 'Work Type'),
+          linkedin: getHeaderValue(headerMap, values, 'LinkedIn'),
+          locale: getHeaderValue(headerMap, values, REFERRER_LOCALE_HEADER),
+          portalTokenVersion: getHeaderValue(headerMap, values, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
+          pendingUpdates: getHeaderValue(headerMap, values, REFERRER_PENDING_UPDATES_HEADER),
+          status: getHeaderValue(headerMap, values, 'Status'),
+          ownerNotes: getHeaderValue(headerMap, values, 'Owner Notes'),
+          tags: getHeaderValue(headerMap, values, 'Tags'),
+          lastContactedAt: getHeaderValue(headerMap, values, 'Last Contacted At'),
+          nextActionAt: getHeaderValue(headerMap, values, 'Next Action At'),
+          archived: getHeaderValue(headerMap, values, 'Archived'),
+          archivedAt: getHeaderValue(headerMap, values, 'ArchivedAt'),
+          archivedBy: getHeaderValue(headerMap, values, 'ArchivedBy'),
         },
       };
     }
@@ -3247,7 +3762,7 @@ export async function getReferrerByIrref(irref: string, options: SheetReadOption
 export async function getReferrerByEmail(email: string, options: SheetReadOptions = {}) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
   await ensureColumns(REFERRER_SHEET_NAME, REFERRER_SECURITY_COLUMNS);
-  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_SHEET_NAME, options);
+  const { headers, rows } = await getSheetDataWithRowIndex(REFERRER_SHEET_NAME, options);
   if (!headers.length) return null;
 
   const normalizedEmail = email.trim().toLowerCase();
@@ -3256,35 +3771,35 @@ export async function getReferrerByEmail(email: string, options: SheetReadOption
 
   if (emailColIndex === undefined) return null;
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i] ?? [];
-    const value = cellValue(row, emailColIndex).toLowerCase();
+  for (const row of rows) {
+    const values = row.values ?? [];
+    const value = cellValue(values, emailColIndex).toLowerCase();
     if (value === normalizedEmail) {
       return {
-        rowIndex: i + 2,
+        rowIndex: row.rowIndex,
         record: {
-          irref: getHeaderValue(headerMap, row, 'iRREF'),
-          timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
-          name: getHeaderValue(headerMap, row, 'Name'),
-          email: getHeaderValue(headerMap, row, 'Email'),
-          phone: getHeaderValue(headerMap, row, 'Phone'),
-          country: getHeaderValue(headerMap, row, 'Country'),
-          company: getHeaderValue(headerMap, row, 'Company'),
-          companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
-          companyApproval: getHeaderValue(headerMap, row, 'Company Approval'),
-          companyIndustry: getHeaderValue(headerMap, row, 'Company Industry'),
-          careersPortal: getHeaderValue(headerMap, row, 'Careers Portal'),
-          workType: getHeaderValue(headerMap, row, 'Work Type'),
-          linkedin: getHeaderValue(headerMap, row, 'LinkedIn'),
-          locale: getHeaderValue(headerMap, row, REFERRER_LOCALE_HEADER),
-          portalTokenVersion: getHeaderValue(headerMap, row, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
-          pendingUpdates: getHeaderValue(headerMap, row, REFERRER_PENDING_UPDATES_HEADER),
-          status: getHeaderValue(headerMap, row, 'Status'),
-          ownerNotes: getHeaderValue(headerMap, row, 'Owner Notes'),
-          tags: getHeaderValue(headerMap, row, 'Tags'),
-          lastContactedAt: getHeaderValue(headerMap, row, 'Last Contacted At'),
-          nextActionAt: getHeaderValue(headerMap, row, 'Next Action At'),
-          archived: getHeaderValue(headerMap, row, 'Archived'),
+          irref: getHeaderValue(headerMap, values, 'iRREF'),
+          timestamp: getHeaderValue(headerMap, values, 'Timestamp'),
+          name: getHeaderValue(headerMap, values, 'Name'),
+          email: getHeaderValue(headerMap, values, 'Email'),
+          phone: getHeaderValue(headerMap, values, 'Phone'),
+          country: getHeaderValue(headerMap, values, 'Country'),
+          company: getHeaderValue(headerMap, values, 'Company'),
+          companyIrcrn: getHeaderValue(headerMap, values, 'Company iRCRN'),
+          companyApproval: getHeaderValue(headerMap, values, 'Company Approval'),
+          companyIndustry: getHeaderValue(headerMap, values, 'Company Industry'),
+          careersPortal: getHeaderValue(headerMap, values, 'Careers Portal'),
+          workType: getHeaderValue(headerMap, values, 'Work Type'),
+          linkedin: getHeaderValue(headerMap, values, 'LinkedIn'),
+          locale: getHeaderValue(headerMap, values, REFERRER_LOCALE_HEADER),
+          portalTokenVersion: getHeaderValue(headerMap, values, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
+          pendingUpdates: getHeaderValue(headerMap, values, REFERRER_PENDING_UPDATES_HEADER),
+          status: getHeaderValue(headerMap, values, 'Status'),
+          ownerNotes: getHeaderValue(headerMap, values, 'Owner Notes'),
+          tags: getHeaderValue(headerMap, values, 'Tags'),
+          lastContactedAt: getHeaderValue(headerMap, values, 'Last Contacted At'),
+          nextActionAt: getHeaderValue(headerMap, values, 'Next Action At'),
+          archived: getHeaderValue(headerMap, values, 'Archived'),
         },
       };
     }
@@ -3398,10 +3913,10 @@ export async function updatePendingUpdateStatus(
   return { success: result.updated, update: updatedUpdate };
 }
 
-export async function deleteReferrerByIrref(
+async function deleteReferrerByIrrefInSheets(
   irref: string,
 ): Promise<{ success: boolean; reason?: 'not_found' | 'error' }> {
-  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS, false, { source: 'sheets' });
 
   const referrer = await getReferrerByIrref(irref, { source: 'sheets' });
   if (!referrer) {
@@ -3445,7 +3960,9 @@ export async function deleteReferrerByIrref(
     });
 
     invalidateSheetDataCache(REFERRER_SHEET_NAME);
-    await deleteDbRows(REFERRER_SHEET_NAME, [irref]);
+    if (SHEET_DB_ENABLED && !SHEET_DB_PRIMARY) {
+      await deleteDbRows(REFERRER_SHEET_NAME, [irref]);
+    }
     return { success: true };
   } catch (error) {
     console.error('Error deleting referrer row', error);
@@ -3453,10 +3970,39 @@ export async function deleteReferrerByIrref(
   }
 }
 
-export async function deleteApplicantByIrain(
+export async function deleteReferrerByIrref(
+  irref: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'error' }> {
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
+
+  if (!SHEET_DB_PRIMARY) {
+    return deleteReferrerByIrrefInSheets(irref);
+  }
+
+  const referrer = await getReferrerByIrref(irref, { source: 'db' });
+  if (!referrer) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  await deleteDbRows(REFERRER_SHEET_NAME, [irref]);
+  invalidateSheetDataCache(REFERRER_SHEET_NAME);
+  await markSheetUpdated(REFERRER_SHEET_NAME);
+
+  scheduleSheetTask(
+    REFERRER_SHEET_NAME,
+    async () => {
+      await deleteReferrerByIrrefInSheets(irref);
+    },
+    `deleteReferrer:${irref}`,
+  );
+
+  return { success: true };
+}
+
+async function deleteApplicantByIrainInSheets(
   irain: string,
 ): Promise<{ success: boolean; reason?: 'not_found' | 'error' }> {
-  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS, false, { source: 'sheets' });
 
   const applicant = await getApplicantByIrain(irain, { source: 'sheets' });
   if (!applicant) {
@@ -3500,12 +4046,43 @@ export async function deleteApplicantByIrain(
     });
 
     invalidateSheetDataCache(APPLICANT_SHEET_NAME);
-    await deleteDbRows(APPLICANT_SHEET_NAME, [irain]);
+    if (SHEET_DB_ENABLED && !SHEET_DB_PRIMARY) {
+      await deleteDbRows(APPLICANT_SHEET_NAME, [irain]);
+    }
     return { success: true };
   } catch (error) {
     console.error('Error deleting applicant row', error);
     return { success: false, reason: 'error' };
   }
+}
+
+export async function deleteApplicantByIrain(
+  irain: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'error' }> {
+  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
+
+  if (!SHEET_DB_PRIMARY) {
+    return deleteApplicantByIrainInSheets(irain);
+  }
+
+  const applicant = await getApplicantByIrain(irain, { source: 'db' });
+  if (!applicant) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  await deleteDbRows(APPLICANT_SHEET_NAME, [irain]);
+  invalidateSheetDataCache(APPLICANT_SHEET_NAME);
+  await markSheetUpdated(APPLICANT_SHEET_NAME);
+
+  scheduleSheetTask(
+    APPLICANT_SHEET_NAME,
+    async () => {
+      await deleteApplicantByIrainInSheets(irain);
+    },
+    `deleteApplicant:${irain}`,
+  );
+
+  return { success: true };
 }
 
 /**
@@ -3744,22 +4321,22 @@ export async function findApplicationsByApplicantId(
   options: SheetReadOptions = {},
 ): Promise<Array<{ id: string; rowIndex: number }>> {
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
-  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME, options);
+  const { headers, rows } = await getSheetDataWithRowIndex(APPLICATION_SHEET_NAME, options);
   const headerMap = buildHeaderMap(headers);
 
   const results: Array<{ id: string; rowIndex: number }> = [];
   const searchId = applicantId.trim().toLowerCase();
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const rowApplicantId = getHeaderValue(headerMap, row, 'Applicant ID').toLowerCase();
-    const archived = getHeaderValue(headerMap, row, 'Archived');
+  for (const row of rows) {
+    const values = row.values ?? [];
+    const rowApplicantId = getHeaderValue(headerMap, values, 'Applicant ID').toLowerCase();
+    const archived = getHeaderValue(headerMap, values, 'Archived');
 
     if (rowApplicantId === searchId) {
       if (includeArchived || archived !== 'true') {
         results.push({
-          id: getHeaderValue(headerMap, row, 'ID'),
-          rowIndex: i + 2, // +1 for header, +1 for 1-indexed
+          id: getHeaderValue(headerMap, values, 'ID'),
+          rowIndex: row.rowIndex,
         });
       }
     }
@@ -3932,22 +4509,22 @@ export async function findApplicationsByReferrerIrref(
   options: SheetReadOptions = {},
 ): Promise<Array<{ id: string; rowIndex: number }>> {
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
-  const { headers, rows } = await getSheetDataWithHeaders(APPLICATION_SHEET_NAME, options);
+  const { headers, rows } = await getSheetDataWithRowIndex(APPLICATION_SHEET_NAME, options);
   const headerMap = buildHeaderMap(headers);
 
   const results: Array<{ id: string; rowIndex: number }> = [];
   const searchIrref = referrerIrref.trim().toLowerCase();
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const rowReferrerIrref = getHeaderValue(headerMap, row, 'Referrer iRREF').toLowerCase();
-    const archived = getHeaderValue(headerMap, row, 'Archived');
+  for (const row of rows) {
+    const values = row.values ?? [];
+    const rowReferrerIrref = getHeaderValue(headerMap, values, 'Referrer iRREF').toLowerCase();
+    const archived = getHeaderValue(headerMap, values, 'Archived');
 
     if (rowReferrerIrref === searchIrref) {
       if (includeArchived || archived !== 'true') {
         results.push({
-          id: getHeaderValue(headerMap, row, 'ID'),
-          rowIndex: i + 2, // +1 for header, +1 for 1-indexed
+          id: getHeaderValue(headerMap, values, 'ID'),
+          rowIndex: row.rowIndex,
         });
       }
     }
@@ -4485,6 +5062,16 @@ async function getMaxIrcrnFromReferrerCompanies(spreadsheetId: string): Promise<
  * Generate a new iRCRN, checking both legacy Referrers sheet and new Referrer Companies sheet.
  */
 export async function generateIRCRNForCompany(): Promise<string> {
+  if (SHEET_DB_PRIMARY && SHEET_DB_ENABLED) {
+    const maxReferrers = await getMaxNumericIdFromDb(REFERRER_SHEET_NAME, 'Company iRCRN', IRCRN_REGEX);
+    const maxCompanies = await getMaxNumericIdFromDb(
+      REFERRER_COMPANIES_SHEET_NAME,
+      'Company iRCRN',
+      IRCRN_REGEX,
+    );
+    const next = Math.max(maxReferrers, maxCompanies) + 1;
+    return `iRCRN${String(next).padStart(10, '0')}`;
+  }
   const spreadsheetId = getSpreadsheetIdOrThrow();
   const maxReferrers = await getMaxIrcrnFromReferrers(spreadsheetId);
   const maxCompanies = await getMaxIrcrnFromReferrerCompanies(spreadsheetId);
@@ -4565,32 +5152,32 @@ export async function getReferrerCompanyById(
 ): Promise<{ rowIndex: number; record: ReferrerCompanyRecord } | null> {
   await ensureHeaders(REFERRER_COMPANIES_SHEET_NAME, REFERRER_COMPANIES_HEADERS);
 
-  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_COMPANIES_SHEET_NAME);
+  const { headers, rows } = await getSheetDataWithRowIndex(REFERRER_COMPANIES_SHEET_NAME);
   if (!headers.length) return null;
 
   const headerMap = buildHeaderMap(headers);
   const normalizedId = id.trim();
 
-  for (let i = 0; i < rows.length; i++) {
-    const row = rows[i];
-    const rowId = getHeaderValue(headerMap, row, 'ID');
+  for (const row of rows) {
+    const values = row.values ?? [];
+    const rowId = getHeaderValue(headerMap, values, 'ID');
     if (rowId !== normalizedId) continue;
 
     return {
-      rowIndex: i + 2, // +1 for header, +1 for 1-indexed
+      rowIndex: row.rowIndex,
       record: {
         id: rowId,
-        timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
-        referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
-        companyName: getHeaderValue(headerMap, row, 'Company Name'),
-        companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN') || undefined,
-        companyApproval: getHeaderValue(headerMap, row, 'Company Approval') as ReferrerCompanyRecord['companyApproval'],
-        companyIndustry: getHeaderValue(headerMap, row, 'Company Industry'),
-        careersPortal: getHeaderValue(headerMap, row, 'Careers Portal') || undefined,
-        workType: getHeaderValue(headerMap, row, 'Work Type'),
-        archived: getHeaderValue(headerMap, row, 'Archived') || undefined,
-        archivedAt: getHeaderValue(headerMap, row, 'ArchivedAt') || undefined,
-        archivedBy: getHeaderValue(headerMap, row, 'ArchivedBy') || undefined,
+        timestamp: getHeaderValue(headerMap, values, 'Timestamp'),
+        referrerIrref: getHeaderValue(headerMap, values, 'Referrer iRREF'),
+        companyName: getHeaderValue(headerMap, values, 'Company Name'),
+        companyIrcrn: getHeaderValue(headerMap, values, 'Company iRCRN') || undefined,
+        companyApproval: getHeaderValue(headerMap, values, 'Company Approval') as ReferrerCompanyRecord['companyApproval'],
+        companyIndustry: getHeaderValue(headerMap, values, 'Company Industry'),
+        careersPortal: getHeaderValue(headerMap, values, 'Careers Portal') || undefined,
+        workType: getHeaderValue(headerMap, values, 'Work Type'),
+        archived: getHeaderValue(headerMap, values, 'Archived') || undefined,
+        archivedAt: getHeaderValue(headerMap, values, 'ArchivedAt') || undefined,
+        archivedBy: getHeaderValue(headerMap, values, 'ArchivedBy') || undefined,
       },
     };
   }
