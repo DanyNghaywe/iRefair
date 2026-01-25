@@ -1,6 +1,8 @@
-import '@testing-library/jest-dom/vitest';
+import * as matchers from '@testing-library/jest-dom/matchers';
 import { cleanup } from '@testing-library/react';
-import { afterEach } from 'vitest';
+
+// Extend vitest's expect with jest-dom matchers
+expect.extend(matchers);
 
 afterEach(() => {
   if (typeof document !== 'undefined') {

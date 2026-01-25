@@ -8,7 +8,11 @@ export default defineConfig({
     },
   },
   test: {
+    globals: true,
     environment: 'node',
+    environmentMatchGlobs: [
+      ['src/components/**/*.test.tsx', 'jsdom'],
+    ],
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
     setupFiles: ['vitest.setup.ts'],
     clearMocks: true,

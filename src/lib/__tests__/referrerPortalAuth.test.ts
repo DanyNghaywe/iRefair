@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import {
   getReferrerPortalToken,

@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
+import { vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
 // Store original env

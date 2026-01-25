@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest';
-
 import { escapeHtml, normalizeHttpUrl } from '../validation';
 
 describe('normalizeHttpUrl', () => {

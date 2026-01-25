@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, vi } from 'vitest';
+import { vi } from 'vitest';
 
 import { createOpaqueToken, hashOpaqueToken, isExpired } from '../tokens';
 
