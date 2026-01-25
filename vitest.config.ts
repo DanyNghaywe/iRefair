@@ -1,0 +1,37 @@
+import path from 'path';
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, 'src'),
+    },
+  },
+  test: {
+    environment: 'node',
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    setupFiles: ['vitest.setup.ts'],
+    clearMocks: true,
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      thresholds: {
+        lines: 33,
+        functions: 33,
+        branches: 25,
+        statements: 33,
+      },
+      exclude: [
+        '**/*.d.ts',
+        '**/*.css',
+        '**/*.module.css',
+        'src/**/*.backup',
+        'src/**/globals.css',
+        'src/**/layout.tsx',
+        'src/**/page.tsx',
+        'src/**/error.tsx',
+        'src/**/not-found.tsx',
+      ],
+    },
+  },
+});

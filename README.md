@@ -1,66 +1,110 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# iRefair
 
-## SMTP / email setup (Gmail)
+A job referral management platform connecting international talent with hiring opportunities through a community-driven referral system.
 
-Set these environment variables for Gmail SMTP:
+## Overview
 
-- `GMAIL_USER` - Your Gmail address (e.g., `irefair.andbeyondconsulting@gmail.com`)
-- `GMAIL_APP_PASSWORD` - Gmail app password (generate at https://myaccount.google.com/apppasswords)
-- `SMTP_FROM_NAME` (optional, defaults to `iRefair`)
+iRefair enables:
+- **Applicants** to register, build profiles, and apply for positions through referrers
+- **Referrers** to manage candidates and facilitate job connections
+- **Founders** to oversee the ecosystem and manage data
 
-Emails are sent via `src/lib/mailer.ts` and the candidate confirmation API is at `src/app/api/candidate/route.ts`.
-User-facing support contact shown in pages/templates is `irefair@andbeyondca.com`.
+Built with Next.js 16, React 19, TypeScript, and Tailwind CSS.
 
-## Google Sheets storage
-
-Set these environment variables to store submissions in Google Sheets:
-
-- `GOOGLE_SHEETS_SPREADSHEET_ID`
-- `GOOGLE_SHEETS_CLIENT_EMAIL`
-- `GOOGLE_SHEETS_PRIVATE_KEY` (keep `\n` line breaks)
-
-Give the service account Editor access to the spreadsheet, with tabs named `Candidates` and `Referrers`. Submission IDs are generated and included in emails.
-
-## ChatGPT integration
-
-Set these environment variables (same keys as `andbeyond-ai`) to enable ChatGPT calls via the OpenAI Responses API:
-
-- `OPENAI_API_KEY`
-- `OPENAI_MODEL` (optional, defaults to `gpt-4.1-mini`)
-
-A generic ChatGPT proxy lives at `src/app/api/chatgpt/route.ts`. It accepts a `POST` body with either a `prompt` string or a `messages` array and returns the model reply. You can check configuration without making a model call using `POST /api/chatgpt?statusOnly=true`.
-
-## Getting Started
-
-First, run the development server:
+## Quick Start
 
 ```bash
+# Install dependencies
+npm install
+
+# Copy environment template and configure
+cp .env.example .env.local
+
+# Run database migrations
+npx prisma migrate dev
+
+# Start development server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to view the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Documentation
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+- [Setup Guide](docs/SETUP.md) - Development environment setup
+- [Architecture](docs/ARCHITECTURE.md) - System overview and design
+- [API Reference](docs/API.md) - API endpoint documentation
+- [Contributing](docs/CONTRIBUTING.md) - Contribution guidelines
 
-## Learn More
+## Configuration
 
-To learn more about Next.js, take a look at the following resources:
+### Required Environment Variables
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Copy `.env.example` to `.env.local` and configure:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+#### Authentication
+- `FOUNDER_EMAIL` - Admin email
+- `FOUNDER_PASSWORD_HASH` - bcrypt hash of admin password
+- `FOUNDER_AUTH_SECRET` - Secret for session signing (64+ chars)
 
-## Deploy on Vercel
+#### Email (Gmail SMTP)
+- `GMAIL_USER` - Gmail address
+- `GMAIL_APP_PASSWORD` - App password ([generate here](https://myaccount.google.com/apppasswords))
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+#### Google Sheets
+- `GOOGLE_SHEETS_SPREADSHEET_ID` - Spreadsheet ID
+- `GOOGLE_SHEETS_CLIENT_EMAIL` - Service account email
+- `GOOGLE_SHEETS_PRIVATE_KEY` - Service account private key
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+#### Database
+- `DATABASE_URL` - PostgreSQL connection string
+
+See `.env.example` for all available options.
+
+## Development
+
+```bash
+# Run development server
+npm run dev
+
+# Run tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Lint code
+npm run lint
+
+# Build for production
+npm run build
+```
+
+## Tech Stack
+
+- **Frontend**: Next.js 16, React 19, Tailwind CSS 4
+- **Backend**: Next.js API Routes, Prisma ORM
+- **Database**: PostgreSQL (Neon), Google Sheets
+- **Storage**: Google Drive
+- **Email**: Gmail SMTP via Nodemailer
+- **Rate Limiting**: Upstash Redis
+- **Deployment**: Vercel
+
+## Project Structure
+
+```
+src/
+├── app/                 # Next.js App Router
+│   ├── (founder)/       # Founder dashboard
+│   ├── api/             # API endpoints
+│   └── [pages]/         # Public pages
+├── components/          # React components
+└── lib/                 # Utility functions
+
+docs/                    # Documentation
+prisma/                  # Database schema
+```
+
+## License
+
+Private - All rights reserved.

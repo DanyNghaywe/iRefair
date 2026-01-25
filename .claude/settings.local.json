@@ -66,7 +66,13 @@
       "Bash(npm ls:*)",
       "Bash(git fetch:*)",
       "Bash(git rm:*)",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(git -C \"c:\\\\Users\\\\User\\\\Documents\\\\my-apps\\\\iRefair\" log --oneline)",
+      "Bash(wc:*)",
+      "Bash(npm run test)",
+      "Bash(xargs -I {} bash -c 'find {} -name \"\"route.ts\"\" -o -name \"\"route.js\"\" | wc -l')",
+      "Bash(npm test:*)",
+      "Bash(npm run test:coverage:*)"
     ]
   }
 }
