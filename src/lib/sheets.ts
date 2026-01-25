@@ -3639,8 +3639,8 @@ export async function getApplicantByIrain(irain: string, options: SheetReadOptio
     const rawValue = cellValue(values, irainIndex === -1 ? 0 : irainIndex).toLowerCase();
     if (rawValue !== normalized) continue;
 
-    const locatedCanada = getHeaderValue(headerMap, row, 'Located in Canada');
-    const eligibleMove = getHeaderValue(headerMap, row, 'Eligible to Move (6 Months)');
+    const locatedCanada = getHeaderValue(headerMap, values, 'Located in Canada');
+    const eligibleMove = getHeaderValue(headerMap, values, 'Eligible to Move (6 Months)');
     const eligible =
       locatedCanada.trim().toLowerCase() === 'yes' || eligibleMove.trim().toLowerCase() === 'yes';
     const eligibilityReason = eligible
@@ -3650,10 +3650,10 @@ export async function getApplicantByIrain(irain: string, options: SheetReadOptio
       : 'Not eligible';
 
     const missingFields: string[] = [];
-    if (!getHeaderValue(headerMap, row, 'Email')) missingFields.push('Email');
-    if (!getHeaderValue(headerMap, row, 'Phone')) missingFields.push('Phone');
+    if (!getHeaderValue(headerMap, values, 'Email')) missingFields.push('Email');
+    if (!getHeaderValue(headerMap, values, 'Phone')) missingFields.push('Phone');
     if (!locatedCanada) missingFields.push('Located in Canada');
-    if (!getHeaderValue(headerMap, row, 'Work Authorization')) {
+    if (!getHeaderValue(headerMap, values, 'Work Authorization')) {
       missingFields.push('Work Authorization');
     }
 
