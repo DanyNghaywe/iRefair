@@ -681,7 +681,7 @@ function runInBackground(task: SheetTask, label: string) {
   void run();
 }
 
-function enqueueSheetTask(sheetName: string, task: SheetTask, label: string) {
+function enqueueSheetTask(sheetName: string, task: SheetTask, label: string): Promise<void> {
   const previous = sheetTaskQueue.get(sheetName) ?? Promise.resolve();
   const next = previous
     .catch(() => undefined)
@@ -695,6 +695,7 @@ function enqueueSheetTask(sheetName: string, task: SheetTask, label: string) {
       }
     });
   sheetTaskQueue.set(sheetName, next);
+  return next;
 }
 
 function scheduleSheetTask(sheetName: string, task: SheetTask, label: string) {
