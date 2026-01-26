@@ -1,8 +1,10 @@
 import { type CompanyRow } from '@/lib/hiringCompanies';
 import { db } from '@/lib/db';
+import { Prisma } from '@prisma/client';
+import { sendMail } from '@/lib/mailer';
+import { escapeHtml } from '@/lib/validation';
 import { google } from 'googleapis';
 import { createHash, randomUUID } from 'crypto';
-import { after } from 'next/server';
 
 const SCOPES = ['https://www.googleapis.com/auth/spreadsheets'];
 
@@ -660,46 +662,386 @@ const sheetDataInFlight = new Map<string, Promise<SheetData>>();
 type SheetTask = () => Promise<void>;
 const sheetTaskQueue = new Map<string, Promise<void>>();
 
-function runInBackground(task: SheetTask, label: string) {
-  const run = async () => {
-    try {
-      await task();
-    } catch (error) {
-      console.error(`Background task failed (${label})`, error);
+type SheetSyncAction =
+  | {
+      type: 'ensureHeaders';
+      sheetName: string;
+      headers: string[];
+      force: boolean;
     }
-  };
-
-  try {
-    if (typeof after === 'function') {
-      after(run);
-      return;
+  | {
+      type: 'ensureColumns';
+      sheetName: string;
+      requiredHeaders: string[];
     }
-  } catch (error) {
-    console.error(`Unable to schedule background task (${label})`, error);
-  }
+  | {
+      type: 'appendRow';
+      sheetName: string;
+      headers?: string[];
+      values: (string | number | null)[];
+    }
+  | {
+      type: 'updateRowById';
+      sheetName: string;
+      idHeaderName: string;
+      idValue: string;
+      headers?: string[];
+      patchHeaders?: string[];
+      patch: Record<string, string>;
+    }
+  | {
+      type: 'deleteRowById';
+      sheetName: string;
+      idHeaderName: string;
+      idValue: string;
+    };
 
-  void run();
+const SHEET_SYNC_MAX_RETRIES = (() => {
+  const raw = process.env.SHEET_SYNC_MAX_RETRIES || '';
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
+})();
+
+const SHEET_SYNC_RETRY_DELAY_MS = (() => {
+  const raw = process.env.SHEET_SYNC_RETRY_DELAY_MS || '';
+  const parsed = Number.parseInt(raw, 10);
+  return Number.isFinite(parsed) && parsed >= 0 ? parsed : 400;
+})();
+
+function sleep(ms: number) {
+  if (ms <= 0) return Promise.resolve();
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function enqueueSheetTask(sheetName: string, task: SheetTask, label: string): Promise<void> {
-  const previous = sheetTaskQueue.get(sheetName) ?? Promise.resolve();
-  const next = previous
-    .catch(() => undefined)
-    .then(task)
-    .catch((error) => {
+function normalizeSheetSyncAction(action: SheetSyncAction): SheetSyncAction {
+  if (action.type === 'appendRow') {
+    return {
+      ...action,
+      values: action.values.map((value) => (value === undefined ? null : value)),
+    };
+  }
+  if (action.type === 'updateRowById') {
+    const patch: Record<string, string> = {};
+    for (const [key, value] of Object.entries(action.patch || {})) {
+      if (value === undefined || value === null) continue;
+      patch[key] = String(value);
+    }
+    return {
+      ...action,
+      patch,
+      patchHeaders: action.patchHeaders?.filter(Boolean),
+      headers: action.headers?.filter(Boolean),
+    };
+  }
+  if (action.type === 'ensureHeaders') {
+    return {
+      ...action,
+      headers: action.headers.filter(Boolean),
+    };
+  }
+  if (action.type === 'ensureColumns') {
+    return {
+      ...action,
+      requiredHeaders: action.requiredHeaders.filter(Boolean),
+    };
+  }
+  return action;
+}
+
+function buildSheetSyncDedupeKey(action: SheetSyncAction) {
+  const normalized = normalizeSheetSyncAction(action);
+  return createHash('sha256').update(JSON.stringify(normalized)).digest('hex');
+}
+
+function formatSheetSyncActionLabel(action: SheetSyncAction) {
+  switch (action.type) {
+    case 'ensureHeaders':
+      return `ensure headers for ${action.sheetName}`;
+    case 'ensureColumns':
+      return `ensure columns for ${action.sheetName}`;
+    case 'appendRow':
+      return `append row to ${action.sheetName}`;
+    case 'updateRowById':
+      return `update ${action.sheetName} (${action.idHeaderName}: ${action.idValue})`;
+    case 'deleteRowById':
+      return `delete ${action.sheetName} (${action.idHeaderName}: ${action.idValue})`;
+    default:
+      return 'sheet sync task';
+  }
+}
+
+async function executeSheetSyncAction(action: SheetSyncAction) {
+  const normalized = normalizeSheetSyncAction(action);
+  switch (normalized.type) {
+    case 'ensureHeaders':
+      await ensureHeaders(normalized.sheetName, normalized.headers, normalized.force, { source: 'sheets' });
+      return;
+    case 'ensureColumns':
+      await ensureColumns(normalized.sheetName, normalized.requiredHeaders, { source: 'sheets' });
+      return;
+    case 'appendRow': {
+      if (normalized.headers?.length) {
+        await ensureHeaders(normalized.sheetName, normalized.headers, false, { source: 'sheets' });
+      }
+      await appendRowInSheets(normalized.sheetName, normalized.values);
+      return;
+    }
+    case 'updateRowById': {
+      if (normalized.headers?.length) {
+        await ensureHeaders(normalized.sheetName, normalized.headers, false, { source: 'sheets' });
+      }
+      if (normalized.patchHeaders?.length) {
+        await ensureColumns(normalized.sheetName, normalized.patchHeaders, { source: 'sheets' });
+      }
+      const result = await updateRowByIdInSheets(
+        normalized.sheetName,
+        normalized.idHeaderName,
+        normalized.idValue,
+        normalized.patch,
+      );
+      if (!result.updated && result.reason === 'not_found') {
+        throw new Error(
+          `Unable to update row in sheet "${normalized.sheetName}" for ${normalized.idHeaderName}.`,
+        );
+      }
+      return;
+    }
+    case 'deleteRowById':
+      {
+        const result = await deleteRowByIdInSheets(
+          normalized.sheetName,
+          normalized.idHeaderName,
+          normalized.idValue,
+        );
+        if (!result.success && result.reason === 'error') {
+          throw new Error(
+            `Unable to delete row in sheet "${normalized.sheetName}" for ${normalized.idHeaderName}.`,
+          );
+        }
+      }
+      return;
+  }
+}
+
+async function markSheetSyncIssueResolvedByAction(action: SheetSyncAction) {
+  if (!SHEET_DB_ENABLED) return;
+  const dedupeKey = buildSheetSyncDedupeKey(action);
+  await db.sheetSyncIssue.updateMany({
+    where: { dedupeKey, resolvedAt: null },
+    data: { status: 'resolved', resolvedAt: new Date() },
+  });
+}
+
+async function notifyFounderOfSheetSyncIssue(params: {
+  issueId: string;
+  sheetName: string;
+  actionLabel: string;
+  error: string;
+}) {
+  const recipients = (process.env.FOUNDER_NOTIFICATION_EMAILS || process.env.FOUNDER_EMAIL || '')
+    .split(',')
+    .map((email) => email.trim())
+    .filter(Boolean);
+  if (recipients.length === 0) return;
+
+  const baseFromEnv =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.VERCEL_URL;
+  const baseUrl =
+    baseFromEnv && baseFromEnv.startsWith('http')
+      ? baseFromEnv
+      : baseFromEnv
+        ? `https://${baseFromEnv}`
+        : 'https://irefair.com';
+  const dashboardUrl = `${baseUrl}/founder`;
+
+  const safeAction = escapeHtml(params.actionLabel);
+  const safeSheet = escapeHtml(params.sheetName);
+  const safeError = escapeHtml(params.error);
+
+  const subject = `iRefair Ops: Sheet sync failed (${params.sheetName})`;
+  const text = `A Sheets sync task failed after multiple retries.\n\nSheet: ${params.sheetName}\nAction: ${params.actionLabel}\nError: ${params.error}\n\nOpen the founder dashboard to retry: ${dashboardUrl}\nIssue ID: ${params.issueId}`;
+  const html = `
+    <p style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2a37;">
+      A Sheets sync task failed after multiple retries.
+    </p>
+    <ul style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#1f2a37;">
+      <li><strong>Sheet:</strong> ${safeSheet}</li>
+      <li><strong>Action:</strong> ${safeAction}</li>
+      <li><strong>Error:</strong> ${safeError}</li>
+    </ul>
+    <p style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;">
+      Open the founder dashboard to retry:
+      <a href="${dashboardUrl}" target="_blank" rel="noreferrer">${dashboardUrl}</a>
+    </p>
+    <p style="font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:#6b7280;">
+      Issue ID: ${escapeHtml(params.issueId)}
+    </p>
+  `;
+
+  try {
+    await sendMail({
+      to: recipients.join(','),
+      subject,
+      html,
+      text,
+    });
+    await db.sheetSyncIssue.update({
+      where: { id: params.issueId },
+      data: { notifiedAt: new Date() },
+    });
+  } catch (error) {
+    console.error('Failed to send sheet sync failure email', error);
+  }
+}
+
+async function recordSheetSyncFailure(action: SheetSyncAction, error: unknown, attempts: number) {
+  if (!SHEET_DB_ENABLED) return;
+  const normalized = normalizeSheetSyncAction(action);
+  const dedupeKey = buildSheetSyncDedupeKey(normalized);
+  const message = error instanceof Error ? error.message : String(error);
+  const now = new Date();
+
+  const existing = await db.sheetSyncIssue.findFirst({
+    where: { dedupeKey, resolvedAt: null },
+  });
+
+  if (existing) {
+    const updated = await db.sheetSyncIssue.update({
+      where: { id: existing.id },
+      data: {
+        error: message,
+        attempts: existing.attempts + attempts,
+        lastAttemptAt: now,
+        status: 'failed',
+        action: normalized as Prisma.InputJsonValue,
+      },
+    });
+    if (!updated.notifiedAt) {
+      await notifyFounderOfSheetSyncIssue({
+        issueId: updated.id,
+        sheetName: updated.sheetName,
+        actionLabel: formatSheetSyncActionLabel(normalized),
+        error: message,
+      });
+    }
+    return;
+  }
+
+  const created = await db.sheetSyncIssue.create({
+    data: {
+      sheetName: normalized.sheetName,
+      action: normalized as Prisma.InputJsonValue,
+      error: message,
+      attempts,
+      status: 'failed',
+      dedupeKey,
+      lastAttemptAt: now,
+    },
+  });
+
+  await notifyFounderOfSheetSyncIssue({
+    issueId: created.id,
+    sheetName: created.sheetName,
+    actionLabel: formatSheetSyncActionLabel(normalized),
+    error: message,
+  });
+}
+
+async function updateSheetSyncIssueFailure(issueId: string, error: unknown, attempts: number) {
+  if (!SHEET_DB_ENABLED) return;
+  const message = error instanceof Error ? error.message : String(error);
+  const now = new Date();
+  const updated = await db.sheetSyncIssue.update({
+    where: { id: issueId },
+    data: {
+      error: message,
+      attempts: { increment: attempts },
+      lastAttemptAt: now,
+      status: 'failed',
+    },
+  });
+  if (!updated.notifiedAt) {
+    const action = updated.action as SheetSyncAction | null;
+    const sheetName = updated.sheetName;
+    await notifyFounderOfSheetSyncIssue({
+      issueId: updated.id,
+      sheetName,
+      actionLabel: action ? formatSheetSyncActionLabel(action) : `sheet sync task for ${sheetName}`,
+      error: message,
+    });
+  }
+}
+
+async function resolveSheetSyncIssueById(issueId: string) {
+  if (!SHEET_DB_ENABLED) return;
+  await db.sheetSyncIssue.update({
+    where: { id: issueId },
+    data: { status: 'resolved', resolvedAt: new Date(), lastAttemptAt: new Date() },
+  });
+}
+
+async function runSheetTaskWithRetry(
+  task: SheetTask,
+  label: string,
+  action?: SheetSyncAction,
+  issueId?: string,
+) {
+  let attempt = 0;
+  let lastError: unknown;
+  const maxAttempts = SHEET_SYNC_MAX_RETRIES;
+
+  while (attempt < maxAttempts) {
+    attempt += 1;
+    try {
+      await task();
+      if (issueId) {
+        await resolveSheetSyncIssueById(issueId);
+      } else if (action) {
+        await markSheetSyncIssueResolvedByAction(action);
+      }
+      return;
+    } catch (error) {
+      lastError = error;
       console.error(`Sheet task failed (${label})`, error);
+      if (attempt < maxAttempts) {
+        const delay = SHEET_SYNC_RETRY_DELAY_MS * attempt;
+        await sleep(delay);
+      }
+    }
+  }
+
+  if (issueId) {
+    await updateSheetSyncIssueFailure(issueId, lastError, attempt);
+  } else if (action) {
+    await recordSheetSyncFailure(action, lastError, attempt);
+  }
+
+  throw lastError;
+}
+
+function enqueueSheetTask(
+  sheetName: string,
+  task: SheetTask,
+  label: string,
+  action?: SheetSyncAction,
+  issueId?: string,
+): Promise<void> {
+  const previous = sheetTaskQueue.get(sheetName) ?? Promise.resolve();
+  const next = previous.catch(() => undefined).then(() => runSheetTaskWithRetry(task, label, action, issueId));
+  const wrapped = next
+    .catch((error) => {
+      throw error;
     })
     .finally(() => {
-      if (sheetTaskQueue.get(sheetName) === next) {
+      if (sheetTaskQueue.get(sheetName) === wrapped) {
         sheetTaskQueue.delete(sheetName);
       }
     });
-  sheetTaskQueue.set(sheetName, next);
-  return next;
-}
-
-function scheduleSheetTask(sheetName: string, task: SheetTask, label: string) {
-  runInBackground(() => enqueueSheetTask(sheetName, task, label), label);
+  sheetTaskQueue.set(sheetName, wrapped);
+  return wrapped;
 }
 
 const SHEET_DB_ENABLED = Boolean(process.env.DATABASE_URL);
@@ -1342,14 +1684,21 @@ export async function ensureHeaders(
       await ensureColumns(APPLICANT_SHEET_NAME, ['LinkedIn'], { source: 'db' });
     }
 
-    if (SHEET_DB_PRIMARY && baseHeaders.length) {
-      scheduleSheetTask(
+    if (SHEET_DB_PRIMARY && baseHeaders.length && (!existing.length || force)) {
+      const action: SheetSyncAction = {
+        type: 'ensureHeaders',
+        sheetName,
+        headers: baseHeaders,
+        force,
+      };
+      void enqueueSheetTask(
         sheetName,
         async () => {
-          await ensureHeaders(sheetName, baseHeaders, force, { source: 'sheets' });
+          await executeSheetSyncAction(action);
         },
         `ensureHeaders:${sheetName}`,
-      );
+        action,
+      ).catch(() => undefined);
     }
 
     return { created };
@@ -1627,16 +1976,20 @@ async function appendRow(
 
   if (SHEET_DB_PRIMARY) {
     const headersSnapshot = headers;
-    scheduleSheetTask(
+    const action: SheetSyncAction = {
+      type: 'appendRow',
+      sheetName,
+      headers: headersSnapshot,
+      values,
+    };
+    void enqueueSheetTask(
       sheetName,
       async () => {
-        if (headersSnapshot.length) {
-          await ensureHeaders(sheetName, headersSnapshot, false, { source: 'sheets' });
-        }
-        await appendRowInSheets(sheetName, values);
+        await executeSheetSyncAction(action);
       },
       `appendRow:${sheetName}`,
-    );
+      action,
+    ).catch(() => undefined);
   }
 }
 
@@ -2409,13 +2762,19 @@ export async function ensureColumns(
     await markSheetUpdated(sheetName, updatedHeaders);
 
     if (SHEET_DB_PRIMARY) {
-      scheduleSheetTask(
+      const action: SheetSyncAction = {
+        type: 'ensureColumns',
+        sheetName,
+        requiredHeaders,
+      };
+      void enqueueSheetTask(
         sheetName,
         async () => {
-          await ensureColumns(sheetName, requiredHeaders, { source: 'sheets' });
+          await executeSheetSyncAction(action);
         },
         `ensureColumns:${sheetName}`,
-      );
+        action,
+      ).catch(() => undefined);
     }
 
     return { appended: missing, headers: updatedHeaders };
@@ -3402,6 +3761,88 @@ async function updateRowByIdInSheets(
   return { updated: true };
 }
 
+async function deleteRowByIdInSheets(
+  sheetName: string,
+  idHeaderName: string,
+  idValue: string,
+): Promise<{ success: boolean; reason?: 'not_found' | 'error' }> {
+  const defaults = getDefaultHeadersForSheet(sheetName);
+  if (defaults.length) {
+    await ensureHeaders(sheetName, defaults, false, { source: 'sheets' });
+  }
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!1:1`,
+  });
+  const headers = headerRow.data.values?.[0] ?? [];
+  const idIndex = headerIndex(headers, idHeaderName);
+  if (idIndex === -1) {
+    throw new Error(`Header "${idHeaderName}" not found in sheet ${sheetName}`);
+  }
+
+  const idColumn = toColumnLetter(idIndex);
+  const column = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${sheetName}!${idColumn}:${idColumn}`,
+    majorDimension: 'COLUMNS',
+  });
+  const rows = column.data.values?.[0] ?? [];
+  const normalizedId = idValue.trim().toLowerCase();
+  let rowIndex = -1;
+  for (let i = 1; i < rows.length; i++) {
+    const value = String(rows[i] ?? '').trim().toLowerCase();
+    if (value === normalizedId) {
+      rowIndex = i + 1; // 1-based for sheets
+      break;
+    }
+  }
+
+  if (rowIndex === -1) {
+    return { success: false, reason: 'not_found' };
+  }
+
+  const doc = await sheets.spreadsheets.get({ spreadsheetId });
+  const targetSheet = doc.data.sheets?.find((sheet) => sheet.properties?.title === sheetName);
+  const sheetId = targetSheet?.properties?.sheetId;
+  if (sheetId === undefined) {
+    console.error(`Unable to find sheet "${sheetName}" for deletion.`);
+    return { success: false, reason: 'error' };
+  }
+
+  try {
+    await sheets.spreadsheets.batchUpdate({
+      spreadsheetId,
+      requestBody: {
+        requests: [
+          {
+            deleteDimension: {
+              range: {
+                sheetId,
+                dimension: 'ROWS',
+                startIndex: rowIndex - 1,
+                endIndex: rowIndex,
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    invalidateSheetDataCache(sheetName);
+    if (SHEET_DB_ENABLED && !SHEET_DB_PRIMARY) {
+      await deleteDbRows(sheetName, [idValue]);
+    }
+    return { success: true };
+  } catch (error) {
+    console.error(`Error deleting row in sheet "${sheetName}"`, error);
+    return { success: false, reason: 'error' };
+  }
+}
+
 export async function updateRowById(
   sheetName: string,
   idHeaderName: string,
@@ -3502,19 +3943,28 @@ export async function updateRowById(
       (header) => patchByHeaderName[header] !== undefined,
     );
     const headersSnapshot = headers;
-    scheduleSheetTask(
+    const sanitizedPatch: Record<string, string> = {};
+    for (const [header, value] of Object.entries(patchByHeaderName)) {
+      if (value === undefined || value === null) continue;
+      sanitizedPatch[header] = String(value);
+    }
+    const action: SheetSyncAction = {
+      type: 'updateRowById',
+      sheetName,
+      idHeaderName,
+      idValue,
+      headers: headersSnapshot,
+      patchHeaders,
+      patch: sanitizedPatch,
+    };
+    void enqueueSheetTask(
       sheetName,
       async () => {
-        if (headersSnapshot.length) {
-          await ensureHeaders(sheetName, headersSnapshot, false, { source: 'sheets' });
-        }
-        if (patchHeaders.length) {
-          await ensureColumns(sheetName, patchHeaders, { source: 'sheets' });
-        }
-        await updateRowByIdInSheets(sheetName, idHeaderName, idValue, patchByHeaderName);
+        await executeSheetSyncAction(action);
       },
       `updateRowById:${sheetName}`,
-    );
+      action,
+    ).catch(() => undefined);
   }
 
   return { updated: true };
@@ -3917,58 +4367,7 @@ export async function updatePendingUpdateStatus(
 async function deleteReferrerByIrrefInSheets(
   irref: string,
 ): Promise<{ success: boolean; reason?: 'not_found' | 'error' }> {
-  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS, false, { source: 'sheets' });
-
-  const referrer = await getReferrerByIrref(irref, { source: 'sheets' });
-  if (!referrer) {
-    return { success: false, reason: 'not_found' };
-  }
-
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-
-  // Get the sheetId for the Referrers sheet
-  const doc = await sheets.spreadsheets.get({ spreadsheetId });
-  const targetSheet = doc.data.sheets?.find(
-    (sheet) => sheet.properties?.title === REFERRER_SHEET_NAME,
-  );
-  const sheetId = targetSheet?.properties?.sheetId;
-
-  if (sheetId === undefined) {
-    console.error(`Unable to find sheet "${REFERRER_SHEET_NAME}" for deletion.`);
-    return { success: false, reason: 'error' };
-  }
-
-  try {
-    // Delete the row using batchUpdate with deleteDimension
-    // rowIndex is 1-indexed, but the API uses 0-indexed startIndex
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId,
-      requestBody: {
-        requests: [
-          {
-            deleteDimension: {
-              range: {
-                sheetId,
-                dimension: 'ROWS',
-                startIndex: referrer.rowIndex - 1, // Convert to 0-indexed
-                endIndex: referrer.rowIndex, // End is exclusive
-              },
-            },
-          },
-        ],
-      },
-    });
-
-    invalidateSheetDataCache(REFERRER_SHEET_NAME);
-    if (SHEET_DB_ENABLED && !SHEET_DB_PRIMARY) {
-      await deleteDbRows(REFERRER_SHEET_NAME, [irref]);
-    }
-    return { success: true };
-  } catch (error) {
-    console.error('Error deleting referrer row', error);
-    return { success: false, reason: 'error' };
-  }
+  return deleteRowByIdInSheets(REFERRER_SHEET_NAME, 'iRREF', irref);
 }
 
 export async function deleteReferrerByIrref(
@@ -3989,13 +4388,20 @@ export async function deleteReferrerByIrref(
   invalidateSheetDataCache(REFERRER_SHEET_NAME);
   await markSheetUpdated(REFERRER_SHEET_NAME);
 
-  scheduleSheetTask(
+  const action: SheetSyncAction = {
+    type: 'deleteRowById',
+    sheetName: REFERRER_SHEET_NAME,
+    idHeaderName: 'iRREF',
+    idValue: irref,
+  };
+  void enqueueSheetTask(
     REFERRER_SHEET_NAME,
     async () => {
-      await deleteReferrerByIrrefInSheets(irref);
+      await executeSheetSyncAction(action);
     },
     `deleteReferrer:${irref}`,
-  );
+    action,
+  ).catch(() => undefined);
 
   return { success: true };
 }
@@ -4003,58 +4409,7 @@ export async function deleteReferrerByIrref(
 async function deleteApplicantByIrainInSheets(
   irain: string,
 ): Promise<{ success: boolean; reason?: 'not_found' | 'error' }> {
-  await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS, false, { source: 'sheets' });
-
-  const applicant = await getApplicantByIrain(irain, { source: 'sheets' });
-  if (!applicant) {
-    return { success: false, reason: 'not_found' };
-  }
-
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-
-  // Get the sheetId for the Applicants sheet
-  const doc = await sheets.spreadsheets.get({ spreadsheetId });
-  const targetSheet = doc.data.sheets?.find(
-    (sheet) => sheet.properties?.title === APPLICANT_SHEET_NAME,
-  );
-  const sheetId = targetSheet?.properties?.sheetId;
-
-  if (sheetId === undefined) {
-    console.error(`Unable to find sheet "${APPLICANT_SHEET_NAME}" for deletion.`);
-    return { success: false, reason: 'error' };
-  }
-
-  try {
-    // Delete the row using batchUpdate with deleteDimension
-    // rowIndex is 1-indexed, but the API uses 0-indexed startIndex
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId,
-      requestBody: {
-        requests: [
-          {
-            deleteDimension: {
-              range: {
-                sheetId,
-                dimension: 'ROWS',
-                startIndex: applicant.rowIndex - 1, // Convert to 0-indexed
-                endIndex: applicant.rowIndex, // End is exclusive
-              },
-            },
-          },
-        ],
-      },
-    });
-
-    invalidateSheetDataCache(APPLICANT_SHEET_NAME);
-    if (SHEET_DB_ENABLED && !SHEET_DB_PRIMARY) {
-      await deleteDbRows(APPLICANT_SHEET_NAME, [irain]);
-    }
-    return { success: true };
-  } catch (error) {
-    console.error('Error deleting applicant row', error);
-    return { success: false, reason: 'error' };
-  }
+  return deleteRowByIdInSheets(APPLICANT_SHEET_NAME, 'iRAIN', irain);
 }
 
 export async function deleteApplicantByIrain(
@@ -4075,13 +4430,20 @@ export async function deleteApplicantByIrain(
   invalidateSheetDataCache(APPLICANT_SHEET_NAME);
   await markSheetUpdated(APPLICANT_SHEET_NAME);
 
-  scheduleSheetTask(
+  const action: SheetSyncAction = {
+    type: 'deleteRowById',
+    sheetName: APPLICANT_SHEET_NAME,
+    idHeaderName: 'iRAIN',
+    idValue: irain,
+  };
+  void enqueueSheetTask(
     APPLICANT_SHEET_NAME,
     async () => {
-      await deleteApplicantByIrainInSheets(irain);
+      await executeSheetSyncAction(action);
     },
     `deleteApplicant:${irain}`,
-  );
+    action,
+  ).catch(() => undefined);
 
   return { success: true };
 }
@@ -5584,4 +5946,99 @@ export async function syncSheetsToDatabase(): Promise<{
     syncedAt: new Date().toISOString(),
     results,
   };
+}
+
+function parseSheetSyncAction(value: unknown): SheetSyncAction | null {
+  if (!value || typeof value !== 'object') return null;
+  const action = value as SheetSyncAction;
+  if (typeof action.type !== 'string' || typeof (action as SheetSyncAction).sheetName !== 'string') {
+    return null;
+  }
+  return action;
+}
+
+function describeSheetSyncAction(action: SheetSyncAction | null): string {
+  if (!action) return 'Sheet sync task';
+  switch (action.type) {
+    case 'ensureHeaders':
+      return `Ensure headers (${action.sheetName})`;
+    case 'ensureColumns':
+      return `Ensure columns (${action.sheetName})`;
+    case 'appendRow':
+      return `Append row (${action.sheetName})`;
+    case 'updateRowById':
+      return `Update ${action.sheetName} (${action.idHeaderName}: ${action.idValue})`;
+    case 'deleteRowById':
+      return `Delete ${action.sheetName} (${action.idHeaderName}: ${action.idValue})`;
+    default:
+      return 'Sheet sync task';
+  }
+}
+
+export type SheetSyncIssueSummary = {
+  id: string;
+  sheetName: string;
+  actionType: string;
+  actionLabel: string;
+  error: string;
+  attempts: number;
+  createdAt: string;
+  lastAttemptAt?: string | null;
+};
+
+export async function listSheetSyncIssues(limit = 10): Promise<SheetSyncIssueSummary[]> {
+  if (!SHEET_DB_ENABLED) return [];
+  const issues = await db.sheetSyncIssue.findMany({
+    where: { resolvedAt: null },
+    orderBy: { createdAt: 'desc' },
+    take: limit,
+  });
+
+  return issues.map((issue) => {
+    const action = parseSheetSyncAction(issue.action);
+    return {
+      id: issue.id,
+      sheetName: issue.sheetName,
+      actionType: action?.type ?? 'unknown',
+      actionLabel: describeSheetSyncAction(action),
+      error: issue.error,
+      attempts: issue.attempts,
+      createdAt: issue.createdAt.toISOString(),
+      lastAttemptAt: issue.lastAttemptAt ? issue.lastAttemptAt.toISOString() : null,
+    };
+  });
+}
+
+export async function retrySheetSyncIssue(
+  issueId: string,
+): Promise<{ ok: boolean; error?: string }> {
+  if (!SHEET_DB_ENABLED) {
+    return { ok: false, error: 'Database is not configured.' };
+  }
+
+  const issue = await db.sheetSyncIssue.findUnique({ where: { id: issueId } });
+  if (!issue || issue.resolvedAt) {
+    return { ok: false, error: 'Issue not found.' };
+  }
+
+  const action = parseSheetSyncAction(issue.action);
+  if (!action) {
+    return { ok: false, error: 'Issue payload is invalid.' };
+  }
+
+  try {
+    await enqueueSheetTask(
+      action.sheetName,
+      async () => {
+        await executeSheetSyncAction(action);
+      },
+      `retryIssue:${issueId}`,
+      action,
+      issueId,
+    );
+    return { ok: true };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return { ok: false, error: message || 'Retry failed.' };
+  }
 }

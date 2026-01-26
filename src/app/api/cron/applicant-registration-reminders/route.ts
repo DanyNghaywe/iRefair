@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { requireCronAuth } from '@/lib/cronAuth';
 import { sendMail } from '@/lib/mailer';
 import { applicantRegistrationReminder } from '@/lib/emailTemplates';
 import {
@@ -23,13 +24,8 @@ const appBaseUrl =
   baseFromEnv && baseFromEnv.startsWith('http') ? baseFromEnv : baseFromEnv ? `https://${baseFromEnv}` : 'https://irefair.com';
 
 export async function GET(request: NextRequest) {
-  // Verify cron secret to prevent unauthorized access
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  }
+  const authResponse = requireCronAuth(request);
+  if (authResponse) return authResponse;
 
   try {
     // Ensure columns exist

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import React from 'react';
 import { vi } from 'vitest';
-import { render, screen, fireEvent, act } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 
 import { ToastProvider, useToast } from '../Toast';
 

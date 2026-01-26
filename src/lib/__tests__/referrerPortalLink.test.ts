@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import type * as Sheets from '@/lib/sheets';
 
 // Store original env
 const originalEnv = { ...process.env };
@@ -35,6 +36,8 @@ vi.mock('@/lib/emailTemplates', () => ({
     text: 'Portal',
   }),
 }));
+
+type ReferrerLookup = Awaited<ReturnType<typeof Sheets.getReferrerByIrref>>;
 
 describe('referrerPortalLink', () => {
   beforeEach(() => {
@@ -124,7 +127,7 @@ describe('referrerPortalLink', () => {
       const { getReferrerByIrref } = await import('@/lib/sheets');
       vi.mocked(getReferrerByIrref).mockResolvedValueOnce({
         record: { portalTokenVersion: '1' },
-      } as any);
+      } as ReferrerLookup);
 
       const { ensureReferrerPortalTokenVersion } = await import('../referrerPortalLink');
       const version = await ensureReferrerPortalTokenVersion('iRREF0000000001');
@@ -136,7 +139,7 @@ describe('referrerPortalLink', () => {
       const { getReferrerByIrref, updateRowById, ensureColumns } = await import('@/lib/sheets');
       vi.mocked(getReferrerByIrref).mockResolvedValueOnce({
         record: { portalTokenVersion: '' },
-      } as any);
+      } as ReferrerLookup);
 
       const { ensureReferrerPortalTokenVersion } = await import('../referrerPortalLink');
       await ensureReferrerPortalTokenVersion('iRREF0000000001');

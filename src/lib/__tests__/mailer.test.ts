@@ -13,9 +13,6 @@ vi.mock('nodemailer', () => ({
   },
 }));
 
-// Import after mocking
-import { sendMail } from '../mailer';
-
 const ORIGINAL_ENV = { ...process.env };
 
 beforeEach(() => {

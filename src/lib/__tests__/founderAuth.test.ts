@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import { createHmac } from 'crypto';
 import { NextRequest } from 'next/server';
 import {
   signSession,
@@ -185,7 +186,6 @@ describe('verifySession', () => {
       .replace(/\//g, '_')
       .replace(/=+$/, '');
     // Sign it properly
-    const { createHmac } = require('crypto');
     const sig1 = createHmac('sha256', TEST_SECRET).update(body1).digest();
     const sigEncoded1 = Buffer.from(sig1)
       .toString('base64')

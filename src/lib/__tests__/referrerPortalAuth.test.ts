@@ -1,4 +1,3 @@
-import { vi } from 'vitest';
 import { NextRequest } from 'next/server';
 import {
   getReferrerPortalToken,

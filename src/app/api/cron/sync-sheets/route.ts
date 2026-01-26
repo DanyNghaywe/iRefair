@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+import { requireCronAuth } from '@/lib/cronAuth';
 import { syncSheetsToDatabase } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
-  const cronSecret = process.env.CRON_SECRET;
-
-  if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-    return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
-  }
+  const authResponse = requireCronAuth(request);
+  if (authResponse) return authResponse;
 
   try {
     const result = await syncSheetsToDatabase();

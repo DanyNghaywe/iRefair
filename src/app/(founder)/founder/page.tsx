@@ -21,6 +21,18 @@ const translations = {
     syncSuccess: "Synced",
     syncError: "Sync failed",
     openSheets: "Open Sheets",
+    sheetSyncTitle: "Sheet sync alerts",
+    sheetSyncAllClear: "All clear",
+    sheetSyncLoading: "Loading sheet sync alerts...",
+    sheetSyncEmpty: "No outstanding sheet sync errors.",
+    sheetSyncRetry: "Retry",
+    sheetSyncRetrying: "Retrying...",
+    sheetSyncLoadError: "Unable to load sheet sync alerts.",
+    sheetSyncRetryError: "Retry failed. Please try again.",
+    sheetSyncAttempts: "Attempts:",
+    sheetSyncLastAttempt: "Last attempt:",
+    sheetSyncFirstSeen: "First seen:",
+    sheetSyncErrorBadge: "Check",
   },
   fr: {
     title: "Console Ops",
@@ -35,6 +47,18 @@ const translations = {
     syncSuccess: "Synchronise",
     syncError: "Echec de sync",
     openSheets: "Ouvrir Sheets",
+    sheetSyncTitle: "Alertes de synchronisation",
+    sheetSyncAllClear: "Tout va bien",
+    sheetSyncLoading: "Chargement des alertes de synchronisation...",
+    sheetSyncEmpty: "Aucune erreur de synchronisation en attente.",
+    sheetSyncRetry: "Reessayer",
+    sheetSyncRetrying: "Nouvelle tentative...",
+    sheetSyncLoadError: "Impossible de charger les alertes de synchronisation.",
+    sheetSyncRetryError: "Nouvelle tentative echouee.",
+    sheetSyncAttempts: "Tentatives :",
+    sheetSyncLastAttempt: "Derniere tentative :",
+    sheetSyncFirstSeen: "Premiere alerte :",
+    sheetSyncErrorBadge: "Verifier",
   },
 };
 
@@ -42,6 +66,17 @@ type Stats = {
   applicants: number | null;
   referrers: number | null;
   applications: number | null;
+};
+
+type SheetSyncIssue = {
+  id: string;
+  sheetName: string;
+  actionType: string;
+  actionLabel: string;
+  error: string;
+  attempts: number;
+  createdAt: string;
+  lastAttemptAt?: string | null;
 };
 
 export default function FounderDashboard() {
@@ -53,6 +88,10 @@ export default function FounderDashboard() {
     applications: null,
   });
   const [syncState, setSyncState] = useState<"idle" | "running" | "success" | "error">("idle");
+  const [issues, setIssues] = useState<SheetSyncIssue[]>([]);
+  const [issuesLoading, setIssuesLoading] = useState(true);
+  const [retryingIssueId, setRetryingIssueId] = useState<string | null>(null);
+  const [issuesError, setIssuesError] = useState("");
 
   const loadStats = useCallback(async () => {
     try {
@@ -70,9 +109,31 @@ export default function FounderDashboard() {
     }
   }, []);
 
+  const loadIssues = useCallback(async () => {
+    setIssuesLoading(true);
+    setIssuesError("");
+    try {
+      const response = await fetch("/api/founder/sheet-sync-issues", { cache: "no-store" });
+      const data = await response.json();
+      if (data?.ok) {
+        setIssues(Array.isArray(data.issues) ? data.issues : []);
+      } else {
+        setIssues([]);
+        setIssuesError(data?.error || t.sheetSyncLoadError);
+      }
+    } catch (error) {
+      console.error("Failed to load sheet sync issues", error);
+      setIssues([]);
+      setIssuesError(t.sheetSyncLoadError);
+    } finally {
+      setIssuesLoading(false);
+    }
+  }, [t.sheetSyncLoadError]);
+
   useEffect(() => {
     loadStats();
-  }, [loadStats]);
+    loadIssues();
+  }, [loadStats, loadIssues]);
 
   const handleSyncNow = async () => {
     if (syncState === "running") return;
@@ -108,6 +169,41 @@ export default function FounderDashboard() {
     { title: t.referrers, value: stats.referrers, hint: t.syncedHint },
     { title: t.applications, value: stats.applications, hint: t.past7Days },
   ];
+
+  const formatTimestamp = (value?: string | null) => {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return value;
+    return date.toLocaleString(language === "fr" ? "fr-CA" : "en-CA", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const handleRetryIssue = async (id: string) => {
+    if (retryingIssueId) return;
+    setRetryingIssueId(id);
+    try {
+      const response = await fetch(`/api/founder/sheet-sync-issues/${id}/retry`, {
+        method: "POST",
+      });
+      const data = await response.json();
+      if (!data?.ok) {
+        setIssuesError(data?.error || t.sheetSyncRetryError);
+      } else {
+        setIssuesError("");
+      }
+      await loadIssues();
+    } catch (error) {
+      console.error("Failed to retry sheet sync issue", error);
+      setIssuesError(t.sheetSyncRetryError);
+    } finally {
+      setRetryingIssueId(null);
+    }
+  };
 
   return (
     <div className="founder-page">
@@ -151,6 +247,61 @@ export default function FounderDashboard() {
             )}
           </div>
         ))}
+
+        <div className="glass-card founder-card founder-card--wide">
+          <div className="founder-card__header">
+            <div className="founder-card__title">{t.sheetSyncTitle}</div>
+            {issuesLoading ? (
+              <span className="founder-badge founder-badge--neutral">...</span>
+            ) : issuesError ? (
+              <span className="founder-badge founder-badge--warning">{t.sheetSyncErrorBadge}</span>
+            ) : issues.length > 0 ? (
+              <span className="founder-badge founder-badge--danger">{issues.length}</span>
+            ) : (
+              <span className="founder-badge founder-badge--success">{t.sheetSyncAllClear}</span>
+            )}
+          </div>
+
+          {issuesLoading ? (
+            <div className="founder-card__meta">{t.sheetSyncLoading}</div>
+          ) : (
+            <>
+              {issuesError ? <div className="founder-card__meta">{issuesError}</div> : null}
+              {issues.length === 0 ? (
+                <div className="founder-card__meta">{t.sheetSyncEmpty}</div>
+              ) : (
+                <ul className="founder-sync-issues">
+                  {issues.map((issue) => (
+                    <li key={issue.id} className="founder-sync-issue">
+                      <div className="founder-sync-issue__main">
+                        <div className="founder-sync-issue__title">{issue.actionLabel}</div>
+                        <div className="founder-sync-issue__meta">
+                          {issue.sheetName} - {t.sheetSyncAttempts} {issue.attempts}
+                          {issue.lastAttemptAt
+                            ? ` - ${t.sheetSyncLastAttempt} ${formatTimestamp(issue.lastAttemptAt)}`
+                            : issue.createdAt
+                            ? ` - ${t.sheetSyncFirstSeen} ${formatTimestamp(issue.createdAt)}`
+                            : ""}
+                        </div>
+                        <div className="founder-sync-issue__error">{issue.error}</div>
+                      </div>
+                      <div className="founder-sync-issue__actions">
+                        <button
+                          className="founder-button founder-button--ghost founder-button--compact"
+                          type="button"
+                          onClick={() => handleRetryIssue(issue.id)}
+                          disabled={retryingIssueId === issue.id}
+                        >
+                          {retryingIssueId === issue.id ? t.sheetSyncRetrying : t.sheetSyncRetry}
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );

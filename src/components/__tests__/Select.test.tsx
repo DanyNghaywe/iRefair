@@ -122,7 +122,7 @@ describe('Select', () => {
     fireEvent.click(screen.getByRole('button'));
 
     await waitFor(() => {
-      const listbox = screen.getByRole('listbox');
+      expect(screen.getByRole('listbox')).toBeInTheDocument();
       const options = screen.getAllByRole('option');
       expect(options).toHaveLength(3);
     });

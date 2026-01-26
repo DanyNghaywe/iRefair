@@ -1,5 +1,6 @@
 import { vi } from 'vitest';
 import { NextRequest } from 'next/server';
+import type * as Sheets from '@/lib/sheets';
 
 // Store original env
 const originalEnv = { ...process.env };
@@ -78,6 +79,10 @@ vi.mock('@/lib/tokens', () => ({
 vi.mock('@/lib/validation', () => ({
   normalizeHttpUrl: vi.fn((url) => url),
 }));
+
+type ExistingApplicantLookup = Awaited<ReturnType<typeof Sheets.findExistingApplicant>>;
+type ApplicantLookup = Awaited<ReturnType<typeof Sheets.findApplicantByIdentifier>>;
+type ApplicationLookup = Awaited<ReturnType<typeof Sheets.getApplicationById>>;
 
 function createFormDataRequest(fields: Record<string, string | File>): NextRequest {
   const formData = new FormData();
@@ -259,7 +264,7 @@ describe('POST /api/applicant', () => {
         familyName: 'Doe',
         archived: 'true',
       },
-    } as any);
+    } as ExistingApplicantLookup);
 
     const { POST } = await import('../applicant/route');
     const request = createFormDataRequest({
@@ -286,7 +291,7 @@ describe('POST /api/applicant', () => {
         updateRequestExpiresAt: new Date(Date.now() + 86400000).toISOString(),
         updateRequestPurpose: 'info',
       },
-    } as any);
+    } as ApplicationLookup);
 
     const { findApplicantByIdentifier } = await import('@/lib/sheets');
     vi.mocked(findApplicantByIdentifier).mockResolvedValueOnce({
@@ -297,7 +302,7 @@ describe('POST /api/applicant', () => {
         firstName: 'John',
         familyName: 'Doe',
       },
-    } as any);
+    } as ApplicantLookup);
 
     const { POST } = await import('../applicant/route');
     const request = createFormDataRequest({
@@ -321,7 +326,7 @@ describe('POST /api/applicant', () => {
         updateRequestTokenHash: 'hashed-opaque',
         updateRequestExpiresAt: new Date(Date.now() - 86400000).toISOString(),
       },
-    } as any);
+    } as ApplicationLookup);
 
     const { isExpired } = await import('@/lib/tokens');
     vi.mocked(isExpired).mockReturnValueOnce(true);
@@ -365,7 +370,7 @@ describe('POST /api/applicant', () => {
         applicantId: 'iRAIN0000000001',
         archived: 'true',
       },
-    } as any);
+    } as ApplicationLookup);
 
     const { POST } = await import('../applicant/route');
     const request = createFormDataRequest({

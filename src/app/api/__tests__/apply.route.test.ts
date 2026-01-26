@@ -1,5 +1,6 @@
 import { vi } from 'vitest';
 import { NextRequest } from 'next/server';
+import type * as Sheets from '@/lib/sheets';
 
 // Store original env
 const originalEnv = { ...process.env };
@@ -57,6 +58,9 @@ vi.mock('@/lib/referrerPortalLink', () => ({
   ensureReferrerPortalTokenVersion: vi.fn().mockResolvedValue(1),
   buildReferrerPortalLink: vi.fn().mockReturnValue('https://example.com/portal'),
 }));
+
+type ApplicantLookup = Awaited<ReturnType<typeof Sheets.findApplicantByIdentifier>>;
+type ReferrerCompanyLookup = Awaited<ReturnType<typeof Sheets.findReferrerCompanyByIrcrnStrict>>;
 
 function createFormDataRequest(fields: Record<string, string | File>): NextRequest {
   const formData = new FormData();
@@ -208,7 +212,7 @@ describe('POST /api/apply', () => {
         familyName: 'Doe',
         applicantSecretHash: 'different-hash', // Different from provided
       },
-    } as any);
+    } as ApplicantLookup);
 
     const { hashApplicantSecret } = await import('@/lib/applicantUpdateToken');
     vi.mocked(hashApplicantSecret).mockReturnValueOnce('wrong-hash');
@@ -242,7 +246,7 @@ describe('POST /api/apply', () => {
         applicantSecretHash: hashValue,
         archived: 'true',
       },
-    } as any);
+    } as ApplicantLookup);
 
     const { POST } = await import('../apply/route');
     const request = createFormDataRequest({
@@ -273,7 +277,7 @@ describe('POST /api/apply', () => {
         familyName: 'Doe',
         applicantSecretHash: hashValue,
       },
-    } as any);
+    } as ApplicantLookup);
 
     vi.mocked(findDuplicateApplication).mockResolvedValueOnce('APP-EXISTING');
 
@@ -307,7 +311,7 @@ describe('POST /api/apply', () => {
         familyName: 'Doe',
         applicantSecretHash: hashValue,
       },
-    } as any);
+    } as ApplicantLookup);
 
     vi.mocked(findReferrerCompanyByIrcrnStrict).mockRejectedValueOnce(new Error('Not found'));
     vi.mocked(findReferrerByIrcrn).mockResolvedValueOnce(null);
@@ -343,7 +347,7 @@ describe('POST /api/apply', () => {
         familyName: 'Doe',
         applicantSecretHash: hashValue,
       },
-    } as any);
+    } as ApplicantLookup);
 
     vi.mocked(findReferrerCompanyByIrcrnStrict).mockResolvedValueOnce({
       referrer: {
@@ -356,7 +360,7 @@ describe('POST /api/apply', () => {
         id: 'RCMP-123',
         companyName: 'Test Company',
       },
-    } as any);
+    } as ReferrerCompanyLookup);
 
     const { scanBufferForViruses } = await import('@/lib/fileScan');
     vi.mocked(scanBufferForViruses).mockResolvedValueOnce({ ok: false, message: 'Malware detected' });
@@ -392,7 +396,7 @@ describe('POST /api/apply', () => {
         familyName: 'Doe',
         applicantSecretHash: hashValue,
       },
-    } as any);
+    } as ApplicantLookup);
 
     vi.mocked(findReferrerCompanyByIrcrnStrict).mockResolvedValueOnce({
       referrer: {
@@ -405,7 +409,7 @@ describe('POST /api/apply', () => {
         id: 'RCMP-123',
         companyName: 'Test Company',
       },
-    } as any);
+    } as ReferrerCompanyLookup);
 
     const { POST } = await import('../apply/route');
     const request = createFormDataRequest({
@@ -443,7 +447,7 @@ describe('POST /api/apply', () => {
         familyName: 'Doe',
         applicantSecretHash: hashValue,
       },
-    } as any);
+    } as ApplicantLookup);
 
     vi.mocked(findReferrerCompanyByIrcrnStrict).mockResolvedValueOnce({
       referrer: {
@@ -456,7 +460,7 @@ describe('POST /api/apply', () => {
         id: 'RCMP-123',
         companyName: 'Test Company',
       },
-    } as any);
+    } as ReferrerCompanyLookup);
 
     const { POST } = await import('../apply/route');
     const request = createFormDataRequest({
@@ -510,7 +514,7 @@ describe('POST /api/apply', () => {
         familyName: 'Doe',
         applicantSecretHash: hashValue,
       },
-    } as any);
+    } as ApplicantLookup);
 
     vi.mocked(findReferrerCompanyByIrcrnStrict).mockRejectedValueOnce(new Error('Not found'));
     vi.mocked(findReferrerByIrcrn).mockResolvedValueOnce(null);
