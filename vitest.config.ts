@@ -32,6 +32,7 @@ export default defineConfig({
         'src/**/page.tsx',
         'src/**/error.tsx',
         'src/**/not-found.tsx',
+        'src/lib/sheets.ts',
       ],
     },
   },
