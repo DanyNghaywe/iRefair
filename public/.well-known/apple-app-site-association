@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAMID.com.irefair.app",
+        "paths": [
+          "/referrer/portal*",
+          "/applicant*",
+          "/update*"
+        ]
+      }
+    ]
+  }
+}

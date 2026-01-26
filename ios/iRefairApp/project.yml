@@ -1,0 +1,35 @@
+name: iRefair
+options:
+  bundleIdPrefix: com.irefair
+  deploymentTarget:
+    iOS: "16.0"
+settings:
+  base:
+    SWIFT_VERSION: 5.9
+    TARGETED_DEVICE_FAMILY: "1"
+    ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+    PRODUCT_NAME: iRefair
+
+packages:
+  Sentry:
+    url: https://github.com/getsentry/sentry-cocoa.git
+    from: 8.0.0
+
+targets:
+  iRefair:
+    type: application
+    platform: iOS
+    sources:
+      - path: iRefairApp
+    resources:
+      - path: iRefairApp/Resources
+    entitlements:
+      path: iRefairApp/iRefairApp.entitlements
+    dependencies:
+      - package: Sentry
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.irefair.app
+        INFOPLIST_FILE: iRefairApp/Info.plist
+        CURRENT_PROJECT_VERSION: 1
+        MARKETING_VERSION: 1.0.0

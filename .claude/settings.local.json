@@ -72,7 +72,10 @@
       "Bash(npm run test)",
       "Bash(xargs -I {} bash -c 'find {} -name \"\"route.ts\"\" -o -name \"\"route.js\"\" | wc -l')",
       "Bash(npm test:*)",
-      "Bash(npm run test:coverage:*)"
+      "Bash(npm run test:coverage:*)",
+      "Bash(gh run list:*)",
+      "Bash(gh run view:*)",
+      "Bash(git rev-list:*)"
     ]
   }
 }

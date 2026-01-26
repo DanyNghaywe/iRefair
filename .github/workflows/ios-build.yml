@@ -1,0 +1,27 @@
+name: iOS Build
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'ios/**'
+      - '.github/workflows/ios-build.yml'
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Generate Xcode project
+        working-directory: ios/iRefairApp
+        run: xcodegen generate
+      - name: Build (Simulator)
+        working-directory: ios/iRefairApp
+        run: |
+          xcodebuild \
+            -scheme iRefair \
+            -sdk iphonesimulator \
+            -destination 'platform=iOS Simulator,name=iPhone 15' \
+            build
