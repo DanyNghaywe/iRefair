@@ -22,19 +22,19 @@ struct FeedbackSheet: View {
             IRefairScreen {
                 IRefairForm {
                     if !networkMonitor.isConnected {
-                        Section {
+                        IRefairSection {
                             StatusBanner(text: l("You're offline. Connect to the internet to send feedback.", "Vous êtes hors ligne. Connectez-vous à Internet pour envoyer l’avis."), style: .warning)
                         }
                     }
 
-                    Section(l("Applicant", "Candidat")) {
+                    IRefairSection(l("Applicant", "Candidat")) {
                         Text(applicant.displayName)
                         Text(applicant.irain)
                             .font(Theme.font(.caption))
                             .foregroundStyle(Theme.muted)
                     }
 
-                    Section(l("Feedback", "Avis")) {
+                    IRefairSection(l("Feedback", "Avis")) {
                         TextField(l("Share feedback", "Partagez votre avis"), text: $feedback, axis: .vertical)
                             .lineLimit(4, reservesSpace: true)
                         Picker(l("Rating", "Évaluation"), selection: $rating) {
@@ -44,15 +44,16 @@ struct FeedbackSheet: View {
                         }
                         .pickerStyle(.segmented)
                         Toggle(l("Recommend", "Recommander"), isOn: $recommend)
+                            .toggleStyle(IRefairCheckboxToggleStyle())
                     }
 
                     if let errorMessage {
-                        Section {
+                        IRefairSection {
                             StatusBanner(text: errorMessage, style: .error)
                         }
                     }
 
-                    Section {
+                    IRefairSection {
                         Button {
                             Task { await submit() }
                         } label: {
@@ -65,7 +66,6 @@ struct FeedbackSheet: View {
                         .buttonStyle(IRefairPrimaryButtonStyle())
                         .disabled(isSubmitting || !networkMonitor.isConnected)
                     }
-                    .listRowBackground(Color.clear)
                 }
                 .navigationTitle(l("Feedback", "Avis"))
                 .toolbar {

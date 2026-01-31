@@ -10,19 +10,21 @@ struct IRefairForm<Content: View>: View {
     var body: some View {
         ZStack {
             IRefairBoardBackground()
-            Form {
-                content
+            ScrollView {
+                VStack(alignment: .leading, spacing: 20) {
+                    content
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 20)
             }
-            .scrollContentBackground(.hidden)
-            .listStyle(.insetGrouped)
-            .listRowBackground(Color.clear)
-            .listRowSeparatorTint(Theme.line.opacity(0.6))
+            .scrollDismissesKeyboard(.interactively)
+            .scrollIndicators(.hidden)
             .foregroundStyle(Theme.ink)
-            .background(Color.clear)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .clipShape(RoundedRectangle(cornerRadius: Theme.boardRadius, style: .continuous))
-        .padding(.horizontal, 16)
+        .padding(.horizontal, 14)
         .padding(.vertical, 12)
     }
 }

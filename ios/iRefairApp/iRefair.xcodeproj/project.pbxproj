@@ -10,6 +10,8 @@
 		01CB43B4E8C9EEDA42BFF9A0 /* Manrope-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = EA17556914830773C349ABD3 /* Manrope-Light.ttf */; };
 		0C6C56C301641119DCB0CE5A /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B4C334CC72E1A91C57A76C0 /* KeychainStore.swift */; };
 		1CD33D758E0CDE3FF7AD41EC /* IRefairButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 310705599E00756B500143AB /* IRefairButtonStyles.swift */; };
+		56E26E86EF35450A9D8BCB66 /* IRefairInputStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = A254AB8F1004452F94E9C331 /* IRefairInputStyles.swift */; };
+		6081A6285E3C460596CEA26F /* IRefairSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B07706361484B7C9E4EA8E0 /* IRefairSection.swift */; };
 		22012686E049ED4D2B8E06B6 /* Telemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8DD4B6A10712905F81F3EE6 /* Telemetry.swift */; };
 		245E02D10EB00EDF87F9EAD8 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FBD882B6C6C4CB9761297D /* Localization.swift */; };
 		29930467CDFB0EFB53C67A25 /* ApplicantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7175E6856EE1CF8C0BF1BDA /* ApplicantView.swift */; };
@@ -49,6 +51,8 @@
 		2013674F2145E9C230628611 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		232A951BBA3F371CBAF2D053 /* APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIModels.swift; sourceTree = "<group>"; };
 		310705599E00756B500143AB /* IRefairButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IRefairButtonStyles.swift; sourceTree = "<group>"; };
+		A254AB8F1004452F94E9C331 /* IRefairInputStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IRefairInputStyles.swift; sourceTree = "<group>"; };
+		2B07706361484B7C9E4EA8E0 /* IRefairSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IRefairSection.swift; sourceTree = "<group>"; };
 		3526C4D3FC073C79ED03B293 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		385A08CB88253605E5C6D000 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		415FA2C3067F0814F89C2A7E /* Manrope-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Manrope-Medium.ttf"; sourceTree = "<group>"; };
@@ -126,6 +130,8 @@
 				AB82BB341BAE41193A29F69A /* DocumentPicker.swift */,
 				310705599E00756B500143AB /* IRefairButtonStyles.swift */,
 				4DCB40F7C8AC9F4748B4B1D2 /* IRefairForm.swift */,
+				A254AB8F1004452F94E9C331 /* IRefairInputStyles.swift */,
+				2B07706361484B7C9E4EA8E0 /* IRefairSection.swift */,
 				A1B2C3D4E5F60718293A4B5C /* ParticlesBackground.swift */,
 				EF4F200D6680A818277F37D0 /* StatusBanner.swift */,
 			);
@@ -332,6 +338,8 @@
 				4B11D2BF90ECEE60817DB08A /* FileReader.swift in Sources */,
 				1CD33D758E0CDE3FF7AD41EC /* IRefairButtonStyles.swift in Sources */,
 				29E25F39FB4053DA6482E56A /* IRefairForm.swift in Sources */,
+				56E26E86EF35450A9D8BCB66 /* IRefairInputStyles.swift in Sources */,
+				6081A6285E3C460596CEA26F /* IRefairSection.swift in Sources */,
 				B6C7D8E9F001122334455667 /* ParticlesBackground.swift in Sources */,
 				0C6C56C301641119DCB0CE5A /* KeychainStore.swift in Sources */,
 				245E02D10EB00EDF87F9EAD8 /* Localization.swift in Sources */,

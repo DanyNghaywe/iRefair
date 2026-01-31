@@ -109,12 +109,12 @@ struct ApplicantView: View {
                     }
 
                     if !networkMonitor.isConnected {
-                        Section {
+                        IRefairSection {
                             StatusBanner(text: l("You're offline. Connect to the internet to submit the form.", "Vous êtes hors ligne. Connectez-vous à Internet pour soumettre le formulaire."), style: .warning)
                         }
                     }
 
-                    Section(l("Submission language", "Langue de soumission")) {
+                    IRefairSection(l("Submission language", "Langue de soumission")) {
                         Picker(l("Language", "Langue"), selection: $submissionLanguage) {
                             Text(l("English", "Anglais")).tag("en")
                             Text(l("French", "Français")).tag("fr")
@@ -122,13 +122,14 @@ struct ApplicantView: View {
                         .pickerStyle(.segmented)
                     }
 
-                    Section(l("Update link (optional)", "Lien de mise à jour (facultatif)")) {
+                    IRefairSection(l("Update link (optional)", "Lien de mise à jour (facultatif)")) {
                         TextField(l("Paste update link", "Collez le lien de mise à jour"), text: $updateLinkInput)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
                         Button(l("Use link", "Utiliser le lien")) {
                             applyUpdateLink()
                         }
+                        .buttonStyle(IRefairGhostButtonStyle())
                         errorText("updateLink")
                         if !updateToken.isEmpty && !updateAppId.isEmpty {
                             Text(l("Update link loaded for application \(updateAppId).", "Lien chargé pour la candidature \(updateAppId)."))
@@ -143,6 +144,7 @@ struct ApplicantView: View {
                                     Text(l("Load update details", "Charger les informations"))
                                 }
                             }
+                            .buttonStyle(IRefairGhostButtonStyle())
                             .disabled(isPrefillLoading || !networkMonitor.isConnected)
                             Button(l("Clear update link", "Effacer le lien")) {
                                 clearUpdateLink()
@@ -156,7 +158,7 @@ struct ApplicantView: View {
                         }
                     }
 
-                    Section(l("Personal information", "Informations personnelles")) {
+                    IRefairSection(l("Personal information", "Informations personnelles")) {
                         TextField(l("First name *", "Prénom *"), text: $firstName)
                         errorText("firstName")
                         TextField(l("Middle name", "Deuxième prénom"), text: $middleName)
@@ -170,7 +172,12 @@ struct ApplicantView: View {
                         TextField(l("Phone *", "Téléphone *"), text: $phone)
                             .keyboardType(.phonePad)
                         errorText("phone")
-                        Picker(l("Country of origin *", "Pays d'origine *"), selection: $countryOfOrigin) {
+                        IRefairMenuPicker(
+                            l("Country of origin *", "Pays d'origine *"),
+                            displayValue: countryOfOrigin.isEmpty ? l("Select", "Sélectionner") : countryOfOrigin,
+                            isPlaceholder: countryOfOrigin.isEmpty,
+                            selection: $countryOfOrigin
+                        ) {
                             Text(l("Select", "Sélectionner")).tag("")
                             ForEach(CountryData.all, id: \.self) { country in
                                 Text(country).tag(country)
@@ -179,7 +186,7 @@ struct ApplicantView: View {
                         errorText("countryOfOrigin")
                     }
 
-                    Section(l("Languages", "Langues")) {
+                    IRefairSection(l("Languages", "Langues")) {
                         ForEach(languageOptions, id: \.value) { option in
                             Toggle(option.label, isOn: Binding(
                                 get: { languages.contains(option.value) },
@@ -191,6 +198,7 @@ struct ApplicantView: View {
                                     }
                                 }
                             ))
+                            .toggleStyle(IRefairCheckboxToggleStyle())
                         }
                         errorText("languages")
                         if languages.contains("Other") {
@@ -199,8 +207,13 @@ struct ApplicantView: View {
                         }
                     }
 
-                    Section(l("Location and authorization", "Lieu et autorisation")) {
-                        Picker(l("Located in Canada? *", "Êtes-vous au Canada ? *"), selection: $locatedCanada) {
+                    IRefairSection(l("Location and authorization", "Lieu et autorisation")) {
+                        IRefairMenuPicker(
+                            l("Located in Canada? *", "Êtes-vous au Canada ? *"),
+                            displayValue: pickerDisplayValue(locatedCanada, options: yesNoOptions),
+                            isPlaceholder: locatedCanada.isEmpty,
+                            selection: $locatedCanada
+                        ) {
                             Text(l("Select", "Sélectionner")).tag("")
                             ForEach(yesNoOptions, id: \.value) { option in
                                 Text(option.label).tag(option.value)
@@ -209,7 +222,12 @@ struct ApplicantView: View {
                         errorText("locatedCanada")
 
                         if locatedCanada == "Yes" {
-                            Picker(l("Province *", "Province *"), selection: $province) {
+                            IRefairMenuPicker(
+                                l("Province *", "Province *"),
+                                displayValue: province.isEmpty ? l("Select", "Sélectionner") : province,
+                                isPlaceholder: province.isEmpty,
+                                selection: $province
+                            ) {
                                 Text(l("Select", "Sélectionner")).tag("")
                                 ForEach(provinces, id: \.self) { item in
                                     Text(item).tag(item)
@@ -217,7 +235,12 @@ struct ApplicantView: View {
                             }
                             errorText("province")
 
-                            Picker(l("Authorized to work in Canada? *", "Autorisé(e) à travailler au Canada ? *"), selection: $authorizedCanada) {
+                            IRefairMenuPicker(
+                                l("Authorized to work in Canada? *", "Autorisé(e) à travailler au Canada ? *"),
+                                displayValue: pickerDisplayValue(authorizedCanada, options: yesNoOptions),
+                                isPlaceholder: authorizedCanada.isEmpty,
+                                selection: $authorizedCanada
+                            ) {
                                 Text(l("Select", "Sélectionner")).tag("")
                                 ForEach(yesNoOptions, id: \.value) { option in
                                     Text(option.label).tag(option.value)
@@ -227,7 +250,12 @@ struct ApplicantView: View {
                         }
 
                         if locatedCanada == "No" {
-                            Picker(l("Eligible to move to Canada? *", "Êtes-vous prêt(e) à déménager au Canada ? *"), selection: $eligibleMoveCanada) {
+                            IRefairMenuPicker(
+                                l("Eligible to move to Canada? *", "Êtes-vous prêt(e) à déménager au Canada ? *"),
+                                displayValue: pickerDisplayValue(eligibleMoveCanada, options: yesNoOptions),
+                                isPlaceholder: eligibleMoveCanada.isEmpty,
+                                selection: $eligibleMoveCanada
+                            ) {
                                 Text(l("Select", "Sélectionner")).tag("")
                                 ForEach(yesNoOptions, id: \.value) { option in
                                     Text(option.label).tag(option.value)
@@ -237,8 +265,13 @@ struct ApplicantView: View {
                         }
                     }
 
-                    Section(l("Professional profile", "Profil professionnel")) {
-                        Picker(l("Industry *", "Secteur *"), selection: $industryType) {
+                    IRefairSection(l("Professional profile", "Profil professionnel")) {
+                        IRefairMenuPicker(
+                            l("Industry *", "Secteur *"),
+                            displayValue: pickerDisplayValue(industryType, options: industryOptions),
+                            isPlaceholder: industryType.isEmpty,
+                            selection: $industryType
+                        ) {
                             Text(l("Select", "Sélectionner")).tag("")
                             ForEach(industryOptions, id: \.value) { item in
                                 Text(item.label).tag(item.value)
@@ -249,7 +282,12 @@ struct ApplicantView: View {
                             TextField(l("Industry details *", "Précisez le secteur *"), text: $industryOther)
                             errorText("industryOther")
                         }
-                        Picker(l("Currently employed? *", "Actuellement employé(e) ? *"), selection: $employmentStatus) {
+                        IRefairMenuPicker(
+                            l("Currently employed? *", "Actuellement employé(e) ? *"),
+                            displayValue: pickerDisplayValue(employmentStatus, options: employmentOptions),
+                            isPlaceholder: employmentStatus.isEmpty,
+                            selection: $employmentStatus
+                        ) {
                             Text(l("Select", "Sélectionner")).tag("")
                             ForEach(employmentOptions, id: \.value) { item in
                                 Text(item.label).tag(item.value)
@@ -263,10 +301,15 @@ struct ApplicantView: View {
                         errorText("linkedin")
                     }
 
-                    Section(l("Referral goals", "Objectifs de recommandation")) {
+                    IRefairSection(l("Referral goals", "Objectifs de recommandation")) {
                         TextField(l("Target role", "Poste cible"), text: $desiredRole)
                         TextField(l("Target companies", "Entreprises ciblées"), text: $targetCompanies)
-                        Picker(l("Specific postings?", "Avez-vous des offres spécifiques ?"), selection: $hasPostings) {
+                        IRefairMenuPicker(
+                            l("Specific postings?", "Avez-vous des offres spécifiques ?"),
+                            displayValue: pickerDisplayValue(hasPostings, options: yesNoOptions),
+                            isPlaceholder: hasPostings.isEmpty,
+                            selection: $hasPostings
+                        ) {
                             Text(l("Select", "Sélectionner")).tag("")
                             ForEach(yesNoOptions, id: \.value) { option in
                                 Text(option.label).tag(option.value)
@@ -278,7 +321,7 @@ struct ApplicantView: View {
                             .lineLimit(3, reservesSpace: true)
                     }
 
-                    Section(l("Resume", "CV")) {
+                    IRefairSection(l("Resume", "CV")) {
                         HStack {
                             Text(resumeName.isEmpty ? l("No file selected", "Aucun fichier sélectionné") : resumeName)
                                 .font(Theme.font(.subheadline))
@@ -287,8 +330,10 @@ struct ApplicantView: View {
                             Button(l("Choose file", "Choisir un fichier")) {
                                 showDocumentPicker = true
                             }
+                            .buttonStyle(IRefairGhostButtonStyle())
                         }
                         .accessibilityLabel(l("Resume file", "Fichier CV"))
+                        .irefairInput()
                         errorText("resume")
                         if !requiresResume {
                             Text(l("Resume optional for info-only updates.", "CV facultatif pour les mises à jour d'information."))
@@ -302,25 +347,25 @@ struct ApplicantView: View {
                         }
                     }
 
-                    Section(l("Consent", "Consentement")) {
+                    IRefairSection(l("Consent", "Consentement")) {
                         Toggle(l("I agree to be contacted by iRefair.", "J’accepte d’être contacté(e) par iRefair."), isOn: $consent)
-                            .toggleStyle(.switch)
+                            .toggleStyle(IRefairCheckboxToggleStyle())
                         errorText("consent")
                     }
 
                     if let errorMessage {
-                        Section {
+                        IRefairSection {
                             StatusBanner(text: errorMessage, style: .error)
                         }
                     }
 
                     if let statusMessage {
-                        Section {
+                        IRefairSection {
                             StatusBanner(text: statusMessage, style: .success)
                         }
                     }
 
-                    Section {
+                    IRefairSection {
                         Button {
                             Task { await submit() }
                         } label: {
@@ -333,7 +378,6 @@ struct ApplicantView: View {
                         .buttonStyle(IRefairPrimaryButtonStyle())
                         .disabled(isSubmitting || !networkMonitor.isConnected)
                     }
-                    .listRowBackground(Color.clear)
                 }
             }
             .navigationTitle(l("Applicant", "Candidat"))
@@ -365,6 +409,11 @@ struct ApplicantView: View {
 
     private func l(_ en: String, _ fr: String) -> String {
         Localizer.text(en, fr, language: submissionLanguage)
+    }
+
+    private func pickerDisplayValue(_ value: String, options: [(value: String, label: String)]) -> String {
+        guard !value.isEmpty else { return l("Select", "Sélectionner") }
+        return options.first(where: { $0.value == value })?.label ?? value
     }
 
     private var yesNoOptions: [(value: String, label: String)] {

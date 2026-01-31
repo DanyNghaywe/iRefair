@@ -7,6 +7,7 @@ struct IRefairPrimaryButtonStyle: ButtonStyle {
             .foregroundStyle(Color.white)
             .padding(.vertical, 12)
             .frame(maxWidth: .infinity)
+            .frame(minHeight: 44)
             .background(
                 LinearGradient(
                     gradient: Gradient(colors: [
@@ -20,7 +21,7 @@ struct IRefairPrimaryButtonStyle: ButtonStyle {
             .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .stroke(Color.white.opacity(0.25), lineWidth: 1)
+                    .stroke(Color(hex: 0x3B82F6).opacity(0.4), lineWidth: 1)
             )
             .shadow(color: Color(hex: 0x3B82F6).opacity(0.3), radius: 12, x: 0, y: 6)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)

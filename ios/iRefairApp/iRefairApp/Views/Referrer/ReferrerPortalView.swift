@@ -19,12 +19,12 @@ struct ReferrerPortalView: View {
     var body: some View {
         IRefairForm {
             if !networkMonitor.isConnected {
-                Section {
+                IRefairSection {
                     StatusBanner(text: l("You're offline. Connect to the internet to load portal data.", "Vous êtes hors ligne. Connectez-vous à Internet pour charger le portail."), style: .warning)
                 }
             }
 
-            Section(l("Access token", "Jeton d’accès")) {
+            IRefairSection(l("Access token", "Jeton d’accès")) {
                 TextField(l("Paste token or portal link", "Collez le jeton ou le lien du portail"), text: $tokenInput)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -37,6 +37,7 @@ struct ReferrerPortalView: View {
                             KeychainStore.save(token, key: "referrerPortalToken")
                         }
                     }
+                    .buttonStyle(IRefairGhostButtonStyle())
                     Spacer()
                     Button(l("Clear", "Effacer")) {
                         storedToken = ""
@@ -45,6 +46,7 @@ struct ReferrerPortalView: View {
                         applicants = []
                         KeychainStore.delete(key: "referrerPortalToken")
                     }
+                    .buttonStyle(IRefairGhostButtonStyle())
                 }
                 Button(l("Load portal data", "Charger les données du portail")) {
                     Task { await loadPortal() }
@@ -54,7 +56,7 @@ struct ReferrerPortalView: View {
             }
 
             if let referrer {
-                Section(l("Referrer", "Référent")) {
+                IRefairSection(l("Referrer", "Référent")) {
                     Text("\(referrer.firstName) \(referrer.lastName)")
                     Text(referrer.email)
                         .foregroundStyle(Theme.muted)
@@ -65,13 +67,13 @@ struct ReferrerPortalView: View {
             }
 
             if isLoading {
-                Section {
+                IRefairSection {
                     ProgressView(l("Loading...", "Chargement..."))
                 }
             }
 
             if !applicants.isEmpty {
-                Section(l("Applicants", "Candidats")) {
+                IRefairSection(l("Applicants", "Candidats")) {
                     ForEach(applicants) { applicant in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(applicant.displayName)
@@ -89,26 +91,26 @@ struct ReferrerPortalView: View {
                             Button(l("Send feedback", "Envoyer un avis")) {
                                 selectedApplicant = applicant
                             }
-                            .buttonStyle(.bordered)
+                            .buttonStyle(IRefairGhostButtonStyle())
                         }
                         .padding(.vertical, 4)
                     }
                 }
             } else if referrer != nil && !isLoading {
-                Section {
+                IRefairSection {
                     Text(l("No applicants assigned yet.", "Aucun candidat assigné pour l'instant."))
                         .foregroundStyle(Theme.muted)
                 }
             }
 
             if let errorMessage {
-                Section {
+                IRefairSection {
                     StatusBanner(text: errorMessage, style: .error)
                 }
             }
 
             if let statusMessage {
-                Section {
+                IRefairSection {
                     StatusBanner(text: statusMessage, style: .success)
                 }
             }

@@ -48,12 +48,12 @@ struct ReferrerRegistrationView: View {
     var body: some View {
         IRefairForm {
             if !networkMonitor.isConnected {
-                Section {
+                IRefairSection {
                     StatusBanner(text: l("You're offline. Connect to the internet to submit the form.", "Vous êtes hors ligne. Connectez-vous à Internet pour soumettre le formulaire."), style: .warning)
                 }
             }
 
-            Section(l("Become a referrer", "Devenir référent")) {
+            IRefairSection(l("Become a referrer", "Devenir référent")) {
                 TextField(l("Full name *", "Nom complet *"), text: $fullName)
                 errorText("name")
                 TextField(l("Work email *", "E-mail professionnel *"), text: $email)
@@ -68,7 +68,12 @@ struct ReferrerRegistrationView: View {
                     .keyboardType(.URL)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                Picker(l("Company industry", "Secteur de l’entreprise"), selection: $companyIndustry) {
+                IRefairMenuPicker(
+                    l("Company industry", "Secteur de l’entreprise"),
+                    displayValue: pickerDisplayValue(companyIndustry, options: companyIndustryOptions),
+                    isPlaceholder: companyIndustry.isEmpty,
+                    selection: $companyIndustry
+                ) {
                     Text(l("Select", "Sélectionner")).tag("")
                     ForEach(companyIndustryOptions, id: \.value) { item in
                         Text(item.label).tag(item.value)
@@ -77,7 +82,12 @@ struct ReferrerRegistrationView: View {
                 if companyIndustry == "Other" {
                     TextField(l("Other industry", "Autre secteur"), text: $companyIndustryOther)
                 }
-                Picker(l("Work type", "Type de travail"), selection: $workType) {
+                IRefairMenuPicker(
+                    l("Work type", "Type de travail"),
+                    displayValue: pickerDisplayValue(workType, options: workTypeOptions),
+                    isPlaceholder: workType.isEmpty,
+                    selection: $workType
+                ) {
                     Text(l("Select", "Sélectionner")).tag("")
                     ForEach(workTypeOptions, id: \.value) { item in
                         Text(item.label).tag(item.value)
@@ -96,7 +106,7 @@ struct ReferrerRegistrationView: View {
                 errorText("linkedIn")
             }
 
-            Section(l("Request portal link", "Demander le lien du portail")) {
+            IRefairSection(l("Request portal link", "Demander le lien du portail")) {
                 TextField(l("Referrer email", "E-mail du référent"), text: $portalEmail)
                     .keyboardType(.emailAddress)
                     .textInputAutocapitalization(.never)
@@ -104,22 +114,23 @@ struct ReferrerRegistrationView: View {
                 Button(l("Send portal link", "Envoyer le lien du portail")) {
                     Task { await requestPortalLink() }
                 }
+                .buttonStyle(IRefairGhostButtonStyle())
                 .disabled(isSubmitting || !networkMonitor.isConnected)
             }
 
             if let errorMessage {
-                Section {
+                IRefairSection {
                     StatusBanner(text: errorMessage, style: .error)
                 }
             }
 
             if let statusMessage {
-                Section {
+                IRefairSection {
                     StatusBanner(text: statusMessage, style: .success)
                 }
             }
 
-            Section {
+            IRefairSection {
                 Button {
                     Task { await submit() }
                 } label: {
@@ -132,7 +143,6 @@ struct ReferrerRegistrationView: View {
                 .buttonStyle(IRefairPrimaryButtonStyle())
                 .disabled(isSubmitting || !networkMonitor.isConnected)
             }
-            .listRowBackground(Color.clear)
         }
     }
 
@@ -180,6 +190,11 @@ struct ReferrerRegistrationView: View {
 
     private func l(_ en: String, _ fr: String) -> String {
         Localizer.text(en, fr, language: submissionLanguage)
+    }
+
+    private func pickerDisplayValue(_ value: String, options: [(value: String, label: String)]) -> String {
+        guard !value.isEmpty else { return l("Select", "Sélectionner") }
+        return options.first(where: { $0.value == value })?.label ?? value
     }
 
     private func validate() -> Bool {

@@ -14,6 +14,12 @@ enum Theme {
     static let panelSoft = Color(hex: 0xF3EDFF)
     static let paper = Color.white.opacity(0.88)
 
+    static let inputBackground = Color.white.opacity(0.32)
+    static let inputBackgroundFocused = Color.white.opacity(0.64)
+    static let inputBorder = Color.white.opacity(0.12)
+    static let inputBorderFocused = Color(hex: 0x3D8BFD).opacity(0.45)
+    static let inputRadius: CGFloat = 14
+
     static let error = Color(hex: 0xE75D6B)
     static let warning = Color(hex: 0xFBBF24)
     static let success = Color(hex: 0x22C55E)
@@ -28,6 +34,8 @@ enum Theme {
 
     static let boardRadius: CGFloat = 24
     static let glassRadius: CGFloat = 20
+    static let sectionRadius: CGFloat = 16
+    static let legendRadius: CGFloat = 12
 
     static let boardGradient = LinearGradient(
         gradient: Gradient(colors: [
@@ -39,6 +47,23 @@ enum Theme {
     )
     static let boardBorder = Color.white.opacity(0.04)
     static let boardShadow = Color(hex: 0x0F172A).opacity(0.08)
+
+    static let sectionGradient = LinearGradient(
+        gradient: Gradient(colors: [
+            Color.white.opacity(0.16),
+            Color.white.opacity(0.08),
+        ]),
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+    static let sectionBorder = Color.white.opacity(0.24)
+    static let sectionShadow = Color(hex: 0x0F172A).opacity(0.1)
+
+    static let legendBackground = Color.white.opacity(0.32)
+    static let legendBorder = Color.white.opacity(0.2)
+
+    static let segmentBackground = Color.white.opacity(0.12)
+    static let segmentBorder = Color.white.opacity(0.28)
 
     static let glassGradient = LinearGradient(
         gradient: Gradient(colors: [
@@ -123,17 +148,20 @@ struct IRefairBackground: View {
         GeometryReader { proxy in
             let size = max(proxy.size.width, proxy.size.height)
             ZStack {
-                Theme.backgroundBase
-                RadialGradient(
-                    gradient: Gradient(stops: [
-                        .init(color: Theme.backgroundStart, location: 0),
-                        .init(color: Theme.backgroundMid, location: 0.44),
-                        .init(color: Theme.backgroundEnd, location: 1),
-                    ]),
-                    center: UnitPoint(x: 0.5, y: 0.32),
-                    startRadius: 0,
-                    endRadius: size
-                )
+                Group {
+                    Theme.backgroundBase
+                    RadialGradient(
+                        gradient: Gradient(stops: [
+                            .init(color: Theme.backgroundStart, location: 0),
+                            .init(color: Theme.backgroundMid, location: 0.44),
+                            .init(color: Theme.backgroundEnd, location: 1),
+                        ]),
+                        center: UnitPoint(x: 0.5, y: 0.32),
+                        startRadius: 0,
+                        endRadius: size
+                    )
+                }
+                .opacity(0.88)
                 RadialGradient(
                     gradient: Gradient(stops: [
                         .init(color: Theme.backgroundOverlayStart, location: 0),
@@ -173,7 +201,8 @@ struct IRefairBoardBackground: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: Theme.boardRadius, style: .continuous)
         shape
-            .fill(Theme.boardGradient)
+            .fill(.ultraThinMaterial)
+            .overlay(shape.fill(Theme.boardGradient))
             .overlay(
                 shape
                     .stroke(Theme.boardBorder, lineWidth: 1)

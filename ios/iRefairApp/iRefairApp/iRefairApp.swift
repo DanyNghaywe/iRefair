@@ -69,15 +69,16 @@ struct iRefairApp: App {
         navAppearance.backgroundColor = .clear
         navAppearance.shadowColor = .clear
         navAppearance.titleTextAttributes = [
-            .foregroundColor: UIColor(hex: 0x0F172A),
+            .foregroundColor: UIColor.white,
             .font: Theme.uiFont(size: 17, weight: .semibold),
         ]
         navAppearance.largeTitleTextAttributes = [
-            .foregroundColor: UIColor(hex: 0x0F172A),
+            .foregroundColor: UIColor.white,
             .font: Theme.uiFont(size: 34, weight: .bold),
         ]
         UINavigationBar.appearance().standardAppearance = navAppearance
         UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
+        UINavigationBar.appearance().tintColor = .white
 
         let tabAppearance = UITabBarAppearance()
         tabAppearance.configureWithTransparentBackground()
@@ -88,9 +89,9 @@ struct iRefairApp: App {
         tabAppearance.stackedLayoutAppearance.selected.titleTextAttributes = [
             .foregroundColor: UIColor(hex: 0x3D8BFD),
         ]
-        tabAppearance.stackedLayoutAppearance.normal.iconColor = UIColor(hex: 0x5D6174)
+        tabAppearance.stackedLayoutAppearance.normal.iconColor = UIColor.white.withAlphaComponent(0.7)
         tabAppearance.stackedLayoutAppearance.normal.titleTextAttributes = [
-            .foregroundColor: UIColor(hex: 0x5D6174),
+            .foregroundColor: UIColor.white.withAlphaComponent(0.7),
         ]
         UITabBar.appearance().standardAppearance = tabAppearance
         UITabBar.appearance().scrollEdgeAppearance = tabAppearance
@@ -101,13 +102,13 @@ struct iRefairApp: App {
         UITableViewCell.appearance().backgroundColor = .clear
         UITableView.appearance().separatorColor = UIColor(hex: 0xE2E6F1, alpha: 0.6)
 
-        UISegmentedControl.appearance().selectedSegmentTintColor = UIColor(hex: 0x3D8BFD)
-        UISegmentedControl.appearance().backgroundColor = UIColor(hex: 0xF3EDFF, alpha: 0.9)
+        UISegmentedControl.appearance().selectedSegmentTintColor = UIColor(hex: 0x3D8BFD, alpha: 0.28)
+        UISegmentedControl.appearance().backgroundColor = UIColor.white.withAlphaComponent(0.12)
         UISegmentedControl.appearance().setTitleTextAttributes([
-            .foregroundColor: UIColor(hex: 0x0F172A),
+            .foregroundColor: UIColor.white.withAlphaComponent(0.82),
         ], for: .normal)
         UISegmentedControl.appearance().setTitleTextAttributes([
-            .foregroundColor: UIColor.white,
+            .foregroundColor: UIColor(hex: 0x0F172A),
         ], for: .selected)
     }
 }

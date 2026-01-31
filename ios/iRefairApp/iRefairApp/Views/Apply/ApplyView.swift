@@ -27,19 +27,19 @@ struct ApplyView: View {
             IRefairScreen {
                 IRefairForm {
                     if !networkMonitor.isConnected {
-                        Section {
+                        IRefairSection {
                             StatusBanner(text: l("You're offline. Connect to the internet to submit the form.", "Vous êtes hors ligne. Connectez-vous à Internet pour soumettre le formulaire."), style: .warning)
                         }
                     }
 
-                    Section {
+                    IRefairSection {
                         Text(l("Submit an application using your iRAIN and Applicant Key.",
                                "Soumettez une candidature avec votre iRAIN et votre clé de candidat."))
                             .font(Theme.font(.subheadline))
                             .foregroundStyle(Theme.muted)
                     }
 
-                    Section(l("Submission language", "Langue de soumission")) {
+                    IRefairSection(l("Submission language", "Langue de soumission")) {
                         Picker(l("Language", "Langue"), selection: $submissionLanguage) {
                             Text(l("English", "Anglais")).tag("en")
                             Text(l("French", "Français")).tag("fr")
@@ -47,7 +47,7 @@ struct ApplyView: View {
                         .pickerStyle(.segmented)
                     }
 
-                    Section(l("Application details", "Détails de la candidature")) {
+                    IRefairSection(l("Application details", "Détails de la candidature")) {
                         TextField(l("Applicant ID (iRAIN) *", "ID candidat (iRAIN) *"), text: $applicantId)
                         errorText("applicantId")
                         TextField(l("Applicant Key *", "Clé du candidat *"), text: $applicantKey)
@@ -60,7 +60,7 @@ struct ApplyView: View {
                         TextField(l("Reference number", "Numéro de référence"), text: $referenceNumber)
                     }
 
-                    Section(l("Resume", "CV")) {
+                    IRefairSection(l("Resume", "CV")) {
                         HStack {
                             Text(resumeName.isEmpty ? l("No file selected", "Aucun fichier sélectionné") : resumeName)
                                 .font(Theme.font(.subheadline))
@@ -69,23 +69,25 @@ struct ApplyView: View {
                             Button(l("Choose file", "Choisir un fichier")) {
                                 showDocumentPicker = true
                             }
+                            .buttonStyle(IRefairGhostButtonStyle())
                         }
+                        .irefairInput()
                         errorText("resume")
                     }
 
                     if let errorMessage {
-                        Section {
+                        IRefairSection {
                             StatusBanner(text: errorMessage, style: .error)
                         }
                     }
 
                     if let statusMessage {
-                        Section {
+                        IRefairSection {
                             StatusBanner(text: statusMessage, style: .success)
                         }
                     }
 
-                    Section {
+                    IRefairSection {
                         Button {
                             Task { await submit() }
                         } label: {
@@ -98,7 +100,6 @@ struct ApplyView: View {
                         .buttonStyle(IRefairPrimaryButtonStyle())
                         .disabled(isSubmitting || !networkMonitor.isConnected)
                     }
-                    .listRowBackground(Color.clear)
                 }
                 .navigationTitle(l("Apply", "Postuler"))
                 .sheet(isPresented: $showDocumentPicker) {

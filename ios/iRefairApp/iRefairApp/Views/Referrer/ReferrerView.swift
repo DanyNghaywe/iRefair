@@ -25,13 +25,13 @@ struct ReferrerView: View {
                     .padding(10)
                     .background(
                         RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Theme.paper)
+                            .fill(Theme.segmentBackground)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .stroke(Theme.line.opacity(0.6), lineWidth: 1)
+                                    .stroke(Theme.segmentBorder, lineWidth: 1)
                             )
                     )
-                    .padding(.horizontal, 16)
+                    .padding(.horizontal, 14)
                     .padding(.top, 8)
 
                     if selection == .register {
