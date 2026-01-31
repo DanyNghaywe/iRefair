@@ -12,22 +12,36 @@ struct ReferrerView: View {
 
     var body: some View {
         NavigationStack {
-            VStack {
-                Picker(l("Mode", "Mode"), selection: $selection) {
-                    ForEach(Section.allCases, id: \.self) { item in
-                        Text(label(for: item)).tag(item)
+            IRefairScreen {
+                VStack {
+                    VStack {
+                        Picker(l("Mode", "Mode"), selection: $selection) {
+                            ForEach(Section.allCases, id: \.self) { item in
+                                Text(label(for: item)).tag(item)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                    }
+                    .padding(10)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(Theme.paper)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                    .stroke(Theme.line.opacity(0.6), lineWidth: 1)
+                            )
+                    )
+                    .padding(.horizontal, 16)
+                    .padding(.top, 8)
+
+                    if selection == .register {
+                        ReferrerRegistrationView()
+                    } else {
+                        ReferrerPortalView()
                     }
                 }
-                .pickerStyle(.segmented)
-                .padding(.horizontal)
-
-                if selection == .register {
-                    ReferrerRegistrationView()
-                } else {
-                    ReferrerPortalView()
-                }
+                .navigationTitle(l("Referrer", "Référent"))
             }
-            .navigationTitle(l("Referrer", "Référent"))
         }
     }
 

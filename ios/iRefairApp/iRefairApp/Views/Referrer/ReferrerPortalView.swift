@@ -17,7 +17,7 @@ struct ReferrerPortalView: View {
     @State private var selectedApplicant: ReferrerApplicant?
 
     var body: some View {
-        Form {
+        IRefairForm {
             if !networkMonitor.isConnected {
                 Section {
                     StatusBanner(text: l("You're offline. Connect to the internet to load portal data.", "Vous êtes hors ligne. Connectez-vous à Internet pour charger le portail."), style: .warning)
@@ -49,6 +49,7 @@ struct ReferrerPortalView: View {
                 Button(l("Load portal data", "Charger les données du portail")) {
                     Task { await loadPortal() }
                 }
+                .buttonStyle(IRefairPrimaryButtonStyle())
                 .disabled(isLoading || !networkMonitor.isConnected)
             }
 
@@ -56,10 +57,10 @@ struct ReferrerPortalView: View {
                 Section(l("Referrer", "Référent")) {
                     Text("\(referrer.firstName) \(referrer.lastName)")
                     Text(referrer.email)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.muted)
                     Text("\(l("ID", "ID")): \(referrer.irref)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                        .font(Theme.font(.caption))
+                        .foregroundStyle(Theme.muted)
                 }
             }
 
@@ -74,16 +75,16 @@ struct ReferrerPortalView: View {
                     ForEach(applicants) { applicant in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(applicant.displayName)
-                                .font(.headline)
+                                .font(Theme.font(.headline, weight: .semibold))
                             if let email = applicant.email {
                                 Text(email)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                                    .font(Theme.font(.subheadline))
+                                    .foregroundStyle(Theme.muted)
                             }
                             if let status = applicant.status {
                                 Text("\(l("Status", "Statut")): \(status)")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
+                                    .font(Theme.font(.caption))
+                                    .foregroundStyle(Theme.muted)
                             }
                             Button(l("Send feedback", "Envoyer un avis")) {
                                 selectedApplicant = applicant
@@ -96,7 +97,7 @@ struct ReferrerPortalView: View {
             } else if referrer != nil && !isLoading {
                 Section {
                     Text(l("No applicants assigned yet.", "Aucun candidat assigné pour l'instant."))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Theme.muted)
                 }
             }
 

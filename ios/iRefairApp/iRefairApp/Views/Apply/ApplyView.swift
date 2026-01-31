@@ -24,83 +24,87 @@ struct ApplyView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                if !networkMonitor.isConnected {
-                    Section {
-                        StatusBanner(text: l("You're offline. Connect to the internet to submit the form.", "Vous êtes hors ligne. Connectez-vous à Internet pour soumettre le formulaire."), style: .warning)
-                    }
-                }
-
-                Section {
-                    Text(l("Submit an application using your iRAIN and Applicant Key.",
-                           "Soumettez une candidature avec votre iRAIN et votre clé de candidat."))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-
-                Section(l("Submission language", "Langue de soumission")) {
-                    Picker(l("Language", "Langue"), selection: $submissionLanguage) {
-                        Text(l("English", "Anglais")).tag("en")
-                        Text(l("French", "Français")).tag("fr")
-                    }
-                    .pickerStyle(.segmented)
-                }
-
-                Section(l("Application details", "Détails de la candidature")) {
-                    TextField(l("Applicant ID (iRAIN) *", "ID candidat (iRAIN) *"), text: $applicantId)
-                    errorText("applicantId")
-                    TextField(l("Applicant Key *", "Clé du candidat *"), text: $applicantKey)
-                    errorText("applicantKey")
-                    TextField(l("iRCRN *", "iRCRN *"), text: $iCrn)
-                        .textInputAutocapitalization(.characters)
-                    errorText("iCrn")
-                    TextField(l("Position *", "Poste *"), text: $position)
-                    errorText("position")
-                    TextField(l("Reference number", "Numéro de référence"), text: $referenceNumber)
-                }
-
-                Section(l("Resume", "CV")) {
-                    HStack {
-                        Text(resumeName.isEmpty ? l("No file selected", "Aucun fichier sélectionné") : resumeName)
-                            .font(.subheadline)
-                            .foregroundStyle(resumeName.isEmpty ? .secondary : .primary)
-                        Spacer()
-                        Button(l("Choose file", "Choisir un fichier")) {
-                            showDocumentPicker = true
+            IRefairScreen {
+                IRefairForm {
+                    if !networkMonitor.isConnected {
+                        Section {
+                            StatusBanner(text: l("You're offline. Connect to the internet to submit the form.", "Vous êtes hors ligne. Connectez-vous à Internet pour soumettre le formulaire."), style: .warning)
                         }
                     }
-                    errorText("resume")
-                }
 
-                if let errorMessage {
                     Section {
-                        StatusBanner(text: errorMessage, style: .error)
+                        Text(l("Submit an application using your iRAIN and Applicant Key.",
+                               "Soumettez une candidature avec votre iRAIN et votre clé de candidat."))
+                            .font(Theme.font(.subheadline))
+                            .foregroundStyle(Theme.muted)
                     }
-                }
 
-                if let statusMessage {
-                    Section {
-                        StatusBanner(text: statusMessage, style: .success)
+                    Section(l("Submission language", "Langue de soumission")) {
+                        Picker(l("Language", "Langue"), selection: $submissionLanguage) {
+                            Text(l("English", "Anglais")).tag("en")
+                            Text(l("French", "Français")).tag("fr")
+                        }
+                        .pickerStyle(.segmented)
                     }
-                }
 
-                Section {
-                    Button {
-                        Task { await submit() }
-                    } label: {
-                        if isSubmitting {
-                            ProgressView()
-                        } else {
-                            Text(l("Submit Application", "Soumettre la candidature"))
+                    Section(l("Application details", "Détails de la candidature")) {
+                        TextField(l("Applicant ID (iRAIN) *", "ID candidat (iRAIN) *"), text: $applicantId)
+                        errorText("applicantId")
+                        TextField(l("Applicant Key *", "Clé du candidat *"), text: $applicantKey)
+                        errorText("applicantKey")
+                        TextField(l("iRCRN *", "iRCRN *"), text: $iCrn)
+                            .textInputAutocapitalization(.characters)
+                        errorText("iCrn")
+                        TextField(l("Position *", "Poste *"), text: $position)
+                        errorText("position")
+                        TextField(l("Reference number", "Numéro de référence"), text: $referenceNumber)
+                    }
+
+                    Section(l("Resume", "CV")) {
+                        HStack {
+                            Text(resumeName.isEmpty ? l("No file selected", "Aucun fichier sélectionné") : resumeName)
+                                .font(Theme.font(.subheadline))
+                                .foregroundStyle(resumeName.isEmpty ? Theme.muted : Theme.ink)
+                            Spacer()
+                            Button(l("Choose file", "Choisir un fichier")) {
+                                showDocumentPicker = true
+                            }
+                        }
+                        errorText("resume")
+                    }
+
+                    if let errorMessage {
+                        Section {
+                            StatusBanner(text: errorMessage, style: .error)
                         }
                     }
-                    .disabled(isSubmitting || !networkMonitor.isConnected)
+
+                    if let statusMessage {
+                        Section {
+                            StatusBanner(text: statusMessage, style: .success)
+                        }
+                    }
+
+                    Section {
+                        Button {
+                            Task { await submit() }
+                        } label: {
+                            if isSubmitting {
+                                ProgressView()
+                            } else {
+                                Text(l("Submit Application", "Soumettre la candidature"))
+                            }
+                        }
+                        .buttonStyle(IRefairPrimaryButtonStyle())
+                        .disabled(isSubmitting || !networkMonitor.isConnected)
+                    }
+                    .listRowBackground(Color.clear)
                 }
-            }
-            .navigationTitle(l("Apply", "Postuler"))
-            .sheet(isPresented: $showDocumentPicker) {
-                DocumentPicker(allowedTypes: allowedTypes()) { url in
-                    handlePickedFile(url)
+                .navigationTitle(l("Apply", "Postuler"))
+                .sheet(isPresented: $showDocumentPicker) {
+                    DocumentPicker(allowedTypes: allowedTypes()) { url in
+                        handlePickedFile(url)
+                    }
                 }
             }
         }
@@ -109,7 +113,7 @@ struct ApplyView: View {
     private func errorText(_ key: String) -> some View {
         Group {
             if let message = fieldErrors[key] {
-                Text(message).foregroundStyle(.red).font(.caption)
+                Text(message).foregroundStyle(Theme.error).font(Theme.font(.caption))
             }
         }
     }

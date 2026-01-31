@@ -30,7 +30,11 @@ struct ContentView: View {
                 }
                 .tag(AppTab.settings)
         }
-        .tint(Color("BrandBlue"))
+        .background(Color.clear)
+        .toolbarBackground(.hidden, for: .tabBar)
+        .tint(Theme.accentPrimary)
+        .environment(\.font, Theme.font(.body))
+        .preferredColorScheme(.light)
     }
 
     private func l(_ en: String, _ fr: String) -> String {

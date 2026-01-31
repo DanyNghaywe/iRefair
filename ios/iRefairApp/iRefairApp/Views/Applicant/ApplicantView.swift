@@ -89,247 +89,251 @@ struct ApplicantView: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    Text(l("Create or update your iRefair applicant profile. All required fields are marked with *.",
-                           "Créez ou mettez à jour votre profil candidat iRefair. Les champs obligatoires sont marqués d’un *."))
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    if apiBaseURL.isEmpty {
-                        Label(l("Set your API base URL in Settings before submitting.",
-                                 "Définissez l’URL de base de l’API dans Paramètres avant d’envoyer."),
-                              systemImage: "exclamationmark.triangle")
-                            .foregroundStyle(.red)
-                    } else {
-                        Text("\(l("API", "API")): \(Validator.sanitizeBaseURL(apiBaseURL))")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                if !networkMonitor.isConnected {
+            IRefairScreen {
+                IRefairForm {
                     Section {
-                        StatusBanner(text: l("You're offline. Connect to the internet to submit the form.", "Vous êtes hors ligne. Connectez-vous à Internet pour soumettre le formulaire."), style: .warning)
-                    }
-                }
-
-                Section(l("Submission language", "Langue de soumission")) {
-                    Picker(l("Language", "Langue"), selection: $submissionLanguage) {
-                        Text(l("English", "Anglais")).tag("en")
-                        Text(l("French", "Français")).tag("fr")
-                    }
-                    .pickerStyle(.segmented)
-                }
-
-                Section(l("Update link (optional)", "Lien de mise à jour (facultatif)")) {
-                    TextField(l("Paste update link", "Collez le lien de mise à jour"), text: $updateLinkInput)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                    Button(l("Use link", "Utiliser le lien")) {
-                        applyUpdateLink()
-                    }
-                    errorText("updateLink")
-                    if !updateToken.isEmpty && !updateAppId.isEmpty {
-                        Text(l("Update link loaded for application \(updateAppId).", "Lien chargé pour la candidature \(updateAppId)."))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        Button {
-                            Task { await loadPrefill() }
-                        } label: {
-                            if isPrefillLoading {
-                                ProgressView()
-                            } else {
-                                Text(l("Load update details", "Charger les informations"))
-                            }
-                        }
-                        .disabled(isPrefillLoading || !networkMonitor.isConnected)
-                        Button(l("Clear update link", "Effacer le lien")) {
-                            clearUpdateLink()
-                        }
-                        .foregroundStyle(.red)
-                        if updatePurpose.lowercased() == "info" {
-                            Text(l("Resume is optional for info-only updates.", "CV facultatif pour les mises à jour d'information."))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                        Text(l("Create or update your iRefair applicant profile. All required fields are marked with *.",
+                               "Créez ou mettez à jour votre profil candidat iRefair. Les champs obligatoires sont marqués d’un *."))
+                            .font(Theme.font(.subheadline))
+                            .foregroundStyle(Theme.muted)
+                        if apiBaseURL.isEmpty {
+                            Label(l("Set your API base URL in Settings before submitting.",
+                                     "Définissez l’URL de base de l’API dans Paramètres avant d’envoyer."),
+                                  systemImage: "exclamationmark.triangle")
+                                .foregroundStyle(Theme.error)
+                        } else {
+                            Text("\(l("API", "API")): \(Validator.sanitizeBaseURL(apiBaseURL))")
+                                .font(Theme.font(.caption))
+                                .foregroundStyle(Theme.muted)
                         }
                     }
-                }
 
-                Section(l("Personal information", "Informations personnelles")) {
-                    TextField(l("First name *", "Prénom *"), text: $firstName)
-                    errorText("firstName")
-                    TextField(l("Middle name", "Deuxième prénom"), text: $middleName)
-                    TextField(l("Last name *", "Nom de famille *"), text: $familyName)
-                    errorText("familyName")
-                    TextField(l("Email *", "Adresse e-mail *"), text: $email)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                    errorText("email")
-                    TextField(l("Phone *", "Téléphone *"), text: $phone)
-                        .keyboardType(.phonePad)
-                    errorText("phone")
-                    Picker(l("Country of origin *", "Pays d'origine *"), selection: $countryOfOrigin) {
-                        Text(l("Select", "Sélectionner")).tag("")
-                        ForEach(CountryData.all, id: \.self) { country in
-                            Text(country).tag(country)
+                    if !networkMonitor.isConnected {
+                        Section {
+                            StatusBanner(text: l("You're offline. Connect to the internet to submit the form.", "Vous êtes hors ligne. Connectez-vous à Internet pour soumettre le formulaire."), style: .warning)
                         }
                     }
-                    errorText("countryOfOrigin")
-                }
 
-                Section(l("Languages", "Langues")) {
-                    ForEach(languageOptions, id: \.value) { option in
-                        Toggle(option.label, isOn: Binding(
-                            get: { languages.contains(option.value) },
-                            set: { isSelected in
-                                if isSelected {
-                                    languages.insert(option.value)
+                    Section(l("Submission language", "Langue de soumission")) {
+                        Picker(l("Language", "Langue"), selection: $submissionLanguage) {
+                            Text(l("English", "Anglais")).tag("en")
+                            Text(l("French", "Français")).tag("fr")
+                        }
+                        .pickerStyle(.segmented)
+                    }
+
+                    Section(l("Update link (optional)", "Lien de mise à jour (facultatif)")) {
+                        TextField(l("Paste update link", "Collez le lien de mise à jour"), text: $updateLinkInput)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                        Button(l("Use link", "Utiliser le lien")) {
+                            applyUpdateLink()
+                        }
+                        errorText("updateLink")
+                        if !updateToken.isEmpty && !updateAppId.isEmpty {
+                            Text(l("Update link loaded for application \(updateAppId).", "Lien chargé pour la candidature \(updateAppId)."))
+                                .font(Theme.font(.caption))
+                                .foregroundStyle(Theme.muted)
+                            Button {
+                                Task { await loadPrefill() }
+                            } label: {
+                                if isPrefillLoading {
+                                    ProgressView()
                                 } else {
-                                    languages.remove(option.value)
+                                    Text(l("Load update details", "Charger les informations"))
                                 }
                             }
-                        ))
-                    }
-                    errorText("languages")
-                    if languages.contains("Other") {
-                        TextField(l("Other languages *", "Autres langues *"), text: $languagesOther)
-                        errorText("languagesOther")
-                    }
-                }
-
-                Section(l("Location and authorization", "Lieu et autorisation")) {
-                    Picker(l("Located in Canada? *", "Êtes-vous au Canada ? *"), selection: $locatedCanada) {
-                        Text(l("Select", "Sélectionner")).tag("")
-                        ForEach(yesNoOptions, id: \.value) { option in
-                            Text(option.label).tag(option.value)
-                        }
-                    }
-                    errorText("locatedCanada")
-
-                    if locatedCanada == "Yes" {
-                        Picker(l("Province *", "Province *"), selection: $province) {
-                            Text(l("Select", "Sélectionner")).tag("")
-                            ForEach(provinces, id: \.self) { item in
-                                Text(item).tag(item)
+                            .disabled(isPrefillLoading || !networkMonitor.isConnected)
+                            Button(l("Clear update link", "Effacer le lien")) {
+                                clearUpdateLink()
+                            }
+                            .foregroundStyle(Theme.error)
+                            if updatePurpose.lowercased() == "info" {
+                                Text(l("Resume is optional for info-only updates.", "CV facultatif pour les mises à jour d'information."))
+                                    .font(Theme.font(.caption))
+                                    .foregroundStyle(Theme.muted)
                             }
                         }
-                        errorText("province")
+                    }
 
-                        Picker(l("Authorized to work in Canada? *", "Autorisé(e) à travailler au Canada ? *"), selection: $authorizedCanada) {
+                    Section(l("Personal information", "Informations personnelles")) {
+                        TextField(l("First name *", "Prénom *"), text: $firstName)
+                        errorText("firstName")
+                        TextField(l("Middle name", "Deuxième prénom"), text: $middleName)
+                        TextField(l("Last name *", "Nom de famille *"), text: $familyName)
+                        errorText("familyName")
+                        TextField(l("Email *", "Adresse e-mail *"), text: $email)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                        errorText("email")
+                        TextField(l("Phone *", "Téléphone *"), text: $phone)
+                            .keyboardType(.phonePad)
+                        errorText("phone")
+                        Picker(l("Country of origin *", "Pays d'origine *"), selection: $countryOfOrigin) {
+                            Text(l("Select", "Sélectionner")).tag("")
+                            ForEach(CountryData.all, id: \.self) { country in
+                                Text(country).tag(country)
+                            }
+                        }
+                        errorText("countryOfOrigin")
+                    }
+
+                    Section(l("Languages", "Langues")) {
+                        ForEach(languageOptions, id: \.value) { option in
+                            Toggle(option.label, isOn: Binding(
+                                get: { languages.contains(option.value) },
+                                set: { isSelected in
+                                    if isSelected {
+                                        languages.insert(option.value)
+                                    } else {
+                                        languages.remove(option.value)
+                                    }
+                                }
+                            ))
+                        }
+                        errorText("languages")
+                        if languages.contains("Other") {
+                            TextField(l("Other languages *", "Autres langues *"), text: $languagesOther)
+                            errorText("languagesOther")
+                        }
+                    }
+
+                    Section(l("Location and authorization", "Lieu et autorisation")) {
+                        Picker(l("Located in Canada? *", "Êtes-vous au Canada ? *"), selection: $locatedCanada) {
                             Text(l("Select", "Sélectionner")).tag("")
                             ForEach(yesNoOptions, id: \.value) { option in
                                 Text(option.label).tag(option.value)
                             }
                         }
-                        errorText("authorizedCanada")
+                        errorText("locatedCanada")
+
+                        if locatedCanada == "Yes" {
+                            Picker(l("Province *", "Province *"), selection: $province) {
+                                Text(l("Select", "Sélectionner")).tag("")
+                                ForEach(provinces, id: \.self) { item in
+                                    Text(item).tag(item)
+                                }
+                            }
+                            errorText("province")
+
+                            Picker(l("Authorized to work in Canada? *", "Autorisé(e) à travailler au Canada ? *"), selection: $authorizedCanada) {
+                                Text(l("Select", "Sélectionner")).tag("")
+                                ForEach(yesNoOptions, id: \.value) { option in
+                                    Text(option.label).tag(option.value)
+                                }
+                            }
+                            errorText("authorizedCanada")
+                        }
+
+                        if locatedCanada == "No" {
+                            Picker(l("Eligible to move to Canada? *", "Êtes-vous prêt(e) à déménager au Canada ? *"), selection: $eligibleMoveCanada) {
+                                Text(l("Select", "Sélectionner")).tag("")
+                                ForEach(yesNoOptions, id: \.value) { option in
+                                    Text(option.label).tag(option.value)
+                                }
+                            }
+                            errorText("eligibleMoveCanada")
+                        }
                     }
 
-                    if locatedCanada == "No" {
-                        Picker(l("Eligible to move to Canada? *", "Êtes-vous prêt(e) à déménager au Canada ? *"), selection: $eligibleMoveCanada) {
+                    Section(l("Professional profile", "Profil professionnel")) {
+                        Picker(l("Industry *", "Secteur *"), selection: $industryType) {
+                            Text(l("Select", "Sélectionner")).tag("")
+                            ForEach(industryOptions, id: \.value) { item in
+                                Text(item.label).tag(item.value)
+                            }
+                        }
+                        errorText("industryType")
+                        if industryType == "Other" {
+                            TextField(l("Industry details *", "Précisez le secteur *"), text: $industryOther)
+                            errorText("industryOther")
+                        }
+                        Picker(l("Currently employed? *", "Actuellement employé(e) ? *"), selection: $employmentStatus) {
+                            Text(l("Select", "Sélectionner")).tag("")
+                            ForEach(employmentOptions, id: \.value) { item in
+                                Text(item.label).tag(item.value)
+                            }
+                        }
+                        errorText("employmentStatus")
+                        TextField(l("LinkedIn profile", "Profil LinkedIn"), text: $linkedin)
+                            .keyboardType(.URL)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                        errorText("linkedin")
+                    }
+
+                    Section(l("Referral goals", "Objectifs de recommandation")) {
+                        TextField(l("Target role", "Poste cible"), text: $desiredRole)
+                        TextField(l("Target companies", "Entreprises ciblées"), text: $targetCompanies)
+                        Picker(l("Specific postings?", "Avez-vous des offres spécifiques ?"), selection: $hasPostings) {
                             Text(l("Select", "Sélectionner")).tag("")
                             ForEach(yesNoOptions, id: \.value) { option in
                                 Text(option.label).tag(option.value)
                             }
                         }
-                        errorText("eligibleMoveCanada")
+                        TextField(l("Links and notes", "Liens et notes"), text: $postingNotes, axis: .vertical)
+                            .lineLimit(2, reservesSpace: true)
+                        TextField(l("Brief pitch", "Brève présentation"), text: $pitch, axis: .vertical)
+                            .lineLimit(3, reservesSpace: true)
                     }
-                }
 
-                Section(l("Professional profile", "Profil professionnel")) {
-                    Picker(l("Industry *", "Secteur *"), selection: $industryType) {
-                        Text(l("Select", "Sélectionner")).tag("")
-                        ForEach(industryOptions, id: \.value) { item in
-                            Text(item.label).tag(item.value)
+                    Section(l("Resume", "CV")) {
+                        HStack {
+                            Text(resumeName.isEmpty ? l("No file selected", "Aucun fichier sélectionné") : resumeName)
+                                .font(Theme.font(.subheadline))
+                                .foregroundStyle(resumeName.isEmpty ? Theme.muted : Theme.ink)
+                            Spacer()
+                            Button(l("Choose file", "Choisir un fichier")) {
+                                showDocumentPicker = true
+                            }
+                        }
+                        .accessibilityLabel(l("Resume file", "Fichier CV"))
+                        errorText("resume")
+                        if !requiresResume {
+                            Text(l("Resume optional for info-only updates.", "CV facultatif pour les mises à jour d'information."))
+                                .font(Theme.font(.caption))
+                                .foregroundStyle(Theme.muted)
+                        }
+                        if let resumeFile, resumeFile.data.count > FileSupport.maxResumeSize {
+                            Text(l("Resume must be under 10 MB.", "Le CV doit faire moins de 10 Mo."))
+                                .foregroundStyle(Theme.error)
+                                .font(Theme.font(.caption))
                         }
                     }
-                    errorText("industryType")
-                    if industryType == "Other" {
-                        TextField(l("Industry details *", "Précisez le secteur *"), text: $industryOther)
-                        errorText("industryOther")
+
+                    Section(l("Consent", "Consentement")) {
+                        Toggle(l("I agree to be contacted by iRefair.", "J’accepte d’être contacté(e) par iRefair."), isOn: $consent)
+                            .toggleStyle(.switch)
+                        errorText("consent")
                     }
-                    Picker(l("Currently employed? *", "Actuellement employé(e) ? *"), selection: $employmentStatus) {
-                        Text(l("Select", "Sélectionner")).tag("")
-                        ForEach(employmentOptions, id: \.value) { item in
-                            Text(item.label).tag(item.value)
+
+                    if let errorMessage {
+                        Section {
+                            StatusBanner(text: errorMessage, style: .error)
                         }
                     }
-                    errorText("employmentStatus")
-                    TextField(l("LinkedIn profile", "Profil LinkedIn"), text: $linkedin)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                    errorText("linkedin")
-                }
 
-                Section(l("Referral goals", "Objectifs de recommandation")) {
-                    TextField(l("Target role", "Poste cible"), text: $desiredRole)
-                    TextField(l("Target companies", "Entreprises ciblées"), text: $targetCompanies)
-                    Picker(l("Specific postings?", "Avez-vous des offres spécifiques ?"), selection: $hasPostings) {
-                        Text(l("Select", "Sélectionner")).tag("")
-                        ForEach(yesNoOptions, id: \.value) { option in
-                            Text(option.label).tag(option.value)
+                    if let statusMessage {
+                        Section {
+                            StatusBanner(text: statusMessage, style: .success)
                         }
                     }
-                    TextField(l("Links and notes", "Liens et notes"), text: $postingNotes, axis: .vertical)
-                        .lineLimit(2, reservesSpace: true)
-                    TextField(l("Brief pitch", "Brève présentation"), text: $pitch, axis: .vertical)
-                        .lineLimit(3, reservesSpace: true)
-                }
 
-                Section(l("Resume", "CV")) {
-                    HStack {
-                        Text(resumeName.isEmpty ? l("No file selected", "Aucun fichier sélectionné") : resumeName)
-                            .font(.subheadline)
-                            .foregroundStyle(resumeName.isEmpty ? .secondary : .primary)
-                        Spacer()
-                        Button(l("Choose file", "Choisir un fichier")) {
-                            showDocumentPicker = true
-                        }
-                    }
-                    .accessibilityLabel(l("Resume file", "Fichier CV"))
-                    errorText("resume")
-                    if !requiresResume {
-                        Text(l("Resume optional for info-only updates.", "CV facultatif pour les mises à jour d'information."))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    if let resumeFile, resumeFile.data.count > FileSupport.maxResumeSize {
-                        Text(l("Resume must be under 10 MB.", "Le CV doit faire moins de 10 Mo."))
-                            .foregroundStyle(.red)
-                            .font(.caption)
-                    }
-                }
-
-                Section(l("Consent", "Consentement")) {
-                    Toggle(l("I agree to be contacted by iRefair.", "J’accepte d’être contacté(e) par iRefair."), isOn: $consent)
-                        .toggleStyle(.switch)
-                    errorText("consent")
-                }
-
-                if let errorMessage {
                     Section {
-                        StatusBanner(text: errorMessage, style: .error)
-                    }
-                }
-
-                if let statusMessage {
-                    Section {
-                        StatusBanner(text: statusMessage, style: .success)
-                    }
-                }
-
-                Section {
-                    Button {
-                        Task { await submit() }
-                    } label: {
-                        if isSubmitting {
-                            ProgressView()
-                        } else {
-                            Text(l("Submit Applicant Profile", "Soumettre le profil candidat"))
+                        Button {
+                            Task { await submit() }
+                        } label: {
+                            if isSubmitting {
+                                ProgressView()
+                            } else {
+                                Text(l("Submit Applicant Profile", "Soumettre le profil candidat"))
+                            }
                         }
+                        .buttonStyle(IRefairPrimaryButtonStyle())
+                        .disabled(isSubmitting || !networkMonitor.isConnected)
                     }
-                    .disabled(isSubmitting || !networkMonitor.isConnected)
+                    .listRowBackground(Color.clear)
                 }
             }
             .navigationTitle(l("Applicant", "Candidat"))
@@ -354,7 +358,7 @@ struct ApplicantView: View {
     private func errorText(_ key: String) -> some View {
         Group {
             if let message = fieldErrors[key] {
-                Text(message).foregroundStyle(.red).font(.caption)
+                Text(message).foregroundStyle(Theme.error).font(Theme.font(.caption))
             }
         }
     }

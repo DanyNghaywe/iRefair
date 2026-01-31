@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 @main
 struct iRefairApp: App {
@@ -7,6 +8,7 @@ struct iRefairApp: App {
 
     init() {
         Telemetry.configure()
+        configureAppearance()
     }
 
     var body: some Scene {
@@ -58,5 +60,54 @@ struct iRefairApp: App {
                 appState.selectedTab = .applicant
             }
         }
+    }
+
+    private func configureAppearance() {
+        let navAppearance = UINavigationBarAppearance()
+        navAppearance.configureWithTransparentBackground()
+        navAppearance.backgroundEffect = nil
+        navAppearance.backgroundColor = .clear
+        navAppearance.shadowColor = .clear
+        navAppearance.titleTextAttributes = [
+            .foregroundColor: UIColor(hex: 0x0F172A),
+            .font: Theme.uiFont(size: 17, weight: .semibold),
+        ]
+        navAppearance.largeTitleTextAttributes = [
+            .foregroundColor: UIColor(hex: 0x0F172A),
+            .font: Theme.uiFont(size: 34, weight: .bold),
+        ]
+        UINavigationBar.appearance().standardAppearance = navAppearance
+        UINavigationBar.appearance().scrollEdgeAppearance = navAppearance
+
+        let tabAppearance = UITabBarAppearance()
+        tabAppearance.configureWithTransparentBackground()
+        tabAppearance.backgroundEffect = nil
+        tabAppearance.backgroundColor = .clear
+        tabAppearance.shadowColor = .clear
+        tabAppearance.stackedLayoutAppearance.selected.iconColor = UIColor(hex: 0x3D8BFD)
+        tabAppearance.stackedLayoutAppearance.selected.titleTextAttributes = [
+            .foregroundColor: UIColor(hex: 0x3D8BFD),
+        ]
+        tabAppearance.stackedLayoutAppearance.normal.iconColor = UIColor(hex: 0x5D6174)
+        tabAppearance.stackedLayoutAppearance.normal.titleTextAttributes = [
+            .foregroundColor: UIColor(hex: 0x5D6174),
+        ]
+        UITabBar.appearance().standardAppearance = tabAppearance
+        UITabBar.appearance().scrollEdgeAppearance = tabAppearance
+        UITabBar.appearance().isTranslucent = true
+        UINavigationBar.appearance().isTranslucent = true
+
+        UITableView.appearance().backgroundColor = .clear
+        UITableViewCell.appearance().backgroundColor = .clear
+        UITableView.appearance().separatorColor = UIColor(hex: 0xE2E6F1, alpha: 0.6)
+
+        UISegmentedControl.appearance().selectedSegmentTintColor = UIColor(hex: 0x3D8BFD)
+        UISegmentedControl.appearance().backgroundColor = UIColor(hex: 0xF3EDFF, alpha: 0.9)
+        UISegmentedControl.appearance().setTitleTextAttributes([
+            .foregroundColor: UIColor(hex: 0x0F172A),
+        ], for: .normal)
+        UISegmentedControl.appearance().setTitleTextAttributes([
+            .foregroundColor: UIColor.white,
+        ], for: .selected)
     }
 }

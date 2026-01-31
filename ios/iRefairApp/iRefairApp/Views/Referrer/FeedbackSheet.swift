@@ -19,55 +19,59 @@ struct FeedbackSheet: View {
 
     var body: some View {
         NavigationStack {
-            Form {
-                if !networkMonitor.isConnected {
-                    Section {
-                        StatusBanner(text: l("You're offline. Connect to the internet to send feedback.", "Vous êtes hors ligne. Connectez-vous à Internet pour envoyer l’avis."), style: .warning)
-                    }
-                }
-
-                Section(l("Applicant", "Candidat")) {
-                    Text(applicant.displayName)
-                    Text(applicant.irain)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-
-                Section(l("Feedback", "Avis")) {
-                    TextField(l("Share feedback", "Partagez votre avis"), text: $feedback, axis: .vertical)
-                        .lineLimit(4, reservesSpace: true)
-                    Picker(l("Rating", "Évaluation"), selection: $rating) {
-                        ForEach(1...5, id: \.self) { value in
-                            Text("\(value)").tag(value)
+            IRefairScreen {
+                IRefairForm {
+                    if !networkMonitor.isConnected {
+                        Section {
+                            StatusBanner(text: l("You're offline. Connect to the internet to send feedback.", "Vous êtes hors ligne. Connectez-vous à Internet pour envoyer l’avis."), style: .warning)
                         }
                     }
-                    .pickerStyle(.segmented)
-                    Toggle(l("Recommend", "Recommander"), isOn: $recommend)
-                }
 
-                if let errorMessage {
-                    Section {
-                        StatusBanner(text: errorMessage, style: .error)
+                    Section(l("Applicant", "Candidat")) {
+                        Text(applicant.displayName)
+                        Text(applicant.irain)
+                            .font(Theme.font(.caption))
+                            .foregroundStyle(Theme.muted)
                     }
-                }
 
-                Section {
-                    Button {
-                        Task { await submit() }
-                    } label: {
-                        if isSubmitting {
-                            ProgressView()
-                        } else {
-                            Text(l("Send feedback", "Envoyer un avis"))
+                    Section(l("Feedback", "Avis")) {
+                        TextField(l("Share feedback", "Partagez votre avis"), text: $feedback, axis: .vertical)
+                            .lineLimit(4, reservesSpace: true)
+                        Picker(l("Rating", "Évaluation"), selection: $rating) {
+                            ForEach(1...5, id: \.self) { value in
+                                Text("\(value)").tag(value)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        Toggle(l("Recommend", "Recommander"), isOn: $recommend)
+                    }
+
+                    if let errorMessage {
+                        Section {
+                            StatusBanner(text: errorMessage, style: .error)
                         }
                     }
-                    .disabled(isSubmitting || !networkMonitor.isConnected)
+
+                    Section {
+                        Button {
+                            Task { await submit() }
+                        } label: {
+                            if isSubmitting {
+                                ProgressView()
+                            } else {
+                                Text(l("Send feedback", "Envoyer un avis"))
+                            }
+                        }
+                        .buttonStyle(IRefairPrimaryButtonStyle())
+                        .disabled(isSubmitting || !networkMonitor.isConnected)
+                    }
+                    .listRowBackground(Color.clear)
                 }
-            }
-            .navigationTitle(l("Feedback", "Avis"))
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(l("Close", "Fermer")) { dismiss() }
+                .navigationTitle(l("Feedback", "Avis"))
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(l("Close", "Fermer")) { dismiss() }
+                    }
                 }
             }
         }

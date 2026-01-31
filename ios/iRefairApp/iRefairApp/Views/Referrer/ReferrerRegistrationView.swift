@@ -46,7 +46,7 @@ struct ReferrerRegistrationView: View {
     private let workTypeValues = ["On-site", "Remote", "Hybrid"]
 
     var body: some View {
-        Form {
+        IRefairForm {
             if !networkMonitor.isConnected {
                 Section {
                     StatusBanner(text: l("You're offline. Connect to the internet to submit the form.", "Vous êtes hors ligne. Connectez-vous à Internet pour soumettre le formulaire."), style: .warning)
@@ -129,15 +129,17 @@ struct ReferrerRegistrationView: View {
                         Text(l("Register as Referrer", "S'inscrire comme référent"))
                     }
                 }
+                .buttonStyle(IRefairPrimaryButtonStyle())
                 .disabled(isSubmitting || !networkMonitor.isConnected)
             }
+            .listRowBackground(Color.clear)
         }
     }
 
     private func errorText(_ key: String) -> some View {
         Group {
             if let message = fieldErrors[key] {
-                Text(message).foregroundStyle(.red).font(.caption)
+                Text(message).foregroundStyle(Theme.error).font(Theme.font(.caption))
             }
         }
     }

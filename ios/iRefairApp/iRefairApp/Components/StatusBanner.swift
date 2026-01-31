@@ -9,19 +9,19 @@ struct StatusBanner: View {
 
         var tint: Color {
             switch self {
-            case .success: return Color.green.opacity(0.15)
-            case .error: return Color.red.opacity(0.15)
-            case .warning: return Color.orange.opacity(0.15)
-            case .info: return Color.blue.opacity(0.12)
+            case .success: return Theme.success.opacity(0.14)
+            case .error: return Theme.error.opacity(0.14)
+            case .warning: return Theme.warning.opacity(0.18)
+            case .info: return Theme.info.opacity(0.12)
             }
         }
 
         var foreground: Color {
             switch self {
-            case .success: return .green
-            case .error: return .red
-            case .warning: return .orange
-            case .info: return .blue
+            case .success: return Theme.success
+            case .error: return Theme.error
+            case .warning: return Theme.warning
+            case .info: return Theme.info
             }
         }
 
@@ -43,14 +43,19 @@ struct StatusBanner: View {
             Image(systemName: style.systemImage)
                 .foregroundStyle(style.foreground)
             Text(text)
-                .foregroundStyle(.primary)
-                .font(.subheadline)
+                .foregroundStyle(Theme.ink)
+                .font(Theme.font(.subheadline))
             Spacer(minLength: 0)
         }
         .padding(12)
         .background(
             RoundedRectangle(cornerRadius: 12)
                 .fill(style.tint)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Theme.glassGradient)
+                        .opacity(0.6)
+                )
         )
         .overlay(
             RoundedRectangle(cornerRadius: 12)
