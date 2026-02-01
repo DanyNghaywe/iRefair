@@ -19,7 +19,7 @@ struct IRefairSection<Content: View>: View {
         let contentTopPadding: CGFloat = hasTitle ? titleOverlap + titleGap : 12
 
         ZStack(alignment: .topLeading) {
-            VStack(alignment: .leading, spacing: 12) {
+            VStack(alignment: .leading, spacing: Theme.fieldGap) {
                 content
             }
             .textFieldStyle(IRefairTextFieldStyle())

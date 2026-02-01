@@ -11,12 +11,12 @@ struct IRefairForm<Content: View>: View {
         ZStack {
             IRefairBoardBackground()
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: Theme.boardGap) {
                     content
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 18)
-                .padding(.vertical, 20)
+                .padding(.horizontal, Theme.boardPadding)
+                .padding(.vertical, Theme.boardPadding)
             }
             .scrollDismissesKeyboard(.interactively)
             .scrollIndicators(.hidden)
@@ -24,7 +24,7 @@ struct IRefairForm<Content: View>: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .clipShape(RoundedRectangle(cornerRadius: Theme.boardRadius, style: .continuous))
-        .padding(.horizontal, 14)
-        .padding(.vertical, 12)
+        .padding(.horizontal, Theme.appPaddingHorizontal)
+        .padding(.vertical, Theme.appPaddingVertical)
     }
 }

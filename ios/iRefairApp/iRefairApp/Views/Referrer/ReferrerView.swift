@@ -31,8 +31,8 @@ struct ReferrerView: View {
                                     .stroke(Theme.segmentBorder, lineWidth: 1)
                             )
                     )
-                    .padding(.horizontal, 14)
-                    .padding(.top, 8)
+                    .padding(.horizontal, Theme.appPaddingHorizontal)
+                    .padding(.top, Theme.appPaddingVertical)
 
                     if selection == .register {
                         ReferrerRegistrationView()

@@ -37,6 +37,13 @@ enum Theme {
     static let sectionRadius: CGFloat = 16
     static let legendRadius: CGFloat = 12
 
+    // Layout spacing aligned to the mobile web app.
+    static let appPaddingHorizontal: CGFloat = 14
+    static let appPaddingVertical: CGFloat = 20
+    static let boardPadding: CGFloat = 18
+    static let boardGap: CGFloat = 32
+    static let fieldGap: CGFloat = 20
+
     static let boardGradient = LinearGradient(
         gradient: Gradient(colors: [
             Color.white.opacity(0.05),
