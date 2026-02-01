@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ReferrerPortalView: View {
     @AppStorage("apiBaseURL") private var apiBaseURL: String = "https://irefair.com"
-    @AppStorage("submissionLanguage") private var submissionLanguage: String = "en"
 
     @EnvironmentObject private var networkMonitor: NetworkMonitor
 
@@ -20,19 +19,19 @@ struct ReferrerPortalView: View {
         IRefairForm {
             if !networkMonitor.isConnected {
                 IRefairSection {
-                    StatusBanner(text: l("You're offline. Connect to the internet to load portal data.", "Vous êtes hors ligne. Connectez-vous à Internet pour charger le portail."), style: .warning)
+                    StatusBanner(text: l("You're offline. Connect to the internet to load portal data."), style: .warning)
                 }
             }
 
-            IRefairSection(l("Access token", "Jeton d’accès")) {
-                IRefairField(l("Paste token or portal link", "Collez le jeton ou le lien du portail")) {
+            IRefairSection(l("Access token")) {
+                IRefairField(l("Paste token or portal link")) {
                     TextField("", text: $tokenInput)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                        .accessibilityLabel(l("Paste token or portal link", "Collez le jeton ou le lien du portail"))
+                        .accessibilityLabel(l("Paste token or portal link"))
                 }
                 HStack {
-                    Button(l("Save token", "Enregistrer le jeton")) {
+                    Button(l("Save token")) {
                         let token = extractToken(from: tokenInput)
                         storedToken = token
                         tokenInput = token
@@ -42,7 +41,7 @@ struct ReferrerPortalView: View {
                     }
                     .buttonStyle(IRefairGhostButtonStyle())
                     Spacer()
-                    Button(l("Clear", "Effacer")) {
+                    Button(l("Clear")) {
                         storedToken = ""
                         tokenInput = ""
                         referrer = nil
@@ -51,7 +50,7 @@ struct ReferrerPortalView: View {
                     }
                     .buttonStyle(IRefairGhostButtonStyle())
                 }
-                Button(l("Load portal data", "Charger les données du portail")) {
+                Button(l("Load portal data")) {
                     Task { await loadPortal() }
                 }
                 .buttonStyle(IRefairPrimaryButtonStyle())
@@ -59,11 +58,11 @@ struct ReferrerPortalView: View {
             }
 
             if let referrer {
-                IRefairSection(l("Referrer", "Référent")) {
+                IRefairSection(l("Referrer")) {
                     Text("\(referrer.firstName) \(referrer.lastName)")
                     Text(referrer.email)
                         .foregroundStyle(Theme.muted)
-                    Text("\(l("ID", "ID")): \(referrer.irref)")
+                    Text("\(l("ID")): \(referrer.irref)")
                         .font(Theme.font(.caption))
                         .foregroundStyle(Theme.muted)
                 }
@@ -71,12 +70,12 @@ struct ReferrerPortalView: View {
 
             if isLoading {
                 IRefairSection {
-                    ProgressView(l("Loading...", "Chargement..."))
+                    ProgressView(l("Loading..."))
                 }
             }
 
             if !applicants.isEmpty {
-                IRefairSection(l("Applicants", "Candidats")) {
+                IRefairSection(l("Applicants")) {
                     ForEach(applicants) { applicant in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(applicant.displayName)
@@ -87,11 +86,11 @@ struct ReferrerPortalView: View {
                                     .foregroundStyle(Theme.muted)
                             }
                             if let status = applicant.status {
-                                Text("\(l("Status", "Statut")): \(status)")
+                                Text("\(l("Status")): \(status)")
                                     .font(Theme.font(.caption))
                                     .foregroundStyle(Theme.muted)
                             }
-                            Button(l("Send feedback", "Envoyer un avis")) {
+                            Button(l("Send feedback")) {
                                 selectedApplicant = applicant
                             }
                             .buttonStyle(IRefairGhostButtonStyle())
@@ -101,7 +100,7 @@ struct ReferrerPortalView: View {
                 }
             } else if referrer != nil && !isLoading {
                 IRefairSection {
-                    Text(l("No applicants assigned yet.", "Aucun candidat assigné pour l'instant."))
+                    Text(l("No applicants assigned yet."))
                         .foregroundStyle(Theme.muted)
                 }
             }
@@ -143,8 +142,8 @@ struct ReferrerPortalView: View {
         return trimmed
     }
 
-    private func l(_ en: String, _ fr: String) -> String {
-        Localizer.text(en, fr, language: submissionLanguage)
+    private func l(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 
     @MainActor
@@ -153,15 +152,15 @@ struct ReferrerPortalView: View {
         statusMessage = nil
         let token = extractToken(from: tokenInput.isEmpty ? storedToken : tokenInput)
         guard !token.isEmpty else {
-            errorMessage = l("Enter a token first.", "Entrez d'abord un jeton.")
+            errorMessage = l("Enter a token first.")
             return
         }
         guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
-            errorMessage = l("Set your API base URL in Settings first.", "Définissez d'abord l'URL de base de l'API dans Paramètres.")
+            errorMessage = l("Set your API base URL in Settings first.")
             return
         }
         guard networkMonitor.isConnected else {
-            errorMessage = l("You're offline. Connect to the internet and try again.", "Vous êtes hors ligne. Connectez-vous à Internet et réessayez.")
+            errorMessage = l("You're offline. Connect to the internet and try again.")
             return
         }
         storedToken = token
@@ -175,7 +174,7 @@ struct ReferrerPortalView: View {
             let response = try await APIClient.loadReferrerPortal(baseURL: apiBaseURL, token: token)
             referrer = response.referrer
             applicants = response.applicants ?? []
-            statusMessage = l("Loaded \(applicants.count) applicants.", "Chargé \(applicants.count) candidats.")
+            statusMessage = String.localizedStringWithFormat(l("Loaded %d applicants."), applicants.count)
             Telemetry.track("referrer_portal_loaded", properties: ["count": "\(applicants.count)"])
         } catch {
             Telemetry.capture(error)

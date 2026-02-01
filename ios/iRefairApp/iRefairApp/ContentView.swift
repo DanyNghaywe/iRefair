@@ -2,31 +2,30 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var appState: AppState
-    @AppStorage("submissionLanguage") private var submissionLanguage: String = "en"
 
     var body: some View {
         TabView(selection: $appState.selectedTab) {
             ApplicantView()
                 .tabItem {
-                    Label(l("Applicant", "Candidat"), systemImage: "person.text.rectangle")
+                    Label(l("Applicant"), systemImage: "person.text.rectangle")
                 }
                 .tag(AppTab.applicant)
 
             ApplyView()
                 .tabItem {
-                    Label(l("Apply", "Postuler"), systemImage: "paperplane")
+                    Label(l("Apply"), systemImage: "paperplane")
                 }
                 .tag(AppTab.apply)
 
             ReferrerView()
                 .tabItem {
-                    Label(l("Referrer", "Référent"), systemImage: "person.2")
+                    Label(l("Referrer"), systemImage: "person.2")
                 }
                 .tag(AppTab.referrer)
 
             SettingsView()
                 .tabItem {
-                    Label(l("Settings", "Paramètres"), systemImage: "gearshape")
+                    Label(l("Settings"), systemImage: "gearshape")
                 }
                 .tag(AppTab.settings)
         }
@@ -37,8 +36,8 @@ struct ContentView: View {
         .preferredColorScheme(.light)
     }
 
-    private func l(_ en: String, _ fr: String) -> String {
-        Localizer.text(en, fr, language: submissionLanguage)
+    private func l(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 

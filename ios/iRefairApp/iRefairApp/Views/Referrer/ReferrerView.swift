@@ -6,8 +6,6 @@ struct ReferrerView: View {
         case portal = "Portal"
     }
 
-    @AppStorage("submissionLanguage") private var submissionLanguage: String = "en"
-
     @State private var selection: Section = .register
 
     var body: some View {
@@ -15,7 +13,7 @@ struct ReferrerView: View {
             IRefairScreen {
                 VStack {
                     VStack {
-                        Picker(l("Mode", "Mode"), selection: $selection) {
+                        Picker(l("Mode"), selection: $selection) {
                             ForEach(Section.allCases, id: \.self) { item in
                                 Text(label(for: item)).tag(item)
                             }
@@ -40,21 +38,21 @@ struct ReferrerView: View {
                         ReferrerPortalView()
                     }
                 }
-                .navigationTitle(l("Referrer", "Référent"))
+                .navigationTitle(l("Referrer"))
             }
         }
     }
 
-    private func l(_ en: String, _ fr: String) -> String {
-        Localizer.text(en, fr, language: submissionLanguage)
+    private func l(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 
     private func label(for section: Section) -> String {
         switch section {
         case .register:
-            return l("Register", "Inscription")
+            return l("Register")
         case .portal:
-            return l("Portal", "Portail")
+            return l("Portal")
         }
     }
 }

@@ -2,7 +2,6 @@ import SwiftUI
 
 struct SettingsView: View {
     @AppStorage("apiBaseURL") private var apiBaseURL: String = "https://irefair.com"
-    @AppStorage("submissionLanguage") private var submissionLanguage: String = "en"
 
     @State private var draftBaseURL = ""
     @State private var statusMessage: String?
@@ -11,51 +10,40 @@ struct SettingsView: View {
         NavigationStack {
             IRefairScreen {
                 IRefairForm {
-                    IRefairSection(l("API Configuration", "Configuration API")) {
-                        IRefairField(l("Base URL", "URL de base")) {
+                    IRefairSection(l("API Configuration")) {
+                        IRefairField(l("Base URL")) {
                             TextField("", text: $draftBaseURL)
                                 .keyboardType(.URL)
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()
-                                .accessibilityLabel(l("Base URL", "URL de base"))
+                                .accessibilityLabel(l("Base URL"))
                         }
                         HStack {
-                            Button(l("Save", "Enregistrer")) {
+                            Button(l("Save")) {
                                 let cleaned = Validator.sanitizeBaseURL(draftBaseURL)
                                 apiBaseURL = cleaned
-                                statusMessage = l("Saved.", "Enregistré.")
+                                statusMessage = l("Saved.")
                             }
                             .buttonStyle(IRefairGhostButtonStyle())
                             Spacer()
-                            Button(l("Reset", "Réinitialiser")) {
+                            Button(l("Reset")) {
                                 apiBaseURL = "https://irefair.com"
                                 draftBaseURL = apiBaseURL
-                                statusMessage = l("Reset to default.", "Réinitialisé.")
+                                statusMessage = l("Reset to default.")
                             }
                             .buttonStyle(IRefairGhostButtonStyle())
                         }
-                        Text(l("Use your production URL or local dev server (e.g. http://localhost:3000).",
-                               "Utilisez l’URL de production ou un serveur local (ex. http://localhost:3000)."))
+                        Text(l("Use your production URL or local dev server (e.g. http://localhost:3000)."))
                             .font(Theme.font(.caption))
                             .foregroundStyle(Theme.muted)
                     }
 
-                    IRefairSection(l("Default language", "Langue par défaut")) {
-                        IRefairField(l("Language", "Langue")) {
-                            Picker(l("Language", "Langue"), selection: $submissionLanguage) {
-                                Text(l("English", "Anglais")).tag("en")
-                                Text(l("French", "Français")).tag("fr")
-                            }
-                            .pickerStyle(.segmented)
-                        }
-                    }
-
-                    IRefairSection(l("Legal", "Mentions légales")) {
+                    IRefairSection(l("Legal")) {
                         if let privacyUrl = URL(string: "https://irefair.com/privacy") {
-                            Link(l("Privacy Policy", "Politique de confidentialité"), destination: privacyUrl)
+                            Link(l("Privacy Policy"), destination: privacyUrl)
                         }
                         if let termsUrl = URL(string: "https://irefair.com/terms") {
-                            Link(l("Terms of Service", "Conditions d’utilisation"), destination: termsUrl)
+                            Link(l("Terms of Service"), destination: termsUrl)
                         }
                     }
 
@@ -65,15 +53,15 @@ struct SettingsView: View {
                         }
                     }
 
-                    IRefairSection(l("App data", "Données de l’app")) {
-                        Button(l("Clear saved referrer token", "Effacer le jeton enregistré")) {
+                    IRefairSection(l("App data")) {
+                        Button(l("Clear saved referrer token")) {
                             KeychainStore.delete(key: "referrerPortalToken")
-                            statusMessage = l("Cleared referrer token.", "Jeton de référent effacé.")
+                            statusMessage = l("Cleared referrer token.")
                         }
                         .buttonStyle(IRefairGhostButtonStyle())
                     }
                 }
-                .navigationTitle(l("Settings", "Paramètres"))
+                .navigationTitle(l("Settings"))
                 .onAppear {
                     draftBaseURL = apiBaseURL
                 }
@@ -81,8 +69,8 @@ struct SettingsView: View {
         }
     }
 
-    private func l(_ en: String, _ fr: String) -> String {
-        Localizer.text(en, fr, language: submissionLanguage)
+    private func l(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 }
 

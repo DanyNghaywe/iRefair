@@ -2,7 +2,6 @@ import SwiftUI
 
 struct ReferrerRegistrationView: View {
     @AppStorage("apiBaseURL") private var apiBaseURL: String = "https://irefair.com"
-    @AppStorage("submissionLanguage") private var submissionLanguage: String = "en"
 
     @EnvironmentObject private var networkMonitor: NetworkMonitor
 
@@ -44,99 +43,89 @@ struct ReferrerRegistrationView: View {
         IRefairForm {
             if !networkMonitor.isConnected {
                 IRefairSection {
-                    StatusBanner(text: l("You're offline. Connect to the internet to submit the form.", "Vous êtes hors ligne. Connectez-vous à Internet pour soumettre le formulaire."), style: .warning)
+                    StatusBanner(text: l("You're offline. Connect to the internet to submit the form."), style: .warning)
                 }
             }
 
-            IRefairSection(l("Submission language", "Langue de soumission")) {
-                IRefairField(l("Language", "Langue")) {
-                    Picker(l("Language", "Langue"), selection: $submissionLanguage) {
-                        Text(l("English", "Anglais")).tag("en")
-                        Text(l("French", "Français")).tag("fr")
-                    }
-                    .pickerStyle(.segmented)
-                }
-            }
-
-            IRefairSection(l("Become a referrer", "Devenir référent")) {
-                IRefairField(l("Full name *", "Nom complet *")) {
+            IRefairSection(l("Become a referrer")) {
+                IRefairField(l("Full name *")) {
                     TextField("", text: $fullName)
-                        .accessibilityLabel(l("Full name *", "Nom complet *"))
+                        .accessibilityLabel(l("Full name *"))
                 }
                 errorText("name")
-                IRefairField(l("Work email *", "E-mail professionnel *")) {
+                IRefairField(l("Work email *")) {
                     TextField("", text: $email)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                        .accessibilityLabel(l("Work email *", "E-mail professionnel *"))
+                        .accessibilityLabel(l("Work email *"))
                 }
                 errorText("email")
-                IRefairField(l("Phone", "Téléphone")) {
+                IRefairField(l("Phone")) {
                     TextField("", text: $phone)
-                        .accessibilityLabel(l("Phone", "Téléphone"))
+                        .accessibilityLabel(l("Phone"))
                 }
                 errorText("phone")
-                IRefairField(l("Country", "Pays")) {
+                IRefairField(l("Country")) {
                     TextField("", text: $country)
-                        .accessibilityLabel(l("Country", "Pays"))
+                        .accessibilityLabel(l("Country"))
                 }
                 errorText("country")
-                IRefairField(l("Company name", "Nom de l’entreprise")) {
+                IRefairField(l("Company name")) {
                     TextField("", text: $company)
-                        .accessibilityLabel(l("Company name", "Nom de l’entreprise"))
+                        .accessibilityLabel(l("Company name"))
                 }
-                IRefairField(l("Careers portal URL", "URL du portail carrières")) {
+                IRefairField(l("Careers portal URL")) {
                     TextField("", text: $careersPortal)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                        .accessibilityLabel(l("Careers portal URL", "URL du portail carrières"))
+                        .accessibilityLabel(l("Careers portal URL"))
                 }
                 errorText("careersPortal")
                 IRefairMenuPicker(
-                    l("Company industry", "Secteur de l’entreprise"),
+                    l("Company industry"),
                     displayValue: pickerDisplayValue(companyIndustry, options: companyIndustryOptions),
                     isPlaceholder: companyIndustry.isEmpty,
                     selection: $companyIndustry
                 ) {
-                    Text(l("Select", "Sélectionner")).tag("")
+                    Text(l("Select")).tag("")
                     ForEach(companyIndustryOptions, id: \.value) { item in
                         Text(item.label).tag(item.value)
                     }
                 }
                 errorText("companyIndustry")
                 if companyIndustry == "Other" {
-                    IRefairField(l("Other industry", "Autre secteur")) {
+                    IRefairField(l("Other industry")) {
                         TextField("", text: $companyIndustryOther)
-                            .accessibilityLabel(l("Other industry", "Autre secteur"))
+                            .accessibilityLabel(l("Other industry"))
                     }
                     errorText("companyIndustryOther")
                 }
                 IRefairMenuPicker(
-                    l("Work type", "Type de travail"),
+                    l("Work type"),
                     displayValue: pickerDisplayValue(workType, options: workTypeOptions),
                     isPlaceholder: workType.isEmpty,
                     selection: $workType
                 ) {
-                    Text(l("Select", "Sélectionner")).tag("")
+                    Text(l("Select")).tag("")
                     ForEach(workTypeOptions, id: \.value) { item in
                         Text(item.label).tag(item.value)
                     }
                 }
                 errorText("workType")
-                IRefairField(l("LinkedIn profile", "Profil LinkedIn")) {
+                IRefairField(l("LinkedIn profile")) {
                     TextField("", text: $linkedIn)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-                        .accessibilityLabel(l("LinkedIn profile", "Profil LinkedIn"))
+                        .accessibilityLabel(l("LinkedIn profile"))
                 }
                 errorText("linkedIn")
             }
 
-            IRefairSection(l("Consent", "Consentement")) {
-                Toggle(l("I agree to be contacted by iRefair.", "J’accepte d’être contacté(e) par iRefair."), isOn: $consent)
+            IRefairSection(l("Consent")) {
+                Toggle(l("I agree to be contacted by iRefair."), isOn: $consent)
                     .toggleStyle(IRefairCheckboxToggleStyle())
                 errorText("consent")
             }
@@ -160,7 +149,7 @@ struct ReferrerRegistrationView: View {
                     if isSubmitting {
                         ProgressView()
                     } else {
-                        Text(l("Register as Referrer", "S'inscrire comme référent"))
+                        Text(l("Register as Referrer"))
                     }
                 }
                 .buttonStyle(IRefairPrimaryButtonStyle())
@@ -178,82 +167,65 @@ struct ReferrerRegistrationView: View {
     }
 
     private var companyIndustryOptions: [(value: String, label: String)] {
-        if submissionLanguage.lowercased() != "fr" {
-            return companyIndustryValues.map { ($0, $0) }
-        }
-        let labels: [String: String] = [
-            "Technology": "Technologie",
-            "Finance": "Finance",
-            "Healthcare": "Santé",
-            "Education": "Éducation",
-            "Retail": "Commerce de détail",
-            "Hospitality": "Hôtellerie",
-            "Marketing / Media": "Marketing / Médias",
-            "Engineering / Construction": "Ingénierie / Construction",
-            "Consulting": "Conseil",
-            "Not for profit": "Organisme à but non lucratif",
-            "Compliance / Audit": "Conformité / Audit",
-            "Other": "Autre",
-        ]
         return companyIndustryValues.map { value in
-            (value: value, label: labels[value] ?? value)
+            (value: value, label: l(value))
         }
     }
 
     private var workTypeOptions: [(value: String, label: String)] {
         let labels: [String: String] = [
-            "On-site": l("On-site", "Sur site"),
-            "Remote": l("Remote", "Télétravail"),
-            "Hybrid": l("Hybrid", "Hybride"),
+            "On-site": l("On-site"),
+            "Remote": l("Remote"),
+            "Hybrid": l("Hybrid"),
         ]
         return workTypeValues.map { value in
             (value: value, label: labels[value] ?? value)
         }
     }
 
-    private func l(_ en: String, _ fr: String) -> String {
-        Localizer.text(en, fr, language: submissionLanguage)
+    private func l(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 
     private func pickerDisplayValue(_ value: String, options: [(value: String, label: String)]) -> String {
-        guard !value.isEmpty else { return l("Select", "Sélectionner") }
+        guard !value.isEmpty else { return l("Select") }
         return options.first(where: { $0.value == value })?.label ?? value
     }
 
     private func validate() -> Bool {
         var errors: [String: String] = [:]
         if fullName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["name"] = l("Full name is required.", "Le nom complet est requis.")
+            errors["name"] = l("Full name is required.")
         }
         if !Validator.isValidEmail(email) {
-            errors["email"] = l("Enter a valid email.", "Veuillez entrer un e-mail valide.")
+            errors["email"] = l("Enter a valid email.")
         }
         if phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["phone"] = l("Phone number is required.", "Le numéro de téléphone est requis.")
+            errors["phone"] = l("Phone number is required.")
         }
         if country.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["country"] = l("Country is required.", "Le pays est requis.")
+            errors["country"] = l("Country is required.")
         }
         if companyIndustry.isEmpty {
-            errors["companyIndustry"] = l("Select an industry.", "Sélectionnez un secteur.")
+            errors["companyIndustry"] = l("Select an industry.")
         }
         if companyIndustry == "Other" && companyIndustryOther.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["companyIndustryOther"] = l("Specify the industry.", "Précisez le secteur.")
+            errors["companyIndustryOther"] = l("Specify the industry.")
         }
         if workType.isEmpty {
-            errors["workType"] = l("Select a work type.", "Sélectionnez un type de travail.")
+            errors["workType"] = l("Select a work type.")
         }
         let careersPortalValue = careersPortal.trimmingCharacters(in: .whitespacesAndNewlines)
         if careersPortalValue.isEmpty {
-            errors["careersPortal"] = l("Careers portal URL is required.", "L'URL du portail carrières est requise.")
+            errors["careersPortal"] = l("Careers portal URL is required.")
         } else if !isValidUrl(careersPortalValue) {
-            errors["careersPortal"] = l("Enter a valid careers portal URL.", "Entrez une URL valide du portail carrières.")
+            errors["careersPortal"] = l("Enter a valid careers portal URL.")
         }
         if !Validator.isValidLinkedInProfile(linkedIn) {
-            errors["linkedIn"] = l("Enter a valid LinkedIn profile URL.", "Entrez une URL LinkedIn valide.")
+            errors["linkedIn"] = l("Enter a valid LinkedIn profile URL.")
         }
         if !consent {
-            errors["consent"] = l("Consent is required.", "Le consentement est requis.")
+            errors["consent"] = l("Consent is required.")
         }
         fieldErrors = errors
         return errors.isEmpty
@@ -265,11 +237,11 @@ struct ReferrerRegistrationView: View {
         statusMessage = nil
         guard validate() else { return }
         guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
-            errorMessage = l("Set your API base URL in Settings first.", "Définissez d'abord l'URL de base de l'API dans Paramètres.")
+            errorMessage = l("Set your API base URL in Settings first.")
             return
         }
         guard networkMonitor.isConnected else {
-            errorMessage = l("You're offline. Connect to the internet and try again.", "Vous êtes hors ligne. Connectez-vous à Internet et réessayez.")
+            errorMessage = l("You're offline. Connect to the internet and try again.")
             return
         }
 
@@ -288,13 +260,13 @@ struct ReferrerRegistrationView: View {
                 "companyIndustryOther": companyIndustryOther.trimmingCharacters(in: .whitespacesAndNewlines),
                 "workType": workType,
                 "linkedin": linkedIn.trimmingCharacters(in: .whitespacesAndNewlines),
-                "language": submissionLanguage,
+                "language": AppLocale.languageCode,
                 "website": "",
             ]
             let response = try await APIClient.registerReferrer(baseURL: apiBaseURL, payload: payload)
             statusMessage = response.irref != nil
-            ? l("Referrer registered. Your ID: \(response.irref ?? "")", "Référent enregistré. Votre ID : \(response.irref ?? "")")
-            : l("Referrer registered.", "Référent enregistré.")
+            ? String.localizedStringWithFormat(l("Referrer registered. Your ID: %@"), response.irref ?? "")
+            : l("Referrer registered.")
             Telemetry.track("referrer_register_success")
         } catch {
             Telemetry.capture(error)

@@ -3,7 +3,6 @@ import UniformTypeIdentifiers
 
 struct ApplyView: View {
     @AppStorage("apiBaseURL") private var apiBaseURL: String = "https://irefair.com"
-    @AppStorage("submissionLanguage") private var submissionLanguage: String = "en"
 
     @EnvironmentObject private var networkMonitor: NetworkMonitor
 
@@ -28,69 +27,58 @@ struct ApplyView: View {
                 IRefairForm {
                     if !networkMonitor.isConnected {
                         IRefairSection {
-                            StatusBanner(text: l("You're offline. Connect to the internet to submit the form.", "Vous êtes hors ligne. Connectez-vous à Internet pour soumettre le formulaire."), style: .warning)
+                            StatusBanner(text: l("You're offline. Connect to the internet to submit the form."), style: .warning)
                         }
                     }
 
                     IRefairSection {
-                        Text(l("Submit an application using your iRAIN and Applicant Key.",
-                               "Soumettez une candidature avec votre iRAIN et votre clé de candidat."))
+                        Text(l("Submit an application using your iRAIN and Applicant Key."))
                             .font(Theme.font(.subheadline))
                             .foregroundStyle(Theme.muted)
                     }
 
-                    IRefairSection(l("Submission language", "Langue de soumission")) {
-                        IRefairField(l("Language", "Langue")) {
-                            Picker(l("Language", "Langue"), selection: $submissionLanguage) {
-                                Text(l("English", "Anglais")).tag("en")
-                                Text(l("French", "Français")).tag("fr")
-                            }
-                            .pickerStyle(.segmented)
-                        }
-                    }
-
-                    IRefairSection(l("Application details", "Détails de la candidature")) {
-                        IRefairField(l("Applicant ID (iRAIN) *", "ID candidat (iRAIN) *")) {
+                    IRefairSection(l("Application details")) {
+                        IRefairField(l("Applicant ID (iRAIN) *")) {
                             TextField("", text: $applicantId)
-                                .accessibilityLabel(l("Applicant ID (iRAIN) *", "ID candidat (iRAIN) *"))
+                                .accessibilityLabel(l("Applicant ID (iRAIN) *"))
                         }
                         errorText("applicantId")
-                        IRefairField(l("Applicant Key *", "Clé du candidat *")) {
+                        IRefairField(l("Applicant Key *")) {
                             TextField("", text: $applicantKey)
-                                .accessibilityLabel(l("Applicant Key *", "Clé du candidat *"))
+                                .accessibilityLabel(l("Applicant Key *"))
                         }
                         errorText("applicantKey")
-                        IRefairField(l("iRCRN *", "iRCRN *")) {
+                        IRefairField(l("iRCRN *")) {
                             TextField("", text: $iCrn)
                                 .textInputAutocapitalization(.characters)
-                                .accessibilityLabel(l("iRCRN *", "iRCRN *"))
+                                .accessibilityLabel(l("iRCRN *"))
                         }
                         errorText("iCrn")
-                        IRefairField(l("Position *", "Poste *")) {
+                        IRefairField(l("Position *")) {
                             TextField("", text: $position)
-                                .accessibilityLabel(l("Position *", "Poste *"))
+                                .accessibilityLabel(l("Position *"))
                         }
                         errorText("position")
-                        IRefairField(l("Reference number", "Numéro de référence")) {
+                        IRefairField(l("Reference number")) {
                             TextField("", text: $referenceNumber)
-                                .accessibilityLabel(l("Reference number", "Numéro de référence"))
+                                .accessibilityLabel(l("Reference number"))
                         }
                     }
 
-                    IRefairSection(l("Resume", "CV")) {
-                        IRefairField(l("Resume", "CV")) {
+                    IRefairSection(l("Resume")) {
+                        IRefairField(l("Resume")) {
                             HStack {
-                                Text(resumeName.isEmpty ? l("No file selected", "Aucun fichier sélectionné") : resumeName)
+                                Text(resumeName.isEmpty ? l("No file selected") : resumeName)
                                     .font(Theme.font(.subheadline))
                                     .foregroundStyle(resumeName.isEmpty ? Theme.muted : Theme.ink)
                                 Spacer()
-                                Button(l("Choose file", "Choisir un fichier")) {
+                                Button(l("Choose file")) {
                                     showDocumentPicker = true
                                 }
                                 .buttonStyle(IRefairGhostButtonStyle())
                             }
                             .irefairInput()
-                            .accessibilityLabel(l("Resume file", "Fichier CV"))
+                            .accessibilityLabel(l("Resume file"))
                         }
                         errorText("resume")
                     }
@@ -114,14 +102,14 @@ struct ApplyView: View {
                             if isSubmitting {
                                 ProgressView()
                             } else {
-                                Text(l("Submit Application", "Soumettre la candidature"))
+                                Text(l("Submit Application"))
                             }
                         }
                         .buttonStyle(IRefairPrimaryButtonStyle())
                         .disabled(isSubmitting || !networkMonitor.isConnected)
                     }
                 }
-                .navigationTitle(l("Apply", "Postuler"))
+                .navigationTitle(l("Apply"))
                 .sheet(isPresented: $showDocumentPicker) {
                     DocumentPicker(allowedTypes: allowedTypes()) { url in
                         handlePickedFile(url)
@@ -139,8 +127,8 @@ struct ApplyView: View {
         }
     }
 
-    private func l(_ en: String, _ fr: String) -> String {
-        Localizer.text(en, fr, language: submissionLanguage)
+    private func l(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 
     private func allowedTypes() -> [UTType] {
@@ -153,14 +141,14 @@ struct ApplyView: View {
     private func handlePickedFile(_ url: URL) {
         do {
             guard FileSupport.isSupportedResume(url) else {
-                let message = l("Resume must be a PDF, DOC, or DOCX file.", "Le CV doit être un fichier PDF, DOC ou DOCX.")
+                let message = l("Resume must be a PDF, DOC, or DOCX file.")
                 fieldErrors["resume"] = message
                 errorMessage = message
                 return
             }
             let data = try FileReader.loadData(from: url)
             guard data.count <= FileSupport.maxResumeSize else {
-                let message = l("Resume must be under 10 MB.", "Le CV doit faire moins de 10 Mo.")
+                let message = l("Resume must be under 10 MB.")
                 fieldErrors["resume"] = message
                 errorMessage = message
                 return
@@ -174,26 +162,26 @@ struct ApplyView: View {
             )
             fieldErrors["resume"] = nil
         } catch {
-            errorMessage = l("Unable to load the selected file.", "Impossible de charger le fichier sélectionné.")
+            errorMessage = l("Unable to load the selected file.")
         }
     }
 
     private func validate() -> Bool {
         var errors: [String: String] = [:]
         if applicantId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["applicantId"] = l("Applicant ID is required.", "L'identifiant candidat est requis.")
+            errors["applicantId"] = l("Applicant ID is required.")
         }
         if applicantKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["applicantKey"] = l("Applicant key is required.", "La clé du candidat est requise.")
+            errors["applicantKey"] = l("Applicant key is required.")
         }
         if iCrn.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["iCrn"] = l("iRCRN is required.", "L'iRCRN est requis.")
+            errors["iCrn"] = l("iRCRN is required.")
         }
         if position.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["position"] = l("Position is required.", "Le poste est requis.")
+            errors["position"] = l("Position is required.")
         }
         if resumeFile == nil {
-            errors["resume"] = l("Please attach a resume.", "Veuillez joindre un CV.")
+            errors["resume"] = l("Please attach a resume.")
         }
         fieldErrors = errors
         return errors.isEmpty
@@ -206,7 +194,7 @@ struct ApplyView: View {
             "iCrn": iCrn.trimmingCharacters(in: .whitespacesAndNewlines),
             "position": position.trimmingCharacters(in: .whitespacesAndNewlines),
             "referenceNumber": referenceNumber.trimmingCharacters(in: .whitespacesAndNewlines),
-            "language": submissionLanguage,
+            "language": AppLocale.languageCode,
             "website": "",
         ]
     }
@@ -218,11 +206,11 @@ struct ApplyView: View {
         guard validate() else { return }
         guard let resumeFile else { return }
         guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
-            errorMessage = l("Set your API base URL in Settings first.", "Définissez d'abord l'URL de base de l'API dans Paramètres.")
+            errorMessage = l("Set your API base URL in Settings first.")
             return
         }
         guard networkMonitor.isConnected else {
-            errorMessage = l("You're offline. Connect to the internet and try again.", "Vous êtes hors ligne. Connectez-vous à Internet et réessayez.")
+            errorMessage = l("You're offline. Connect to the internet and try again.")
             return
         }
 
@@ -236,7 +224,7 @@ struct ApplyView: View {
                 payload: payload,
                 resume: resumeFile
             )
-            statusMessage = response.message ?? l("Application submitted successfully.", "Candidature envoyée avec succès.")
+            statusMessage = response.message ?? l("Application submitted successfully.")
             Telemetry.track("apply_submit_success")
         } catch {
             Telemetry.capture(error)

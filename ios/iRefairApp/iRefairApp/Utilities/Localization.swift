@@ -1,7 +1,8 @@
 import Foundation
 
-enum Localizer {
-    static func text(_ en: String, _ fr: String, language: String) -> String {
-        language.lowercased() == "fr" ? fr : en
+enum AppLocale {
+    static var languageCode: String {
+        let preferred = (Bundle.main.preferredLocalizations.first ?? Locale.preferredLanguages.first ?? "en").lowercased()
+        return preferred.hasPrefix("fr") ? "fr" : "en"
     }
 }

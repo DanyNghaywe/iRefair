@@ -3,7 +3,6 @@ import SwiftUI
 struct FeedbackSheet: View {
     @Environment(\.dismiss) private var dismiss
     @AppStorage("apiBaseURL") private var apiBaseURL: String = "https://irefair.com"
-    @AppStorage("submissionLanguage") private var submissionLanguage: String = "en"
 
     @EnvironmentObject private var networkMonitor: NetworkMonitor
 
@@ -23,32 +22,32 @@ struct FeedbackSheet: View {
                 IRefairForm {
                     if !networkMonitor.isConnected {
                         IRefairSection {
-                            StatusBanner(text: l("You're offline. Connect to the internet to send feedback.", "Vous êtes hors ligne. Connectez-vous à Internet pour envoyer l’avis."), style: .warning)
+                            StatusBanner(text: l("You're offline. Connect to the internet to send feedback."), style: .warning)
                         }
                     }
 
-                    IRefairSection(l("Applicant", "Candidat")) {
+                    IRefairSection(l("Applicant")) {
                         Text(applicant.displayName)
                         Text(applicant.irain)
                             .font(Theme.font(.caption))
                             .foregroundStyle(Theme.muted)
                     }
 
-                    IRefairSection(l("Feedback", "Avis")) {
-                        IRefairField(l("Share feedback", "Partagez votre avis")) {
+                    IRefairSection(l("Feedback")) {
+                        IRefairField(l("Share feedback")) {
                             TextField("", text: $feedback, axis: .vertical)
                                 .lineLimit(4, reservesSpace: true)
-                                .accessibilityLabel(l("Share feedback", "Partagez votre avis"))
+                                .accessibilityLabel(l("Share feedback"))
                         }
-                        IRefairField(l("Rating", "Évaluation")) {
-                            Picker(l("Rating", "Évaluation"), selection: $rating) {
+                        IRefairField(l("Rating")) {
+                            Picker(l("Rating"), selection: $rating) {
                                 ForEach(1...5, id: \.self) { value in
                                     Text("\(value)").tag(value)
                                 }
                             }
                             .pickerStyle(.segmented)
                         }
-                        Toggle(l("Recommend", "Recommander"), isOn: $recommend)
+                        Toggle(l("Recommend"), isOn: $recommend)
                             .toggleStyle(IRefairCheckboxToggleStyle())
                     }
 
@@ -65,44 +64,44 @@ struct FeedbackSheet: View {
                             if isSubmitting {
                                 ProgressView()
                             } else {
-                                Text(l("Send feedback", "Envoyer un avis"))
+                                Text(l("Send feedback"))
                             }
                         }
                         .buttonStyle(IRefairPrimaryButtonStyle())
                         .disabled(isSubmitting || !networkMonitor.isConnected)
                     }
                 }
-                .navigationTitle(l("Feedback", "Avis"))
+                .navigationTitle(l("Feedback"))
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button(l("Close", "Fermer")) { dismiss() }
+                        Button(l("Close")) { dismiss() }
                     }
                 }
             }
         }
     }
 
-    private func l(_ en: String, _ fr: String) -> String {
-        Localizer.text(en, fr, language: submissionLanguage)
+    private func l(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 
     @MainActor
     private func submit() async {
         errorMessage = nil
         guard !token.isEmpty else {
-            errorMessage = l("Missing token.", "Jeton manquant.")
+            errorMessage = l("Missing token.")
             return
         }
         guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
-            errorMessage = l("Set your API base URL in Settings first.", "Définissez d'abord l'URL de base de l'API dans Paramètres.")
+            errorMessage = l("Set your API base URL in Settings first.")
             return
         }
         guard networkMonitor.isConnected else {
-            errorMessage = l("You're offline. Connect to the internet and try again.", "Vous êtes hors ligne. Connectez-vous à Internet et réessayez.")
+            errorMessage = l("You're offline. Connect to the internet and try again.")
             return
         }
         guard !feedback.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            errorMessage = l("Feedback is required.", "Le commentaire est requis.")
+            errorMessage = l("Feedback is required.")
             return
         }
 

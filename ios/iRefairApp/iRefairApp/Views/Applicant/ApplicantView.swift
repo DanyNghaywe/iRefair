@@ -3,7 +3,6 @@ import UniformTypeIdentifiers
 
 struct ApplicantView: View {
     @AppStorage("apiBaseURL") private var apiBaseURL: String = "https://irefair.com"
-    @AppStorage("submissionLanguage") private var submissionLanguage: String = "en"
     @AppStorage("applicantUpdateToken") private var storedUpdateToken: String = ""
     @AppStorage("applicantUpdateAppId") private var storedUpdateAppId: String = ""
 
@@ -86,17 +85,15 @@ struct ApplicantView: View {
             IRefairScreen {
                 IRefairForm {
                     Section {
-                        Text(l("Create or update your iRefair applicant profile. All required fields are marked with *.",
-                               "Créez ou mettez à jour votre profil candidat iRefair. Les champs obligatoires sont marqués d’un *."))
+                        Text(l("Create or update your iRefair applicant profile. All required fields are marked with *."))
                             .font(Theme.font(.subheadline))
                             .foregroundStyle(Theme.muted)
                         if apiBaseURL.isEmpty {
-                            Label(l("Set your API base URL in Settings before submitting.",
-                                     "Définissez l’URL de base de l’API dans Paramètres avant d’envoyer."),
+                            Label(l("Set your API base URL in Settings before submitting."),
                                   systemImage: "exclamationmark.triangle")
                                 .foregroundStyle(Theme.error)
                         } else {
-                            Text("\(l("API", "API")): \(Validator.sanitizeBaseURL(apiBaseURL))")
+                            Text("\(l("API")): \(Validator.sanitizeBaseURL(apiBaseURL))")
                                 .font(Theme.font(.caption))
                                 .foregroundStyle(Theme.muted)
                         }
@@ -104,56 +101,46 @@ struct ApplicantView: View {
 
                     if !networkMonitor.isConnected {
                         IRefairSection {
-                            StatusBanner(text: l("You're offline. Connect to the internet to submit the form.", "Vous êtes hors ligne. Connectez-vous à Internet pour soumettre le formulaire."), style: .warning)
+                            StatusBanner(text: l("You're offline. Connect to the internet to submit the form."), style: .warning)
                         }
                     }
 
-                    IRefairSection(l("Submission language", "Langue de soumission")) {
-                        IRefairField(l("Language", "Langue")) {
-                            Picker(l("Language", "Langue"), selection: $submissionLanguage) {
-                                Text(l("English", "Anglais")).tag("en")
-                                Text(l("French", "Français")).tag("fr")
-                            }
-                            .pickerStyle(.segmented)
-                        }
-                    }
-
-                    IRefairSection(l("Personal information", "Informations personnelles")) {
-                        IRefairField(l("First name *", "Prénom *")) {
+                    IRefairSection(l("Personal information")) {
+                        IRefairField(l("First name *")) {
                             TextField("", text: $firstName)
-                                .accessibilityLabel(l("First name *", "Prénom *"))
+                                .accessibilityLabel(l("First name *"))
                         }
                         errorText("firstName")
-                        IRefairField(l("Middle name", "Deuxième prénom")) {
+                        IRefairField(l("Middle name")) {
                             TextField("", text: $middleName)
-                                .accessibilityLabel(l("Middle name", "Deuxième prénom"))
+                                .accessibilityLabel(l("Middle name"))
                         }
-                        IRefairField(l("Last name *", "Nom de famille *")) {
+                        IRefairField(l("Last name *")) {
                             TextField("", text: $familyName)
-                                .accessibilityLabel(l("Last name *", "Nom de famille *"))
+                                .accessibilityLabel(l("Last name *"))
                         }
                         errorText("familyName")
-                        IRefairField(l("Email *", "Adresse e-mail *")) {
+                        IRefairField(l("Email *")) {
                             TextField("", text: $email)
                                 .keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()
-                                .accessibilityLabel(l("Email *", "Adresse e-mail *"))
+                                .accessibilityLabel(l("Email *"))
                         }
                         errorText("email")
-                        IRefairField(l("Phone *", "Téléphone *")) {
+                        IRefairField(l("Phone *")) {
                             TextField("", text: $phone)
                                 .keyboardType(.phonePad)
-                                .accessibilityLabel(l("Phone *", "Téléphone *"))
+                                .accessibilityLabel(l("Phone *"))
                         }
                         errorText("phone")
                         IRefairMenuPicker(
-                            l("Country of origin *", "Pays d'origine *"),
-                            displayValue: countryOfOrigin.isEmpty ? l("Select", "Sélectionner") : countryOfOrigin,
+                            l("Country of origin *"),
+                            displayValue: countryOfOrigin.isEmpty ? l("Select") : countryOfOrigin,
                             isPlaceholder: countryOfOrigin.isEmpty,
                             selection: $countryOfOrigin
                         ) {
-                            Text(l("Select", "Sélectionner")).tag("")
+                            Text(l("Select")).tag("")
                             ForEach(CountryData.all, id: \.self) { country in
                                 Text(country).tag(country)
                             }
@@ -161,7 +148,7 @@ struct ApplicantView: View {
                         errorText("countryOfOrigin")
                     }
 
-                    IRefairSection(l("Languages", "Langues")) {
+                    IRefairSection(l("Languages")) {
                         ForEach(languageOptions, id: \.value) { option in
                             Toggle(option.label, isOn: Binding(
                                 get: { languages.contains(option.value) },
@@ -177,22 +164,22 @@ struct ApplicantView: View {
                         }
                         errorText("languages")
                         if languages.contains("Other") {
-                            IRefairField(l("Other languages *", "Autres langues *")) {
+                            IRefairField(l("Other languages *")) {
                                 TextField("", text: $languagesOther)
-                                    .accessibilityLabel(l("Other languages *", "Autres langues *"))
+                                    .accessibilityLabel(l("Other languages *"))
                             }
                             errorText("languagesOther")
                         }
                     }
 
-                    IRefairSection(l("Location and authorization", "Lieu et autorisation")) {
+                    IRefairSection(l("Location and authorization")) {
                         IRefairMenuPicker(
-                            l("Located in Canada? *", "Êtes-vous au Canada ? *"),
+                            l("Located in Canada? *"),
                             displayValue: pickerDisplayValue(locatedCanada, options: yesNoOptions),
                             isPlaceholder: locatedCanada.isEmpty,
                             selection: $locatedCanada
                         ) {
-                            Text(l("Select", "Sélectionner")).tag("")
+                            Text(l("Select")).tag("")
                             ForEach(yesNoOptions, id: \.value) { option in
                                 Text(option.label).tag(option.value)
                             }
@@ -201,12 +188,12 @@ struct ApplicantView: View {
 
                         if locatedCanada == "Yes" {
                             IRefairMenuPicker(
-                                l("Province *", "Province *"),
-                                displayValue: province.isEmpty ? l("Select", "Sélectionner") : province,
+                                l("Province *"),
+                                displayValue: province.isEmpty ? l("Select") : province,
                                 isPlaceholder: province.isEmpty,
                                 selection: $province
                             ) {
-                                Text(l("Select", "Sélectionner")).tag("")
+                                Text(l("Select")).tag("")
                                 ForEach(provinces, id: \.self) { item in
                                     Text(item).tag(item)
                                 }
@@ -214,12 +201,12 @@ struct ApplicantView: View {
                             errorText("province")
 
                             IRefairMenuPicker(
-                                l("Authorized to work in Canada? *", "Autorisé(e) à travailler au Canada ? *"),
+                                l("Authorized to work in Canada? *"),
                                 displayValue: pickerDisplayValue(authorizedCanada, options: yesNoOptions),
                                 isPlaceholder: authorizedCanada.isEmpty,
                                 selection: $authorizedCanada
                             ) {
-                                Text(l("Select", "Sélectionner")).tag("")
+                                Text(l("Select")).tag("")
                                 ForEach(yesNoOptions, id: \.value) { option in
                                     Text(option.label).tag(option.value)
                                 }
@@ -229,12 +216,12 @@ struct ApplicantView: View {
 
                         if locatedCanada == "No" {
                             IRefairMenuPicker(
-                                l("Eligible to move to Canada? *", "Êtes-vous prêt(e) à déménager au Canada ? *"),
+                                l("Eligible to move to Canada? *"),
                                 displayValue: pickerDisplayValue(eligibleMoveCanada, options: yesNoOptions),
                                 isPlaceholder: eligibleMoveCanada.isEmpty,
                                 selection: $eligibleMoveCanada
                             ) {
-                                Text(l("Select", "Sélectionner")).tag("")
+                                Text(l("Select")).tag("")
                                 ForEach(yesNoOptions, id: \.value) { option in
                                     Text(option.label).tag(option.value)
                                 }
@@ -243,73 +230,73 @@ struct ApplicantView: View {
                         }
                     }
 
-                    IRefairSection(l("Professional profile", "Profil professionnel")) {
+                    IRefairSection(l("Professional profile")) {
                         IRefairMenuPicker(
-                            l("Industry *", "Secteur *"),
+                            l("Industry *"),
                             displayValue: pickerDisplayValue(industryType, options: industryOptions),
                             isPlaceholder: industryType.isEmpty,
                             selection: $industryType
                         ) {
-                            Text(l("Select", "Sélectionner")).tag("")
+                            Text(l("Select")).tag("")
                             ForEach(industryOptions, id: \.value) { item in
                                 Text(item.label).tag(item.value)
                             }
                         }
                         errorText("industryType")
                         if industryType == "Other" {
-                            IRefairField(l("Industry details *", "Précisez le secteur *")) {
+                            IRefairField(l("Industry details *")) {
                                 TextField("", text: $industryOther)
-                                    .accessibilityLabel(l("Industry details *", "Précisez le secteur *"))
+                                    .accessibilityLabel(l("Industry details *"))
                             }
                             errorText("industryOther")
                         }
                         IRefairMenuPicker(
-                            l("Currently employed? *", "Actuellement employé(e) ? *"),
+                            l("Currently employed? *"),
                             displayValue: pickerDisplayValue(employmentStatus, options: employmentOptions),
                             isPlaceholder: employmentStatus.isEmpty,
                             selection: $employmentStatus
                         ) {
-                            Text(l("Select", "Sélectionner")).tag("")
+                            Text(l("Select")).tag("")
                             ForEach(employmentOptions, id: \.value) { item in
                                 Text(item.label).tag(item.value)
                             }
                         }
                         errorText("employmentStatus")
-                        IRefairField(l("LinkedIn profile", "Profil LinkedIn")) {
+                        IRefairField(l("LinkedIn profile")) {
                             TextField("", text: $linkedin)
                                 .keyboardType(.URL)
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()
-                                .accessibilityLabel(l("LinkedIn profile", "Profil LinkedIn"))
+                                .accessibilityLabel(l("LinkedIn profile"))
                         }
                         errorText("linkedin")
                     }
 
-                    IRefairSection(l("Resume", "CV")) {
-                        IRefairField(l("Resume", "CV")) {
+                    IRefairSection(l("Resume")) {
+                        IRefairField(l("Resume")) {
                             HStack {
-                                Text(resumeName.isEmpty ? l("No file selected", "Aucun fichier sélectionné") : resumeName)
+                                Text(resumeName.isEmpty ? l("No file selected") : resumeName)
                                     .font(Theme.font(.subheadline))
                                     .foregroundStyle(resumeName.isEmpty ? Theme.muted : Theme.ink)
                                 Spacer()
-                                Button(l("Choose file", "Choisir un fichier")) {
+                                Button(l("Choose file")) {
                                     showDocumentPicker = true
                                 }
                                 .buttonStyle(IRefairGhostButtonStyle())
                             }
-                            .accessibilityLabel(l("Resume file", "Fichier CV"))
+                            .accessibilityLabel(l("Resume file"))
                             .irefairInput()
                         }
                         errorText("resume")
                         if let resumeFile, resumeFile.data.count > FileSupport.maxResumeSize {
-                            Text(l("Resume must be under 10 MB.", "Le CV doit faire moins de 10 Mo."))
+                            Text(l("Resume must be under 10 MB."))
                                 .foregroundStyle(Theme.error)
                                 .font(Theme.font(.caption))
                         }
                     }
 
-                    IRefairSection(l("Consent", "Consentement")) {
-                        Toggle(l("I agree to be contacted by iRefair.", "J’accepte d’être contacté(e) par iRefair."), isOn: $consent)
+                    IRefairSection(l("Consent")) {
+                        Toggle(l("I agree to be contacted by iRefair."), isOn: $consent)
                             .toggleStyle(IRefairCheckboxToggleStyle())
                         errorText("consent")
                     }
@@ -333,7 +320,7 @@ struct ApplicantView: View {
                             if isSubmitting {
                                 ProgressView()
                             } else {
-                                Text(l("Submit Applicant Profile", "Soumettre le profil candidat"))
+                                Text(l("Submit Applicant Profile"))
                             }
                         }
                         .buttonStyle(IRefairPrimaryButtonStyle())
@@ -341,7 +328,7 @@ struct ApplicantView: View {
                     }
                 }
             }
-            .navigationTitle(l("Applicant", "Candidat"))
+            .navigationTitle(l("Applicant"))
             .sheet(isPresented: $showDocumentPicker) {
                 DocumentPicker(allowedTypes: allowedTypes()) { url in
                     handlePickedFile(url)
@@ -377,73 +364,37 @@ struct ApplicantView: View {
         }
     }
 
-    private func l(_ en: String, _ fr: String) -> String {
-        Localizer.text(en, fr, language: submissionLanguage)
+    private func l(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
     }
 
     private func pickerDisplayValue(_ value: String, options: [(value: String, label: String)]) -> String {
-        guard !value.isEmpty else { return l("Select", "Sélectionner") }
+        guard !value.isEmpty else { return l("Select") }
         return options.first(where: { $0.value == value })?.label ?? value
     }
 
     private var yesNoOptions: [(value: String, label: String)] {
         [
-            (value: "Yes", label: l("Yes", "Oui")),
-            (value: "No", label: l("No", "Non")),
+            (value: "Yes", label: l("Yes")),
+            (value: "No", label: l("No")),
         ]
     }
 
     private var languageOptions: [(value: String, label: String)] {
-        let labels: [String: String] = [
-            "English": l("English", "Anglais"),
-            "Arabic": l("Arabic", "Arabe"),
-            "French": l("French", "Français"),
-            "Other": l("Other", "Autre"),
-        ]
         return languageValues.map { value in
-            (value: value, label: labels[value] ?? value)
+            (value: value, label: l(value))
         }
     }
 
     private var employmentOptions: [(value: String, label: String)] {
-        let labels: [String: String] = [
-            "Yes": l("Yes", "Oui"),
-            "No": l("No", "Non"),
-            "Temporary Work": l("Temporary Work", "Travail temporaire"),
-        ]
         return employmentValues.map { value in
-            (value: value, label: labels[value] ?? value)
+            (value: value, label: l(value))
         }
     }
 
     private var industryOptions: [(value: String, label: String)] {
-        if submissionLanguage.lowercased() != "fr" {
-            return industryValues.map { ($0, $0) }
-        }
-        let labels: [String: String] = [
-            "Information Technology (IT)": "Technologies de l'information (TI)",
-            "Finance / Banking / Accounting": "Finance / Banque / Comptabilité",
-            "Healthcare / Medical": "Santé / Médical",
-            "Education / Academia": "Éducation / Université",
-            "Engineering / Construction": "Ingénierie / Construction",
-            "Marketing / Advertising / PR": "Marketing / Publicité / RP",
-            "Media / Entertainment / Journalism": "Médias / Divertissement / Journalisme",
-            "Legal / Law": "Juridique / Droit",
-            "Human Resources / Recruitment": "Ressources humaines / Recrutement",
-            "Retail / E-commerce": "Commerce de détail / E-commerce",
-            "Hospitality / Travel / Tourism": "Hôtellerie / Voyage / Tourisme",
-            "Logistics / Transportation": "Logistique / Transport",
-            "Manufacturing": "Fabrication",
-            "Non-Profit / NGO": "Organisme à but non lucratif / ONG",
-            "Real Estate": "Immobilier",
-            "Energy / Utilities": "Énergie / Services publics",
-            "Telecommunications": "Télécommunications",
-            "Agriculture / Food Industry": "Agriculture / Agroalimentaire",
-            "Compliance/ Audit/ Monitoring & Evaluation": "Conformité / Audit / Suivi & Évaluation",
-            "Other": "Autre",
-        ]
         return industryValues.map { value in
-            (value: value, label: labels[value] ?? value)
+            (value: value, label: l(value))
         }
     }
 
@@ -464,14 +415,14 @@ struct ApplicantView: View {
     private func handlePickedFile(_ url: URL) {
         do {
             guard FileSupport.isSupportedResume(url) else {
-                let message = l("Resume must be a PDF, DOC, or DOCX file.", "Le CV doit être un fichier PDF, DOC ou DOCX.")
+                let message = l("Resume must be a PDF, DOC, or DOCX file.")
                 fieldErrors["resume"] = message
                 errorMessage = message
                 return
             }
             let data = try FileReader.loadData(from: url)
             guard data.count <= FileSupport.maxResumeSize else {
-                let message = l("Resume must be under 10 MB.", "Le CV doit faire moins de 10 Mo.")
+                let message = l("Resume must be under 10 MB.")
                 fieldErrors["resume"] = message
                 errorMessage = message
                 return
@@ -485,7 +436,7 @@ struct ApplicantView: View {
             )
             fieldErrors["resume"] = nil
         } catch {
-            errorMessage = l("Unable to load the selected file.", "Impossible de charger le fichier sélectionné.")
+            errorMessage = l("Unable to load the selected file.")
         }
     }
 
@@ -498,11 +449,11 @@ struct ApplicantView: View {
         }
         guard !isPrefillLoading else { return }
         guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
-            errorMessage = l("Set your API base URL in Settings first.", "Définissez d'abord l'URL de base de l'API dans Paramètres.")
+            errorMessage = l("Set your API base URL in Settings first.")
             return
         }
         guard networkMonitor.isConnected else {
-            errorMessage = l("You're offline. Connect to the internet and try again.", "Vous êtes hors ligne. Connectez-vous à Internet et réessayez.")
+            errorMessage = l("You're offline. Connect to the internet and try again.")
             return
         }
 
@@ -516,7 +467,7 @@ struct ApplicantView: View {
                 appId: updateAppId
             )
             guard let data = response.data else {
-                errorMessage = l("Unable to load your details.", "Impossible de charger vos informations.")
+                errorMessage = l("Unable to load your details.")
                 return
             }
             updatePurpose = response.updatePurpose ?? "cv"
@@ -547,7 +498,7 @@ struct ApplicantView: View {
             if !data.resumeFileName.isEmpty {
                 resumeName = data.resumeFileName
             }
-            statusMessage = l("Details loaded. Update your information and submit.", "Informations chargées. Mettez à jour vos informations et soumettez.")
+            statusMessage = l("Details loaded. Update your information and submit.")
             Telemetry.track("applicant_prefill_loaded", properties: ["purpose": updatePurpose])
         } catch {
             Telemetry.capture(error)
@@ -558,57 +509,57 @@ struct ApplicantView: View {
     private func validate() -> Bool {
         var errors: [String: String] = [:]
         if firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["firstName"] = l("First name is required.", "Le prénom est requis.")
+            errors["firstName"] = l("First name is required.")
         }
         if familyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["familyName"] = l("Last name is required.", "Le nom de famille est requis.")
+            errors["familyName"] = l("Last name is required.")
         }
         if !Validator.isValidEmail(email) {
-            errors["email"] = l("Enter a valid email.", "Veuillez entrer un e-mail valide.")
+            errors["email"] = l("Enter a valid email.")
         }
         if phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["phone"] = l("Phone number is required.", "Le numéro de téléphone est requis.")
+            errors["phone"] = l("Phone number is required.")
         }
         if countryOfOrigin.isEmpty {
-            errors["countryOfOrigin"] = l("Select a country.", "Sélectionnez un pays.")
+            errors["countryOfOrigin"] = l("Select a country.")
         }
         if languages.isEmpty {
-            errors["languages"] = l("Select at least one language.", "Sélectionnez au moins une langue.")
+            errors["languages"] = l("Select at least one language.")
         }
         if languages.contains("Other") && languagesOther.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["languagesOther"] = l("Specify other languages.", "Précisez les autres langues.")
+            errors["languagesOther"] = l("Specify other languages.")
         }
         if locatedCanada.isEmpty {
-            errors["locatedCanada"] = l("Select an option.", "Sélectionnez une option.")
+            errors["locatedCanada"] = l("Select an option.")
         }
         if locatedCanada == "Yes" {
             if province.isEmpty {
-                errors["province"] = l("Select a province.", "Sélectionnez une province.")
+                errors["province"] = l("Select a province.")
             }
             if authorizedCanada.isEmpty {
-                errors["authorizedCanada"] = l("Select an option.", "Sélectionnez une option.")
+                errors["authorizedCanada"] = l("Select an option.")
             }
         }
         if locatedCanada == "No" && eligibleMoveCanada.isEmpty {
-            errors["eligibleMoveCanada"] = l("Select an option.", "Sélectionnez une option.")
+            errors["eligibleMoveCanada"] = l("Select an option.")
         }
         if industryType.isEmpty {
-            errors["industryType"] = l("Select an industry.", "Sélectionnez un secteur.")
+            errors["industryType"] = l("Select an industry.")
         }
         if industryType == "Other" && industryOther.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["industryOther"] = l("Provide industry details.", "Précisez le secteur.")
+            errors["industryOther"] = l("Provide industry details.")
         }
         if employmentStatus.isEmpty {
-            errors["employmentStatus"] = l("Select an option.", "Sélectionnez une option.")
+            errors["employmentStatus"] = l("Select an option.")
         }
         if !Validator.isValidLinkedInProfile(linkedin) {
-            errors["linkedin"] = l("Enter a valid LinkedIn profile URL.", "Entrez une URL LinkedIn valide.")
+            errors["linkedin"] = l("Enter a valid LinkedIn profile URL.")
         }
         if requiresResume && resumeFile == nil {
-            errors["resume"] = l("Resume is required.", "Le CV est requis.")
+            errors["resume"] = l("Resume is required.")
         }
         if !consent {
-            errors["consent"] = l("Consent is required.", "Le consentement est requis.")
+            errors["consent"] = l("Consent is required.")
         }
 
         fieldErrors = errors
@@ -634,7 +585,7 @@ struct ApplicantView: View {
             "employmentStatus": employmentStatus,
             "languages": languagesValue,
             "languagesOther": languagesOther,
-            "language": submissionLanguage,
+            "language": AppLocale.languageCode,
             "website": "",
         ]
         if !updateToken.isEmpty && !updateAppId.isEmpty {
@@ -650,11 +601,11 @@ struct ApplicantView: View {
         statusMessage = nil
         guard validate() else { return }
         guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
-            errorMessage = l("Set your API base URL in Settings first.", "Définissez d'abord l'URL de base de l'API dans Paramètres.")
+            errorMessage = l("Set your API base URL in Settings first.")
             return
         }
         guard networkMonitor.isConnected else {
-            errorMessage = l("You're offline. Connect to the internet and try again.", "Vous êtes hors ligne. Connectez-vous à Internet et réessayez.")
+            errorMessage = l("You're offline. Connect to the internet and try again.")
             return
         }
 
@@ -668,7 +619,7 @@ struct ApplicantView: View {
                 payload: payload,
                 resume: resumeFile
             )
-            statusMessage = response.message ?? l("Application submitted. Please check your email to confirm registration.", "Candidature envoyée. Veuillez vérifier votre e-mail pour confirmer l'inscription.")
+            statusMessage = response.message ?? l("Application submitted. Please check your email to confirm registration.")
             if !updateToken.isEmpty && !updateAppId.isEmpty {
                 updatePurpose = ""
                 updateToken = ""

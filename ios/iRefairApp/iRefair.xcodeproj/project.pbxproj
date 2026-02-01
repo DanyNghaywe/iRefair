@@ -3,20 +3,19 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 63;
 	objects = {
 
 /* Begin PBXBuildFile section */
 		01CB43B4E8C9EEDA42BFF9A0 /* Manrope-Light.ttf in Resources */ = {isa = PBXBuildFile; fileRef = EA17556914830773C349ABD3 /* Manrope-Light.ttf */; };
+		AD4EDD21CEFD45E5268CC09F /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = CD4E954B0AC038EF087639D2 /* Localizable.strings */; };
+		EE71D61FE9A0C26EBE9838AD /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5F22F0CEA10D6EDD07A1C163 /* InfoPlist.strings */; };
 		0C6C56C301641119DCB0CE5A /* KeychainStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6B4C334CC72E1A91C57A76C0 /* KeychainStore.swift */; };
 		1CD33D758E0CDE3FF7AD41EC /* IRefairButtonStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 310705599E00756B500143AB /* IRefairButtonStyles.swift */; };
-		56E26E86EF35450A9D8BCB66 /* IRefairInputStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = A254AB8F1004452F94E9C331 /* IRefairInputStyles.swift */; };
-		6081A6285E3C460596CEA26F /* IRefairSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B07706361484B7C9E4EA8E0 /* IRefairSection.swift */; };
 		22012686E049ED4D2B8E06B6 /* Telemetry.swift in Sources */ = {isa = PBXBuildFile; fileRef = E8DD4B6A10712905F81F3EE6 /* Telemetry.swift */; };
 		245E02D10EB00EDF87F9EAD8 /* Localization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 94FBD882B6C6C4CB9761297D /* Localization.swift */; };
 		29930467CDFB0EFB53C67A25 /* ApplicantView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7175E6856EE1CF8C0BF1BDA /* ApplicantView.swift */; };
 		29E25F39FB4053DA6482E56A /* IRefairForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4DCB40F7C8AC9F4748B4B1D2 /* IRefairForm.swift */; };
-		B6C7D8E9F001122334455667 /* ParticlesBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* ParticlesBackground.swift */; };
 		2CCE2CF3A67D0D55DB3131E6 /* CountryData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C66919B14E812CEDA1A0F /* CountryData.swift */; };
 		3120372A76F9F30A8AD588D3 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3526C4D3FC073C79ED03B293 /* AppState.swift */; };
 		314469237E73EDB8324551E4 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = E141D93A7E08DE450C6ED81F /* APIClient.swift */; };
@@ -26,7 +25,9 @@
 		4B11D2BF90ECEE60817DB08A /* FileReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0BC0692168CE582EA4AF047 /* FileReader.swift */; };
 		4D81CA3D1451B4BA89AFF230 /* Manrope-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = EB6810485DC434FF6E349FD5 /* Manrope-Regular.ttf */; };
 		548B8FF3BF06EB6CB74152B3 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B59C7BD199A141AE4833F3 /* Theme.swift */; };
+		56E26E86EF35450A9D8BCB66 /* IRefairInputStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = A254AB8F1004452F94E9C331 /* IRefairInputStyles.swift */; };
 		59BE841C9DF13A54BD235FE3 /* Manrope-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 806DFDE6F12D23EC9B6BA214 /* Manrope-Bold.ttf */; };
+		6081A6285E3C460596CEA26F /* IRefairSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B07706361484B7C9E4EA8E0 /* IRefairSection.swift */; };
 		65D6D2092AEE681429E15550 /* Manrope-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 44A8E4329C9F21005E71FD78 /* Manrope-ExtraBold.ttf */; };
 		6643679DC9CCDBB81B786909 /* iRefairApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1875FA483C7F2A9B4A88132 /* iRefairApp.swift */; };
 		6F171B620EE7E5C0E44D5912 /* Validation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5263E76882577A6A0DD62C5 /* Validation.swift */; };
@@ -37,6 +38,7 @@
 		93A78013420DC23B45F603A6 /* ApplyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDE4D7C44AC4EEACAA9B422C /* ApplyView.swift */; };
 		A2EA45701FE8C4D28F6EB61A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 385A08CB88253605E5C6D000 /* SettingsView.swift */; };
 		A480740D61EF20B786598A13 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2013674F2145E9C230628611 /* NetworkMonitor.swift */; };
+		B6C7D8E9F001122334455667 /* ParticlesBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* ParticlesBackground.swift */; };
 		BE207861F9BB28C0BBDC300E /* DocumentPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB82BB341BAE41193A29F69A /* DocumentPicker.swift */; };
 		C3F75187AE724FC3F5DC7406 /* ReferrerRegistrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E744DAB140CFB0C1A13C72B6 /* ReferrerRegistrationView.swift */; };
 		CF038ECBC1A3005074C7FFD1 /* Manrope-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 415FA2C3067F0814F89C2A7E /* Manrope-Medium.ttf */; };
@@ -50,9 +52,8 @@
 		0AE0C8F11B767D285AFB881F /* ReferrerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferrerView.swift; sourceTree = "<group>"; };
 		2013674F2145E9C230628611 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		232A951BBA3F371CBAF2D053 /* APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIModels.swift; sourceTree = "<group>"; };
-		310705599E00756B500143AB /* IRefairButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IRefairButtonStyles.swift; sourceTree = "<group>"; };
-		A254AB8F1004452F94E9C331 /* IRefairInputStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IRefairInputStyles.swift; sourceTree = "<group>"; };
 		2B07706361484B7C9E4EA8E0 /* IRefairSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IRefairSection.swift; sourceTree = "<group>"; };
+		310705599E00756B500143AB /* IRefairButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IRefairButtonStyles.swift; sourceTree = "<group>"; };
 		3526C4D3FC073C79ED03B293 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		385A08CB88253605E5C6D000 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		415FA2C3067F0814F89C2A7E /* Manrope-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Manrope-Medium.ttf"; sourceTree = "<group>"; };
@@ -61,14 +62,17 @@
 		44A8E4329C9F21005E71FD78 /* Manrope-ExtraBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Manrope-ExtraBold.ttf"; sourceTree = "<group>"; };
 		4CA6D5DFC4EBE68021E45014 /* ReferrerPortalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferrerPortalView.swift; sourceTree = "<group>"; };
 		4DCB40F7C8AC9F4748B4B1D2 /* IRefairForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IRefairForm.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F60718293A4B5C /* ParticlesBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticlesBackground.swift; sourceTree = "<group>"; };
 		555C66919B14E812CEDA1A0F /* CountryData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryData.swift; sourceTree = "<group>"; };
 		568191C610DCD4BE013FCF54 /* MultipartFormData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipartFormData.swift; sourceTree = "<group>"; };
+		62A813E10C7B7173C11FB63E /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
+		4498986BFB4411A3B6B525D6 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		68D33042B7D63CD050AEDCEF /* Manrope-ExtraLight.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Manrope-ExtraLight.ttf"; sourceTree = "<group>"; };
 		6B4C334CC72E1A91C57A76C0 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		806DFDE6F12D23EC9B6BA214 /* Manrope-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Manrope-Bold.ttf"; sourceTree = "<group>"; };
 		94FBD882B6C6C4CB9761297D /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
 		9BBAF1A75BD0FE1659D40157 /* Manrope-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Manrope-SemiBold.ttf"; sourceTree = "<group>"; };
+		A1B2C3D4E5F60718293A4B5C /* ParticlesBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticlesBackground.swift; sourceTree = "<group>"; };
+		A254AB8F1004452F94E9C331 /* IRefairInputStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IRefairInputStyles.swift; sourceTree = "<group>"; };
 		A5263E76882577A6A0DD62C5 /* Validation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Validation.swift; sourceTree = "<group>"; };
 		AB82BB341BAE41193A29F69A /* DocumentPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPicker.swift; sourceTree = "<group>"; };
 		C2D05710079E34D5B851F76F /* iRefairApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = iRefairApp.entitlements; sourceTree = "<group>"; };
@@ -77,6 +81,7 @@
 		C7B59C7BD199A141AE4833F3 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
 		D6C1273FA556B1A018CC35B3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		DDE4D7C44AC4EEACAA9B422C /* ApplyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplyView.swift; sourceTree = "<group>"; };
+		12F5BF043515B1D068508B84 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		E141D93A7E08DE450C6ED81F /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
 		E7175E6856EE1CF8C0BF1BDA /* ApplicantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicantView.swift; sourceTree = "<group>"; };
 		E744DAB140CFB0C1A13C72B6 /* ReferrerRegistrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferrerRegistrationView.swift; sourceTree = "<group>"; };
@@ -86,6 +91,7 @@
 		EF4F200D6680A818277F37D0 /* StatusBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBanner.swift; sourceTree = "<group>"; };
 		F0BC0692168CE582EA4AF047 /* FileReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileReader.swift; sourceTree = "<group>"; };
 		F1875FA483C7F2A9B4A88132 /* iRefairApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iRefairApp.swift; sourceTree = "<group>"; };
+		FF34314CEFD6D5F1B947291B /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -175,6 +181,8 @@
 		58AAA48E87040636709AFE01 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
+				5F22F0CEA10D6EDD07A1C163 /* InfoPlist.strings */,
+				CD4E954B0AC038EF087639D2 /* Localizable.strings */,
 				C5026EADAE06C7187546D475 /* Assets.xcassets */,
 				BA2712ED1D7ECCDE7933ED13 /* Fonts */,
 			);
@@ -288,13 +296,13 @@
 			knownRegions = (
 				Base,
 				en,
+				fr,
 			);
 			mainGroup = 174D4DAE66F5EF504BADCD69;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				3793435ED326579598C0A828 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 			);
-			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -308,6 +316,8 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				EE71D61FE9A0C26EBE9838AD /* InfoPlist.strings in Resources */,
+				AD4EDD21CEFD45E5268CC09F /* Localizable.strings in Resources */,
 				3338326BCD08AD1556DF3E22 /* Assets.xcassets in Resources */,
 				59BE841C9DF13A54BD235FE3 /* Manrope-Bold.ttf in Resources */,
 				65D6D2092AEE681429E15550 /* Manrope-ExtraBold.ttf in Resources */,
@@ -358,6 +368,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXVariantGroup section */
+		CD4E954B0AC038EF087639D2 /* Localizable.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				62A813E10C7B7173C11FB63E /* en */,
+				FF34314CEFD6D5F1B947291B /* fr */,
+			);
+			name = Localizable.strings;
+			sourceTree = "<group>";
+		};
+		5F22F0CEA10D6EDD07A1C163 /* InfoPlist.strings */ = {
+			isa = PBXVariantGroup;
+			children = (
+				4498986BFB4411A3B6B525D6 /* en */,
+				12F5BF043515B1D068508B84 /* fr */,
+			);
+			name = InfoPlist.strings;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
 		1A2C6C9F53D29BF6A20252C1 /* Debug */ = {
