@@ -15,13 +15,8 @@ struct ReferrerRegistrationView: View {
     @State private var companyIndustry = ""
     @State private var companyIndustryOther = ""
     @State private var workType = ""
-    @State private var referralType = ""
-    @State private var monthlySlots = ""
-    @State private var roles = ""
-    @State private var regions = ""
     @State private var linkedIn = ""
-
-    @State private var portalEmail = ""
+    @State private var consent = false
 
     @State private var isSubmitting = false
     @State private var statusMessage: String?
@@ -53,6 +48,14 @@ struct ReferrerRegistrationView: View {
                 }
             }
 
+            IRefairSection(l("Submission language", "Langue de soumission")) {
+                Picker(l("Language", "Langue"), selection: $submissionLanguage) {
+                    Text(l("English", "Anglais")).tag("en")
+                    Text(l("French", "Français")).tag("fr")
+                }
+                .pickerStyle(.segmented)
+            }
+
             IRefairSection(l("Become a referrer", "Devenir référent")) {
                 TextField(l("Full name *", "Nom complet *"), text: $fullName)
                 errorText("name")
@@ -62,12 +65,15 @@ struct ReferrerRegistrationView: View {
                     .autocorrectionDisabled()
                 errorText("email")
                 TextField(l("Phone", "Téléphone"), text: $phone)
+                errorText("phone")
                 TextField(l("Country", "Pays"), text: $country)
+                errorText("country")
                 TextField(l("Company name", "Nom de l’entreprise"), text: $company)
                 TextField(l("Careers portal URL", "URL du portail carrières"), text: $careersPortal)
                     .keyboardType(.URL)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
+                errorText("careersPortal")
                 IRefairMenuPicker(
                     l("Company industry", "Secteur de l’entreprise"),
                     displayValue: pickerDisplayValue(companyIndustry, options: companyIndustryOptions),
@@ -79,8 +85,10 @@ struct ReferrerRegistrationView: View {
                         Text(item.label).tag(item.value)
                     }
                 }
+                errorText("companyIndustry")
                 if companyIndustry == "Other" {
                     TextField(l("Other industry", "Autre secteur"), text: $companyIndustryOther)
+                    errorText("companyIndustryOther")
                 }
                 IRefairMenuPicker(
                     l("Work type", "Type de travail"),
@@ -93,12 +101,7 @@ struct ReferrerRegistrationView: View {
                         Text(item.label).tag(item.value)
                     }
                 }
-                TextField(l("Referral type", "Type de recommandation"), text: $referralType)
-                TextField(l("Monthly slots", "Créneaux mensuels"), text: $monthlySlots)
-                TextField(l("Teams and roles", "Équipes et rôles"), text: $roles, axis: .vertical)
-                    .lineLimit(2, reservesSpace: true)
-                TextField(l("Regions", "Régions"), text: $regions, axis: .vertical)
-                    .lineLimit(2, reservesSpace: true)
+                errorText("workType")
                 TextField(l("LinkedIn profile", "Profil LinkedIn"), text: $linkedIn)
                     .keyboardType(.URL)
                     .textInputAutocapitalization(.never)
@@ -106,16 +109,10 @@ struct ReferrerRegistrationView: View {
                 errorText("linkedIn")
             }
 
-            IRefairSection(l("Request portal link", "Demander le lien du portail")) {
-                TextField(l("Referrer email", "E-mail du référent"), text: $portalEmail)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-                Button(l("Send portal link", "Envoyer le lien du portail")) {
-                    Task { await requestPortalLink() }
-                }
-                .buttonStyle(IRefairGhostButtonStyle())
-                .disabled(isSubmitting || !networkMonitor.isConnected)
+            IRefairSection(l("Consent", "Consentement")) {
+                Toggle(l("I agree to be contacted by iRefair.", "J’accepte d’être contacté(e) par iRefair."), isOn: $consent)
+                    .toggleStyle(IRefairCheckboxToggleStyle())
+                errorText("consent")
             }
 
             if let errorMessage {
@@ -205,8 +202,32 @@ struct ReferrerRegistrationView: View {
         if !Validator.isValidEmail(email) {
             errors["email"] = l("Enter a valid email.", "Veuillez entrer un e-mail valide.")
         }
+        if phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            errors["phone"] = l("Phone number is required.", "Le numéro de téléphone est requis.")
+        }
+        if country.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            errors["country"] = l("Country is required.", "Le pays est requis.")
+        }
+        if companyIndustry.isEmpty {
+            errors["companyIndustry"] = l("Select an industry.", "Sélectionnez un secteur.")
+        }
+        if companyIndustry == "Other" && companyIndustryOther.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            errors["companyIndustryOther"] = l("Specify the industry.", "Précisez le secteur.")
+        }
+        if workType.isEmpty {
+            errors["workType"] = l("Select a work type.", "Sélectionnez un type de travail.")
+        }
+        let careersPortalValue = careersPortal.trimmingCharacters(in: .whitespacesAndNewlines)
+        if careersPortalValue.isEmpty {
+            errors["careersPortal"] = l("Careers portal URL is required.", "L'URL du portail carrières est requise.")
+        } else if !isValidUrl(careersPortalValue) {
+            errors["careersPortal"] = l("Enter a valid careers portal URL.", "Entrez une URL valide du portail carrières.")
+        }
         if !Validator.isValidLinkedInProfile(linkedIn) {
             errors["linkedIn"] = l("Enter a valid LinkedIn profile URL.", "Entrez une URL LinkedIn valide.")
+        }
+        if !consent {
+            errors["consent"] = l("Consent is required.", "Le consentement est requis.")
         }
         fieldErrors = errors
         return errors.isEmpty
@@ -240,10 +261,6 @@ struct ReferrerRegistrationView: View {
                 "companyIndustry": companyIndustry,
                 "companyIndustryOther": companyIndustryOther.trimmingCharacters(in: .whitespacesAndNewlines),
                 "workType": workType,
-                "referralType": referralType.trimmingCharacters(in: .whitespacesAndNewlines),
-                "monthlySlots": monthlySlots.trimmingCharacters(in: .whitespacesAndNewlines),
-                "roles": roles.trimmingCharacters(in: .whitespacesAndNewlines),
-                "regions": regions.trimmingCharacters(in: .whitespacesAndNewlines),
                 "linkedin": linkedIn.trimmingCharacters(in: .whitespacesAndNewlines),
                 "language": submissionLanguage,
                 "website": "",
@@ -259,34 +276,9 @@ struct ReferrerRegistrationView: View {
         }
     }
 
-    @MainActor
-    private func requestPortalLink() async {
-        errorMessage = nil
-        statusMessage = nil
-        guard Validator.isValidEmail(portalEmail) else {
-            errorMessage = l("Enter a valid email.", "Veuillez entrer un e-mail valide.")
-            return
-        }
-        guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
-            errorMessage = l("Set your API base URL in Settings first.", "Définissez d'abord l'URL de base de l'API dans Paramètres.")
-            return
-        }
-        guard networkMonitor.isConnected else {
-            errorMessage = l("You're offline. Connect to the internet and try again.", "Vous êtes hors ligne. Connectez-vous à Internet et réessayez.")
-            return
-        }
-
-        isSubmitting = true
-        defer { isSubmitting = false }
-
-        do {
-            let response = try await APIClient.requestReferrerLink(baseURL: apiBaseURL, email: portalEmail)
-            statusMessage = response.message ?? l("Portal link sent.", "Lien du portail envoyé.")
-            Telemetry.track("referrer_portal_link_sent")
-        } catch {
-            Telemetry.capture(error)
-            errorMessage = error.localizedDescription
-        }
+    private func isValidUrl(_ value: String) -> Bool {
+        guard let url = URL(string: value), let scheme = url.scheme?.lowercased() else { return false }
+        return scheme == "http" || scheme == "https"
     }
 }
 

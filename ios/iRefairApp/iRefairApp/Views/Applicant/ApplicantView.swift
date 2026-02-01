@@ -25,18 +25,12 @@ struct ApplicantView: View {
     @State private var industryOther = ""
     @State private var employmentStatus = ""
     @State private var linkedin = ""
-    @State private var desiredRole = ""
-    @State private var targetCompanies = ""
-    @State private var hasPostings = ""
-    @State private var postingNotes = ""
-    @State private var pitch = ""
     @State private var consent = false
 
     @State private var resumeFile: UploadFile?
     @State private var resumeName = ""
     @State private var showDocumentPicker = false
 
-    @State private var updateLinkInput = ""
     @State private var updateToken = ""
     @State private var updateAppId = ""
     @State private var updatePurpose = ""
@@ -120,42 +114,6 @@ struct ApplicantView: View {
                             Text(l("French", "Français")).tag("fr")
                         }
                         .pickerStyle(.segmented)
-                    }
-
-                    IRefairSection(l("Update link (optional)", "Lien de mise à jour (facultatif)")) {
-                        TextField(l("Paste update link", "Collez le lien de mise à jour"), text: $updateLinkInput)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
-                        Button(l("Use link", "Utiliser le lien")) {
-                            applyUpdateLink()
-                        }
-                        .buttonStyle(IRefairGhostButtonStyle())
-                        errorText("updateLink")
-                        if !updateToken.isEmpty && !updateAppId.isEmpty {
-                            Text(l("Update link loaded for application \(updateAppId).", "Lien chargé pour la candidature \(updateAppId)."))
-                                .font(Theme.font(.caption))
-                                .foregroundStyle(Theme.muted)
-                            Button {
-                                Task { await loadPrefill() }
-                            } label: {
-                                if isPrefillLoading {
-                                    ProgressView()
-                                } else {
-                                    Text(l("Load update details", "Charger les informations"))
-                                }
-                            }
-                            .buttonStyle(IRefairGhostButtonStyle())
-                            .disabled(isPrefillLoading || !networkMonitor.isConnected)
-                            Button(l("Clear update link", "Effacer le lien")) {
-                                clearUpdateLink()
-                            }
-                            .foregroundStyle(Theme.error)
-                            if updatePurpose.lowercased() == "info" {
-                                Text(l("Resume is optional for info-only updates.", "CV facultatif pour les mises à jour d'information."))
-                                    .font(Theme.font(.caption))
-                                    .foregroundStyle(Theme.muted)
-                            }
-                        }
                     }
 
                     IRefairSection(l("Personal information", "Informations personnelles")) {
@@ -301,26 +259,6 @@ struct ApplicantView: View {
                         errorText("linkedin")
                     }
 
-                    IRefairSection(l("Referral goals", "Objectifs de recommandation")) {
-                        TextField(l("Target role", "Poste cible"), text: $desiredRole)
-                        TextField(l("Target companies", "Entreprises ciblées"), text: $targetCompanies)
-                        IRefairMenuPicker(
-                            l("Specific postings?", "Avez-vous des offres spécifiques ?"),
-                            displayValue: pickerDisplayValue(hasPostings, options: yesNoOptions),
-                            isPlaceholder: hasPostings.isEmpty,
-                            selection: $hasPostings
-                        ) {
-                            Text(l("Select", "Sélectionner")).tag("")
-                            ForEach(yesNoOptions, id: \.value) { option in
-                                Text(option.label).tag(option.value)
-                            }
-                        }
-                        TextField(l("Links and notes", "Liens et notes"), text: $postingNotes, axis: .vertical)
-                            .lineLimit(2, reservesSpace: true)
-                        TextField(l("Brief pitch", "Brève présentation"), text: $pitch, axis: .vertical)
-                            .lineLimit(3, reservesSpace: true)
-                    }
-
                     IRefairSection(l("Resume", "CV")) {
                         HStack {
                             Text(resumeName.isEmpty ? l("No file selected", "Aucun fichier sélectionné") : resumeName)
@@ -335,11 +273,6 @@ struct ApplicantView: View {
                         .accessibilityLabel(l("Resume file", "Fichier CV"))
                         .irefairInput()
                         errorText("resume")
-                        if !requiresResume {
-                            Text(l("Resume optional for info-only updates.", "CV facultatif pour les mises à jour d'information."))
-                                .font(Theme.font(.caption))
-                                .foregroundStyle(Theme.muted)
-                        }
                         if let resumeFile, resumeFile.data.count > FileSupport.maxResumeSize {
                             Text(l("Resume must be under 10 MB.", "Le CV doit faire moins de 10 Mo."))
                                 .foregroundStyle(Theme.error)
@@ -389,12 +322,21 @@ struct ApplicantView: View {
             .onAppear {
                 updateToken = storedUpdateToken
                 updateAppId = storedUpdateAppId
+                if !updateToken.isEmpty && !updateAppId.isEmpty {
+                    Task { await loadPrefill() }
+                }
             }
             .onChange(of: storedUpdateToken) { value in
                 updateToken = value
+                if !updateToken.isEmpty && !updateAppId.isEmpty {
+                    Task { await loadPrefill() }
+                }
             }
             .onChange(of: storedUpdateAppId) { value in
                 updateAppId = value
+                if !updateToken.isEmpty && !updateAppId.isEmpty {
+                    Task { await loadPrefill() }
+                }
             }
         }
     }
@@ -519,58 +461,14 @@ struct ApplicantView: View {
         }
     }
 
-    private func applyUpdateLink() {
-        fieldErrors["updateLink"] = nil
-        errorMessage = nil
-        let trimmed = updateLinkInput.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let info = extractUpdateInfo(from: trimmed) else {
-            fieldErrors["updateLink"] = l("Invalid update link.", "Lien de mise à jour invalide.")
-            return
-        }
-        updateToken = info.token
-        updateAppId = info.appId
-        storedUpdateToken = info.token
-        storedUpdateAppId = info.appId
-        updatePurpose = "cv"
-        statusMessage = l("Update link saved. You can load your details below.", "Lien de mise à jour enregistré. Vous pouvez charger vos informations ci-dessous.")
-    }
-
-    private func clearUpdateLink() {
-        updateLinkInput = ""
-        updateToken = ""
-        updateAppId = ""
-        updatePurpose = ""
-        storedUpdateToken = ""
-        storedUpdateAppId = ""
-        fieldErrors["updateLink"] = nil
-    }
-
-    private func extractUpdateInfo(from input: String) -> (token: String, appId: String)? {
-        guard !input.isEmpty else { return nil }
-        if let url = URL(string: input),
-           let components = URLComponents(url: url, resolvingAgainstBaseURL: false) {
-            let query = (components.queryItems ?? []).reduce(into: [String: String]()) { partial, item in
-                if let value = item.value {
-                    partial[item.name.lowercased()] = value
-                }
-            }
-            let token = query["updatetoken"] ?? query["token"] ?? ""
-            let appId = query["appid"] ?? query["applicationid"] ?? ""
-            if !token.isEmpty && !appId.isEmpty {
-                return (token, appId)
-            }
-        }
-        return nil
-    }
-
     @MainActor
     private func loadPrefill() async {
         errorMessage = nil
         statusMessage = nil
         guard !updateToken.isEmpty, !updateAppId.isEmpty else {
-            errorMessage = l("Paste a valid update link first.", "Collez d'abord un lien de mise à jour valide.")
             return
         }
+        guard !isPrefillLoading else { return }
         guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
             errorMessage = l("Set your API base URL in Settings first.", "Définissez d'abord l'URL de base de l'API dans Paramètres.")
             return
@@ -611,11 +509,6 @@ struct ApplicantView: View {
             industryOther = data.industryOther
             employmentStatus = data.employmentStatus
             linkedin = data.linkedin
-            desiredRole = data.desiredRole
-            targetCompanies = data.targetCompanies
-            hasPostings = data.hasPostings
-            postingNotes = data.postingNotes
-            pitch = data.pitch
             languagesOther = data.languagesOther
 
             let languageList = data.languages
@@ -636,9 +529,6 @@ struct ApplicantView: View {
 
     private func validate() -> Bool {
         var errors: [String: String] = [:]
-        if (updateToken.isEmpty && !updateAppId.isEmpty) || (!updateToken.isEmpty && updateAppId.isEmpty) {
-            errors["updateLink"] = l("Update link is incomplete. Paste the full link.", "Le lien de mise à jour est incomplet. Collez le lien complet.")
-        }
         if firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             errors["firstName"] = l("First name is required.", "Le prénom est requis.")
         }
@@ -716,11 +606,6 @@ struct ApplicantView: View {
             "employmentStatus": employmentStatus,
             "languages": languagesValue,
             "languagesOther": languagesOther,
-            "desiredRole": desiredRole,
-            "targetCompanies": targetCompanies,
-            "hasPostings": hasPostings,
-            "postingNotes": postingNotes,
-            "pitch": pitch,
             "language": submissionLanguage,
             "website": "",
         ]
@@ -758,6 +643,10 @@ struct ApplicantView: View {
             statusMessage = response.message ?? l("Application submitted. Please check your email to confirm registration.", "Candidature envoyée. Veuillez vérifier votre e-mail pour confirmer l'inscription.")
             if !updateToken.isEmpty && !updateAppId.isEmpty {
                 updatePurpose = ""
+                updateToken = ""
+                updateAppId = ""
+                storedUpdateToken = ""
+                storedUpdateAppId = ""
             }
             Telemetry.track("applicant_submit_success")
         } catch {
