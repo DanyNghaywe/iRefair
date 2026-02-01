@@ -30,8 +30,7 @@ struct IRefairSection<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
                 shape
-                    .fill(.ultraThinMaterial)
-                    .overlay(shape.fill(Theme.sectionGradient))
+                    .fill(Theme.sectionGradient)
                     .overlay(shape.stroke(Theme.sectionBorder, lineWidth: 1))
                     .shadow(color: Theme.sectionShadow, radius: 12, x: 0, y: 6)
             )

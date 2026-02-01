@@ -49,7 +49,7 @@ enum Theme {
 
     static let boardGradient = LinearGradient(
         gradient: Gradient(colors: [
-            Color.white.opacity(0.05),
+            Color.white.opacity(0.04),
             Color.white.opacity(0.01),
         ]),
         startPoint: .top,
@@ -60,14 +60,14 @@ enum Theme {
 
     static let sectionGradient = LinearGradient(
         gradient: Gradient(colors: [
-            Color.white.opacity(0.16),
-            Color.white.opacity(0.08),
+            Color.white.opacity(0.12),
+            Color.white.opacity(0.04),
         ]),
         startPoint: .topLeading,
         endPoint: .bottomTrailing
     )
-    static let sectionBorder = Color.white.opacity(0.24)
-    static let sectionShadow = Color(hex: 0x0F172A).opacity(0.1)
+    static let sectionBorder = Color.white.opacity(0.18)
+    static let sectionShadow = Color(hex: 0x0F172A).opacity(0.08)
 
     static let legendBackground = Color.white.opacity(0.32)
     static let legendBorder = Color.white.opacity(0.2)
@@ -211,8 +211,7 @@ struct IRefairBoardBackground: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: Theme.boardRadius, style: .continuous)
         shape
-            .fill(.ultraThinMaterial)
-            .overlay(shape.fill(Theme.boardGradient))
+            .fill(Theme.boardGradient)
             .overlay(
                 shape
                     .stroke(Theme.boardBorder, lineWidth: 1)
