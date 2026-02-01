@@ -43,6 +43,9 @@ enum Theme {
     static let boardPadding: CGFloat = 18
     static let boardGap: CGFloat = 32
     static let fieldGap: CGFloat = 20
+    static let fieldLabelGap: CGFloat = 8
+    static let fieldLabelFontSize: CGFloat = 14
+    static let fieldLabelKerning: CGFloat = -0.14
 
     static let boardGradient = LinearGradient(
         gradient: Gradient(colors: [

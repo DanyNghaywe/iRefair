@@ -39,6 +39,36 @@ extension View {
     }
 }
 
+struct IRefairFieldLabel: View {
+    let text: String
+
+    var body: some View {
+        Text(text)
+            .font(Theme.font(size: Theme.fieldLabelFontSize, weight: .semibold))
+            .foregroundStyle(Color.white)
+            .kerning(Theme.fieldLabelKerning)
+            .lineLimit(nil)
+            .multilineTextAlignment(.leading)
+    }
+}
+
+struct IRefairField<Content: View>: View {
+    let label: String
+    let content: Content
+
+    init(_ label: String, @ViewBuilder content: () -> Content) {
+        self.label = label
+        self.content = content()
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Theme.fieldLabelGap) {
+            IRefairFieldLabel(text: label)
+            content
+        }
+    }
+}
+
 struct IRefairPickerLabel: View {
     let text: String
     var isPlaceholder: Bool = false
@@ -73,15 +103,18 @@ struct IRefairMenuPicker<SelectionValue: Hashable, Content: View>: View {
     }
 
     var body: some View {
-        Picker(selection: $selection) {
-            content
-        } label: {
-            IRefairPickerLabel(text: displayValue, isPlaceholder: isPlaceholder)
+        VStack(alignment: .leading, spacing: Theme.fieldLabelGap) {
+            IRefairFieldLabel(text: title)
+            Picker(selection: $selection) {
+                content
+            } label: {
+                IRefairPickerLabel(text: displayValue, isPlaceholder: isPlaceholder)
+            }
+            .pickerStyle(.menu)
+            .irefairInput()
+            .buttonStyle(.plain)
+            .accessibilityLabel(title)
         }
-        .pickerStyle(.menu)
-        .irefairInput()
-        .buttonStyle(.plain)
-        .accessibilityLabel(title)
     }
 }
 

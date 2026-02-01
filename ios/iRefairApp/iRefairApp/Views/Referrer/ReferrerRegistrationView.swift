@@ -49,30 +49,50 @@ struct ReferrerRegistrationView: View {
             }
 
             IRefairSection(l("Submission language", "Langue de soumission")) {
-                Picker(l("Language", "Langue"), selection: $submissionLanguage) {
-                    Text(l("English", "Anglais")).tag("en")
-                    Text(l("French", "Français")).tag("fr")
+                IRefairField(l("Language", "Langue")) {
+                    Picker(l("Language", "Langue"), selection: $submissionLanguage) {
+                        Text(l("English", "Anglais")).tag("en")
+                        Text(l("French", "Français")).tag("fr")
+                    }
+                    .pickerStyle(.segmented)
                 }
-                .pickerStyle(.segmented)
             }
 
             IRefairSection(l("Become a referrer", "Devenir référent")) {
-                TextField(l("Full name *", "Nom complet *"), text: $fullName)
+                IRefairField(l("Full name *", "Nom complet *")) {
+                    TextField("", text: $fullName)
+                        .accessibilityLabel(l("Full name *", "Nom complet *"))
+                }
                 errorText("name")
-                TextField(l("Work email *", "E-mail professionnel *"), text: $email)
-                    .keyboardType(.emailAddress)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                IRefairField(l("Work email *", "E-mail professionnel *")) {
+                    TextField("", text: $email)
+                        .keyboardType(.emailAddress)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .accessibilityLabel(l("Work email *", "E-mail professionnel *"))
+                }
                 errorText("email")
-                TextField(l("Phone", "Téléphone"), text: $phone)
+                IRefairField(l("Phone", "Téléphone")) {
+                    TextField("", text: $phone)
+                        .accessibilityLabel(l("Phone", "Téléphone"))
+                }
                 errorText("phone")
-                TextField(l("Country", "Pays"), text: $country)
+                IRefairField(l("Country", "Pays")) {
+                    TextField("", text: $country)
+                        .accessibilityLabel(l("Country", "Pays"))
+                }
                 errorText("country")
-                TextField(l("Company name", "Nom de l’entreprise"), text: $company)
-                TextField(l("Careers portal URL", "URL du portail carrières"), text: $careersPortal)
-                    .keyboardType(.URL)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                IRefairField(l("Company name", "Nom de l’entreprise")) {
+                    TextField("", text: $company)
+                        .accessibilityLabel(l("Company name", "Nom de l’entreprise"))
+                }
+                IRefairField(l("Careers portal URL", "URL du portail carrières")) {
+                    TextField("", text: $careersPortal)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .accessibilityLabel(l("Careers portal URL", "URL du portail carrières"))
+                }
                 errorText("careersPortal")
                 IRefairMenuPicker(
                     l("Company industry", "Secteur de l’entreprise"),
@@ -87,7 +107,10 @@ struct ReferrerRegistrationView: View {
                 }
                 errorText("companyIndustry")
                 if companyIndustry == "Other" {
-                    TextField(l("Other industry", "Autre secteur"), text: $companyIndustryOther)
+                    IRefairField(l("Other industry", "Autre secteur")) {
+                        TextField("", text: $companyIndustryOther)
+                            .accessibilityLabel(l("Other industry", "Autre secteur"))
+                    }
                     errorText("companyIndustryOther")
                 }
                 IRefairMenuPicker(
@@ -102,10 +125,13 @@ struct ReferrerRegistrationView: View {
                     }
                 }
                 errorText("workType")
-                TextField(l("LinkedIn profile", "Profil LinkedIn"), text: $linkedIn)
-                    .keyboardType(.URL)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                IRefairField(l("LinkedIn profile", "Profil LinkedIn")) {
+                    TextField("", text: $linkedIn)
+                        .keyboardType(.URL)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .accessibilityLabel(l("LinkedIn profile", "Profil LinkedIn"))
+                }
                 errorText("linkedIn")
             }
 

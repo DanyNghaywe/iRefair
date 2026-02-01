@@ -109,26 +109,43 @@ struct ApplicantView: View {
                     }
 
                     IRefairSection(l("Submission language", "Langue de soumission")) {
-                        Picker(l("Language", "Langue"), selection: $submissionLanguage) {
-                            Text(l("English", "Anglais")).tag("en")
-                            Text(l("French", "Français")).tag("fr")
+                        IRefairField(l("Language", "Langue")) {
+                            Picker(l("Language", "Langue"), selection: $submissionLanguage) {
+                                Text(l("English", "Anglais")).tag("en")
+                                Text(l("French", "Français")).tag("fr")
+                            }
+                            .pickerStyle(.segmented)
                         }
-                        .pickerStyle(.segmented)
                     }
 
                     IRefairSection(l("Personal information", "Informations personnelles")) {
-                        TextField(l("First name *", "Prénom *"), text: $firstName)
+                        IRefairField(l("First name *", "Prénom *")) {
+                            TextField("", text: $firstName)
+                                .accessibilityLabel(l("First name *", "Prénom *"))
+                        }
                         errorText("firstName")
-                        TextField(l("Middle name", "Deuxième prénom"), text: $middleName)
-                        TextField(l("Last name *", "Nom de famille *"), text: $familyName)
+                        IRefairField(l("Middle name", "Deuxième prénom")) {
+                            TextField("", text: $middleName)
+                                .accessibilityLabel(l("Middle name", "Deuxième prénom"))
+                        }
+                        IRefairField(l("Last name *", "Nom de famille *")) {
+                            TextField("", text: $familyName)
+                                .accessibilityLabel(l("Last name *", "Nom de famille *"))
+                        }
                         errorText("familyName")
-                        TextField(l("Email *", "Adresse e-mail *"), text: $email)
-                            .keyboardType(.emailAddress)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
+                        IRefairField(l("Email *", "Adresse e-mail *")) {
+                            TextField("", text: $email)
+                                .keyboardType(.emailAddress)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .accessibilityLabel(l("Email *", "Adresse e-mail *"))
+                        }
                         errorText("email")
-                        TextField(l("Phone *", "Téléphone *"), text: $phone)
-                            .keyboardType(.phonePad)
+                        IRefairField(l("Phone *", "Téléphone *")) {
+                            TextField("", text: $phone)
+                                .keyboardType(.phonePad)
+                                .accessibilityLabel(l("Phone *", "Téléphone *"))
+                        }
                         errorText("phone")
                         IRefairMenuPicker(
                             l("Country of origin *", "Pays d'origine *"),
@@ -160,7 +177,10 @@ struct ApplicantView: View {
                         }
                         errorText("languages")
                         if languages.contains("Other") {
-                            TextField(l("Other languages *", "Autres langues *"), text: $languagesOther)
+                            IRefairField(l("Other languages *", "Autres langues *")) {
+                                TextField("", text: $languagesOther)
+                                    .accessibilityLabel(l("Other languages *", "Autres langues *"))
+                            }
                             errorText("languagesOther")
                         }
                     }
@@ -237,7 +257,10 @@ struct ApplicantView: View {
                         }
                         errorText("industryType")
                         if industryType == "Other" {
-                            TextField(l("Industry details *", "Précisez le secteur *"), text: $industryOther)
+                            IRefairField(l("Industry details *", "Précisez le secteur *")) {
+                                TextField("", text: $industryOther)
+                                    .accessibilityLabel(l("Industry details *", "Précisez le secteur *"))
+                            }
                             errorText("industryOther")
                         }
                         IRefairMenuPicker(
@@ -252,26 +275,31 @@ struct ApplicantView: View {
                             }
                         }
                         errorText("employmentStatus")
-                        TextField(l("LinkedIn profile", "Profil LinkedIn"), text: $linkedin)
-                            .keyboardType(.URL)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
+                        IRefairField(l("LinkedIn profile", "Profil LinkedIn")) {
+                            TextField("", text: $linkedin)
+                                .keyboardType(.URL)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .accessibilityLabel(l("LinkedIn profile", "Profil LinkedIn"))
+                        }
                         errorText("linkedin")
                     }
 
                     IRefairSection(l("Resume", "CV")) {
-                        HStack {
-                            Text(resumeName.isEmpty ? l("No file selected", "Aucun fichier sélectionné") : resumeName)
-                                .font(Theme.font(.subheadline))
-                                .foregroundStyle(resumeName.isEmpty ? Theme.muted : Theme.ink)
-                            Spacer()
-                            Button(l("Choose file", "Choisir un fichier")) {
-                                showDocumentPicker = true
+                        IRefairField(l("Resume", "CV")) {
+                            HStack {
+                                Text(resumeName.isEmpty ? l("No file selected", "Aucun fichier sélectionné") : resumeName)
+                                    .font(Theme.font(.subheadline))
+                                    .foregroundStyle(resumeName.isEmpty ? Theme.muted : Theme.ink)
+                                Spacer()
+                                Button(l("Choose file", "Choisir un fichier")) {
+                                    showDocumentPicker = true
+                                }
+                                .buttonStyle(IRefairGhostButtonStyle())
                             }
-                            .buttonStyle(IRefairGhostButtonStyle())
+                            .accessibilityLabel(l("Resume file", "Fichier CV"))
+                            .irefairInput()
                         }
-                        .accessibilityLabel(l("Resume file", "Fichier CV"))
-                        .irefairInput()
                         errorText("resume")
                         if let resumeFile, resumeFile.data.count > FileSupport.maxResumeSize {
                             Text(l("Resume must be under 10 MB.", "Le CV doit faire moins de 10 Mo."))

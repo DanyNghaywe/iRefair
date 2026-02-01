@@ -25,9 +25,12 @@ struct ReferrerPortalView: View {
             }
 
             IRefairSection(l("Access token", "Jeton d’accès")) {
-                TextField(l("Paste token or portal link", "Collez le jeton ou le lien du portail"), text: $tokenInput)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                IRefairField(l("Paste token or portal link", "Collez le jeton ou le lien du portail")) {
+                    TextField("", text: $tokenInput)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+                        .accessibilityLabel(l("Paste token or portal link", "Collez le jeton ou le lien du portail"))
+                }
                 HStack {
                     Button(l("Save token", "Enregistrer le jeton")) {
                         let token = extractToken(from: tokenInput)

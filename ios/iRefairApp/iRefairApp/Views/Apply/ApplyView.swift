@@ -40,38 +40,58 @@ struct ApplyView: View {
                     }
 
                     IRefairSection(l("Submission language", "Langue de soumission")) {
-                        Picker(l("Language", "Langue"), selection: $submissionLanguage) {
-                            Text(l("English", "Anglais")).tag("en")
-                            Text(l("French", "Français")).tag("fr")
+                        IRefairField(l("Language", "Langue")) {
+                            Picker(l("Language", "Langue"), selection: $submissionLanguage) {
+                                Text(l("English", "Anglais")).tag("en")
+                                Text(l("French", "Français")).tag("fr")
+                            }
+                            .pickerStyle(.segmented)
                         }
-                        .pickerStyle(.segmented)
                     }
 
                     IRefairSection(l("Application details", "Détails de la candidature")) {
-                        TextField(l("Applicant ID (iRAIN) *", "ID candidat (iRAIN) *"), text: $applicantId)
+                        IRefairField(l("Applicant ID (iRAIN) *", "ID candidat (iRAIN) *")) {
+                            TextField("", text: $applicantId)
+                                .accessibilityLabel(l("Applicant ID (iRAIN) *", "ID candidat (iRAIN) *"))
+                        }
                         errorText("applicantId")
-                        TextField(l("Applicant Key *", "Clé du candidat *"), text: $applicantKey)
+                        IRefairField(l("Applicant Key *", "Clé du candidat *")) {
+                            TextField("", text: $applicantKey)
+                                .accessibilityLabel(l("Applicant Key *", "Clé du candidat *"))
+                        }
                         errorText("applicantKey")
-                        TextField(l("iRCRN *", "iRCRN *"), text: $iCrn)
-                            .textInputAutocapitalization(.characters)
+                        IRefairField(l("iRCRN *", "iRCRN *")) {
+                            TextField("", text: $iCrn)
+                                .textInputAutocapitalization(.characters)
+                                .accessibilityLabel(l("iRCRN *", "iRCRN *"))
+                        }
                         errorText("iCrn")
-                        TextField(l("Position *", "Poste *"), text: $position)
+                        IRefairField(l("Position *", "Poste *")) {
+                            TextField("", text: $position)
+                                .accessibilityLabel(l("Position *", "Poste *"))
+                        }
                         errorText("position")
-                        TextField(l("Reference number", "Numéro de référence"), text: $referenceNumber)
+                        IRefairField(l("Reference number", "Numéro de référence")) {
+                            TextField("", text: $referenceNumber)
+                                .accessibilityLabel(l("Reference number", "Numéro de référence"))
+                        }
                     }
 
                     IRefairSection(l("Resume", "CV")) {
-                        HStack {
-                            Text(resumeName.isEmpty ? l("No file selected", "Aucun fichier sélectionné") : resumeName)
-                                .font(Theme.font(.subheadline))
-                                .foregroundStyle(resumeName.isEmpty ? Theme.muted : Theme.ink)
-                            Spacer()
-                            Button(l("Choose file", "Choisir un fichier")) {
-                                showDocumentPicker = true
+                        IRefairField(l("Resume", "CV")) {
+                            HStack {
+                                Text(resumeName.isEmpty ? l("No file selected", "Aucun fichier sélectionné") : resumeName)
+                                    .font(Theme.font(.subheadline))
+                                    .foregroundStyle(resumeName.isEmpty ? Theme.muted : Theme.ink)
+                                Spacer()
+                                Button(l("Choose file", "Choisir un fichier")) {
+                                    showDocumentPicker = true
+                                }
+                                .buttonStyle(IRefairGhostButtonStyle())
                             }
-                            .buttonStyle(IRefairGhostButtonStyle())
+                            .irefairInput()
+                            .accessibilityLabel(l("Resume file", "Fichier CV"))
                         }
-                        .irefairInput()
                         errorText("resume")
                     }
 

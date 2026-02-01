@@ -35,14 +35,19 @@ struct FeedbackSheet: View {
                     }
 
                     IRefairSection(l("Feedback", "Avis")) {
-                        TextField(l("Share feedback", "Partagez votre avis"), text: $feedback, axis: .vertical)
-                            .lineLimit(4, reservesSpace: true)
-                        Picker(l("Rating", "Évaluation"), selection: $rating) {
-                            ForEach(1...5, id: \.self) { value in
-                                Text("\(value)").tag(value)
-                            }
+                        IRefairField(l("Share feedback", "Partagez votre avis")) {
+                            TextField("", text: $feedback, axis: .vertical)
+                                .lineLimit(4, reservesSpace: true)
+                                .accessibilityLabel(l("Share feedback", "Partagez votre avis"))
                         }
-                        .pickerStyle(.segmented)
+                        IRefairField(l("Rating", "Évaluation")) {
+                            Picker(l("Rating", "Évaluation"), selection: $rating) {
+                                ForEach(1...5, id: \.self) { value in
+                                    Text("\(value)").tag(value)
+                                }
+                            }
+                            .pickerStyle(.segmented)
+                        }
                         Toggle(l("Recommend", "Recommander"), isOn: $recommend)
                             .toggleStyle(IRefairCheckboxToggleStyle())
                     }

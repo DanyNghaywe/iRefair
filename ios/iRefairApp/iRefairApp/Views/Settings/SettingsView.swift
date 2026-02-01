@@ -12,10 +12,13 @@ struct SettingsView: View {
             IRefairScreen {
                 IRefairForm {
                     IRefairSection(l("API Configuration", "Configuration API")) {
-                        TextField(l("Base URL", "URL de base"), text: $draftBaseURL)
-                            .keyboardType(.URL)
-                            .textInputAutocapitalization(.never)
-                            .autocorrectionDisabled()
+                        IRefairField(l("Base URL", "URL de base")) {
+                            TextField("", text: $draftBaseURL)
+                                .keyboardType(.URL)
+                                .textInputAutocapitalization(.never)
+                                .autocorrectionDisabled()
+                                .accessibilityLabel(l("Base URL", "URL de base"))
+                        }
                         HStack {
                             Button(l("Save", "Enregistrer")) {
                                 let cleaned = Validator.sanitizeBaseURL(draftBaseURL)
@@ -38,11 +41,13 @@ struct SettingsView: View {
                     }
 
                     IRefairSection(l("Default language", "Langue par défaut")) {
-                        Picker(l("Language", "Langue"), selection: $submissionLanguage) {
-                            Text(l("English", "Anglais")).tag("en")
-                            Text(l("French", "Français")).tag("fr")
+                        IRefairField(l("Language", "Langue")) {
+                            Picker(l("Language", "Langue"), selection: $submissionLanguage) {
+                                Text(l("English", "Anglais")).tag("en")
+                                Text(l("French", "Français")).tag("fr")
+                            }
+                            .pickerStyle(.segmented)
                         }
-                        .pickerStyle(.segmented)
                     }
 
                     IRefairSection(l("Legal", "Mentions légales")) {
