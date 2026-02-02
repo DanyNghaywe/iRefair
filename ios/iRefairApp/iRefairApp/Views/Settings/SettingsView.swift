@@ -61,7 +61,6 @@ struct SettingsView: View {
                         .buttonStyle(IRefairGhostButtonStyle())
                     }
                 }
-                .navigationTitle(l("Settings"))
                 .onAppear {
                     draftBaseURL = apiBaseURL
                 }

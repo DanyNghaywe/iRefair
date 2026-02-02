@@ -41,6 +41,12 @@ struct ReferrerRegistrationView: View {
 
     var body: some View {
         IRefairForm {
+            IRefairCardHeader(
+                eyebrow: l("For referrers"),
+                title: l("Referrer referral form"),
+                lead: l("Share the teams, roles, and capacity you have. Log an applicant now or just your availability.")
+            )
+
             if !networkMonitor.isConnected {
                 IRefairSection {
                     StatusBanner(text: l("You're offline. Connect to the internet to submit the form."), style: .warning)

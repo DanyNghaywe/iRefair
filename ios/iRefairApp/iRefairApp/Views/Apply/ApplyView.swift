@@ -25,16 +25,16 @@ struct ApplyView: View {
         NavigationStack {
             IRefairScreen {
                 IRefairForm {
+                    IRefairCardHeader(
+                        eyebrow: l("Application"),
+                        title: l("iRefair - Apply Now"),
+                        lead: l("iRefair is a free initiative created to support Lebanese and Arab newcomers in Canada by connecting them with professionals who can refer them for jobs.")
+                    )
+
                     if !networkMonitor.isConnected {
                         IRefairSection {
                             StatusBanner(text: l("You're offline. Connect to the internet to submit the form."), style: .warning)
                         }
-                    }
-
-                    IRefairSection {
-                        Text(l("Submit an application using your iRAIN and Applicant Key."))
-                            .font(Theme.font(.subheadline))
-                            .foregroundStyle(Theme.muted)
                     }
 
                     IRefairSection(l("Application details")) {
@@ -109,7 +109,6 @@ struct ApplyView: View {
                         .disabled(isSubmitting || !networkMonitor.isConnected)
                     }
                 }
-                .navigationTitle(l("Apply"))
                 .sheet(isPresented: $showDocumentPicker) {
                     DocumentPicker(allowedTypes: allowedTypes()) { url in
                         handlePickedFile(url)

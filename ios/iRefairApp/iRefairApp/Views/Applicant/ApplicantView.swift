@@ -84,20 +84,11 @@ struct ApplicantView: View {
         NavigationStack {
             IRefairScreen {
                 IRefairForm {
-                    Section {
-                        Text(l("Create or update your iRefair applicant profile. All required fields are marked with *."))
-                            .font(Theme.font(.subheadline))
-                            .foregroundStyle(Theme.muted)
-                        if apiBaseURL.isEmpty {
-                            Label(l("Set your API base URL in Settings before submitting."),
-                                  systemImage: "exclamationmark.triangle")
-                                .foregroundStyle(Theme.error)
-                        } else {
-                            Text("\(l("API")): \(Validator.sanitizeBaseURL(apiBaseURL))")
-                                .font(Theme.font(.caption))
-                                .foregroundStyle(Theme.muted)
-                        }
-                    }
+                    IRefairCardHeader(
+                        eyebrow: l("For applicants"),
+                        title: l("Applicant referral request"),
+                        lead: l("Tell us your background and target roles. We'll pair you with referrers when they're available.")
+                    )
 
                     if !networkMonitor.isConnected {
                         IRefairSection {
@@ -328,7 +319,6 @@ struct ApplicantView: View {
                     }
                 }
             }
-            .navigationTitle(l("Applicant"))
             .sheet(isPresented: $showDocumentPicker) {
                 DocumentPicker(allowedTypes: allowedTypes()) { url in
                     handlePickedFile(url)

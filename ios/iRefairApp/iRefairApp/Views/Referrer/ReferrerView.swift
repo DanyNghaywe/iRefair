@@ -38,7 +38,6 @@ struct ReferrerView: View {
                         ReferrerPortalView()
                     }
                 }
-                .navigationTitle(l("Referrer"))
             }
         }
     }

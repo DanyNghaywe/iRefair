@@ -8,7 +8,9 @@
 "Applicant ID is required." = "L'identifiant candidat est requis.";
 "Applicant Key *" = "Clé du candidat *";
 "Applicant key is required." = "La clé du candidat est requise.";
+"Applicant referral request" = "Demande de recommandation de candidat";
 "Applicants" = "Candidats";
+"Application" = "Candidature";
 "Application details" = "Détails de la candidature";
 "Application submitted successfully." = "Candidature envoyée avec succès.";
 "Application submitted. Please check your email to confirm registration." = "Candidature envoyée. Veuillez vérifier votre e-mail pour confirmer l'inscription.";
@@ -55,6 +57,8 @@
 "Finance / Banking / Accounting" = "Finance / Banque / Comptabilité";
 "First name *" = "Prénom *";
 "First name is required." = "Le prénom est requis.";
+"For applicants" = "Pour les candidats";
+"For referrers" = "Pour les référents";
 "French" = "Français";
 "Full name *" = "Nom complet *";
 "Full name is required." = "Le nom complet est requis.";
@@ -116,8 +120,10 @@
 "Recommend" = "Recommander";
 "Reference number" = "Numéro de référence";
 "Referrer" = "Référent";
+"Referrer portal" = "Portail référent";
 "Referrer registered." = "Référent enregistré.";
 "Referrer registered. Your ID: %@" = "Référent enregistré. Votre ID : %@";
+"Referrer referral form" = "Formulaire de recommandation du référent";
 "Register" = "Inscription";
 "Register as Referrer" = "S'inscrire comme référent";
 "Remote" = "Télétravail";
@@ -152,7 +158,13 @@
 "Submit Applicant Profile" = "Soumettre le profil candidat";
 "Submit Application" = "Soumettre la candidature";
 "Submit an application using your iRAIN and Applicant Key." = "Soumettez une candidature avec votre iRAIN et votre clé de candidat.";
+"Share the teams, roles, and capacity you have. Log an applicant now or just your availability." = "Indiquez les équipes, les rôles et votre capacité. Enregistrez un candidat ou simplement votre disponibilité.";
+"Tell us your background and target roles. We'll pair you with referrers when they're available." = "Parlez-nous de votre parcours et des postes visés. Nous vous mettrons en relation avec des référents disponibles.";
 "Technology" = "Technologie";
+"Track your referrals" = "Suivez vos recommandations";
+"Review candidates, download CVs, and manage your referrals." = "Examinez les candidats, téléchargez les CV et gérez vos recommandations.";
+"iRefair - Apply Now" = "iRefair - Postuler maintenant";
+"iRefair is a free initiative created to support Lebanese and Arab newcomers in Canada by connecting them with professionals who can refer them for jobs." = "iRefair est une initiative gratuite créée pour soutenir les nouveaux arrivants libanais et arabes au Canada en les mettant en contact avec des professionnels qui peuvent les recommander pour des emplois.";
 "Telecommunications" = "Télécommunications";
 "Temporary Work" = "Travail temporaire";
 "Terms of Service" = "Conditions d'utilisation";

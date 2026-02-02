@@ -28,3 +28,28 @@ struct IRefairForm<Content: View>: View {
         .padding(.vertical, Theme.appPaddingVertical)
     }
 }
+
+struct IRefairCardHeader: View {
+    let eyebrow: String
+    let title: String
+    let lead: String
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(eyebrow)
+                .font(Theme.font(size: 11, weight: .semibold))
+                .foregroundStyle(Color.white.opacity(0.7))
+                .textCase(.uppercase)
+                .kerning(1.1)
+            Text(title)
+                .font(Theme.font(size: 24, weight: .bold))
+                .foregroundStyle(Color.white)
+                .kerning(-0.5)
+            Text(lead)
+                .font(Theme.font(size: 18))
+                .foregroundStyle(Color.white.opacity(0.85))
+                .lineSpacing(4)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+}

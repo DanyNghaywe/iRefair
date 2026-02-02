@@ -8,7 +8,9 @@
 "Applicant ID is required." = "Applicant ID is required.";
 "Applicant Key *" = "Applicant Key *";
 "Applicant key is required." = "Applicant key is required.";
+"Applicant referral request" = "Applicant referral request";
 "Applicants" = "Applicants";
+"Application" = "Application";
 "Application details" = "Application details";
 "Application submitted successfully." = "Application submitted successfully.";
 "Application submitted. Please check your email to confirm registration." = "Application submitted. Please check your email to confirm registration.";
@@ -55,6 +57,8 @@
 "Finance / Banking / Accounting" = "Finance / Banking / Accounting";
 "First name *" = "First name *";
 "First name is required." = "First name is required.";
+"For applicants" = "For applicants";
+"For referrers" = "For referrers";
 "French" = "French";
 "Full name *" = "Full name *";
 "Full name is required." = "Full name is required.";
@@ -116,8 +120,10 @@
 "Recommend" = "Recommend";
 "Reference number" = "Reference number";
 "Referrer" = "Referrer";
+"Referrer portal" = "Referrer portal";
 "Referrer registered." = "Referrer registered.";
 "Referrer registered. Your ID: %@" = "Referrer registered. Your ID: %@";
+"Referrer referral form" = "Referrer referral form";
 "Register" = "Register";
 "Register as Referrer" = "Register as Referrer";
 "Remote" = "Remote";
@@ -152,7 +158,13 @@
 "Submit Applicant Profile" = "Submit Applicant Profile";
 "Submit Application" = "Submit Application";
 "Submit an application using your iRAIN and Applicant Key." = "Submit an application using your iRAIN and Applicant Key.";
+"Share the teams, roles, and capacity you have. Log an applicant now or just your availability." = "Share the teams, roles, and capacity you have. Log an applicant now or just your availability.";
+"Tell us your background and target roles. We'll pair you with referrers when they're available." = "Tell us your background and target roles. We'll pair you with referrers when they're available.";
 "Technology" = "Technology";
+"Track your referrals" = "Track your referrals";
+"Review candidates, download CVs, and manage your referrals." = "Review candidates, download CVs, and manage your referrals.";
+"iRefair - Apply Now" = "iRefair - Apply Now";
+"iRefair is a free initiative created to support Lebanese and Arab newcomers in Canada by connecting them with professionals who can refer them for jobs." = "iRefair is a free initiative created to support Lebanese and Arab newcomers in Canada by connecting them with professionals who can refer them for jobs.";
 "Telecommunications" = "Telecommunications";
 "Temporary Work" = "Temporary Work";
 "Terms of Service" = "Terms of Service";

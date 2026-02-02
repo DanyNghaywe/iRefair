@@ -71,7 +71,6 @@ struct FeedbackSheet: View {
                         .disabled(isSubmitting || !networkMonitor.isConnected)
                     }
                 }
-                .navigationTitle(l("Feedback"))
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button(l("Close")) { dismiss() }

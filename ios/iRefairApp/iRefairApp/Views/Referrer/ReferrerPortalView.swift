@@ -17,6 +17,12 @@ struct ReferrerPortalView: View {
 
     var body: some View {
         IRefairForm {
+            IRefairCardHeader(
+                eyebrow: l("Referrer portal"),
+                title: l("Track your referrals"),
+                lead: l("Review candidates, download CVs, and manage your referrals.")
+            )
+
             if !networkMonitor.isConnected {
                 IRefairSection {
                     StatusBanner(text: l("You're offline. Connect to the internet to load portal data."), style: .warning)
