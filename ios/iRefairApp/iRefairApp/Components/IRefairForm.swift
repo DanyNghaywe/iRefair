@@ -46,7 +46,7 @@ struct IRefairCardHeader: View {
                 .foregroundStyle(Color.white)
                 .kerning(-0.5)
             Text(lead)
-                .font(Theme.font(size: 18))
+                .font(Theme.font(size: 16))
                 .foregroundStyle(Color.white.opacity(0.85))
                 .lineSpacing(4)
         }
