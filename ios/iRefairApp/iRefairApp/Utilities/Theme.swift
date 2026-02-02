@@ -42,6 +42,8 @@ enum Theme {
     static let appPaddingVertical: CGFloat = 20
     static let boardPadding: CGFloat = 18
     static let boardGap: CGFloat = 32
+    static let cardHeaderPaddingVertical: CGFloat = 18
+    static let cardHeaderTextGap: CGFloat = 10
     static let fieldGap: CGFloat = 20
     static let fieldLabelGap: CGFloat = 8
     static let fieldLabelFontSize: CGFloat = 14

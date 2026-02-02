@@ -35,7 +35,7 @@ struct IRefairCardHeader: View {
     let lead: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: Theme.cardHeaderTextGap) {
             Text(eyebrow)
                 .font(Theme.font(size: 11, weight: .semibold))
                 .foregroundStyle(Color.white.opacity(0.7))
@@ -51,5 +51,6 @@ struct IRefairCardHeader: View {
                 .lineSpacing(4)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.vertical, Theme.cardHeaderPaddingVertical)
     }
 }
