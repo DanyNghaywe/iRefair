@@ -37,6 +37,20 @@ struct ApplyResponse: APIResult {
     let error: String?
 }
 
+struct HiringCompaniesResponse: APIResult {
+    let ok: Bool
+    let companies: [HiringCompany]?
+    let error: String?
+}
+
+struct HiringCompany: Identifiable, Decodable {
+    var id: String { code }
+    let code: String
+    let name: String
+    let industry: String
+    let careersUrl: String?
+}
+
 struct ReferrerRegistrationResponse: APIResult {
     let ok: Bool
     let irref: String?

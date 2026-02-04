@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct ReferrerPortalView: View {
-    @AppStorage("apiBaseURL") private var apiBaseURL: String = "https://irefair.com"
+    private let apiBaseURL: String = APIConfig.baseURL
 
     @EnvironmentObject private var networkMonitor: NetworkMonitor
 
@@ -162,7 +162,7 @@ struct ReferrerPortalView: View {
             return
         }
         guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
-            errorMessage = l("Set your API base URL in Settings first.")
+            errorMessage = l("App configuration is missing API base URL.")
             return
         }
         guard networkMonitor.isConnected else {

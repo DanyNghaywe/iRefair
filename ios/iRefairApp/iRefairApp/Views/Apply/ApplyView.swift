@@ -2,7 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ApplyView: View {
-    @AppStorage("apiBaseURL") private var apiBaseURL: String = "https://irefair.com"
+    private let apiBaseURL: String = APIConfig.baseURL
 
     @EnvironmentObject private var networkMonitor: NetworkMonitor
 
@@ -54,6 +54,22 @@ struct ApplyView: View {
                                 .accessibilityLabel(l("iRCRN *"))
                         }
                         errorText("iCrn")
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(l("Need an iRCRN?"))
+                                .font(Theme.font(.caption))
+                                .foregroundStyle(Theme.muted)
+                            NavigationLink {
+                                HiringCompaniesView()
+                            } label: {
+                                HStack(spacing: 8) {
+                                    Text(l("Browse hiring companies"))
+                                    Spacer(minLength: 0)
+                                    Image(systemName: "chevron.right")
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .buttonStyle(IRefairGhostButtonStyle())
+                        }
                         IRefairField(l("Position *")) {
                             TextField("", text: $position)
                                 .accessibilityLabel(l("Position *"))
@@ -205,7 +221,7 @@ struct ApplyView: View {
         guard validate() else { return }
         guard let resumeFile else { return }
         guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
-            errorMessage = l("Set your API base URL in Settings first.")
+            errorMessage = l("App configuration is missing API base URL.")
             return
         }
         guard networkMonitor.isConnected else {

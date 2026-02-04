@@ -1,5 +1,16 @@
 import Foundation
 
+enum APIConfig {
+    static var baseURL: String {
+        let configured = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String ?? ""
+        let sanitizedConfigured = Validator.sanitizeBaseURL(configured)
+        if !sanitizedConfigured.isEmpty {
+            return sanitizedConfigured
+        }
+        return "https://irefair.com"
+    }
+}
+
 enum Validator {
     static func isValidEmail(_ value: String) -> Bool {
         let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)

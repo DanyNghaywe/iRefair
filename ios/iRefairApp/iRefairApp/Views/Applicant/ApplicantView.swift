@@ -2,7 +2,7 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 struct ApplicantView: View {
-    @AppStorage("apiBaseURL") private var apiBaseURL: String = "https://irefair.com"
+    private let apiBaseURL: String = APIConfig.baseURL
     @AppStorage("applicantUpdateToken") private var storedUpdateToken: String = ""
     @AppStorage("applicantUpdateAppId") private var storedUpdateAppId: String = ""
 
@@ -439,7 +439,7 @@ struct ApplicantView: View {
         }
         guard !isPrefillLoading else { return }
         guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
-            errorMessage = l("Set your API base URL in Settings first.")
+            errorMessage = l("App configuration is missing API base URL.")
             return
         }
         guard networkMonitor.isConnected else {
@@ -591,7 +591,7 @@ struct ApplicantView: View {
         statusMessage = nil
         guard validate() else { return }
         guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
-            errorMessage = l("Set your API base URL in Settings first.")
+            errorMessage = l("App configuration is missing API base URL.")
             return
         }
         guard networkMonitor.isConnected else {

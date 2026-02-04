@@ -13,9 +13,9 @@ This folder contains a SwiftUI native iOS client for iRefair. It talks to the ex
    - `open iRefair.xcodeproj`
 4. Run the Next.js API locally (optional, for development):
    - From the repo root: `npm run dev`
-5. In the app, open **Settings** and set the API Base URL:
+5. Configure the API base URL in `ios/iRefairApp/iRefairApp/Info.plist` under `API_BASE_URL`:
    - Local dev: `http://localhost:3000`
-   - Production: `https://irefair.com`
+   - Production: your deployed API host
 
 ## Features
 

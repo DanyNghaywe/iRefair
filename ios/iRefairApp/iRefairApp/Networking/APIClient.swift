@@ -51,6 +51,13 @@ enum APIClient {
         return try await sendWithRetry(request, retries: 2)
     }
 
+    static func loadHiringCompanies(baseURL: String) async throws -> HiringCompaniesResponse {
+        let url = try makeURL(baseURL: baseURL, path: "/api/hiring-companies")
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        return try await sendWithRetry(request, retries: 2)
+    }
+
     static func loadApplicantPrefill(baseURL: String, updateToken: String, appId: String) async throws -> ApplicantPrefillResponse {
         guard var components = URLComponents(url: try makeURL(baseURL: baseURL, path: "/api/applicant/data"), resolvingAgainstBaseURL: false) else {
             throw APIError(message: "Invalid API base URL.")
@@ -111,6 +118,9 @@ enum APIClient {
         guard let http = response as? HTTPURLResponse else {
             throw APIError(message: "Invalid server response.")
         }
+        guard isLikelyJSONResponse(http: http, data: data) else {
+            throw APIError(message: "Unexpected server response. Please try again later.")
+        }
         let decoded = try decode(T.self, from: data)
         if (200..<300).contains(http.statusCode) {
             return try decoded.validated()
@@ -162,5 +172,25 @@ enum APIClient {
         default:
             return "Network error. Please try again."
         }
+    }
+
+    private static func isLikelyJSONResponse(http: HTTPURLResponse, data: Data) -> Bool {
+        if let contentType = http.value(forHTTPHeaderField: "Content-Type")?.lowercased(),
+           contentType.contains("application/json") {
+            return true
+        }
+
+        guard let firstNonWhitespaceByte = data.first(where: { byte in
+            switch byte {
+            case 0x09, 0x0A, 0x0D, 0x20:
+                return false
+            default:
+                return true
+            }
+        }) else {
+            return false
+        }
+
+        return firstNonWhitespaceByte == 0x7B || firstNonWhitespaceByte == 0x5B
     }
 }
