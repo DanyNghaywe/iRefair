@@ -7,14 +7,14 @@ export const dynamic = 'force-dynamic';
 
 type Params = { id: string };
 
-export async function POST(request: NextRequest, context: { params: Params }) {
+export async function POST(request: NextRequest, context: { params: Promise<Params> }) {
   try {
     requireFounder(request);
   } catch {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 
-  const issueId = context.params.id;
+  const { id: issueId } = await context.params;
   if (!issueId) {
     return NextResponse.json({ ok: false, error: 'Missing issue id.' }, { status: 400 });
   }
