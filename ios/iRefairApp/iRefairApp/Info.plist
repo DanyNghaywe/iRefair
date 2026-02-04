@@ -24,7 +24,7 @@
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>API_BASE_URL</key>
-	<string>https://irefair.com</string>
+	<string>https://irefair.andbeyondca.com</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>NSAppTransportSecurity</key>

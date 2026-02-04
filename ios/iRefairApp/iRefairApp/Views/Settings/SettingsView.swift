@@ -8,10 +8,10 @@ struct SettingsView: View {
             IRefairScreen {
                 IRefairForm {
                     IRefairSection(l("Legal")) {
-                        if let privacyUrl = URL(string: "https://irefair.com/privacy") {
+                        if let privacyUrl = URL(string: "\(APIConfig.baseURL)/privacy") {
                             Link(l("Privacy Policy"), destination: privacyUrl)
                         }
-                        if let termsUrl = URL(string: "https://irefair.com/terms") {
+                        if let termsUrl = URL(string: "\(APIConfig.baseURL)/terms") {
                             Link(l("Terms of Service"), destination: termsUrl)
                         }
                     }

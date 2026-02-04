@@ -16,6 +16,7 @@ struct HiringCompaniesView: View {
     @State private var selectedCareersUrl: URL?
 
     private let pageSize = 20
+    private let loadingRows = 1
 
     var body: some View {
         IRefairScreen {
@@ -36,12 +37,8 @@ struct HiringCompaniesView: View {
                 }
 
                 if isLoading {
-                    IRefairSection {
-                        ProgressView(l("Loading..."))
-                    }
-                }
-
-                if !paginatedCompanies.isEmpty {
+                    loadingTableView
+                } else if !paginatedCompanies.isEmpty {
                     HiringTableContainer(border: tableBorder, fill: tableFill) {
                         VStack(alignment: .leading, spacing: 12) {
                             Text(l("iRCRN company list"))
@@ -95,7 +92,7 @@ struct HiringCompaniesView: View {
                                 .foregroundStyle(lightFaintText)
                         }
                     }
-                } else if !isLoading {
+                } else {
                     IRefairSection {
                         Text(l("No companies available yet."))
                             .foregroundStyle(lightFaintText)
@@ -226,6 +223,59 @@ struct HiringCompaniesView: View {
             paginationButton("»", label: l("Go to last page"), disabled: validPage == totalPages) {
                 currentPage = totalPages
             }
+        }
+    }
+
+    private var loadingTableView: some View {
+        HiringTableContainer(border: tableBorder, fill: tableFill) {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(l("iRCRN company list"))
+                    .font(Theme.font(.caption, weight: .semibold))
+                    .foregroundStyle(lightMutedText)
+                    .textCase(.uppercase)
+                    .kerning(1.4)
+                LazyVStack(alignment: .leading, spacing: 0) {
+                    ForEach(0..<loadingRows, id: \.self) { index in
+                        loadingRow(index: index)
+                    }
+                }
+                IRefairSkeletonBlock(width: 170, height: 12, cornerRadius: 999)
+                    .frame(maxWidth: .infinity)
+                Text(l("iRCRN: iRefair Company Reference Number"))
+                    .font(Theme.font(.caption))
+                    .foregroundStyle(lightFaintText)
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(l("Loading..."))
+    }
+
+    @ViewBuilder
+    private func loadingRow(index: Int) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            loadingLabeledValue(titleWidth: 56, valueWidth: 92, delay: 0.03)
+            loadingLabeledValue(titleWidth: 108, valueWidth: 220, delay: 0.06)
+            loadingLabeledValue(titleWidth: 74, valueWidth: 180, delay: 0.09)
+            VStack(alignment: .leading, spacing: 6) {
+                IRefairSkeletonBlock(width: 108, height: 10, cornerRadius: 999, delay: 0.11)
+                IRefairSkeletonBlock(width: 156, height: 16, cornerRadius: 8, delay: 0.14)
+            }
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(index.isMultiple(of: 2) ? rowTint : Color.clear)
+
+        if index < loadingRows - 1 {
+            Divider()
+                .background(dividerTone)
+        }
+    }
+
+    private func loadingLabeledValue(titleWidth: CGFloat, valueWidth: CGFloat, delay: Double) -> some View {
+        VStack(alignment: .leading, spacing: 5) {
+            IRefairSkeletonBlock(width: titleWidth, height: 10, cornerRadius: 999, delay: delay)
+            IRefairSkeletonBlock(width: valueWidth, height: 14, cornerRadius: 8, delay: delay + 0.02)
         }
     }
 

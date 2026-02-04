@@ -15,7 +15,7 @@ This folder contains a SwiftUI native iOS client for iRefair. It talks to the ex
    - From the repo root: `npm run dev`
 5. Configure the API base URL in `ios/iRefairApp/iRefairApp/Info.plist` under `API_BASE_URL`:
    - Local dev: `http://localhost:3000`
-   - Production: your deployed API host
+   - Production: your deployed API host (current: `https://irefair.andbeyondca.com`)
 
 ## Features
 
@@ -28,8 +28,8 @@ This folder contains a SwiftUI native iOS client for iRefair. It talks to the ex
   - `irefair://update?updateToken=...&appId=...` to prefill applicant updates
 - Universal links (https):
   - Update the `TEAMID` in `public/.well-known/apple-app-site-association`
-  - Example: `https://irefair.com/referrer/portal?token=...`
-  - Example: `https://irefair.com/applicant?updateToken=...&appId=...`
+  - Example: `https://irefair.andbeyondca.com/referrer/portal?token=...`
+  - Example: `https://irefair.andbeyondca.com/applicant?updateToken=...&appId=...`
 
 ## Notes
 

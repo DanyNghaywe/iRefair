@@ -119,7 +119,7 @@ enum APIClient {
             throw APIError(message: "Invalid server response.")
         }
         guard isLikelyJSONResponse(http: http, data: data) else {
-            throw APIError(message: "Unexpected server response. Please try again later.")
+            throw nonJSONResponseError(for: request, response: http, data: data)
         }
         let decoded = try decode(T.self, from: data)
         if (200..<300).contains(http.statusCode) {
@@ -192,5 +192,50 @@ enum APIClient {
         }
 
         return firstNonWhitespaceByte == 0x7B || firstNonWhitespaceByte == 0x5B
+    }
+
+    private static func nonJSONResponseError(for request: URLRequest, response http: HTTPURLResponse, data: Data) -> APIError {
+        let statusCode = http.statusCode
+        let requestHost = request.url?.host?.lowercased()
+        let responseHost = http.url?.host?.lowercased()
+
+        if let requestHost, let responseHost, requestHost != responseHost {
+            return APIError(
+                message: "API host redirected from \(requestHost) to \(responseHost). Update API_BASE_URL and try again."
+            )
+        }
+
+        if (300..<400).contains(statusCode),
+           let location = http.value(forHTTPHeaderField: "Location"),
+           !location.isEmpty {
+            return APIError(message: "API request was redirected to \(location). Update API_BASE_URL and try again.")
+        }
+
+        if let preview = responsePreview(data), !preview.isEmpty {
+            return APIError(message: "Unexpected server response (HTTP \(statusCode)): \(preview)")
+        }
+
+        return APIError(message: "Unexpected server response (HTTP \(statusCode)). Please try again later.")
+    }
+
+    private static func responsePreview(_ data: Data, maxLength: Int = 140) -> String? {
+        guard let text = String(data: data, encoding: .utf8) else {
+            return nil
+        }
+
+        let normalized = text
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard !normalized.isEmpty else {
+            return nil
+        }
+
+        if normalized.count <= maxLength {
+            return normalized
+        }
+
+        let endIndex = normalized.index(normalized.startIndex, offsetBy: maxLength)
+        return "\(normalized[..<endIndex])..."
     }
 }

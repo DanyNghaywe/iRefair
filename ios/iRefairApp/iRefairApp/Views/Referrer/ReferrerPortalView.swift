@@ -14,6 +14,7 @@ struct ReferrerPortalView: View {
     @State private var statusMessage: String?
 
     @State private var selectedApplicant: ReferrerApplicant?
+    private let loadingRows = 1
 
     var body: some View {
         IRefairForm {
@@ -75,12 +76,10 @@ struct ReferrerPortalView: View {
             }
 
             if isLoading {
-                IRefairSection {
-                    ProgressView(l("Loading..."))
+                IRefairSection(l("Applicants")) {
+                    loadingApplicantsRows
                 }
-            }
-
-            if !applicants.isEmpty {
+            } else if !applicants.isEmpty {
                 IRefairSection(l("Applicants")) {
                     ForEach(applicants) { applicant in
                         VStack(alignment: .leading, spacing: 4) {
@@ -104,7 +103,7 @@ struct ReferrerPortalView: View {
                         .padding(.vertical, 4)
                     }
                 }
-            } else if referrer != nil && !isLoading {
+            } else if referrer != nil {
                 IRefairSection {
                     Text(l("No applicants assigned yet."))
                         .foregroundStyle(Theme.muted)
@@ -135,6 +134,34 @@ struct ReferrerPortalView: View {
                 Task { await loadPortal() }
             }
         }
+    }
+
+    private var loadingApplicantsRows: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(0..<loadingRows, id: \.self) { index in
+                HStack(alignment: .top, spacing: 12) {
+                    IRefairSkeletonBlock(width: 32, height: 32, cornerRadius: 16, delay: Double(index) * 0.03)
+
+                    VStack(alignment: .leading, spacing: 6) {
+                        IRefairSkeletonBlock(width: 180, height: 16, cornerRadius: 8, delay: Double(index) * 0.03 + 0.02)
+                        IRefairSkeletonBlock(width: 140, height: 12, cornerRadius: 999, delay: Double(index) * 0.03 + 0.04)
+                        IRefairSkeletonBlock(width: 118, height: 10, cornerRadius: 999, delay: Double(index) * 0.03 + 0.06)
+                    }
+
+                    Spacer(minLength: 8)
+
+                    IRefairSkeletonBlock(width: 96, height: 32, cornerRadius: 12, delay: Double(index) * 0.03 + 0.08)
+                }
+                .padding(.vertical, 8)
+
+                if index < loadingRows - 1 {
+                    Divider()
+                        .background(Color.white.opacity(0.12))
+                }
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(l("Loading..."))
     }
 
     private func extractToken(from input: String) -> String {

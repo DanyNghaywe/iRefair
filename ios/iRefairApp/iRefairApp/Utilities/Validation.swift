@@ -7,7 +7,7 @@ enum APIConfig {
         if !sanitizedConfigured.isEmpty {
             return sanitizedConfigured
         }
-        return "https://irefair.com"
+        return "https://irefair.andbeyondca.com"
     }
 }
 
