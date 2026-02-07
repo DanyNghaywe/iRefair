@@ -47,8 +47,8 @@ struct HiringCompaniesView: View {
                                 .foregroundStyle(lightMutedText)
                                 .textCase(.uppercase)
                                 .kerning(1.4)
-                            LazyVStack(alignment: .leading, spacing: 0) {
-                                ForEach(Array(paginatedCompanies.enumerated()), id: \.element.id) { index, company in
+                            LazyVStack(alignment: .leading, spacing: 10) {
+                                ForEach(paginatedCompanies, id: \.id) { company in
                                     VStack(alignment: .leading, spacing: 12) {
                                         labeledValue(title: l("iRCRN"), value: company.code)
                                         labeledValue(title: l("Company Name"), value: company.name)
@@ -77,14 +77,17 @@ struct HiringCompaniesView: View {
                                             }
                                         }
                                     }
-                                    .padding(.vertical, 10)
-                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 14)
+                                    .padding(.horizontal, 14)
                                     .frame(maxWidth: .infinity, alignment: .leading)
-                                    .background(index.isMultiple(of: 2) ? rowTint : Color.clear)
-                                    if index < paginatedCompanies.count - 1 {
-                                        Divider()
-                                            .background(dividerTone)
-                                    }
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                            .fill(rowCardFill)
+                                            .overlay(
+                                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                    .stroke(rowCardBorder, lineWidth: 1)
+                                            )
+                                    )
                                 }
                             }
                             if totalPages > 1 {
@@ -239,7 +242,7 @@ struct HiringCompaniesView: View {
                     .foregroundStyle(lightMutedText)
                     .textCase(.uppercase)
                     .kerning(1.4)
-                LazyVStack(alignment: .leading, spacing: 0) {
+                LazyVStack(alignment: .leading, spacing: 10) {
                     ForEach(0..<loadingRows, id: \.self) { index in
                         loadingRow(index: index)
                     }
@@ -266,15 +269,17 @@ struct HiringCompaniesView: View {
                 IRefairSkeletonBlock(width: 156, height: 16, cornerRadius: 8, delay: 0.14)
             }
         }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 10)
+        .padding(.vertical, 14)
+        .padding(.horizontal, 14)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(index.isMultiple(of: 2) ? rowTint : Color.clear)
-
-        if index < loadingRows - 1 {
-            Divider()
-                .background(dividerTone)
-        }
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(rowCardFill)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(rowCardBorder, lineWidth: 1)
+                )
+        )
     }
 
     private func loadingLabeledValue(titleWidth: CGFloat, valueWidth: CGFloat, delay: Double) -> some View {
@@ -369,10 +374,6 @@ struct HiringCompaniesView: View {
         Color(hex: 0xE0F2FF)
     }
 
-    private var dividerTone: Color {
-        Color.white.opacity(0.12)
-    }
-
     private var tableBorder: Color {
         Color.white.opacity(0.16)
     }
@@ -381,8 +382,12 @@ struct HiringCompaniesView: View {
         Color.white.opacity(0.02)
     }
 
-    private var rowTint: Color {
+    private var rowCardFill: Color {
         Color.white.opacity(0.06)
+    }
+
+    private var rowCardBorder: Color {
+        Color.white.opacity(0.12)
     }
 
     @MainActor
