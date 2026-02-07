@@ -132,16 +132,62 @@ struct IRefairPickerLabel: View {
     var isPlaceholder: Bool = false
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 0) {
             Text(text)
-                .foregroundStyle(isPlaceholder ? Theme.muted : Theme.ink)
+                .font(Theme.font(size: 16))
+                .foregroundStyle(Theme.ink)
                 .lineLimit(1)
                 .truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
             Spacer()
-            Image(systemName: "chevron.down")
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(Theme.muted)
+            IRefairWebChevron()
         }
+    }
+}
+
+private struct IRefairSelectInputModifier: ViewModifier {
+    let isFocused: Bool
+
+    func body(content: Content) -> some View {
+        let shape = RoundedRectangle(cornerRadius: Theme.inputRadius, style: .continuous)
+        let fill = isFocused ? Theme.inputBackgroundFocused : Theme.inputBackground
+        let ring = Theme.inputBorderFocused
+        let border = Color.white.opacity(0.24)
+        content
+            .padding(.vertical, 12)
+            .padding(.horizontal, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .frame(minHeight: 44)
+            .background(fill, in: shape)
+            .overlay(
+                shape.stroke(border, lineWidth: 1)
+            )
+            .overlay(
+                shape.stroke(ring, lineWidth: isFocused ? 2 : 0)
+            )
+            .animation(.easeInOut(duration: 0.15), value: isFocused)
+    }
+}
+
+private struct IRefairWebChevron: View {
+    var body: some View {
+        Path { path in
+            path.move(to: CGPoint(x: 2, y: 3))
+            path.addLine(to: CGPoint(x: 7, y: 7))
+            path.addLine(to: CGPoint(x: 12, y: 3))
+        }
+        .stroke(
+            Color(hex: 0x4B5563),
+            style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round)
+        )
+        .frame(width: 14, height: 10)
+        .accessibilityHidden(true)
+    }
+}
+
+extension View {
+    func irefairSelectInput(isFocused: Bool = false) -> some View {
+        modifier(IRefairSelectInputModifier(isFocused: isFocused))
     }
 }
 
@@ -151,6 +197,8 @@ struct IRefairMenuPicker<SelectionValue: Hashable, Content: View>: View {
     let isPlaceholder: Bool
     @Binding var selection: SelectionValue
     let content: Content
+    @State private var showsFocusState = false
+    @State private var focusResetTask: Task<Void, Never>?
 
     init(_ title: String, displayValue: String, isPlaceholder: Bool = false, selection: Binding<SelectionValue>, @ViewBuilder content: () -> Content) {
         self.title = title
@@ -163,16 +211,55 @@ struct IRefairMenuPicker<SelectionValue: Hashable, Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.fieldLabelGap) {
             IRefairFieldLabel(text: title)
-            Picker(selection: $selection) {
-                content
-            } label: {
-                IRefairPickerLabel(text: displayValue, isPlaceholder: isPlaceholder)
-            }
-            .pickerStyle(.menu)
-            .irefairInput()
-            .buttonStyle(.plain)
+            IRefairPickerLabel(text: displayValue, isPlaceholder: isPlaceholder)
+                .allowsHitTesting(false)
+                .irefairSelectInput(isFocused: showsFocusState)
+                .overlay {
+                    Picker(selection: $selection) {
+                        content
+                    } label: {
+                        EmptyView()
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .contentShape(Rectangle())
+                    // Keep native iOS picker interaction while rendering the custom web-style shell.
+                    .opacity(0.015)
+                }
+            .frame(maxWidth: .infinity)
+            .simultaneousGesture(
+                TapGesture().onEnded {
+                    activateFocusState()
+                }
+            )
+            .accessibilityElement(children: .ignore)
             .accessibilityLabel(title)
+            .accessibilityValue(displayValue)
         }
+        .onChange(of: selection) { _ in
+            deactivateFocusState()
+        }
+        .onDisappear {
+            focusResetTask?.cancel()
+            focusResetTask = nil
+        }
+    }
+
+    private func activateFocusState() {
+        focusResetTask?.cancel()
+        showsFocusState = true
+        focusResetTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            showsFocusState = false
+            focusResetTask = nil
+        }
+    }
+
+    private func deactivateFocusState() {
+        focusResetTask?.cancel()
+        focusResetTask = nil
+        showsFocusState = false
     }
 }
 
