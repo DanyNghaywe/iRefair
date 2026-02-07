@@ -93,7 +93,7 @@ struct ApplyView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Text(l("Need an iRCRN?"))
                                 .font(Theme.font(.caption))
-                                .foregroundStyle(Theme.muted)
+                                .foregroundStyle(Color.white.opacity(0.82))
                             NavigationLink {
                                 HiringCompaniesView()
                             } label: {
