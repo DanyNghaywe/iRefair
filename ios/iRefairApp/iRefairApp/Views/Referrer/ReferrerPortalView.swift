@@ -32,7 +32,7 @@ struct ReferrerPortalView: View {
 
             IRefairSection(l("Access token")) {
                 IRefairField(l("Paste token or portal link")) {
-                    TextField("", text: $tokenInput)
+                    IRefairTextField("", text: $tokenInput)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .accessibilityLabel(l("Paste token or portal link"))

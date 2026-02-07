@@ -39,17 +39,17 @@ struct ApplyView: View {
 
                     IRefairSection(l("Application details")) {
                         IRefairField(l("Applicant ID (iRAIN) *")) {
-                            TextField("", text: $applicantId)
+                            IRefairTextField("", text: $applicantId)
                                 .accessibilityLabel(l("Applicant ID (iRAIN) *"))
                         }
                         errorText("applicantId")
                         IRefairField(l("Applicant Key *")) {
-                            TextField("", text: $applicantKey)
+                            IRefairTextField("", text: $applicantKey)
                                 .accessibilityLabel(l("Applicant Key *"))
                         }
                         errorText("applicantKey")
                         IRefairField(l("iRCRN *")) {
-                            TextField("", text: $iCrn)
+                            IRefairTextField("", text: $iCrn)
                                 .textInputAutocapitalization(.characters)
                                 .accessibilityLabel(l("iRCRN *"))
                         }
@@ -71,12 +71,12 @@ struct ApplyView: View {
                             .buttonStyle(IRefairGhostButtonStyle())
                         }
                         IRefairField(l("Position *")) {
-                            TextField("", text: $position)
+                            IRefairTextField("", text: $position)
                                 .accessibilityLabel(l("Position *"))
                         }
                         errorText("position")
                         IRefairField(l("Reference number")) {
-                            TextField("", text: $referenceNumber)
+                            IRefairTextField("", text: $referenceNumber)
                                 .accessibilityLabel(l("Reference number"))
                         }
                     }

@@ -1,35 +1,93 @@
 import SwiftUI
 
-struct IRefairTextFieldStyle: TextFieldStyle {
-    func _body(configuration: TextField<_Label>) -> some View {
-        let shape = RoundedRectangle(cornerRadius: Theme.inputRadius, style: .continuous)
-        configuration
-            .foregroundStyle(Theme.ink)
-            .padding(.vertical, 12)
-            .padding(.horizontal, 14)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .frame(minHeight: 44)
-            .background(Theme.inputBackground, in: shape)
-            .background(.ultraThinMaterial, in: shape)
-            .overlay(
-                shape.stroke(Theme.inputBorder, lineWidth: 1)
-            )
+private struct IRefairInputFocusedKey: EnvironmentKey {
+    static let defaultValue = false
+}
+
+extension EnvironmentValues {
+    var irefairInputFocused: Bool {
+        get { self[IRefairInputFocusedKey.self] }
+        set { self[IRefairInputFocusedKey.self] = newValue }
     }
 }
 
-struct IRefairInputModifier: ViewModifier {
-    func body(content: Content) -> some View {
+private struct IRefairInputChrome<Content: View>: View {
+    let isFocused: Bool
+    let content: Content
+
+    init(isFocused: Bool, @ViewBuilder content: () -> Content) {
+        self.isFocused = isFocused
+        self.content = content()
+    }
+
+    var body: some View {
         let shape = RoundedRectangle(cornerRadius: Theme.inputRadius, style: .continuous)
+        let fill = isFocused ? Theme.inputBackgroundFocused : Theme.inputBackground
+        let border = isFocused ? Theme.inputBorderFocused : Theme.inputBorder
+        let borderWidth: CGFloat = isFocused ? 2 : 1
+
         content
             .padding(.vertical, 12)
             .padding(.horizontal, 14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .frame(minHeight: 44)
-            .background(Theme.inputBackground, in: shape)
-            .background(.ultraThinMaterial, in: shape)
+            .background(fill, in: shape)
             .overlay(
-                shape.stroke(Theme.inputBorder, lineWidth: 1)
+                shape.stroke(border, lineWidth: borderWidth)
             )
+            .animation(.easeInOut(duration: 0.15), value: isFocused)
+    }
+}
+
+struct IRefairTextField: View {
+    private let title: String
+    @Binding private var text: String
+    private let axis: Axis
+
+    @FocusState private var isFocused: Bool
+
+    init(_ title: String, text: Binding<String>) {
+        self.title = title
+        self._text = text
+        self.axis = .horizontal
+    }
+
+    init(_ title: String, text: Binding<String>, axis: Axis) {
+        self.title = title
+        self._text = text
+        self.axis = axis
+    }
+
+    var body: some View {
+        Group {
+            switch axis {
+            case .horizontal:
+                SwiftUI.TextField(title, text: $text)
+            case .vertical:
+                SwiftUI.TextField(title, text: $text, axis: .vertical)
+            }
+        }
+        .focused($isFocused)
+        .environment(\.irefairInputFocused, isFocused)
+    }
+}
+
+struct IRefairTextFieldStyle: TextFieldStyle {
+    @Environment(\.irefairInputFocused) private var isFocused
+
+    func _body(configuration: TextField<_Label>) -> some View {
+        IRefairInputChrome(isFocused: isFocused) {
+            configuration
+                .foregroundStyle(Theme.ink)
+        }
+    }
+}
+
+struct IRefairInputModifier: ViewModifier {
+    func body(content: Content) -> some View {
+        IRefairInputChrome(isFocused: false) {
+            content
+        }
     }
 }
 

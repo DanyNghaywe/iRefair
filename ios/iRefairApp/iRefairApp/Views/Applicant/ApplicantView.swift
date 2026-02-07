@@ -98,21 +98,21 @@ struct ApplicantView: View {
 
                     IRefairSection(l("Personal information")) {
                         IRefairField(l("First name *")) {
-                            TextField("", text: $firstName)
+                            IRefairTextField("", text: $firstName)
                                 .accessibilityLabel(l("First name *"))
                         }
                         errorText("firstName")
                         IRefairField(l("Middle name")) {
-                            TextField("", text: $middleName)
+                            IRefairTextField("", text: $middleName)
                                 .accessibilityLabel(l("Middle name"))
                         }
                         IRefairField(l("Last name *")) {
-                            TextField("", text: $familyName)
+                            IRefairTextField("", text: $familyName)
                                 .accessibilityLabel(l("Last name *"))
                         }
                         errorText("familyName")
                         IRefairField(l("Email *")) {
-                            TextField("", text: $email)
+                            IRefairTextField("", text: $email)
                                 .keyboardType(.emailAddress)
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()
@@ -120,7 +120,7 @@ struct ApplicantView: View {
                         }
                         errorText("email")
                         IRefairField(l("Phone *")) {
-                            TextField("", text: $phone)
+                            IRefairTextField("", text: $phone)
                                 .keyboardType(.phonePad)
                                 .accessibilityLabel(l("Phone *"))
                         }
@@ -156,7 +156,7 @@ struct ApplicantView: View {
                         errorText("languages")
                         if languages.contains("Other") {
                             IRefairField(l("Other languages *")) {
-                                TextField("", text: $languagesOther)
+                                IRefairTextField("", text: $languagesOther)
                                     .accessibilityLabel(l("Other languages *"))
                             }
                             errorText("languagesOther")
@@ -236,7 +236,7 @@ struct ApplicantView: View {
                         errorText("industryType")
                         if industryType == "Other" {
                             IRefairField(l("Industry details *")) {
-                                TextField("", text: $industryOther)
+                                IRefairTextField("", text: $industryOther)
                                     .accessibilityLabel(l("Industry details *"))
                             }
                             errorText("industryOther")
@@ -254,7 +254,7 @@ struct ApplicantView: View {
                         }
                         errorText("employmentStatus")
                         IRefairField(l("LinkedIn profile")) {
-                            TextField("", text: $linkedin)
+                            IRefairTextField("", text: $linkedin)
                                 .keyboardType(.URL)
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()

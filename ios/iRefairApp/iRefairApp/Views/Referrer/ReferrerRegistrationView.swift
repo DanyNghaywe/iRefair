@@ -55,12 +55,12 @@ struct ReferrerRegistrationView: View {
 
             IRefairSection(l("Become a referrer")) {
                 IRefairField(l("Full name *")) {
-                    TextField("", text: $fullName)
+                    IRefairTextField("", text: $fullName)
                         .accessibilityLabel(l("Full name *"))
                 }
                 errorText("name")
                 IRefairField(l("Work email *")) {
-                    TextField("", text: $email)
+                    IRefairTextField("", text: $email)
                         .keyboardType(.emailAddress)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -68,21 +68,21 @@ struct ReferrerRegistrationView: View {
                 }
                 errorText("email")
                 IRefairField(l("Phone")) {
-                    TextField("", text: $phone)
+                    IRefairTextField("", text: $phone)
                         .accessibilityLabel(l("Phone"))
                 }
                 errorText("phone")
                 IRefairField(l("Country")) {
-                    TextField("", text: $country)
+                    IRefairTextField("", text: $country)
                         .accessibilityLabel(l("Country"))
                 }
                 errorText("country")
                 IRefairField(l("Company name")) {
-                    TextField("", text: $company)
+                    IRefairTextField("", text: $company)
                         .accessibilityLabel(l("Company name"))
                 }
                 IRefairField(l("Careers portal URL")) {
-                    TextField("", text: $careersPortal)
+                    IRefairTextField("", text: $careersPortal)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -103,7 +103,7 @@ struct ReferrerRegistrationView: View {
                 errorText("companyIndustry")
                 if companyIndustry == "Other" {
                     IRefairField(l("Other industry")) {
-                        TextField("", text: $companyIndustryOther)
+                        IRefairTextField("", text: $companyIndustryOther)
                             .accessibilityLabel(l("Other industry"))
                     }
                     errorText("companyIndustryOther")
@@ -121,7 +121,7 @@ struct ReferrerRegistrationView: View {
                 }
                 errorText("workType")
                 IRefairField(l("LinkedIn profile")) {
-                    TextField("", text: $linkedIn)
+                    IRefairTextField("", text: $linkedIn)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
