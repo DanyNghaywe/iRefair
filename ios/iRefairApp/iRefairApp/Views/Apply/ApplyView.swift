@@ -3,7 +3,10 @@ import UniformTypeIdentifiers
 
 struct ApplyView: View {
     private let apiBaseURL: String = APIConfig.baseURL
+    private let moreInfoURL = URL(string: "https://andbeyondca.com/impact/")
+    private let applyLinkTopSpacing: CGFloat = 8
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @EnvironmentObject private var networkMonitor: NetworkMonitor
 
     @State private var applicantId = ""
@@ -25,11 +28,44 @@ struct ApplyView: View {
         NavigationStack {
             IRefairScreen {
                 IRefairForm {
-                    IRefairCardHeader(
-                        eyebrow: l("Application"),
-                        title: l("iRefair - Apply Now"),
-                        lead: l("iRefair is a free initiative created to support Lebanese and Arab newcomers in Canada by connecting them with professionals who can refer them for jobs.")
-                    )
+                    VStack(alignment: .leading, spacing: Theme.cardHeaderTextGap) {
+                        Text(l("Application"))
+                            .font(Theme.font(size: 11, weight: .semibold))
+                            .foregroundStyle(Color.white.opacity(0.7))
+                            .textCase(.uppercase)
+                            .kerning(1.1)
+                        Text(l("iRefair - Apply Now"))
+                            .font(Theme.font(size: 24, weight: .bold))
+                            .foregroundStyle(Color.white)
+                            .kerning(-0.5)
+                        Text(l("iRefair is a free initiative created to support Lebanese and Arab newcomers in Canada by connecting them with professionals who can refer them for jobs."))
+                            .font(Theme.font(size: 16))
+                            .foregroundStyle(Color.white.opacity(0.85))
+                            .lineSpacing(4)
+                        if let moreInfoURL {
+                            HStack(spacing: 4) {
+                                Text(l("For more info, visit"))
+                                    .font(Theme.font(size: applyLinkFontSize))
+                                Link(destination: moreInfoURL) {
+                                    Text(l("&BeyondCA"))
+                                        .font(Theme.font(size: applyLinkFontSize, weight: .bold))
+                                        .foregroundStyle(Color.white.opacity(0.95))
+                                        .padding(.bottom, 0)
+                                        .overlay(alignment: .bottom) {
+                                            Rectangle()
+                                                .fill(Color.white.opacity(0.95))
+                                                .frame(height: 1.1)
+                                                .offset(y: -0.25)
+                                        }
+                                }
+                            }
+                            .foregroundStyle(Color.white.opacity(0.95))
+                            .tint(Color.white.opacity(0.95))
+                            .padding(.top, applyLinkTopSpacing - Theme.cardHeaderTextGap)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, Theme.cardHeaderPaddingVertical)
 
                     if !networkMonitor.isConnected {
                         IRefairSection {
@@ -151,6 +187,10 @@ struct ApplyView: View {
         if let doc = UTType(filenameExtension: "doc") { types.append(doc) }
         if let docx = UTType(filenameExtension: "docx") { types.append(docx) }
         return types
+    }
+
+    private var applyLinkFontSize: CGFloat {
+        horizontalSizeClass == .compact ? 15 : 16
     }
 
     private func handlePickedFile(_ url: URL) {
