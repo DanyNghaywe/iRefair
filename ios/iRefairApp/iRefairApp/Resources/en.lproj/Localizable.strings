@@ -25,7 +25,7 @@
 "Careers portal URL" = "Careers portal URL";
 "Careers portal URL is required." = "Careers portal URL is required.";
 "Careers website" = "Careers website";
-"Choose the position you want to apply for and note the company iRCRN." = "Choose the position you want to apply for and note the company iRCRN.";
+"Choose the position you want to apply for and note the company iRCRN." = "Choose the position you want to apply for and note the company **iRCRN**.";
 "Choose file" = "Choose file";
 "Clear" = "Clear";
 "Clear saved referrer token" = "Clear saved referrer token";
@@ -34,7 +34,7 @@
 "Company Name" = "Company Name";
 "Company industry" = "Company industry";
 "Company name" = "Company name (optional)";
-"Complete the Apply Now form on the iRefair website using your iRAIN and the company iRCRN. Do not apply directly on the company website." = "Complete the Apply Now form on the iRefair website using your iRAIN and the company iRCRN. Do not apply directly on the company website.";
+"Complete the Apply Now form on the iRefair website using your iRAIN and the company iRCRN. Do not apply directly on the company website." = "Complete the **Apply Now** form on the iRefair website using your **iRAIN** and the company **iRCRN**. Do not apply directly on the company website.";
 "Compliance / Audit" = "Compliance / Audit";
 "Compliance/ Audit/ Monitoring & Evaluation" = "Compliance/ Audit/ Monitoring & Evaluation";
 "Consent" = "Consent";
@@ -85,7 +85,7 @@
 "I agree to be contacted by iRefair." = "I agree to be contacted by iRefair.";
 "ID" = "ID";
 "Once you have identified a suitable vacancy, keep the company " = "Once you have identified a suitable vacancy, keep the company ";
-"Open the careers website of the company you are interested in." = "Open the careers website of the company you are interested in.";
+"Open the careers website of the company you are interested in." = "Open the **careers website** of the company you are interested in.";
 "Page %d of %d" = "Page %d of %d";
 "Return to iRefair and use the Apply page to submit your application." = "Return to iRefair and use the Apply page to submit your application.";
 "Review the companies listed in the table below." = "Review the companies listed in the table below.";
@@ -198,7 +198,7 @@
 "Review candidates, download CVs, and manage your referrals." = "Review candidates, download CVs, and manage your referrals.";
 "iRCRN" = "iRCRN";
 "iRCRN company list" = "iRCRN company list";
-"iRCRN: iRefair Company Reference Number" = "iRCRN: iRefair Company Reference Number";
+"iRCRN: iRefair Company Reference Number" = "**iRCRN:** iRefair Company Reference Number";
 "iRefair - Apply Now" = "iRefair - Apply Now";
 "iRefair is a free initiative created to support Lebanese and Arab newcomers in Canada by connecting them with professionals who can refer them for jobs." = "iRefair is a free initiative created to support Lebanese and Arab newcomers in Canada by connecting them with professionals who can refer them for jobs.";
 "Telecommunications" = "Telecommunications";

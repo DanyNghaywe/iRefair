@@ -25,7 +25,7 @@
 "Careers portal URL" = "URL du portail carrières";
 "Careers portal URL is required." = "L'URL du portail carrières est requise.";
 "Careers website" = "Site carrières";
-"Choose the position you want to apply for and note the company iRCRN." = "Choisissez le poste auquel vous souhaitez postuler et notez le iRCRN de l'entreprise.";
+"Choose the position you want to apply for and note the company iRCRN." = "Choisissez le poste auquel vous souhaitez postuler et notez le **iRCRN** de l'entreprise.";
 "Choose file" = "Choisir un fichier";
 "Clear" = "Effacer";
 "Clear saved referrer token" = "Effacer le jeton enregistré";
@@ -34,7 +34,7 @@
 "Company Name" = "Nom de l'entreprise";
 "Company industry" = "Secteur de l'entreprise";
 "Company name" = "Nom de l'entreprise (optionnel)";
-"Complete the Apply Now form on the iRefair website using your iRAIN and the company iRCRN. Do not apply directly on the company website." = "Remplissez le formulaire Postuler maintenant sur le site iRefair en utilisant votre iRAIN et le iRCRN de l'entreprise. Ne postulez pas directement sur le site de l'entreprise.";
+"Complete the Apply Now form on the iRefair website using your iRAIN and the company iRCRN. Do not apply directly on the company website." = "Remplissez le formulaire **Postuler maintenant** sur le site iRefair en utilisant votre **iRAIN** et le **iRCRN** de l'entreprise. Ne postulez pas directement sur le site de l'entreprise.";
 "Compliance / Audit" = "Conformité / Audit";
 "Compliance/ Audit/ Monitoring & Evaluation" = "Conformité / Audit / Suivi & Évaluation";
 "Consent" = "Consentement";
@@ -85,7 +85,7 @@
 "I agree to be contacted by iRefair." = "J'accepte d'être contacté(e) par iRefair.";
 "ID" = "ID";
 "Once you have identified a suitable vacancy, keep the company " = "Une fois que vous avez identifié un poste approprié, gardez le ";
-"Open the careers website of the company you are interested in." = "Ouvrez le site carrières de l'entreprise qui vous intéresse.";
+"Open the careers website of the company you are interested in." = "Ouvrez le **site carrières** de l'entreprise qui vous intéresse.";
 "Page %d of %d" = "Page %d sur %d";
 "Return to iRefair and use the Apply page to submit your application." = "Revenez sur iRefair et utilisez la page Postuler pour soumettre votre candidature.";
 "Review the companies listed in the table below." = "Consultez les entreprises listées dans le tableau ci-dessous.";
@@ -198,7 +198,7 @@
 "Review candidates, download CVs, and manage your referrals." = "Examinez les candidats, téléchargez les CV et gérez vos recommandations.";
 "iRCRN" = "iRCRN";
 "iRCRN company list" = "Liste des entreprises iRCRN";
-"iRCRN: iRefair Company Reference Number" = "iRCRN : Numéro de référence d'entreprise iRefair";
+"iRCRN: iRefair Company Reference Number" = "**iRCRN :** Numéro de référence d'entreprise iRefair";
 "iRefair - Apply Now" = "iRefair - Postuler maintenant";
 "iRefair is a free initiative created to support Lebanese and Arab newcomers in Canada by connecting them with professionals who can refer them for jobs." = "iRefair est une initiative gratuite créée pour soutenir les nouveaux arrivants libanais et arabes au Canada en les mettant en contact avec des professionnels qui peuvent les recommander pour des emplois.";
 "Telecommunications" = "Télécommunications";

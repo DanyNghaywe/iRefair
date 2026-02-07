@@ -17,6 +17,7 @@ struct HiringCompaniesView: View {
 
     private let pageSize = 20
     private let loadingRows = 1
+    private let applyNowInlineLinkURL = URL(string: "irefair://apply-now")!
 
     var body: some View {
         IRefairScreen {
@@ -54,8 +55,10 @@ struct HiringCompaniesView: View {
                                         labeledValue(title: l("Industry"), value: company.industry)
                                         VStack(alignment: .leading, spacing: 6) {
                                             Text(l("Careers website"))
-                                                .font(Theme.font(.caption, weight: .semibold))
-                                                .foregroundStyle(lightMutedText)
+                                                .font(Theme.font(size: 12, weight: .bold))
+                                                .foregroundStyle(tableLabelText)
+                                                .textCase(.uppercase)
+                                                .kerning(0.6)
                                             if let careersLink = normalizedCareersUrl(from: company) {
                                                 Button {
                                                     selectedCareersUrl = careersLink
@@ -87,8 +90,8 @@ struct HiringCompaniesView: View {
                             if totalPages > 1 {
                                 paginationView
                             }
-                            Text(l("iRCRN: iRefair Company Reference Number"))
-                                .font(Theme.font(.caption))
+                            Text(localizedMarkdown("iRCRN: iRefair Company Reference Number"))
+                                .font(Theme.font(.subheadline))
                                 .foregroundStyle(lightFaintText)
                         }
                     }
@@ -107,17 +110,8 @@ struct HiringCompaniesView: View {
 
                 VStack(alignment: .leading, spacing: 10) {
                     followUpText
-                        .font(Theme.font(.subheadline))
-                        .foregroundStyle(lightText)
-                    Button {
-                        dismiss()
-                    } label: {
-                        Text(l("Apply Now"))
-                    }
-                    .buttonStyle(HiringLinkButtonStyle(color: linkText, weight: .bold))
-                    .frame(maxWidth: .infinity, alignment: .leading)
                     Text(l("We wish you success with your applications."))
-                        .font(Theme.font(.caption))
+                        .font(Theme.font(.subheadline, weight: .medium))
                         .foregroundStyle(lightFaintText)
                 }
             }
@@ -150,12 +144,12 @@ struct HiringCompaniesView: View {
         }
     }
 
-    private var steps: [String] {
+    private var steps: [AttributedString] {
         [
-            l("Review the companies listed in the table below."),
-            l("Open the careers website of the company you are interested in."),
-            l("Choose the position you want to apply for and note the company iRCRN."),
-            l("Complete the Apply Now form on the iRefair website using your iRAIN and the company iRCRN. Do not apply directly on the company website."),
+            localizedMarkdown("Review the companies listed in the table below."),
+            localizedMarkdown("Open the careers website of the company you are interested in."),
+            localizedMarkdown("Choose the position you want to apply for and note the company iRCRN."),
+            localizedMarkdown("Complete the Apply Now form on the iRefair website using your iRAIN and the company iRCRN. Do not apply directly on the company website."),
         ]
     }
 
@@ -176,14 +170,25 @@ struct HiringCompaniesView: View {
         return Array(companies[startIndex..<endIndex])
     }
 
-    private var followUpText: Text {
-        Text(l("Once you have identified a suitable vacancy, keep the company ")) +
-            Text("iRCRN").bold() +
-            Text(l(" and your ")) +
-            Text("iRAIN").bold() +
-            Text(l(" ready, then submit your application through the ")) +
-            Text(l("Apply Now")).bold() +
-            Text(l(" page on iRefair."))
+    private var followUpText: some View {
+        Text(
+            localizedMarkdown(
+                "\(l("Once you have identified a suitable vacancy, keep the company "))**iRCRN**\(l(" and your "))**iRAIN**\(l(" ready, then submit your application through the "))[**\(l("Apply Now"))**](\(applyNowInlineLinkURL.absoluteString))\(l(" page on iRefair."))"
+            )
+        )
+        .font(Theme.font(.subheadline, weight: .bold))
+        .foregroundStyle(lightText)
+        .tint(linkText)
+        .environment(
+            \.openURL,
+            OpenURLAction { url in
+                guard url == applyNowInlineLinkURL else {
+                    return .systemAction
+                }
+                dismiss()
+                return .handled
+            }
+        )
     }
 
     private var stepsList: some View {
@@ -194,10 +199,10 @@ struct HiringCompaniesView: View {
                         .font(Theme.font(.caption, weight: .semibold))
                         .foregroundStyle(lightMutedText)
                         .frame(width: 20, alignment: .leading)
-                    Text(step)
-                        .font(Theme.font(.subheadline))
-                        .foregroundStyle(lightText)
-                        .fixedSize(horizontal: false, vertical: true)
+            Text(step)
+                .font(Theme.font(.subheadline))
+                .foregroundStyle(lightText)
+                .fixedSize(horizontal: false, vertical: true)
                 }
                 .accessibilityElement(children: .combine)
             }
@@ -241,8 +246,8 @@ struct HiringCompaniesView: View {
                 }
                 IRefairSkeletonBlock(width: 170, height: 12, cornerRadius: 999)
                     .frame(maxWidth: .infinity)
-                Text(l("iRCRN: iRefair Company Reference Number"))
-                    .font(Theme.font(.caption))
+                Text(localizedMarkdown("iRCRN: iRefair Company Reference Number"))
+                    .font(Theme.font(.subheadline))
                     .foregroundStyle(lightFaintText)
             }
         }
@@ -283,8 +288,10 @@ struct HiringCompaniesView: View {
     private func labeledValue(title: String, value: String, valueColor: Color? = nil) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(Theme.font(.caption, weight: .semibold))
-                .foregroundStyle(lightMutedText)
+                .font(Theme.font(size: 12, weight: .bold))
+                .foregroundStyle(tableLabelText)
+                .textCase(.uppercase)
+                .kerning(0.6)
             Text(value)
                 .font(Theme.font(.subheadline, weight: .semibold))
                 .foregroundStyle(valueColor ?? lightText)
@@ -304,6 +311,12 @@ struct HiringCompaniesView: View {
 
     private func l(_ key: String) -> String {
         NSLocalizedString(key, comment: "")
+    }
+
+    private func localizedMarkdown(_ key: String) -> AttributedString {
+        let localized = l(key)
+        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        return (try? AttributedString(markdown: localized, options: options)) ?? AttributedString(localized)
     }
 
     private var careersWarningMessage: String {
@@ -346,6 +359,10 @@ struct HiringCompaniesView: View {
 
     private var lightFaintText: Color {
         Color.white.opacity(0.85)
+    }
+
+    private var tableLabelText: Color {
+        Color.white.opacity(0.5)
     }
 
     private var linkText: Color {
