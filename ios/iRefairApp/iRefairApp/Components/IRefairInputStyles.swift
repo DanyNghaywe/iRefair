@@ -211,22 +211,18 @@ struct IRefairMenuPicker<SelectionValue: Hashable, Content: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Theme.fieldLabelGap) {
             IRefairFieldLabel(text: title)
-            IRefairPickerLabel(text: displayValue, isPlaceholder: isPlaceholder)
-                .allowsHitTesting(false)
-                .irefairSelectInput(isFocused: showsFocusState)
-                .overlay {
-                    Picker(selection: $selection) {
-                        content
-                    } label: {
-                        EmptyView()
-                    }
-                    .pickerStyle(.menu)
-                    .labelsHidden()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .contentShape(Rectangle())
-                    // Keep native iOS picker interaction while rendering the custom web-style shell.
-                    .opacity(0.015)
+            Menu {
+                Picker(selection: $selection) {
+                    content
+                } label: {
+                    EmptyView()
                 }
+            } label: {
+                IRefairPickerLabel(text: displayValue, isPlaceholder: isPlaceholder)
+                    .irefairSelectInput(isFocused: showsFocusState)
+            }
+            .menuIndicator(.hidden)
+            .buttonStyle(.plain)
             .frame(maxWidth: .infinity)
             .simultaneousGesture(
                 TapGesture().onEnded {
