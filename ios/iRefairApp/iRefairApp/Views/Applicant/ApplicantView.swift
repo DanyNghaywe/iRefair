@@ -329,7 +329,7 @@ struct ApplicantView: View {
                             )
                         errorText("consent")
                     }
-                    .padding(.top, -14)
+                    .padding(.top, -12)
 
                     if let errorMessage {
                         IRefairSection {
