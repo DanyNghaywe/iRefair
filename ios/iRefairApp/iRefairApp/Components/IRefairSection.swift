@@ -25,7 +25,7 @@ struct IRefairSection<Content: View>: View {
             .textFieldStyle(IRefairTextFieldStyle())
             .tint(Theme.accentPrimary)
             .padding(.top, contentTopPadding)
-            .padding(.bottom, 12)
+            .padding(.bottom, 14)
             .padding(.horizontal, 14)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(
