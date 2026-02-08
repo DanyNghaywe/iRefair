@@ -291,15 +291,38 @@ struct IRefairGhostButtonStyle: ButtonStyle {
 }
 
 struct IRefairCheckboxToggleStyle: ToggleStyle {
+    let labelColor: Color
+    let labelFont: Font
+    let labelKerning: CGFloat
+    let verticalAlignment: VerticalAlignment
+    let uncheckedFillColor: Color
+    let uncheckedBorderColor: Color
+
+    init(
+        labelColor: Color = Color.white.opacity(0.9),
+        labelFont: Font = Theme.font(.subheadline),
+        labelKerning: CGFloat = 0,
+        verticalAlignment: VerticalAlignment = .top,
+        uncheckedFillColor: Color = Color.white.opacity(0.12),
+        uncheckedBorderColor: Color = Color.white.opacity(0.35)
+    ) {
+        self.labelColor = labelColor
+        self.labelFont = labelFont
+        self.labelKerning = labelKerning
+        self.verticalAlignment = verticalAlignment
+        self.uncheckedFillColor = uncheckedFillColor
+        self.uncheckedBorderColor = uncheckedBorderColor
+    }
+
     func makeBody(configuration: Configuration) -> some View {
         Button(action: { configuration.isOn.toggle() }) {
-            HStack(alignment: .top, spacing: 12) {
+            HStack(alignment: verticalAlignment, spacing: 12) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 6, style: .continuous)
-                        .fill(configuration.isOn ? Theme.accentPrimary : Color.white.opacity(0.12))
+                        .fill(configuration.isOn ? Theme.accentPrimary : uncheckedFillColor)
                         .overlay(
                             RoundedRectangle(cornerRadius: 6, style: .continuous)
-                                .stroke(Color.white.opacity(configuration.isOn ? 0.0 : 0.35), lineWidth: 1)
+                                .stroke(configuration.isOn ? .clear : uncheckedBorderColor, lineWidth: 1)
                         )
                     if configuration.isOn {
                         Image(systemName: "checkmark")
@@ -310,8 +333,10 @@ struct IRefairCheckboxToggleStyle: ToggleStyle {
                 .frame(width: 20, height: 20)
 
                 configuration.label
-                    .foregroundStyle(Color.white.opacity(0.9))
-                    .font(Theme.font(.subheadline))
+                    .foregroundStyle(labelColor)
+                    .font(labelFont)
+                    .kerning(labelKerning)
+                    .multilineTextAlignment(.leading)
             }
         }
         .buttonStyle(.plain)

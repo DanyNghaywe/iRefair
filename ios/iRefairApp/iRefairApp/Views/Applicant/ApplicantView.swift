@@ -80,6 +80,14 @@ struct ApplicantView: View {
         "Nunavut",
         "Yukon",
     ]
+    private let applicantConsentPoints = [
+        "iRefair is a voluntary, community-driven initiative, and I am under no obligation to make any referrals.",
+        "Any referral I make is based on my own discretion, and I am solely responsible for complying with my company’s internal referral or hiring policies.",
+        "iRefair, &Beyond Consulting, IM Power SARL and inaspire and their legal founders assume no liability at all including but not limited to: hiring outcomes, internal processes, or employer decisions.",
+        "My contact and employer details will be kept confidential and will not be shared without my consent.",
+        "I may request to update or delete my information at any time by contacting us via email.",
+        "My participation is entirely optional, and I can opt out at any time by contacting us via email.",
+    ]
 
     var body: some View {
         NavigationStack {
@@ -290,11 +298,38 @@ struct ApplicantView: View {
                         errorText("resume")
                     }
 
-                    IRefairSection(l("Consent")) {
-                        Toggle(l("I agree to be contacted by iRefair."), isOn: $consent)
-                            .toggleStyle(IRefairCheckboxToggleStyle())
+                    IRefairSection {
+                        Text(l("Consent & Legal Disclaimer"))
+                            .font(Theme.font(size: 18, weight: .bold))
+                            .foregroundStyle(Theme.ink)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        Text(l("By submitting this form, I agree to be contacted by iRefair when a potential applicant may align with open roles at my company. I understand and acknowledge the following:"))
+                            .font(Theme.font(size: 16))
+                            .foregroundStyle(Theme.ink)
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
+
+                        VStack(alignment: .leading, spacing: 8) {
+                            ForEach(Array(applicantConsentPoints.enumerated()), id: \.offset) { _, pointKey in
+                                consentPointRow(pointKey)
+                            }
+                        }
+
+                        Toggle(l("I have read, understood, and agree to the above terms."), isOn: $consent)
+                            .toggleStyle(
+                                IRefairCheckboxToggleStyle(
+                                    labelColor: Color.white,
+                                    labelFont: Theme.font(size: Theme.fieldLabelFontSize, weight: .semibold),
+                                    labelKerning: Theme.fieldLabelKerning,
+                                    verticalAlignment: .center,
+                                    uncheckedFillColor: Color.white.opacity(0.9),
+                                    uncheckedBorderColor: Color(hex: 0x4B5563).opacity(0.72)
+                                )
+                            )
                         errorText("consent")
                     }
+                    .padding(.top, -14)
 
                     if let errorMessage {
                         IRefairSection {
@@ -377,6 +412,47 @@ struct ApplicantView: View {
     private func pickerDisplayValue(_ value: String, options: [(value: String, label: String)]) -> String {
         guard !value.isEmpty else { return l("Select") }
         return options.first(where: { $0.value == value })?.label ?? value
+    }
+
+    @ViewBuilder
+    private func consentPointRow(_ pointKey: String) -> some View {
+        HStack(alignment: .top, spacing: 8) {
+            Image(systemName: "circle.fill")
+                .font(.system(size: 6, weight: .semibold))
+                .foregroundStyle(Theme.ink)
+                .padding(.top, 7)
+
+            Text(localizedConsentPoint(pointKey))
+                .font(Theme.font(size: 16))
+                .foregroundStyle(Theme.ink)
+                .tint(Color(hex: 0x063770))
+                .lineSpacing(3)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private func localizedConsentPoint(_ key: String) -> AttributedString {
+        let localized = l(key)
+        let email = "irefair@andbeyondca.com"
+        let englishLinkText = l("contacting us via email")
+        let frenchLinkText = l("nous contactant par courriel")
+        var markdown = localized
+
+        if markdown.contains(englishLinkText) {
+            markdown = markdown.replacingOccurrences(
+                of: englishLinkText,
+                with: "[\(englishLinkText)](mailto:\(email))"
+            )
+        }
+        if markdown.contains(frenchLinkText) {
+            markdown = markdown.replacingOccurrences(
+                of: frenchLinkText,
+                with: "[\(frenchLinkText)](mailto:\(email))"
+            )
+        }
+
+        let options = AttributedString.MarkdownParsingOptions(interpretedSyntax: .inlineOnlyPreservingWhitespace)
+        return (try? AttributedString(markdown: markdown, options: options)) ?? AttributedString(localized)
     }
 
     private var yesNoOptions: [(value: String, label: String)] {
