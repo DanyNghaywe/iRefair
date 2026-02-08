@@ -120,7 +120,7 @@ struct ApplicantView: View {
                         }
                         errorText("email")
                         IRefairField(l("Phone *")) {
-                            IRefairTextField("", text: $phone)
+                            IRefairTextField(l("+1-XXX-XXXX or +961-XX-XXXXXX"), text: $phone)
                                 .keyboardType(.phonePad)
                                 .accessibilityLabel(l("Phone *"))
                         }
@@ -156,7 +156,7 @@ struct ApplicantView: View {
                         errorText("languages")
                         if languages.contains("Other") {
                             IRefairField(l("Other languages *")) {
-                                IRefairTextField("", text: $languagesOther)
+                                IRefairTextField(l("Please specify"), text: $languagesOther)
                                     .accessibilityLabel(l("Other languages *"))
                             }
                             errorText("languagesOther")
@@ -180,7 +180,7 @@ struct ApplicantView: View {
                         if locatedCanada == "Yes" {
                             IRefairMenuPicker(
                                 l("Province *"),
-                                displayValue: province.isEmpty ? l("Select") : province,
+                                displayValue: province.isEmpty ? l("Select province") : province,
                                 isPlaceholder: province.isEmpty,
                                 selection: $province
                             ) {
@@ -236,7 +236,7 @@ struct ApplicantView: View {
                         errorText("industryType")
                         if industryType == "Other" {
                             IRefairField(l("Industry details *")) {
-                                IRefairTextField("", text: $industryOther)
+                                IRefairTextField(l("Please specify"), text: $industryOther)
                                     .accessibilityLabel(l("Industry details *"))
                             }
                             errorText("industryOther")
@@ -254,7 +254,7 @@ struct ApplicantView: View {
                         }
                         errorText("employmentStatus")
                         IRefairField(l("LinkedIn profile")) {
-                            IRefairTextField("", text: $linkedin)
+                            IRefairTextField(l("https://linkedin.com/in/"), text: $linkedin)
                                 .keyboardType(.URL)
                                 .textInputAutocapitalization(.never)
                                 .autocorrectionDisabled()

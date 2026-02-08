@@ -15,6 +15,7 @@
 "Application submitted. Please check your email to confirm registration." = "Candidature envoyée. Veuillez vérifier votre e-mail pour confirmer l'inscription.";
 "Apply" = "Postuler";
 "Apply Now" = "Postuler maintenant";
+"Add any notes or feedback..." = "Ajoutez des notes ou commentaires...";
 "Arabic" = "Arabe";
 "Authorized to work in Canada? *" = "Autorisé(e) à travailler au Canada ?";
 "&BeyondCA" = "&BeyondCA";
@@ -25,6 +26,7 @@
 "Cancel" = "Annuler";
 "Careers portal URL" = "URL du portail carrières";
 "Careers portal URL is required." = "L'URL du portail carrières est requise.";
+"https://company.com/careers" = "https://entreprise.com/careers";
 "Careers website" = "Site carrières";
 "Choose the position you want to apply for and note the company iRCRN." = "Choisissez le poste auquel vous souhaitez postuler et notez le **iRCRN** de l'entreprise.";
 "Choose file" = "Choisir un fichier";
@@ -55,6 +57,10 @@
 "Energy / Utilities" = "Énergie / Services publics";
 "Engineering / Construction" = "Ingénierie / Construction";
 "English" = "Anglais";
+"Enter your iRAIN (legacy CAND-... also accepted)" = "Entrez votre iRAIN (ancien CAND-... également accepté)";
+"Enter the Applicant Key from your email" = "Entrez la clé du candidat reçue par e-mail";
+"Enter the iRCRN" = "Entrez l'iRCRN";
+"e.g. Software Engineer" = "ex. Ingénieur logiciel";
 "Enter a token first." = "Entrez d'abord un jeton.";
 "Enter a valid LinkedIn profile URL." = "Entrez une URL LinkedIn valide.";
 "Enter a valid careers portal URL." = "Entrez une URL valide du portail carrières.";
@@ -109,6 +115,7 @@
 "Legal" = "Mentions légales";
 "Legal / Law" = "Juridique / Droit";
 "LinkedIn profile" = "Profil LinkedIn (optionnel)";
+"https://linkedin.com/in/" = "https://linkedin.com/in/";
 "Load portal data" = "Charger les données du portail";
 "Loaded %d applicants." = "Chargé %d candidats.";
 "Loading..." = "Chargement...";
@@ -139,8 +146,10 @@
 "Personal information" = "Informations personnelles";
 "Phone" = "Téléphone";
 "Phone *" = "Téléphone";
+"+1-XXX-XXXX or +961-XX-XXXXXX" = "+1-XXX-XXXX ou +961-XX-XXXXXX";
 "Phone number is required." = "Le numéro de téléphone est requis.";
 "Please attach a resume." = "Veuillez joindre un CV.";
+"Please specify" = "Précisez";
 "Portal" = "Portail";
 "Position *" = "Poste *";
 "Position is required." = "Le poste est requis.";
@@ -175,6 +184,7 @@
 "Search" = "Recherche";
 "Search by company or iRCRN" = "Rechercher par entreprise ou iRCRN";
 "Select" = "Sélectionner";
+"Select province" = "Sélectionnez une province";
 "Select a country." = "Sélectionnez un pays.";
 "Select a province." = "Sélectionnez une province.";
 "Select a work type." = "Sélectionnez un type de travail.";

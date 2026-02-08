@@ -15,6 +15,7 @@
 "Application submitted. Please check your email to confirm registration." = "Application submitted. Please check your email to confirm registration.";
 "Apply" = "Apply";
 "Apply Now" = "Apply Now";
+"Add any notes or feedback..." = "Add any notes or feedback...";
 "Arabic" = "Arabic";
 "Authorized to work in Canada? *" = "Authorized to work in Canada?";
 "&BeyondCA" = "&BeyondCA";
@@ -25,6 +26,7 @@
 "Cancel" = "Cancel";
 "Careers portal URL" = "Careers portal URL";
 "Careers portal URL is required." = "Careers portal URL is required.";
+"https://company.com/careers" = "https://company.com/careers";
 "Careers website" = "Careers website";
 "Choose the position you want to apply for and note the company iRCRN." = "Choose the position you want to apply for and note the company **iRCRN**.";
 "Choose file" = "Choose file";
@@ -55,6 +57,10 @@
 "Energy / Utilities" = "Energy / Utilities";
 "Engineering / Construction" = "Engineering / Construction";
 "English" = "English";
+"Enter your iRAIN (legacy CAND-... also accepted)" = "Enter your iRAIN (legacy CAND-... also accepted)";
+"Enter the Applicant Key from your email" = "Enter the Applicant Key from your email";
+"Enter the iRCRN" = "Enter the iRCRN";
+"e.g. Software Engineer" = "e.g. Software Engineer";
 "Enter a token first." = "Enter a token first.";
 "Enter a valid LinkedIn profile URL." = "Enter a valid LinkedIn profile URL.";
 "Enter a valid careers portal URL." = "Enter a valid careers portal URL.";
@@ -109,6 +115,7 @@
 "Legal" = "Legal";
 "Legal / Law" = "Legal / Law";
 "LinkedIn profile" = "LinkedIn profile (optional)";
+"https://linkedin.com/in/" = "https://linkedin.com/in/";
 "Load portal data" = "Load portal data";
 "Loaded %d applicants." = "Loaded %d applicants.";
 "Loading..." = "Loading...";
@@ -139,8 +146,10 @@
 "Personal information" = "Personal information";
 "Phone" = "Phone";
 "Phone *" = "Phone";
+"+1-XXX-XXXX or +961-XX-XXXXXX" = "+1-XXX-XXXX or +961-XX-XXXXXX";
 "Phone number is required." = "Phone number is required.";
 "Please attach a resume." = "Please attach a resume.";
+"Please specify" = "Please specify";
 "Portal" = "Portal";
 "Position *" = "Position *";
 "Position is required." = "Position is required.";
@@ -175,6 +184,7 @@
 "Search" = "Search";
 "Search by company or iRCRN" = "Search by company or iRCRN";
 "Select" = "Select";
+"Select province" = "Select province";
 "Select a country." = "Select a country.";
 "Select a province." = "Select a province.";
 "Select a work type." = "Select a work type.";

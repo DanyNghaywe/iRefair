@@ -68,12 +68,12 @@ struct ReferrerRegistrationView: View {
                 }
                 errorText("email")
                 IRefairField(l("Phone")) {
-                    IRefairTextField("", text: $phone)
+                    IRefairTextField(l("+1-XXX-XXXX or +961-XX-XXXXXX"), text: $phone)
                         .accessibilityLabel(l("Phone"))
                 }
                 errorText("phone")
                 IRefairField(l("Country")) {
-                    IRefairTextField("", text: $country)
+                    IRefairTextField(l("Select"), text: $country)
                         .accessibilityLabel(l("Country"))
                 }
                 errorText("country")
@@ -82,7 +82,7 @@ struct ReferrerRegistrationView: View {
                         .accessibilityLabel(l("Company name"))
                 }
                 IRefairField(l("Careers portal URL")) {
-                    IRefairTextField("", text: $careersPortal)
+                    IRefairTextField(l("https://company.com/careers"), text: $careersPortal)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
@@ -103,7 +103,7 @@ struct ReferrerRegistrationView: View {
                 errorText("companyIndustry")
                 if companyIndustry == "Other" {
                     IRefairField(l("Other industry")) {
-                        IRefairTextField("", text: $companyIndustryOther)
+                        IRefairTextField(l("Please specify"), text: $companyIndustryOther)
                             .accessibilityLabel(l("Other industry"))
                     }
                     errorText("companyIndustryOther")
@@ -121,7 +121,7 @@ struct ReferrerRegistrationView: View {
                 }
                 errorText("workType")
                 IRefairField(l("LinkedIn profile")) {
-                    IRefairTextField("", text: $linkedIn)
+                    IRefairTextField(l("https://linkedin.com/in/"), text: $linkedIn)
                         .keyboardType(.URL)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()

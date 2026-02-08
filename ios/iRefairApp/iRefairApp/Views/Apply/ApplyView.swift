@@ -75,17 +75,17 @@ struct ApplyView: View {
 
                     IRefairSection(l("Application details")) {
                         IRefairField(l("Applicant ID (iRAIN) *")) {
-                            IRefairTextField("", text: $applicantId)
+                            IRefairTextField(l("Enter your iRAIN (legacy CAND-... also accepted)"), text: $applicantId)
                                 .accessibilityLabel(l("Applicant ID (iRAIN) *"))
                         }
                         errorText("applicantId")
                         IRefairField(l("Applicant Key *")) {
-                            IRefairTextField("", text: $applicantKey)
+                            IRefairTextField(l("Enter the Applicant Key from your email"), text: $applicantKey)
                                 .accessibilityLabel(l("Applicant Key *"))
                         }
                         errorText("applicantKey")
                         IRefairField(l("iRCRN *")) {
-                            IRefairTextField("", text: $iCrn)
+                            IRefairTextField(l("Enter the iRCRN"), text: $iCrn)
                                 .textInputAutocapitalization(.characters)
                                 .accessibilityLabel(l("iRCRN *"))
                         }
@@ -107,12 +107,12 @@ struct ApplyView: View {
                             .buttonStyle(IRefairGhostButtonStyle())
                         }
                         IRefairField(l("Position *")) {
-                            IRefairTextField("", text: $position)
+                            IRefairTextField(l("e.g. Software Engineer"), text: $position)
                                 .accessibilityLabel(l("Position *"))
                         }
                         errorText("position")
                         IRefairField(l("Reference number")) {
-                            IRefairTextField("", text: $referenceNumber)
+                            IRefairTextField(l("Reference number"), text: $referenceNumber)
                                 .accessibilityLabel(l("Reference number"))
                         }
                     }

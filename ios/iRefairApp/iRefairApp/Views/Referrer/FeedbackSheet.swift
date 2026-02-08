@@ -35,7 +35,7 @@ struct FeedbackSheet: View {
 
                     IRefairSection(l("Feedback")) {
                         IRefairField(l("Share feedback")) {
-                            IRefairTextField("", text: $feedback, axis: .vertical)
+                            IRefairTextField(l("Add any notes or feedback..."), text: $feedback, axis: .vertical)
                                 .lineLimit(4, reservesSpace: true)
                                 .accessibilityLabel(l("Share feedback"))
                         }
