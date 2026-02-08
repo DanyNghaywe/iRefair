@@ -236,6 +236,8 @@
 "No file chosen" = "Aucun fichier choisi";
 "Upload a CV specific to this company and position. PDF or DOC/DOCX, max 10 MB." = "Téléchargez un CV spécifique à cette entreprise et ce poste. PDF ou DOC/DOCX, max 10 Mo.";
 "Clear form" = "Effacer le formulaire";
+"Send referral request" = "Envoyer la demande de recommandation";
+"Send referrer details" = "Envoyer les informations du référent";
 "Submit" = "Soumettre";
 "Submitting..." = "Envoi...";
 "Use this form to apply to the company you wish to join. You will need your iRefair iRAIN and the iRefair Company Reference Number (iRCRN)." = "Utilisez ce formulaire pour postuler à l'entreprise que vous souhaitez rejoindre. Vous aurez besoin de votre iRAIN iRefair et du numéro de référence de l'entreprise iRefair (iRCRN).";

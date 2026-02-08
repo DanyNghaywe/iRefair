@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 struct ApplyView: View {
     private let apiBaseURL: String = APIConfig.baseURL
+    private let actionColumns = [GridItem(.adaptive(minimum: 360), spacing: 12)]
     private let moreInfoURL = URL(string: "https://andbeyondca.com/impact/")
     private let applyLinkTopSpacing: CGFloat = 8
 
@@ -136,24 +137,31 @@ struct ApplyView: View {
                         }
                     }
 
-                    IRefairSection {
-                        HStack(spacing: 12) {
-                            Button(l("Clear form")) {
-                                resetForm()
-                            }
-                            .buttonStyle(IRefairGhostButtonStyle())
-                            .frame(maxWidth: .infinity)
-                            .disabled(isSubmitting)
-
-                            Button {
-                                Task { await submit() }
-                            } label: {
-                                Text(isSubmitting ? l("Submitting...") : l("Submit"))
-                            }
-                            .buttonStyle(IRefairPrimaryButtonStyle())
-                            .disabled(isSubmitting || !networkMonitor.isConnected)
+                    LazyVGrid(columns: actionColumns, spacing: 12) {
+                        Button(l("Clear form")) {
+                            resetForm()
                         }
+                        .frame(maxWidth: .infinity)
+                        .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
+                        .disabled(isSubmitting)
+
+                        Button {
+                            Task { await submit() }
+                        } label: {
+                            if isSubmitting {
+                                HStack(spacing: 8) {
+                                    Text(l("Submitting..."))
+                                    ProgressView().tint(.white)
+                                }
+                            } else {
+                                Text(l("Submit"))
+                            }
+                        }
+                        .buttonStyle(IRefairPrimaryButtonStyle())
+                        .disabled(isSubmitting || !networkMonitor.isConnected)
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 8)
 
                     IRefairSection {
                         VStack(alignment: .leading, spacing: 8) {

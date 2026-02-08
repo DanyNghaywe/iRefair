@@ -2,6 +2,7 @@ import SwiftUI
 
 struct ReferrerRegistrationView: View {
     private let apiBaseURL: String = APIConfig.baseURL
+    private let actionColumns = [GridItem(.adaptive(minimum: 360), spacing: 12)]
 
     @EnvironmentObject private var networkMonitor: NetworkMonitor
 
@@ -148,19 +149,31 @@ struct ReferrerRegistrationView: View {
                 }
             }
 
-            IRefairSection {
+            LazyVGrid(columns: actionColumns, spacing: 12) {
+                Button(l("Clear form")) {
+                    resetForm()
+                }
+                .frame(maxWidth: .infinity)
+                .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
+                .disabled(isSubmitting)
+
                 Button {
                     Task { await submit() }
                 } label: {
                     if isSubmitting {
-                        ProgressView()
+                        HStack(spacing: 8) {
+                            Text(l("Submitting..."))
+                            ProgressView().tint(.white)
+                        }
                     } else {
-                        Text(l("Register as Referrer"))
+                        Text(l("Send referrer details"))
                     }
                 }
                 .buttonStyle(IRefairPrimaryButtonStyle())
                 .disabled(isSubmitting || !networkMonitor.isConnected)
             }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 8)
         }
     }
 
@@ -235,6 +248,23 @@ struct ReferrerRegistrationView: View {
         }
         fieldErrors = errors
         return errors.isEmpty
+    }
+
+    private func resetForm() {
+        fullName = ""
+        email = ""
+        phone = ""
+        country = ""
+        company = ""
+        careersPortal = ""
+        companyIndustry = ""
+        companyIndustryOther = ""
+        workType = ""
+        linkedIn = ""
+        consent = false
+        fieldErrors = [:]
+        errorMessage = nil
+        statusMessage = nil
     }
 
     @MainActor

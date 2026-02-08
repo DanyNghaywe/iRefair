@@ -260,24 +260,33 @@ struct IRefairMenuPicker<SelectionValue: Hashable, Content: View>: View {
 }
 
 struct IRefairGhostButtonStyle: ButtonStyle {
+    let fillWidth: Bool
+
+    init(fillWidth: Bool = false) {
+        self.fillWidth = fillWidth
+    }
+
     func makeBody(configuration: Configuration) -> some View {
+        let isPressed = configuration.isPressed
+
         configuration.label
-            .font(Theme.font(.subheadline, weight: .semibold))
+            .font(Theme.font(size: 14, weight: .bold))
             .foregroundStyle(Color.white)
-            .padding(.vertical, 10)
-            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .padding(.horizontal, 16)
             .frame(minHeight: 44)
+            .frame(maxWidth: fillWidth ? .infinity : nil)
             .background(
                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                    .fill(Color.white.opacity(configuration.isPressed ? 0.1 : 0.12))
+                    .fill(Color.white.opacity(isPressed ? 0.1 : 0.12))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12, style: .continuous)
                             .stroke(Color.white.opacity(0.25), lineWidth: 1)
                     )
             )
-            .shadow(color: Color(hex: 0x0F172A).opacity(0.08), radius: 10, x: 0, y: 6)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
-            .opacity(configuration.isPressed ? 0.9 : 1)
+            .shadow(color: Color(hex: 0x0F172A).opacity(0.08), radius: 10, x: 0, y: isPressed ? 4 : 6)
+            .scaleEffect(isPressed ? 0.99 : 1)
+            .opacity(isPressed ? 0.96 : 1)
     }
 }
 

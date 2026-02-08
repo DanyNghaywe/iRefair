@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 struct ApplicantView: View {
     private let apiBaseURL: String = APIConfig.baseURL
+    private let actionColumns = [GridItem(.adaptive(minimum: 360), spacing: 12)]
     @AppStorage("applicantUpdateToken") private var storedUpdateToken: String = ""
     @AppStorage("applicantUpdateAppId") private var storedUpdateAppId: String = ""
 
@@ -307,19 +308,31 @@ struct ApplicantView: View {
                         }
                     }
 
-                    IRefairSection {
+                    LazyVGrid(columns: actionColumns, spacing: 12) {
+                        Button(l("Clear form")) {
+                            resetForm()
+                        }
+                        .frame(maxWidth: .infinity)
+                        .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
+                        .disabled(isSubmitting)
+
                         Button {
                             Task { await submit() }
                         } label: {
                             if isSubmitting {
-                                ProgressView()
+                                HStack(spacing: 8) {
+                                    Text(l("Submitting..."))
+                                    ProgressView().tint(.white)
+                                }
                             } else {
-                                Text(l("Submit Applicant Profile"))
+                                Text(l("Send referral request"))
                             }
                         }
                         .buttonStyle(IRefairPrimaryButtonStyle())
                         .disabled(isSubmitting || !networkMonitor.isConnected)
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 8)
                 }
             }
             .sheet(isPresented: $showDocumentPicker) {
@@ -557,6 +570,31 @@ struct ApplicantView: View {
 
         fieldErrors = errors
         return errors.isEmpty
+    }
+
+    private func resetForm() {
+        firstName = ""
+        middleName = ""
+        familyName = ""
+        email = ""
+        phone = ""
+        countryOfOrigin = ""
+        languages = []
+        languagesOther = ""
+        locatedCanada = ""
+        province = ""
+        authorizedCanada = ""
+        eligibleMoveCanada = ""
+        industryType = ""
+        industryOther = ""
+        employmentStatus = ""
+        linkedin = ""
+        consent = false
+        resumeFile = nil
+        resumeName = ""
+        fieldErrors = [:]
+        errorMessage = nil
+        statusMessage = nil
     }
 
     private func buildPayload() -> [String: String] {
