@@ -73,10 +73,10 @@ struct ApplyView: View {
                         }
                     }
 
-                    IRefairSection(l("Application details")) {
-                        IRefairField(l("Applicant ID (iRAIN) *")) {
+                    IRefairSection {
+                        IRefairField(l("Your iRAIN *")) {
                             IRefairTextField(l("Enter your iRAIN (legacy CAND-... also accepted)"), text: $applicantId)
-                                .accessibilityLabel(l("Applicant ID (iRAIN) *"))
+                                .accessibilityLabel(l("Your iRAIN *"))
                         }
                         errorText("applicantId")
                         IRefairField(l("Applicant Key *")) {
@@ -84,54 +84,43 @@ struct ApplyView: View {
                                 .accessibilityLabel(l("Applicant Key *"))
                         }
                         errorText("applicantKey")
-                        IRefairField(l("iRCRN *")) {
+                        IRefairField(l("Enter the iRCRN of the company you wish to join *")) {
                             IRefairTextField(l("Enter the iRCRN"), text: $iCrn)
                                 .textInputAutocapitalization(.characters)
-                                .accessibilityLabel(l("iRCRN *"))
+                                .accessibilityLabel(l("Enter the iRCRN of the company you wish to join *"))
                         }
                         errorText("iCrn")
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(l("Need an iRCRN?"))
-                                .font(Theme.font(.caption))
-                                .foregroundStyle(Color.white.opacity(0.82))
-                            NavigationLink {
-                                HiringCompaniesView()
-                            } label: {
-                                HStack(spacing: 8) {
-                                    Text(l("Browse hiring companies"))
-                                    Spacer(minLength: 0)
-                                    Image(systemName: "chevron.right")
-                                }
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .buttonStyle(IRefairGhostButtonStyle())
-                        }
-                        IRefairField(l("Position *")) {
+                        IRefairField(l("Position you are applying for *")) {
                             IRefairTextField(l("e.g. Software Engineer"), text: $position)
-                                .accessibilityLabel(l("Position *"))
+                                .accessibilityLabel(l("Position you are applying for *"))
                         }
                         errorText("position")
-                        IRefairField(l("Reference number")) {
+                        IRefairField(l("If available, please enter a reference number for the position (from company's website)")) {
                             IRefairTextField(l("Reference number"), text: $referenceNumber)
-                                .accessibilityLabel(l("Reference number"))
+                                .accessibilityLabel(l("If available, please enter a reference number for the position (from company's website)"))
                         }
-                    }
-
-                    IRefairSection(l("Resume")) {
-                        IRefairField(l("Resume")) {
+                        IRefairField(l("Attach your CV tailored for this position (required)")) {
                             HStack {
-                                Text(resumeName.isEmpty ? l("No file selected") : resumeName)
-                                    .font(Theme.font(.subheadline))
-                                    .foregroundStyle(resumeName.isEmpty ? Theme.muted : Theme.ink)
-                                Spacer()
-                                Button(l("Choose file")) {
+                                Button(l("Add file")) {
                                     showDocumentPicker = true
                                 }
                                 .buttonStyle(IRefairGhostButtonStyle())
+                                .fixedSize(horizontal: true, vertical: false)
+                                Text(resumeName.isEmpty ? l("No file chosen") : resumeName)
+                                    .font(Theme.font(size: 14))
+                                    .foregroundStyle(Color.white.opacity(resumeName.isEmpty ? 0.92 : 1.0))
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            .irefairInput()
-                            .accessibilityLabel(l("Resume file"))
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .accessibilityLabel(l("Attach your CV tailored for this position (required)"))
                         }
+                        Text(l("Upload a CV specific to this company and position. PDF or DOC/DOCX, max 10 MB."))
+                            .font(Theme.font(size: 14))
+                            .foregroundStyle(Color.white.opacity(0.9))
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
                         errorText("resume")
                     }
 
@@ -148,17 +137,39 @@ struct ApplyView: View {
                     }
 
                     IRefairSection {
-                        Button {
-                            Task { await submit() }
-                        } label: {
-                            if isSubmitting {
-                                ProgressView()
-                            } else {
-                                Text(l("Submit Application"))
+                        HStack(spacing: 12) {
+                            Button(l("Clear form")) {
+                                resetForm()
                             }
+                            .buttonStyle(IRefairGhostButtonStyle())
+                            .frame(maxWidth: .infinity)
+                            .disabled(isSubmitting)
+
+                            Button {
+                                Task { await submit() }
+                            } label: {
+                                Text(isSubmitting ? l("Submitting...") : l("Submit"))
+                            }
+                            .buttonStyle(IRefairPrimaryButtonStyle())
+                            .disabled(isSubmitting || !networkMonitor.isConnected)
                         }
-                        .buttonStyle(IRefairPrimaryButtonStyle())
-                        .disabled(isSubmitting || !networkMonitor.isConnected)
+                    }
+
+                    IRefairSection {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(l("Use this form to apply to the company you wish to join. You will need your iRefair iRAIN and the iRefair Company Reference Number (iRCRN)."))
+                                .font(Theme.font(.subheadline))
+                                .foregroundStyle(Color.white.opacity(0.9))
+                                .fixedSize(horizontal: false, vertical: true)
+                            NavigationLink {
+                                HiringCompaniesView()
+                            } label: {
+                                Text(l("Find iRCRN codes"))
+                                    .font(Theme.font(.subheadline, weight: .semibold))
+                                    .underline()
+                            }
+                            .foregroundStyle(Color.white)
+                        }
                     }
                 }
                 .sheet(isPresented: $showDocumentPicker) {
@@ -196,14 +207,14 @@ struct ApplyView: View {
     private func handlePickedFile(_ url: URL) {
         do {
             guard FileSupport.isSupportedResume(url) else {
-                let message = l("Resume must be a PDF, DOC, or DOCX file.")
+                let message = l("Please upload a PDF or DOC/DOCX file under 10MB.")
                 fieldErrors["resume"] = message
                 errorMessage = message
                 return
             }
             let data = try FileReader.loadData(from: url)
             guard data.count <= FileSupport.maxResumeSize else {
-                let message = l("Resume must be under 10 MB.")
+                let message = l("Please upload a PDF or DOC/DOCX file under 10MB.")
                 fieldErrors["resume"] = message
                 errorMessage = message
                 return
@@ -224,22 +235,35 @@ struct ApplyView: View {
     private func validate() -> Bool {
         var errors: [String: String] = [:]
         if applicantId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["applicantId"] = l("Applicant ID is required.")
+            errors["applicantId"] = l("Please enter your iRAIN or legacy CAND ID.")
         }
         if applicantKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["applicantKey"] = l("Applicant key is required.")
+            errors["applicantKey"] = l("Please enter your Applicant Key.")
         }
         if iCrn.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["iCrn"] = l("iRCRN is required.")
+            errors["iCrn"] = l("Please enter the iRCRN.")
         }
         if position.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["position"] = l("Position is required.")
+            errors["position"] = l("Please enter the position you are applying for.")
         }
         if resumeFile == nil {
-            errors["resume"] = l("Please attach a resume.")
+            errors["resume"] = l("Please upload your resume (PDF or DOC/DOCX under 10MB).")
         }
         fieldErrors = errors
         return errors.isEmpty
+    }
+
+    private func resetForm() {
+        applicantId = ""
+        applicantKey = ""
+        iCrn = ""
+        position = ""
+        referenceNumber = ""
+        resumeFile = nil
+        resumeName = ""
+        fieldErrors = [:]
+        errorMessage = nil
+        statusMessage = nil
     }
 
     private func buildPayload() -> [String: String] {
@@ -279,7 +303,7 @@ struct ApplyView: View {
                 payload: payload,
                 resume: resumeFile
             )
-            statusMessage = response.message ?? l("Application submitted successfully.")
+            statusMessage = response.message ?? l("Application submitted. We'll log it and follow up with next steps.")
             Telemetry.track("apply_submit_success")
         } catch {
             Telemetry.capture(error)

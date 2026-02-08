@@ -263,27 +263,30 @@ struct ApplicantView: View {
                         errorText("linkedin")
                     }
 
-                    IRefairSection(l("Resume")) {
-                        IRefairField(l("Resume")) {
+                    IRefairSection(l("Attachments")) {
+                        IRefairField(l("Upload your general CV / resume")) {
                             HStack {
-                                Text(resumeName.isEmpty ? l("No file selected") : resumeName)
-                                    .font(Theme.font(.subheadline))
-                                    .foregroundStyle(resumeName.isEmpty ? Theme.muted : Theme.ink)
-                                Spacer()
-                                Button(l("Choose file")) {
+                                Button(l("Upload resume")) {
                                     showDocumentPicker = true
                                 }
                                 .buttonStyle(IRefairGhostButtonStyle())
+                                .fixedSize(horizontal: true, vertical: false)
+                                Text(resumeName.isEmpty ? l("No file selected yet") : resumeName)
+                                    .font(Theme.font(size: 14))
+                                    .foregroundStyle(Color.white.opacity(resumeName.isEmpty ? 0.92 : 1.0))
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.leading)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            .accessibilityLabel(l("Resume file"))
-                            .irefairInput()
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .accessibilityLabel(l("Upload your general CV / resume"))
                         }
+                        Text(l("Upload your main CV (not tailored to a specific job). You can submit a company-specific CV when applying to positions. Accepted: PDF, DOC, DOCX. Max 10MB."))
+                            .font(Theme.font(size: 14))
+                            .foregroundStyle(Color.white.opacity(0.9))
+                            .lineSpacing(3)
+                            .fixedSize(horizontal: false, vertical: true)
                         errorText("resume")
-                        if let resumeFile, resumeFile.data.count > FileSupport.maxResumeSize {
-                            Text(l("Resume must be under 10 MB."))
-                                .foregroundStyle(Theme.error)
-                                .font(Theme.font(.caption))
-                        }
                     }
 
                     IRefairSection(l("Consent")) {
@@ -405,14 +408,14 @@ struct ApplicantView: View {
     private func handlePickedFile(_ url: URL) {
         do {
             guard FileSupport.isSupportedResume(url) else {
-                let message = l("Resume must be a PDF, DOC, or DOCX file.")
+                let message = l("Please upload a PDF or DOC/DOCX file under 10MB.")
                 fieldErrors["resume"] = message
                 errorMessage = message
                 return
             }
             let data = try FileReader.loadData(from: url)
             guard data.count <= FileSupport.maxResumeSize else {
-                let message = l("Resume must be under 10 MB.")
+                let message = l("Please upload a PDF or DOC/DOCX file under 10MB.")
                 fieldErrors["resume"] = message
                 errorMessage = message
                 return
@@ -546,7 +549,7 @@ struct ApplicantView: View {
             errors["linkedin"] = l("Enter a valid LinkedIn profile URL.")
         }
         if requiresResume && resumeFile == nil {
-            errors["resume"] = l("Resume is required.")
+            errors["resume"] = l("Please upload your resume / CV.")
         }
         if !consent {
             errors["consent"] = l("Consent is required.")
@@ -609,7 +612,7 @@ struct ApplicantView: View {
                 payload: payload,
                 resume: resumeFile
             )
-            statusMessage = response.message ?? l("Application submitted. Please check your email to confirm registration.")
+            statusMessage = response.message ?? l("We've received your request. We'll follow up by email soon.")
             if !updateToken.isEmpty && !updateAppId.isEmpty {
                 updatePurpose = ""
                 updateToken = ""
