@@ -24,143 +24,157 @@ struct ApplyView: View {
     @State private var statusMessage: String?
     @State private var errorMessage: String?
     @State private var fieldErrors: [String: String] = [:]
+    @State private var validationScrollTarget: String?
 
     var body: some View {
         NavigationStack {
-            IRefairScreen {
-                IRefairForm {
-                    VStack(alignment: .leading, spacing: Theme.cardHeaderTextGap) {
-                        Text(l("Application"))
-                            .font(Theme.font(size: 11, weight: .semibold))
-                            .foregroundStyle(Color.white.opacity(0.7))
-                            .textCase(.uppercase)
-                            .kerning(1.1)
-                        Text(l("iRefair - Apply Now"))
-                            .font(Theme.font(size: 24, weight: .bold))
-                            .foregroundStyle(Color.white)
-                            .kerning(-0.5)
-                        Text(l("iRefair is a free initiative created to support Lebanese and Arab newcomers in Canada by connecting them with professionals who can refer them for jobs."))
-                            .font(Theme.font(size: 16))
-                            .foregroundStyle(Color.white.opacity(0.85))
-                            .lineSpacing(4)
-                        if let moreInfoURL {
-                            HStack(spacing: 4) {
-                                Text(l("For more info, visit"))
-                                    .font(Theme.font(size: applyLinkFontSize))
-                                Link(destination: moreInfoURL) {
-                                    Text(l("&BeyondCA"))
-                                        .font(Theme.font(size: applyLinkFontSize, weight: .bold))
-                                        .foregroundStyle(Color.white.opacity(0.95))
-                                        .padding(.bottom, 0)
-                                        .overlay(alignment: .bottom) {
-                                            Rectangle()
-                                                .fill(Color.white.opacity(0.95))
-                                                .frame(height: 1.1)
-                                                .offset(y: -0.25)
-                                        }
+            ScrollViewReader { scrollProxy in
+                IRefairScreen {
+                    IRefairForm {
+                        VStack(alignment: .leading, spacing: Theme.cardHeaderTextGap) {
+                            Text(l("Application"))
+                                .font(Theme.font(size: 11, weight: .semibold))
+                                .foregroundStyle(Color.white.opacity(0.7))
+                                .textCase(.uppercase)
+                                .kerning(1.1)
+                            Text(l("iRefair - Apply Now"))
+                                .font(Theme.font(size: 24, weight: .bold))
+                                .foregroundStyle(Color.white)
+                                .kerning(-0.5)
+                            Text(l("iRefair is a free initiative created to support Lebanese and Arab newcomers in Canada by connecting them with professionals who can refer them for jobs."))
+                                .font(Theme.font(size: 16))
+                                .foregroundStyle(Color.white.opacity(0.85))
+                                .lineSpacing(4)
+                            if let moreInfoURL {
+                                HStack(spacing: 4) {
+                                    Text(l("For more info, visit"))
+                                        .font(Theme.font(size: applyLinkFontSize))
+                                    Link(destination: moreInfoURL) {
+                                        Text(l("&BeyondCA"))
+                                            .font(Theme.font(size: applyLinkFontSize, weight: .bold))
+                                            .foregroundStyle(Color.white.opacity(0.95))
+                                            .padding(.bottom, 0)
+                                            .overlay(alignment: .bottom) {
+                                                Rectangle()
+                                                    .fill(Color.white.opacity(0.95))
+                                                    .frame(height: 1.1)
+                                                    .offset(y: -0.25)
+                                            }
+                                    }
                                 }
+                                .foregroundStyle(Color.white.opacity(0.95))
+                                .tint(Color.white.opacity(0.95))
+                                .padding(.top, applyLinkTopSpacing - Theme.cardHeaderTextGap)
                             }
-                            .foregroundStyle(Color.white.opacity(0.95))
-                            .tint(Color.white.opacity(0.95))
-                            .padding(.top, applyLinkTopSpacing - Theme.cardHeaderTextGap)
                         }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.vertical, Theme.cardHeaderPaddingVertical)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, Theme.cardHeaderPaddingVertical)
 
-                    if !networkMonitor.isConnected {
+                        if !networkMonitor.isConnected {
+                            IRefairSection {
+                                StatusBanner(text: l("You're offline. Connect to the internet to submit the form."), style: .warning)
+                            }
+                        }
+
                         IRefairSection {
-                            StatusBanner(text: l("You're offline. Connect to the internet to submit the form."), style: .warning)
-                        }
-                    }
-
-                    IRefairSection {
-                        IRefairField(l("Your iRAIN *")) {
-                            IRefairTextField(l("Enter your iRAIN (legacy CAND-... also accepted)"), text: $applicantId)
-                                .accessibilityLabel(l("Your iRAIN *"))
-                        }
-                        errorText("applicantId")
-                        IRefairField(l("Applicant Key *")) {
-                            IRefairTextField(l("Enter the Applicant Key from your email"), text: $applicantKey)
-                                .accessibilityLabel(l("Applicant Key *"))
-                        }
-                        errorText("applicantKey")
-                        IRefairField(l("Enter the iRCRN of the company you wish to join *")) {
-                            IRefairTextField(l("Enter the iRCRN"), text: $iCrn)
-                                .textInputAutocapitalization(.characters)
-                                .accessibilityLabel(l("Enter the iRCRN of the company you wish to join *"))
-                        }
-                        errorText("iCrn")
-                        IRefairField(l("Position you are applying for *")) {
-                            IRefairTextField(l("e.g. Software Engineer"), text: $position)
-                                .accessibilityLabel(l("Position you are applying for *"))
-                        }
-                        errorText("position")
-                        IRefairField(l("If available, please enter a reference number for the position (from company's website)")) {
-                            IRefairTextField(l("Reference number"), text: $referenceNumber)
-                                .accessibilityLabel(l("If available, please enter a reference number for the position (from company's website)"))
-                        }
-                        IRefairField(l("Attach your CV tailored for this position (required)")) {
-                            HStack {
-                                Button(l("Add file")) {
-                                    showDocumentPicker = true
+                            IRefairField(l("Your iRAIN *")) {
+                                IRefairTextField(l("Enter your iRAIN (legacy CAND-... also accepted)"), text: $applicantId)
+                                    .accessibilityLabel(l("Your iRAIN *"))
+                            }
+                            .id(fieldAnchorId(for: "applicantId"))
+                            errorText("applicantId")
+                            IRefairField(l("Applicant Key *")) {
+                                IRefairTextField(l("Enter the Applicant Key from your email"), text: $applicantKey)
+                                    .accessibilityLabel(l("Applicant Key *"))
+                            }
+                            .id(fieldAnchorId(for: "applicantKey"))
+                            errorText("applicantKey")
+                            IRefairField(l("Enter the iRCRN of the company you wish to join *")) {
+                                IRefairTextField(l("Enter the iRCRN"), text: $iCrn)
+                                    .textInputAutocapitalization(.characters)
+                                    .accessibilityLabel(l("Enter the iRCRN of the company you wish to join *"))
+                            }
+                            .id(fieldAnchorId(for: "iCrn"))
+                            errorText("iCrn")
+                            IRefairField(l("Position you are applying for *")) {
+                                IRefairTextField(l("e.g. Software Engineer"), text: $position)
+                                    .accessibilityLabel(l("Position you are applying for *"))
+                            }
+                            .id(fieldAnchorId(for: "position"))
+                            errorText("position")
+                            IRefairField(l("If available, please enter a reference number for the position (from company's website)")) {
+                                IRefairTextField(l("Reference number"), text: $referenceNumber)
+                                    .accessibilityLabel(l("If available, please enter a reference number for the position (from company's website)"))
+                            }
+                            IRefairField(l("Attach your CV tailored for this position (required)")) {
+                                HStack {
+                                    Button(l("Add file")) {
+                                        showDocumentPicker = true
+                                    }
+                                    .buttonStyle(IRefairGhostButtonStyle())
+                                    .fixedSize(horizontal: true, vertical: false)
+                                    Text(resumeName.isEmpty ? l("No file chosen") : resumeName)
+                                        .font(Theme.font(size: 14))
+                                        .foregroundStyle(Color.white.opacity(resumeName.isEmpty ? 0.92 : 1.0))
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.leading)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
                                 }
-                                .buttonStyle(IRefairGhostButtonStyle())
-                                .fixedSize(horizontal: true, vertical: false)
-                                Text(resumeName.isEmpty ? l("No file chosen") : resumeName)
-                                    .font(Theme.font(size: 14))
-                                    .foregroundStyle(Color.white.opacity(resumeName.isEmpty ? 0.92 : 1.0))
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.leading)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .accessibilityLabel(l("Attach your CV tailored for this position (required)"))
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .accessibilityLabel(l("Attach your CV tailored for this position (required)"))
-                        }
-                        Text(l("Upload a CV specific to this company and position. PDF or DOC/DOCX, max 10 MB."))
-                            .font(Theme.font(size: 14))
-                            .foregroundStyle(Color.white.opacity(0.9))
-                            .lineSpacing(3)
-                            .fixedSize(horizontal: false, vertical: true)
-                        errorText("resume")
-                    }
-
-                    if let errorMessage {
-                        IRefairSection {
-                            StatusBanner(text: errorMessage, style: .error)
-                        }
-                    }
-
-                    if let statusMessage {
-                        IRefairSection {
-                            StatusBanner(text: statusMessage, style: .success)
-                        }
-                    }
-
-                    actionButtons
-                        .frame(maxWidth: .infinity, alignment: useLandscapeActionRow ? .trailing : .leading)
-                        .padding(.top, 8)
-
-                    IRefairSection {
-                        VStack(alignment: .leading, spacing: 8) {
-                            Text(l("Use this form to apply to the company you wish to join. You will need your iRefair iRAIN and the iRefair Company Reference Number (iRCRN)."))
-                                .font(Theme.font(.subheadline))
+                            .id(fieldAnchorId(for: "resume"))
+                            Text(l("Upload a CV specific to this company and position. PDF or DOC/DOCX, max 10 MB."))
+                                .font(Theme.font(size: 14))
                                 .foregroundStyle(Color.white.opacity(0.9))
+                                .lineSpacing(3)
                                 .fixedSize(horizontal: false, vertical: true)
-                            NavigationLink {
-                                HiringCompaniesView()
-                            } label: {
-                                Text(l("Find iRCRN codes"))
-                                    .font(Theme.font(.subheadline, weight: .semibold))
-                                    .underline()
+                            errorText("resume")
+                        }
+
+                        if let errorMessage {
+                            IRefairSection {
+                                StatusBanner(text: errorMessage, style: .error)
                             }
-                            .foregroundStyle(Color.white)
+                        }
+
+                        if let statusMessage {
+                            IRefairSection {
+                                StatusBanner(text: statusMessage, style: .success)
+                            }
+                        }
+
+                        actionButtons
+                            .frame(maxWidth: .infinity, alignment: useLandscapeActionRow ? .trailing : .leading)
+                            .padding(.top, 8)
+
+                        IRefairSection {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text(l("Use this form to apply to the company you wish to join. You will need your iRefair iRAIN and the iRefair Company Reference Number (iRCRN)."))
+                                    .font(Theme.font(.subheadline))
+                                    .foregroundStyle(Color.white.opacity(0.9))
+                                    .fixedSize(horizontal: false, vertical: true)
+                                NavigationLink {
+                                    HiringCompaniesView()
+                                } label: {
+                                    Text(l("Find iRCRN codes"))
+                                        .font(Theme.font(.subheadline, weight: .semibold))
+                                        .underline()
+                                }
+                                .foregroundStyle(Color.white)
+                            }
                         }
                     }
-                }
-                .sheet(isPresented: $showDocumentPicker) {
-                    DocumentPicker(allowedTypes: allowedTypes()) { url in
-                        handlePickedFile(url)
+                    .onChange(of: validationScrollTarget) { target in
+                        guard let target else { return }
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            scrollProxy.scrollTo(target, anchor: .top)
+                        }
+                    }
+                    .sheet(isPresented: $showDocumentPicker) {
+                        DocumentPicker(allowedTypes: allowedTypes()) { url in
+                            handlePickedFile(url)
+                        }
                     }
                 }
             }
@@ -170,7 +184,9 @@ struct ApplyView: View {
     private func errorText(_ key: String) -> some View {
         Group {
             if let message = fieldErrors[key] {
-                Text(message).foregroundStyle(Theme.warning.opacity(0.95)).font(Theme.font(.caption))
+                Text(message)
+                    .foregroundStyle(Theme.warning.opacity(0.95))
+                    .font(Theme.font(.caption))
             }
         }
     }
@@ -226,6 +242,19 @@ struct ApplyView: View {
         NSLocalizedString(key, comment: "")
     }
 
+    private func fieldAnchorId(for key: String) -> String {
+        "apply-validation-field-\(key)"
+    }
+
+    private func scrollToFirstValidationError(_ key: String?) {
+        guard let key else { return }
+        let target = fieldAnchorId(for: key)
+        validationScrollTarget = nil
+        DispatchQueue.main.async {
+            validationScrollTarget = target
+        }
+    }
+
     private func allowedTypes() -> [UTType] {
         var types: [UTType] = [.pdf]
         if let doc = UTType(filenameExtension: "doc") { types.append(doc) }
@@ -267,22 +296,32 @@ struct ApplyView: View {
 
     private func validate() -> Bool {
         var errors: [String: String] = [:]
+        var firstErrorKey: String?
+
+        func addError(_ key: String, _ message: String) {
+            if firstErrorKey == nil {
+                firstErrorKey = key
+            }
+            errors[key] = message
+        }
+
         if applicantId.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["applicantId"] = l("Please enter your iRAIN or legacy CAND ID.")
+            addError("applicantId", l("Please enter your iRAIN or legacy CAND ID."))
         }
         if applicantKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["applicantKey"] = l("Please enter your Applicant Key.")
+            addError("applicantKey", l("Please enter your Applicant Key."))
         }
         if iCrn.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["iCrn"] = l("Please enter the iRCRN.")
+            addError("iCrn", l("Please enter the iRCRN."))
         }
         if position.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["position"] = l("Please enter the position you are applying for.")
+            addError("position", l("Please enter the position you are applying for."))
         }
         if resumeFile == nil {
-            errors["resume"] = l("Please upload your resume (PDF or DOC/DOCX under 10MB).")
+            addError("resume", l("Please upload your resume (PDF or DOC/DOCX under 10MB)."))
         }
         fieldErrors = errors
+        scrollToFirstValidationError(firstErrorKey)
         return errors.isEmpty
     }
 

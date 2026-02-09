@@ -41,6 +41,7 @@ struct ApplicantView: View {
     @State private var statusMessage: String?
     @State private var errorMessage: String?
     @State private var fieldErrors: [String: String] = [:]
+    @State private var validationScrollTarget: String?
 
     private let languageValues = ["English", "Arabic", "French", "Other"]
     private let employmentValues = ["Yes", "No", "Temporary Work"]
@@ -92,285 +93,312 @@ struct ApplicantView: View {
 
     var body: some View {
         NavigationStack {
-            IRefairScreen {
-                IRefairForm {
-                    IRefairCardHeader(
-                        eyebrow: l("For applicants"),
-                        title: l("Applicant referral request"),
-                        lead: l("Tell us your background and target roles. We'll pair you with referrers when they're available.")
-                    )
+            ScrollViewReader { scrollProxy in
+                IRefairScreen {
+                    IRefairForm {
+                        IRefairCardHeader(
+                            eyebrow: l("For applicants"),
+                            title: l("Applicant referral request"),
+                            lead: l("Tell us your background and target roles. We'll pair you with referrers when they're available.")
+                        )
 
-                    if !networkMonitor.isConnected {
-                        IRefairSection {
-                            StatusBanner(text: l("You're offline. Connect to the internet to submit the form."), style: .warning)
-                        }
-                    }
-
-                    IRefairSection(l("Personal information")) {
-                        IRefairField(l("First name *")) {
-                            IRefairTextField("", text: $firstName)
-                                .accessibilityLabel(l("First name *"))
-                        }
-                        errorText("firstName")
-                        IRefairField(l("Middle name")) {
-                            IRefairTextField("", text: $middleName)
-                                .accessibilityLabel(l("Middle name"))
-                        }
-                        IRefairField(l("Last name *")) {
-                            IRefairTextField("", text: $familyName)
-                                .accessibilityLabel(l("Last name *"))
-                        }
-                        errorText("familyName")
-                        IRefairField(l("Email *")) {
-                            IRefairTextField("", text: $email)
-                                .keyboardType(.emailAddress)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .accessibilityLabel(l("Email *"))
-                        }
-                        errorText("email")
-                        IRefairField(l("Phone *")) {
-                            IRefairTextField(l("+1-XXX-XXXX or +961-XX-XXXXXX"), text: $phone)
-                                .keyboardType(.phonePad)
-                                .accessibilityLabel(l("Phone *"))
-                        }
-                        errorText("phone")
-                        IRefairMenuPicker(
-                            l("Country of origin *"),
-                            displayValue: countryOfOrigin.isEmpty ? l("Select") : countryOfOrigin,
-                            isPlaceholder: countryOfOrigin.isEmpty,
-                            selection: $countryOfOrigin
-                        ) {
-                            Text(l("Select")).tag("")
-                            ForEach(CountryData.all, id: \.self) { country in
-                                Text(country).tag(country)
+                        if !networkMonitor.isConnected {
+                            IRefairSection {
+                                StatusBanner(text: l("You're offline. Connect to the internet to submit the form."), style: .warning)
                             }
                         }
-                        errorText("countryOfOrigin")
-                    }
 
-                    IRefairSection(l("Languages")) {
-                        ForEach(languageOptions, id: \.value) { option in
-                            Toggle(option.label, isOn: Binding(
-                                get: { languages.contains(option.value) },
-                                set: { isSelected in
-                                    if isSelected {
-                                        languages.insert(option.value)
-                                    } else {
-                                        languages.remove(option.value)
+                        IRefairSection(l("Personal information")) {
+                            IRefairField(l("First name *")) {
+                                IRefairTextField("", text: $firstName)
+                                    .accessibilityLabel(l("First name *"))
+                            }
+                            .id(fieldAnchorId(for: "firstName"))
+                            errorText("firstName")
+                            IRefairField(l("Middle name")) {
+                                IRefairTextField("", text: $middleName)
+                                    .accessibilityLabel(l("Middle name"))
+                            }
+                            IRefairField(l("Last name *")) {
+                                IRefairTextField("", text: $familyName)
+                                    .accessibilityLabel(l("Last name *"))
+                            }
+                            .id(fieldAnchorId(for: "familyName"))
+                            errorText("familyName")
+                            IRefairField(l("Email *")) {
+                                IRefairTextField("", text: $email)
+                                    .keyboardType(.emailAddress)
+                                    .textInputAutocapitalization(.never)
+                                    .autocorrectionDisabled()
+                                    .accessibilityLabel(l("Email *"))
+                            }
+                            .id(fieldAnchorId(for: "email"))
+                            errorText("email")
+                            IRefairField(l("Phone *")) {
+                                IRefairTextField(l("+1-XXX-XXXX or +961-XX-XXXXXX"), text: $phone)
+                                    .keyboardType(.phonePad)
+                                    .accessibilityLabel(l("Phone *"))
+                            }
+                            .id(fieldAnchorId(for: "phone"))
+                            errorText("phone")
+                            IRefairMenuPicker(
+                                l("Country of origin *"),
+                                displayValue: countryOfOrigin.isEmpty ? l("Select") : countryOfOrigin,
+                                isPlaceholder: countryOfOrigin.isEmpty,
+                                selection: $countryOfOrigin
+                            ) {
+                                Text(l("Select")).tag("")
+                                ForEach(CountryData.all, id: \.self) { country in
+                                    Text(country).tag(country)
+                                }
+                            }
+                            .id(fieldAnchorId(for: "countryOfOrigin"))
+                            errorText("countryOfOrigin")
+                        }
+
+                        IRefairSection(l("Languages")) {
+                            Color.clear
+                                .frame(height: 0)
+                                .id(fieldAnchorId(for: "languages"))
+                            ForEach(languageOptions, id: \.value) { option in
+                                Toggle(option.label, isOn: Binding(
+                                    get: { languages.contains(option.value) },
+                                    set: { isSelected in
+                                        if isSelected {
+                                            languages.insert(option.value)
+                                        } else {
+                                            languages.remove(option.value)
+                                        }
+                                    }
+                                ))
+                                .toggleStyle(IRefairCheckboxToggleStyle())
+                            }
+                            errorText("languages")
+                            if languages.contains("Other") {
+                                IRefairField(l("Other languages *")) {
+                                    IRefairTextField(l("Please specify"), text: $languagesOther)
+                                        .accessibilityLabel(l("Other languages *"))
+                                }
+                                .id(fieldAnchorId(for: "languagesOther"))
+                                errorText("languagesOther")
+                            }
+                        }
+
+                        IRefairSection(l("Location and authorization")) {
+                            IRefairMenuPicker(
+                                l("Located in Canada? *"),
+                                displayValue: pickerDisplayValue(locatedCanada, options: yesNoOptions),
+                                isPlaceholder: locatedCanada.isEmpty,
+                                selection: $locatedCanada
+                            ) {
+                                Text(l("Select")).tag("")
+                                ForEach(yesNoOptions, id: \.value) { option in
+                                    Text(option.label).tag(option.value)
+                                }
+                            }
+                            .id(fieldAnchorId(for: "locatedCanada"))
+                            errorText("locatedCanada")
+
+                            if locatedCanada == "Yes" {
+                                IRefairMenuPicker(
+                                    l("Province *"),
+                                    displayValue: province.isEmpty ? l("Select province") : province,
+                                    isPlaceholder: province.isEmpty,
+                                    selection: $province
+                                ) {
+                                    Text(l("Select")).tag("")
+                                    ForEach(provinces, id: \.self) { item in
+                                        Text(item).tag(item)
                                     }
                                 }
-                            ))
-                            .toggleStyle(IRefairCheckboxToggleStyle())
-                        }
-                        errorText("languages")
-                        if languages.contains("Other") {
-                            IRefairField(l("Other languages *")) {
-                                IRefairTextField(l("Please specify"), text: $languagesOther)
-                                    .accessibilityLabel(l("Other languages *"))
-                            }
-                            errorText("languagesOther")
-                        }
-                    }
+                                .id(fieldAnchorId(for: "province"))
+                                errorText("province")
 
-                    IRefairSection(l("Location and authorization")) {
-                        IRefairMenuPicker(
-                            l("Located in Canada? *"),
-                            displayValue: pickerDisplayValue(locatedCanada, options: yesNoOptions),
-                            isPlaceholder: locatedCanada.isEmpty,
-                            selection: $locatedCanada
-                        ) {
-                            Text(l("Select")).tag("")
-                            ForEach(yesNoOptions, id: \.value) { option in
-                                Text(option.label).tag(option.value)
+                                IRefairMenuPicker(
+                                    l("Authorized to work in Canada? *"),
+                                    displayValue: pickerDisplayValue(authorizedCanada, options: yesNoOptions),
+                                    isPlaceholder: authorizedCanada.isEmpty,
+                                    selection: $authorizedCanada
+                                ) {
+                                    Text(l("Select")).tag("")
+                                    ForEach(yesNoOptions, id: \.value) { option in
+                                        Text(option.label).tag(option.value)
+                                    }
+                                }
+                                .id(fieldAnchorId(for: "authorizedCanada"))
+                                errorText("authorizedCanada")
+                            }
+
+                            if locatedCanada == "No" {
+                                IRefairMenuPicker(
+                                    l("Eligible to move to Canada? *"),
+                                    displayValue: pickerDisplayValue(eligibleMoveCanada, options: yesNoOptions),
+                                    isPlaceholder: eligibleMoveCanada.isEmpty,
+                                    selection: $eligibleMoveCanada
+                                ) {
+                                    Text(l("Select")).tag("")
+                                    ForEach(yesNoOptions, id: \.value) { option in
+                                        Text(option.label).tag(option.value)
+                                    }
+                                }
+                                .id(fieldAnchorId(for: "eligibleMoveCanada"))
+                                errorText("eligibleMoveCanada")
                             }
                         }
-                        errorText("locatedCanada")
 
-                        if locatedCanada == "Yes" {
+                        IRefairSection(l("Professional profile")) {
                             IRefairMenuPicker(
-                                l("Province *"),
-                                displayValue: province.isEmpty ? l("Select province") : province,
-                                isPlaceholder: province.isEmpty,
-                                selection: $province
+                                l("Industry *"),
+                                displayValue: pickerDisplayValue(industryType, options: industryOptions),
+                                isPlaceholder: industryType.isEmpty,
+                                selection: $industryType
                             ) {
                                 Text(l("Select")).tag("")
-                                ForEach(provinces, id: \.self) { item in
-                                    Text(item).tag(item)
+                                ForEach(industryOptions, id: \.value) { item in
+                                    Text(item.label).tag(item.value)
                                 }
                             }
-                            errorText("province")
-
+                            .id(fieldAnchorId(for: "industryType"))
+                            errorText("industryType")
+                            if industryType == "Other" {
+                                IRefairField(l("Industry details *")) {
+                                    IRefairTextField(l("Please specify"), text: $industryOther)
+                                        .accessibilityLabel(l("Industry details *"))
+                                }
+                                .id(fieldAnchorId(for: "industryOther"))
+                                errorText("industryOther")
+                            }
                             IRefairMenuPicker(
-                                l("Authorized to work in Canada? *"),
-                                displayValue: pickerDisplayValue(authorizedCanada, options: yesNoOptions),
-                                isPlaceholder: authorizedCanada.isEmpty,
-                                selection: $authorizedCanada
+                                l("Currently employed? *"),
+                                displayValue: pickerDisplayValue(employmentStatus, options: employmentOptions),
+                                isPlaceholder: employmentStatus.isEmpty,
+                                selection: $employmentStatus
                             ) {
                                 Text(l("Select")).tag("")
-                                ForEach(yesNoOptions, id: \.value) { option in
-                                    Text(option.label).tag(option.value)
+                                ForEach(employmentOptions, id: \.value) { item in
+                                    Text(item.label).tag(item.value)
                                 }
                             }
-                            errorText("authorizedCanada")
+                            .id(fieldAnchorId(for: "employmentStatus"))
+                            errorText("employmentStatus")
+                            IRefairField(l("LinkedIn profile")) {
+                                IRefairTextField(l("https://linkedin.com/in/"), text: $linkedin)
+                                    .keyboardType(.URL)
+                                    .textInputAutocapitalization(.never)
+                                    .autocorrectionDisabled()
+                                    .accessibilityLabel(l("LinkedIn profile"))
+                            }
+                            .id(fieldAnchorId(for: "linkedin"))
+                            errorText("linkedin")
                         }
 
-                        if locatedCanada == "No" {
-                            IRefairMenuPicker(
-                                l("Eligible to move to Canada? *"),
-                                displayValue: pickerDisplayValue(eligibleMoveCanada, options: yesNoOptions),
-                                isPlaceholder: eligibleMoveCanada.isEmpty,
-                                selection: $eligibleMoveCanada
-                            ) {
-                                Text(l("Select")).tag("")
-                                ForEach(yesNoOptions, id: \.value) { option in
-                                    Text(option.label).tag(option.value)
+                        IRefairSection(l("Attachments")) {
+                            IRefairField(l("Upload your general CV / resume")) {
+                                HStack {
+                                    Button(l("Upload resume")) {
+                                        showDocumentPicker = true
+                                    }
+                                    .buttonStyle(IRefairGhostButtonStyle())
+                                    .fixedSize(horizontal: true, vertical: false)
+                                    Text(resumeName.isEmpty ? l("No file selected yet") : resumeName)
+                                        .font(Theme.font(size: 14))
+                                        .foregroundStyle(Color.white.opacity(resumeName.isEmpty ? 0.92 : 1.0))
+                                        .lineLimit(2)
+                                        .multilineTextAlignment(.leading)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .accessibilityLabel(l("Upload your general CV / resume"))
+                            }
+                            .id(fieldAnchorId(for: "resume"))
+                            Text(l("Upload your main CV (not tailored to a specific job). You can submit a company-specific CV when applying to positions. Accepted: PDF, DOC, DOCX. Max 10MB."))
+                                .font(Theme.font(size: 14))
+                                .foregroundStyle(Color.white.opacity(0.9))
+                                .lineSpacing(3)
+                                .fixedSize(horizontal: false, vertical: true)
+                            errorText("resume")
+                        }
+
+                        IRefairSection {
+                            Text(l("Consent & Legal Disclaimer"))
+                                .font(Theme.font(size: 18, weight: .bold))
+                                .foregroundStyle(Theme.ink)
+                                .fixedSize(horizontal: false, vertical: true)
+
+                            Text(l("By submitting this form, I agree to be contacted by iRefair when a potential applicant may align with open roles at my company. I understand and acknowledge the following:"))
+                                .font(Theme.font(size: 16))
+                                .foregroundStyle(Theme.ink)
+                                .lineSpacing(3)
+                                .fixedSize(horizontal: false, vertical: true)
+
+                            VStack(alignment: .leading, spacing: 8) {
+                                ForEach(Array(applicantConsentPoints.enumerated()), id: \.offset) { _, pointKey in
+                                    consentPointRow(pointKey)
                                 }
                             }
-                            errorText("eligibleMoveCanada")
-                        }
-                    }
 
-                    IRefairSection(l("Professional profile")) {
-                        IRefairMenuPicker(
-                            l("Industry *"),
-                            displayValue: pickerDisplayValue(industryType, options: industryOptions),
-                            isPlaceholder: industryType.isEmpty,
-                            selection: $industryType
-                        ) {
-                            Text(l("Select")).tag("")
-                            ForEach(industryOptions, id: \.value) { item in
-                                Text(item.label).tag(item.value)
-                            }
-                        }
-                        errorText("industryType")
-                        if industryType == "Other" {
-                            IRefairField(l("Industry details *")) {
-                                IRefairTextField(l("Please specify"), text: $industryOther)
-                                    .accessibilityLabel(l("Industry details *"))
-                            }
-                            errorText("industryOther")
-                        }
-                        IRefairMenuPicker(
-                            l("Currently employed? *"),
-                            displayValue: pickerDisplayValue(employmentStatus, options: employmentOptions),
-                            isPlaceholder: employmentStatus.isEmpty,
-                            selection: $employmentStatus
-                        ) {
-                            Text(l("Select")).tag("")
-                            ForEach(employmentOptions, id: \.value) { item in
-                                Text(item.label).tag(item.value)
-                            }
-                        }
-                        errorText("employmentStatus")
-                        IRefairField(l("LinkedIn profile")) {
-                            IRefairTextField(l("https://linkedin.com/in/"), text: $linkedin)
-                                .keyboardType(.URL)
-                                .textInputAutocapitalization(.never)
-                                .autocorrectionDisabled()
-                                .accessibilityLabel(l("LinkedIn profile"))
-                        }
-                        errorText("linkedin")
-                    }
-
-                    IRefairSection(l("Attachments")) {
-                        IRefairField(l("Upload your general CV / resume")) {
-                            HStack {
-                                Button(l("Upload resume")) {
-                                    showDocumentPicker = true
-                                }
-                                .buttonStyle(IRefairGhostButtonStyle())
-                                .fixedSize(horizontal: true, vertical: false)
-                                Text(resumeName.isEmpty ? l("No file selected yet") : resumeName)
-                                    .font(Theme.font(size: 14))
-                                    .foregroundStyle(Color.white.opacity(resumeName.isEmpty ? 0.92 : 1.0))
-                                    .lineLimit(2)
-                                    .multilineTextAlignment(.leading)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .accessibilityLabel(l("Upload your general CV / resume"))
-                        }
-                        Text(l("Upload your main CV (not tailored to a specific job). You can submit a company-specific CV when applying to positions. Accepted: PDF, DOC, DOCX. Max 10MB."))
-                            .font(Theme.font(size: 14))
-                            .foregroundStyle(Color.white.opacity(0.9))
-                            .lineSpacing(3)
-                            .fixedSize(horizontal: false, vertical: true)
-                        errorText("resume")
-                    }
-
-                    IRefairSection {
-                        Text(l("Consent & Legal Disclaimer"))
-                            .font(Theme.font(size: 18, weight: .bold))
-                            .foregroundStyle(Theme.ink)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        Text(l("By submitting this form, I agree to be contacted by iRefair when a potential applicant may align with open roles at my company. I understand and acknowledge the following:"))
-                            .font(Theme.font(size: 16))
-                            .foregroundStyle(Theme.ink)
-                            .lineSpacing(3)
-                            .fixedSize(horizontal: false, vertical: true)
-
-                        VStack(alignment: .leading, spacing: 8) {
-                            ForEach(Array(applicantConsentPoints.enumerated()), id: \.offset) { _, pointKey in
-                                consentPointRow(pointKey)
-                            }
-                        }
-
-                        Toggle(l("I have read, understood, and agree to the above terms."), isOn: $consent)
-                            .toggleStyle(
-                                IRefairCheckboxToggleStyle(
-                                    labelColor: Color.white,
-                                    labelFont: Theme.font(size: Theme.fieldLabelFontSize, weight: .semibold),
-                                    labelKerning: Theme.fieldLabelKerning,
-                                    verticalAlignment: .center,
-                                    uncheckedFillColor: Color.white.opacity(0.9),
-                                    uncheckedBorderColor: Color(hex: 0x4B5563).opacity(0.72)
+                            Toggle(l("I have read, understood, and agree to the above terms."), isOn: $consent)
+                                .toggleStyle(
+                                    IRefairCheckboxToggleStyle(
+                                        labelColor: Color.white,
+                                        labelFont: Theme.font(size: Theme.fieldLabelFontSize, weight: .semibold),
+                                        labelKerning: Theme.fieldLabelKerning,
+                                        verticalAlignment: .center,
+                                        uncheckedFillColor: Color.white.opacity(0.9),
+                                        uncheckedBorderColor: Color(hex: 0x4B5563).opacity(0.72)
+                                    )
                                 )
-                            )
-                        errorText("consent")
-                    }
-                    .padding(.top, -12)
+                                .id(fieldAnchorId(for: "consent"))
+                            errorText("consent")
+                        }
+                        .padding(.top, -12)
 
-                    if let errorMessage {
-                        IRefairSection {
-                            StatusBanner(text: errorMessage, style: .error)
+                        if let errorMessage {
+                            IRefairSection {
+                                StatusBanner(text: errorMessage, style: .error)
+                            }
+                        }
+
+                        if let statusMessage {
+                            IRefairSection {
+                                StatusBanner(text: statusMessage, style: .success)
+                            }
+                        }
+
+                        actionButtons
+                            .frame(maxWidth: .infinity, alignment: useLandscapeActionRow ? .trailing : .leading)
+                            .padding(.top, 8)
+                    }
+                    .onChange(of: validationScrollTarget) { target in
+                        guard let target else { return }
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            scrollProxy.scrollTo(target, anchor: .top)
                         }
                     }
-
-                    if let statusMessage {
-                        IRefairSection {
-                            StatusBanner(text: statusMessage, style: .success)
-                        }
+                }
+                .sheet(isPresented: $showDocumentPicker) {
+                    DocumentPicker(allowedTypes: allowedTypes()) { url in
+                        handlePickedFile(url)
                     }
-
-                    actionButtons
-                        .frame(maxWidth: .infinity, alignment: useLandscapeActionRow ? .trailing : .leading)
-                        .padding(.top, 8)
                 }
-            }
-            .sheet(isPresented: $showDocumentPicker) {
-                DocumentPicker(allowedTypes: allowedTypes()) { url in
-                    handlePickedFile(url)
+                .onAppear {
+                    updateToken = storedUpdateToken
+                    updateAppId = storedUpdateAppId
+                    if !updateToken.isEmpty && !updateAppId.isEmpty {
+                        Task { await loadPrefill() }
+                    }
                 }
-            }
-            .onAppear {
-                updateToken = storedUpdateToken
-                updateAppId = storedUpdateAppId
-                if !updateToken.isEmpty && !updateAppId.isEmpty {
-                    Task { await loadPrefill() }
+                .onChange(of: storedUpdateToken) { value in
+                    updateToken = value
+                    if !updateToken.isEmpty && !updateAppId.isEmpty {
+                        Task { await loadPrefill() }
+                    }
                 }
-            }
-            .onChange(of: storedUpdateToken) { value in
-                updateToken = value
-                if !updateToken.isEmpty && !updateAppId.isEmpty {
-                    Task { await loadPrefill() }
-                }
-            }
-            .onChange(of: storedUpdateAppId) { value in
-                updateAppId = value
-                if !updateToken.isEmpty && !updateAppId.isEmpty {
-                    Task { await loadPrefill() }
+                .onChange(of: storedUpdateAppId) { value in
+                    updateAppId = value
+                    if !updateToken.isEmpty && !updateAppId.isEmpty {
+                        Task { await loadPrefill() }
+                    }
                 }
             }
         }
@@ -379,7 +407,9 @@ struct ApplicantView: View {
     private func errorText(_ key: String) -> some View {
         Group {
             if let message = fieldErrors[key] {
-                Text(message).foregroundStyle(Theme.warning.opacity(0.95)).font(Theme.font(.caption))
+                Text(message)
+                    .foregroundStyle(Theme.warning.opacity(0.95))
+                    .font(Theme.font(.caption))
             }
         }
     }
@@ -433,6 +463,19 @@ struct ApplicantView: View {
 
     private func l(_ key: String) -> String {
         NSLocalizedString(key, comment: "")
+    }
+
+    private func fieldAnchorId(for key: String) -> String {
+        "applicant-validation-field-\(key)"
+    }
+
+    private func scrollToFirstValidationError(_ key: String?) {
+        guard let key else { return }
+        let target = fieldAnchorId(for: key)
+        validationScrollTarget = nil
+        DispatchQueue.main.async {
+            validationScrollTarget = target
+        }
     }
 
     private func pickerDisplayValue(_ value: String, options: [(value: String, label: String)]) -> String {
@@ -616,64 +659,74 @@ struct ApplicantView: View {
 
     private func validate() -> Bool {
         var errors: [String: String] = [:]
+        var firstErrorKey: String?
+
+        func addError(_ key: String, _ message: String) {
+            if firstErrorKey == nil {
+                firstErrorKey = key
+            }
+            errors[key] = message
+        }
+
         if firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["firstName"] = l("Please enter your first name.")
+            addError("firstName", l("Please enter your first name."))
         }
         if familyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["familyName"] = l("Please enter your family name.")
+            addError("familyName", l("Please enter your family name."))
         }
         let emailValue = email.trimmingCharacters(in: .whitespacesAndNewlines)
         if emailValue.isEmpty {
-            errors["email"] = l("Please enter your email address.")
+            addError("email", l("Please enter your email address."))
         } else if !Validator.isValidEmail(emailValue) {
-            errors["email"] = l("Please enter a valid email address.")
+            addError("email", l("Please enter a valid email address."))
         }
         if phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["phone"] = l("Please enter your phone number.")
+            addError("phone", l("Please enter your phone number."))
         }
         if countryOfOrigin.isEmpty {
-            errors["countryOfOrigin"] = l("Please select your country of origin.")
+            addError("countryOfOrigin", l("Please select your country of origin."))
         }
         if languages.isEmpty {
-            errors["languages"] = l("Please select at least one language.")
+            addError("languages", l("Please select at least one language."))
         }
         if languages.contains("Other") && languagesOther.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["languagesOther"] = l("Please specify the other language.")
+            addError("languagesOther", l("Please specify the other language."))
         }
         if locatedCanada.isEmpty {
-            errors["locatedCanada"] = l("Please select your current location status.")
+            addError("locatedCanada", l("Please select your current location status."))
         }
         if locatedCanada == "Yes" {
             if province.isEmpty {
-                errors["province"] = l("Please select your province.")
+                addError("province", l("Please select your province."))
             }
             if authorizedCanada.isEmpty {
-                errors["authorizedCanada"] = l("Please confirm your work authorization.")
+                addError("authorizedCanada", l("Please confirm your work authorization."))
             }
         }
         if locatedCanada == "No" && eligibleMoveCanada.isEmpty {
-            errors["eligibleMoveCanada"] = l("Please confirm if you can move and work in Canada in the next 6 months.")
+            addError("eligibleMoveCanada", l("Please confirm if you can move and work in Canada in the next 6 months."))
         }
         if industryType.isEmpty {
-            errors["industryType"] = l("Please select an industry type.")
+            addError("industryType", l("Please select an industry type."))
         }
         if industryType == "Other" && industryOther.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["industryOther"] = l("Please specify the other industry type.")
+            addError("industryOther", l("Please specify the other industry type."))
         }
         if employmentStatus.isEmpty {
-            errors["employmentStatus"] = l("Please select your employment status.")
+            addError("employmentStatus", l("Please select your employment status."))
         }
         if !Validator.isValidLinkedInProfile(linkedin) {
-            errors["linkedin"] = l("Please enter a valid LinkedIn profile URL.")
+            addError("linkedin", l("Please enter a valid LinkedIn profile URL."))
         }
         if requiresResume && resumeFile == nil {
-            errors["resume"] = l("Please upload your resume / CV.")
+            addError("resume", l("Please upload your resume / CV."))
         }
         if !consent {
-            errors["consent"] = l("Consent is required.")
+            addError("consent", l("Consent is required."))
         }
 
         fieldErrors = errors
+        scrollToFirstValidationError(firstErrorKey)
         return errors.isEmpty
     }
 

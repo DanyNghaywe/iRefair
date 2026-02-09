@@ -23,6 +23,7 @@ struct ReferrerRegistrationView: View {
     @State private var statusMessage: String?
     @State private var errorMessage: String?
     @State private var fieldErrors: [String: String] = [:]
+    @State private var validationScrollTarget: String?
 
     private let companyIndustryValues = [
         "Technology",
@@ -50,151 +51,171 @@ struct ReferrerRegistrationView: View {
     ]
 
     var body: some View {
-        IRefairForm {
-            IRefairCardHeader(
-                eyebrow: l("For referrers"),
-                title: l("Referrer referral form"),
-                lead: l("Share the teams, roles, and capacity you have. Log an applicant now or just your availability.")
-            )
+        ScrollViewReader { scrollProxy in
+            IRefairForm {
+                IRefairCardHeader(
+                    eyebrow: l("For referrers"),
+                    title: l("Referrer referral form"),
+                    lead: l("Share the teams, roles, and capacity you have. Log an applicant now or just your availability.")
+                )
 
-            if !networkMonitor.isConnected {
+                if !networkMonitor.isConnected {
+                    IRefairSection {
+                        StatusBanner(text: l("You're offline. Connect to the internet to submit the form."), style: .warning)
+                    }
+                }
+
+                IRefairSection(l("Become a referrer")) {
+                    IRefairField(l("Full name *")) {
+                        IRefairTextField("", text: $fullName)
+                            .accessibilityLabel(l("Full name *"))
+                    }
+                    .id(fieldAnchorId(for: "name"))
+                    errorText("name")
+                    IRefairField(l("Work email *")) {
+                        IRefairTextField("", text: $email)
+                            .keyboardType(.emailAddress)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .accessibilityLabel(l("Work email *"))
+                    }
+                    .id(fieldAnchorId(for: "email"))
+                    errorText("email")
+                    IRefairField(l("Phone")) {
+                        IRefairTextField(l("+1-XXX-XXXX or +961-XX-XXXXXX"), text: $phone)
+                            .accessibilityLabel(l("Phone"))
+                    }
+                    .id(fieldAnchorId(for: "phone"))
+                    errorText("phone")
+                    IRefairField(l("Country")) {
+                        IRefairTextField(l("Select"), text: $country)
+                            .accessibilityLabel(l("Country"))
+                    }
+                    .id(fieldAnchorId(for: "country"))
+                    errorText("country")
+                    IRefairField(l("Company name")) {
+                        IRefairTextField("", text: $company)
+                            .accessibilityLabel(l("Company name"))
+                    }
+                    IRefairField(l("Careers portal URL")) {
+                        IRefairTextField(l("https://company.com/careers"), text: $careersPortal)
+                            .keyboardType(.URL)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .accessibilityLabel(l("Careers portal URL"))
+                    }
+                    .id(fieldAnchorId(for: "careersPortal"))
+                    errorText("careersPortal")
+                    IRefairMenuPicker(
+                        l("Company industry"),
+                        displayValue: pickerDisplayValue(companyIndustry, options: companyIndustryOptions),
+                        isPlaceholder: companyIndustry.isEmpty,
+                        selection: $companyIndustry
+                    ) {
+                        Text(l("Select")).tag("")
+                        ForEach(companyIndustryOptions, id: \.value) { item in
+                            Text(item.label).tag(item.value)
+                        }
+                    }
+                    .id(fieldAnchorId(for: "companyIndustry"))
+                    errorText("companyIndustry")
+                    if companyIndustry == "Other" {
+                        IRefairField(l("Other industry")) {
+                            IRefairTextField(l("Please specify"), text: $companyIndustryOther)
+                                .accessibilityLabel(l("Other industry"))
+                        }
+                        .id(fieldAnchorId(for: "companyIndustryOther"))
+                        errorText("companyIndustryOther")
+                    }
+                    IRefairMenuPicker(
+                        l("Work type"),
+                        displayValue: pickerDisplayValue(workType, options: workTypeOptions),
+                        isPlaceholder: workType.isEmpty,
+                        selection: $workType
+                    ) {
+                        Text(l("Select")).tag("")
+                        ForEach(workTypeOptions, id: \.value) { item in
+                            Text(item.label).tag(item.value)
+                        }
+                    }
+                    .id(fieldAnchorId(for: "workType"))
+                    errorText("workType")
+                    IRefairField(l("LinkedIn profile")) {
+                        IRefairTextField(l("https://linkedin.com/in/"), text: $linkedIn)
+                            .keyboardType(.URL)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .accessibilityLabel(l("LinkedIn profile"))
+                    }
+                    .id(fieldAnchorId(for: "linkedIn"))
+                    errorText("linkedIn")
+                }
+
                 IRefairSection {
-                    StatusBanner(text: l("You're offline. Connect to the internet to submit the form."), style: .warning)
-                }
-            }
+                    Text(l("Consent & Legal Disclaimer"))
+                        .font(Theme.font(size: 18, weight: .bold))
+                        .foregroundStyle(Theme.ink)
+                        .fixedSize(horizontal: false, vertical: true)
 
-            IRefairSection(l("Become a referrer")) {
-                IRefairField(l("Full name *")) {
-                    IRefairTextField("", text: $fullName)
-                        .accessibilityLabel(l("Full name *"))
-                }
-                errorText("name")
-                IRefairField(l("Work email *")) {
-                    IRefairTextField("", text: $email)
-                        .keyboardType(.emailAddress)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .accessibilityLabel(l("Work email *"))
-                }
-                errorText("email")
-                IRefairField(l("Phone")) {
-                    IRefairTextField(l("+1-XXX-XXXX or +961-XX-XXXXXX"), text: $phone)
-                        .accessibilityLabel(l("Phone"))
-                }
-                errorText("phone")
-                IRefairField(l("Country")) {
-                    IRefairTextField(l("Select"), text: $country)
-                        .accessibilityLabel(l("Country"))
-                }
-                errorText("country")
-                IRefairField(l("Company name")) {
-                    IRefairTextField("", text: $company)
-                        .accessibilityLabel(l("Company name"))
-                }
-                IRefairField(l("Careers portal URL")) {
-                    IRefairTextField(l("https://company.com/careers"), text: $careersPortal)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .accessibilityLabel(l("Careers portal URL"))
-                }
-                errorText("careersPortal")
-                IRefairMenuPicker(
-                    l("Company industry"),
-                    displayValue: pickerDisplayValue(companyIndustry, options: companyIndustryOptions),
-                    isPlaceholder: companyIndustry.isEmpty,
-                    selection: $companyIndustry
-                ) {
-                    Text(l("Select")).tag("")
-                    ForEach(companyIndustryOptions, id: \.value) { item in
-                        Text(item.label).tag(item.value)
+                    Text(l("By submitting this form, I agree to be contacted by iRefair when a potential applicant may align with open roles at my company. I understand and acknowledge the following:"))
+                        .font(Theme.font(size: 16))
+                        .foregroundStyle(Theme.ink)
+                        .lineSpacing(3)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        ForEach(Array(referrerConsentPoints.enumerated()), id: \.offset) { _, pointKey in
+                            consentPointRow(pointKey)
+                        }
                     }
-                }
-                errorText("companyIndustry")
-                if companyIndustry == "Other" {
-                    IRefairField(l("Other industry")) {
-                        IRefairTextField(l("Please specify"), text: $companyIndustryOther)
-                            .accessibilityLabel(l("Other industry"))
-                    }
-                    errorText("companyIndustryOther")
-                }
-                IRefairMenuPicker(
-                    l("Work type"),
-                    displayValue: pickerDisplayValue(workType, options: workTypeOptions),
-                    isPlaceholder: workType.isEmpty,
-                    selection: $workType
-                ) {
-                    Text(l("Select")).tag("")
-                    ForEach(workTypeOptions, id: \.value) { item in
-                        Text(item.label).tag(item.value)
-                    }
-                }
-                errorText("workType")
-                IRefairField(l("LinkedIn profile")) {
-                    IRefairTextField(l("https://linkedin.com/in/"), text: $linkedIn)
-                        .keyboardType(.URL)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .accessibilityLabel(l("LinkedIn profile"))
-                }
-                errorText("linkedIn")
-            }
 
-            IRefairSection {
-                Text(l("Consent & Legal Disclaimer"))
-                    .font(Theme.font(size: 18, weight: .bold))
-                    .foregroundStyle(Theme.ink)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Text(l("By submitting this form, I agree to be contacted by iRefair when a potential applicant may align with open roles at my company. I understand and acknowledge the following:"))
-                    .font(Theme.font(size: 16))
-                    .foregroundStyle(Theme.ink)
-                    .lineSpacing(3)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    ForEach(Array(referrerConsentPoints.enumerated()), id: \.offset) { _, pointKey in
-                        consentPointRow(pointKey)
-                    }
-                }
-
-                Toggle(l("I have read, understood, and agree to the above terms."), isOn: $consent)
-                    .toggleStyle(
-                        IRefairCheckboxToggleStyle(
-                            labelColor: Color.white,
-                            labelFont: Theme.font(size: Theme.fieldLabelFontSize, weight: .semibold),
-                            labelKerning: Theme.fieldLabelKerning,
-                            verticalAlignment: .center,
-                            uncheckedFillColor: Color.white.opacity(0.9),
-                            uncheckedBorderColor: Color(hex: 0x4B5563).opacity(0.72)
+                    Toggle(l("I have read, understood, and agree to the above terms."), isOn: $consent)
+                        .toggleStyle(
+                            IRefairCheckboxToggleStyle(
+                                labelColor: Color.white,
+                                labelFont: Theme.font(size: Theme.fieldLabelFontSize, weight: .semibold),
+                                labelKerning: Theme.fieldLabelKerning,
+                                verticalAlignment: .center,
+                                uncheckedFillColor: Color.white.opacity(0.9),
+                                uncheckedBorderColor: Color(hex: 0x4B5563).opacity(0.72)
+                            )
                         )
-                    )
-                errorText("consent")
-            }
-            .padding(.top, -12)
+                        .id(fieldAnchorId(for: "consent"))
+                    errorText("consent")
+                }
+                .padding(.top, -12)
 
-            if let errorMessage {
-                IRefairSection {
-                    StatusBanner(text: errorMessage, style: .error)
+                if let errorMessage {
+                    IRefairSection {
+                        StatusBanner(text: errorMessage, style: .error)
+                    }
+                }
+
+                if let statusMessage {
+                    IRefairSection {
+                        StatusBanner(text: statusMessage, style: .success)
+                    }
+                }
+
+                actionButtons
+                    .frame(maxWidth: .infinity, alignment: useLandscapeActionRow ? .trailing : .leading)
+                    .padding(.top, 8)
+            }
+            .onChange(of: validationScrollTarget) { target in
+                guard let target else { return }
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    scrollProxy.scrollTo(target, anchor: .top)
                 }
             }
-
-            if let statusMessage {
-                IRefairSection {
-                    StatusBanner(text: statusMessage, style: .success)
-                }
-            }
-
-            actionButtons
-                .frame(maxWidth: .infinity, alignment: useLandscapeActionRow ? .trailing : .leading)
-                .padding(.top, 8)
         }
     }
 
     private func errorText(_ key: String) -> some View {
         Group {
             if let message = fieldErrors[key] {
-                Text(message).foregroundStyle(Theme.warning.opacity(0.95)).font(Theme.font(.caption))
+                Text(message)
+                    .foregroundStyle(Theme.warning.opacity(0.95))
+                    .font(Theme.font(.caption))
             }
         }
     }
@@ -267,6 +288,19 @@ struct ReferrerRegistrationView: View {
         NSLocalizedString(key, comment: "")
     }
 
+    private func fieldAnchorId(for key: String) -> String {
+        "referrer-validation-field-\(key)"
+    }
+
+    private func scrollToFirstValidationError(_ key: String?) {
+        guard let key else { return }
+        let target = fieldAnchorId(for: key)
+        validationScrollTarget = nil
+        DispatchQueue.main.async {
+            validationScrollTarget = target
+        }
+    }
+
     private func pickerDisplayValue(_ value: String, options: [(value: String, label: String)]) -> String {
         guard !value.isEmpty else { return l("Select") }
         return options.first(where: { $0.value == value })?.label ?? value
@@ -315,43 +349,53 @@ struct ReferrerRegistrationView: View {
 
     private func validate() -> Bool {
         var errors: [String: String] = [:]
+        var firstErrorKey: String?
+
+        func addError(_ key: String, _ message: String) {
+            if firstErrorKey == nil {
+                firstErrorKey = key
+            }
+            errors[key] = message
+        }
+
         if fullName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["name"] = l("Please enter your name.")
+            addError("name", l("Please enter your name."))
         }
         let emailValue = email.trimmingCharacters(in: .whitespacesAndNewlines)
         if emailValue.isEmpty {
-            errors["email"] = l("Please enter your work email.")
+            addError("email", l("Please enter your work email."))
         } else if !Validator.isValidEmail(emailValue) {
-            errors["email"] = l("Please enter a valid email address.")
+            addError("email", l("Please enter a valid email address."))
         }
         if phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["phone"] = l("Please enter your phone number.")
+            addError("phone", l("Please enter your phone number."))
         }
         if country.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["country"] = l("Please select your country of origin.")
-        }
-        if companyIndustry.isEmpty {
-            errors["companyIndustry"] = l("Please select the company industry.")
-        }
-        if companyIndustry == "Other" && companyIndustryOther.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["companyIndustryOther"] = l("Please specify the company industry.")
-        }
-        if workType.isEmpty {
-            errors["workType"] = l("Please select a work type.")
+            addError("country", l("Please select your country of origin."))
         }
         let careersPortalValue = careersPortal.trimmingCharacters(in: .whitespacesAndNewlines)
         if careersPortalValue.isEmpty {
-            errors["careersPortal"] = l("Please enter the careers portal URL.")
+            addError("careersPortal", l("Please enter the careers portal URL."))
         } else if !isValidUrl(careersPortalValue) {
-            errors["careersPortal"] = l("Please enter a valid URL (http/https).")
+            addError("careersPortal", l("Please enter a valid URL (http/https)."))
+        }
+        if companyIndustry.isEmpty {
+            addError("companyIndustry", l("Please select the company industry."))
+        }
+        if companyIndustry == "Other" && companyIndustryOther.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            addError("companyIndustryOther", l("Please specify the company industry."))
+        }
+        if workType.isEmpty {
+            addError("workType", l("Please select a work type."))
         }
         if !Validator.isValidLinkedInProfile(linkedIn) {
-            errors["linkedIn"] = l("Please enter a valid LinkedIn profile URL.")
+            addError("linkedIn", l("Please enter a valid LinkedIn profile URL."))
         }
         if !consent {
-            errors["consent"] = l("Consent is required.")
+            addError("consent", l("Consent is required."))
         }
         fieldErrors = errors
+        scrollToFirstValidationError(firstErrorKey)
         return errors.isEmpty
     }
 
