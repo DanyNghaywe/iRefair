@@ -194,7 +194,7 @@ struct ReferrerRegistrationView: View {
     private func errorText(_ key: String) -> some View {
         Group {
             if let message = fieldErrors[key] {
-                Text(message).foregroundStyle(Theme.error).font(Theme.font(.caption))
+                Text(message).foregroundStyle(Theme.warning.opacity(0.95)).font(Theme.font(.caption))
             }
         }
     }
@@ -316,34 +316,37 @@ struct ReferrerRegistrationView: View {
     private func validate() -> Bool {
         var errors: [String: String] = [:]
         if fullName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["name"] = l("Full name is required.")
+            errors["name"] = l("Please enter your name.")
         }
-        if !Validator.isValidEmail(email) {
-            errors["email"] = l("Enter a valid email.")
+        let emailValue = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        if emailValue.isEmpty {
+            errors["email"] = l("Please enter your work email.")
+        } else if !Validator.isValidEmail(emailValue) {
+            errors["email"] = l("Please enter a valid email address.")
         }
         if phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["phone"] = l("Phone number is required.")
+            errors["phone"] = l("Please enter your phone number.")
         }
         if country.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["country"] = l("Country is required.")
+            errors["country"] = l("Please select your country of origin.")
         }
         if companyIndustry.isEmpty {
-            errors["companyIndustry"] = l("Select an industry.")
+            errors["companyIndustry"] = l("Please select the company industry.")
         }
         if companyIndustry == "Other" && companyIndustryOther.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["companyIndustryOther"] = l("Specify the industry.")
+            errors["companyIndustryOther"] = l("Please specify the company industry.")
         }
         if workType.isEmpty {
-            errors["workType"] = l("Select a work type.")
+            errors["workType"] = l("Please select a work type.")
         }
         let careersPortalValue = careersPortal.trimmingCharacters(in: .whitespacesAndNewlines)
         if careersPortalValue.isEmpty {
-            errors["careersPortal"] = l("Careers portal URL is required.")
+            errors["careersPortal"] = l("Please enter the careers portal URL.")
         } else if !isValidUrl(careersPortalValue) {
-            errors["careersPortal"] = l("Enter a valid careers portal URL.")
+            errors["careersPortal"] = l("Please enter a valid URL (http/https).")
         }
         if !Validator.isValidLinkedInProfile(linkedIn) {
-            errors["linkedIn"] = l("Enter a valid LinkedIn profile URL.")
+            errors["linkedIn"] = l("Please enter a valid LinkedIn profile URL.")
         }
         if !consent {
             errors["consent"] = l("Consent is required.")

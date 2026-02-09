@@ -170,7 +170,7 @@ struct ApplyView: View {
     private func errorText(_ key: String) -> some View {
         Group {
             if let message = fieldErrors[key] {
-                Text(message).foregroundStyle(Theme.error).font(Theme.font(.caption))
+                Text(message).foregroundStyle(Theme.warning.opacity(0.95)).font(Theme.font(.caption))
             }
         }
     }

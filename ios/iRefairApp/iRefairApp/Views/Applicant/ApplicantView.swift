@@ -379,7 +379,7 @@ struct ApplicantView: View {
     private func errorText(_ key: String) -> some View {
         Group {
             if let message = fieldErrors[key] {
-                Text(message).foregroundStyle(Theme.error).font(Theme.font(.caption))
+                Text(message).foregroundStyle(Theme.warning.opacity(0.95)).font(Theme.font(.caption))
             }
         }
     }
@@ -617,51 +617,54 @@ struct ApplicantView: View {
     private func validate() -> Bool {
         var errors: [String: String] = [:]
         if firstName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["firstName"] = l("First name is required.")
+            errors["firstName"] = l("Please enter your first name.")
         }
         if familyName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["familyName"] = l("Last name is required.")
+            errors["familyName"] = l("Please enter your family name.")
         }
-        if !Validator.isValidEmail(email) {
-            errors["email"] = l("Enter a valid email.")
+        let emailValue = email.trimmingCharacters(in: .whitespacesAndNewlines)
+        if emailValue.isEmpty {
+            errors["email"] = l("Please enter your email address.")
+        } else if !Validator.isValidEmail(emailValue) {
+            errors["email"] = l("Please enter a valid email address.")
         }
         if phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["phone"] = l("Phone number is required.")
+            errors["phone"] = l("Please enter your phone number.")
         }
         if countryOfOrigin.isEmpty {
-            errors["countryOfOrigin"] = l("Select a country.")
+            errors["countryOfOrigin"] = l("Please select your country of origin.")
         }
         if languages.isEmpty {
-            errors["languages"] = l("Select at least one language.")
+            errors["languages"] = l("Please select at least one language.")
         }
         if languages.contains("Other") && languagesOther.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["languagesOther"] = l("Specify other languages.")
+            errors["languagesOther"] = l("Please specify the other language.")
         }
         if locatedCanada.isEmpty {
-            errors["locatedCanada"] = l("Select an option.")
+            errors["locatedCanada"] = l("Please select your current location status.")
         }
         if locatedCanada == "Yes" {
             if province.isEmpty {
-                errors["province"] = l("Select a province.")
+                errors["province"] = l("Please select your province.")
             }
             if authorizedCanada.isEmpty {
-                errors["authorizedCanada"] = l("Select an option.")
+                errors["authorizedCanada"] = l("Please confirm your work authorization.")
             }
         }
         if locatedCanada == "No" && eligibleMoveCanada.isEmpty {
-            errors["eligibleMoveCanada"] = l("Select an option.")
+            errors["eligibleMoveCanada"] = l("Please confirm if you can move and work in Canada in the next 6 months.")
         }
         if industryType.isEmpty {
-            errors["industryType"] = l("Select an industry.")
+            errors["industryType"] = l("Please select an industry type.")
         }
         if industryType == "Other" && industryOther.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors["industryOther"] = l("Provide industry details.")
+            errors["industryOther"] = l("Please specify the other industry type.")
         }
         if employmentStatus.isEmpty {
-            errors["employmentStatus"] = l("Select an option.")
+            errors["employmentStatus"] = l("Please select your employment status.")
         }
         if !Validator.isValidLinkedInProfile(linkedin) {
-            errors["linkedin"] = l("Enter a valid LinkedIn profile URL.")
+            errors["linkedin"] = l("Please enter a valid LinkedIn profile URL.")
         }
         if requiresResume && resumeFile == nil {
             errors["resume"] = l("Please upload your resume / CV.")
