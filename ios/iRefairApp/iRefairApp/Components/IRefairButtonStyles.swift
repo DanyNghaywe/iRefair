@@ -1,6 +1,12 @@
 import SwiftUI
 
 struct IRefairPrimaryButtonStyle: ButtonStyle {
+    let fillWidth: Bool
+
+    init(fillWidth: Bool = true) {
+        self.fillWidth = fillWidth
+    }
+
     func makeBody(configuration: Configuration) -> some View {
         let isPressed = configuration.isPressed
 
@@ -9,7 +15,7 @@ struct IRefairPrimaryButtonStyle: ButtonStyle {
             .foregroundStyle(Color.white)
             .padding(.vertical, 12)
             .padding(.horizontal, 16)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: fillWidth ? .infinity : nil)
             .frame(minHeight: 44)
             .background(
                 LinearGradient(

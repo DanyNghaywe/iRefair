@@ -3,11 +3,11 @@ import UniformTypeIdentifiers
 
 struct ApplyView: View {
     private let apiBaseURL: String = APIConfig.baseURL
-    private let actionColumns = [GridItem(.adaptive(minimum: 360), spacing: 12)]
     private let moreInfoURL = URL(string: "https://andbeyondca.com/impact/")
     private let applyLinkTopSpacing: CGFloat = 8
 
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @EnvironmentObject private var networkMonitor: NetworkMonitor
 
     @State private var applicantId = ""
@@ -137,31 +137,9 @@ struct ApplyView: View {
                         }
                     }
 
-                    LazyVGrid(columns: actionColumns, spacing: 12) {
-                        Button(l("Clear form")) {
-                            resetForm()
-                        }
-                        .frame(maxWidth: .infinity)
-                        .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
-                        .disabled(isSubmitting)
-
-                        Button {
-                            Task { await submit() }
-                        } label: {
-                            if isSubmitting {
-                                HStack(spacing: 8) {
-                                    Text(l("Submitting..."))
-                                    ProgressView().tint(.white)
-                                }
-                            } else {
-                                Text(l("Submit"))
-                            }
-                        }
-                        .buttonStyle(IRefairPrimaryButtonStyle())
-                        .disabled(isSubmitting || !networkMonitor.isConnected)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, 8)
+                    actionButtons
+                        .frame(maxWidth: .infinity, alignment: useLandscapeActionRow ? .trailing : .leading)
+                        .padding(.top, 8)
 
                     IRefairSection {
                         VStack(alignment: .leading, spacing: 8) {
@@ -195,6 +173,53 @@ struct ApplyView: View {
                 Text(message).foregroundStyle(Theme.error).font(Theme.font(.caption))
             }
         }
+    }
+
+    @ViewBuilder
+    private var actionButtons: some View {
+        if useLandscapeActionRow {
+            HStack(spacing: 12) {
+                Spacer(minLength: 0)
+                clearActionButton(fillWidth: false)
+                submitActionButton(fillWidth: false)
+            }
+        } else {
+            VStack(spacing: 12) {
+                clearActionButton(fillWidth: true)
+                submitActionButton(fillWidth: true)
+            }
+        }
+    }
+
+    private var useLandscapeActionRow: Bool {
+        verticalSizeClass == .compact || horizontalSizeClass == .regular
+    }
+
+    private func clearActionButton(fillWidth: Bool) -> some View {
+        Button(l("Clear form")) {
+            resetForm()
+        }
+        .frame(maxWidth: fillWidth ? .infinity : nil)
+        .buttonStyle(IRefairGhostButtonStyle(fillWidth: fillWidth))
+        .disabled(isSubmitting)
+    }
+
+    private func submitActionButton(fillWidth: Bool) -> some View {
+        Button {
+            Task { await submit() }
+        } label: {
+            if isSubmitting {
+                HStack(spacing: 8) {
+                    Text(l("Submitting..."))
+                    ProgressView().tint(.white)
+                }
+            } else {
+                Text(l("Submit"))
+            }
+        }
+        .frame(maxWidth: fillWidth ? .infinity : nil)
+        .buttonStyle(IRefairPrimaryButtonStyle(fillWidth: fillWidth))
+        .disabled(isSubmitting || !networkMonitor.isConnected)
     }
 
     private func l(_ key: String) -> String {

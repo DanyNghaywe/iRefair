@@ -2,8 +2,9 @@ import SwiftUI
 
 struct ReferrerRegistrationView: View {
     private let apiBaseURL: String = APIConfig.baseURL
-    private let actionColumns = [GridItem(.adaptive(minimum: 360), spacing: 12)]
 
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    @Environment(\.verticalSizeClass) private var verticalSizeClass
     @EnvironmentObject private var networkMonitor: NetworkMonitor
 
     @State private var fullName = ""
@@ -184,31 +185,9 @@ struct ReferrerRegistrationView: View {
                 }
             }
 
-            LazyVGrid(columns: actionColumns, spacing: 12) {
-                Button(l("Clear form")) {
-                    resetForm()
-                }
-                .frame(maxWidth: .infinity)
-                .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
-                .disabled(isSubmitting)
-
-                Button {
-                    Task { await submit() }
-                } label: {
-                    if isSubmitting {
-                        HStack(spacing: 8) {
-                            Text(l("Submitting..."))
-                            ProgressView().tint(.white)
-                        }
-                    } else {
-                        Text(l("Send referrer details"))
-                    }
-                }
-                .buttonStyle(IRefairPrimaryButtonStyle())
-                .disabled(isSubmitting || !networkMonitor.isConnected)
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.top, 8)
+            actionButtons
+                .frame(maxWidth: .infinity, alignment: useLandscapeActionRow ? .trailing : .leading)
+                .padding(.top, 8)
         }
     }
 
@@ -218,6 +197,53 @@ struct ReferrerRegistrationView: View {
                 Text(message).foregroundStyle(Theme.error).font(Theme.font(.caption))
             }
         }
+    }
+
+    @ViewBuilder
+    private var actionButtons: some View {
+        if useLandscapeActionRow {
+            HStack(spacing: 12) {
+                Spacer(minLength: 0)
+                clearActionButton(fillWidth: false)
+                submitActionButton(fillWidth: false)
+            }
+        } else {
+            VStack(spacing: 12) {
+                clearActionButton(fillWidth: true)
+                submitActionButton(fillWidth: true)
+            }
+        }
+    }
+
+    private var useLandscapeActionRow: Bool {
+        verticalSizeClass == .compact || horizontalSizeClass == .regular
+    }
+
+    private func clearActionButton(fillWidth: Bool) -> some View {
+        Button(l("Clear form")) {
+            resetForm()
+        }
+        .frame(maxWidth: fillWidth ? .infinity : nil)
+        .buttonStyle(IRefairGhostButtonStyle(fillWidth: fillWidth))
+        .disabled(isSubmitting)
+    }
+
+    private func submitActionButton(fillWidth: Bool) -> some View {
+        Button {
+            Task { await submit() }
+        } label: {
+            if isSubmitting {
+                HStack(spacing: 8) {
+                    Text(l("Submitting..."))
+                    ProgressView().tint(.white)
+                }
+            } else {
+                Text(l("Send referrer details"))
+            }
+        }
+        .frame(maxWidth: fillWidth ? .infinity : nil)
+        .buttonStyle(IRefairPrimaryButtonStyle(fillWidth: fillWidth))
+        .disabled(isSubmitting || !networkMonitor.isConnected)
     }
 
     private var companyIndustryOptions: [(value: String, label: String)] {
