@@ -37,31 +37,25 @@ struct ReferrerPortalView: View {
                         .autocorrectionDisabled()
                         .accessibilityLabel(l("Paste token or portal link"))
                 }
-                HStack {
-                    Button(l("Save token")) {
-                        let token = extractToken(from: tokenInput)
-                        storedToken = token
-                        tokenInput = token
-                        if !token.isEmpty {
-                            KeychainStore.save(token, key: "referrerPortalToken")
-                        }
-                    }
-                    .buttonStyle(IRefairGhostButtonStyle())
-                    Spacer()
+                HStack(spacing: 12) {
                     Button(l("Clear")) {
                         storedToken = ""
                         tokenInput = ""
                         referrer = nil
                         applicants = []
+                        errorMessage = nil
+                        statusMessage = nil
                         KeychainStore.delete(key: "referrerPortalToken")
                     }
-                    .buttonStyle(IRefairGhostButtonStyle())
+                    .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
+                    .disabled(tokenInput.isEmpty && storedToken.isEmpty && referrer == nil && applicants.isEmpty)
+
+                    Button(l("Load portal data")) {
+                        Task { await loadPortal() }
+                    }
+                    .buttonStyle(IRefairPrimaryButtonStyle(fillWidth: true))
+                    .disabled(isLoading || !networkMonitor.isConnected)
                 }
-                Button(l("Load portal data")) {
-                    Task { await loadPortal() }
-                }
-                .buttonStyle(IRefairPrimaryButtonStyle())
-                .disabled(isLoading || !networkMonitor.isConnected)
             }
 
             if let referrer {
