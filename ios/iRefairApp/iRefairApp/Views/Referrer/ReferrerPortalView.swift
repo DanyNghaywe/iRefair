@@ -60,12 +60,17 @@ struct ReferrerPortalView: View {
 
             if let referrer {
                 IRefairSection(l("Referrer")) {
-                    Text("\(referrer.firstName) \(referrer.lastName)")
+                    Text(referrer.displayName)
                     Text(referrer.email)
                         .foregroundStyle(Theme.muted)
                     Text("\(l("ID")): \(referrer.irref)")
                         .font(Theme.font(.caption))
                         .foregroundStyle(Theme.muted)
+                    if let company = referrer.company, !company.isEmpty {
+                        Text(company)
+                            .font(Theme.font(.caption))
+                            .foregroundStyle(Theme.muted)
+                    }
                 }
             }
 

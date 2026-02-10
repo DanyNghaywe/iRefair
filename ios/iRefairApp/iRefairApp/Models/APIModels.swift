@@ -89,7 +89,30 @@ struct ReferrerPortalDataResponse: APIResult {
     let ok: Bool
     let referrer: ReferrerSummary?
     let applicants: [ReferrerApplicant]?
+    let companies: [ReferrerCompany]?
     let error: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case ok
+        case referrer
+        case applicants
+        case items
+        case companies
+        case error
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        ok = try container.decode(Bool.self, forKey: .ok)
+        referrer = try container.decodeIfPresent(ReferrerSummary.self, forKey: .referrer)
+        if let applicants = try container.decodeIfPresent([ReferrerApplicant].self, forKey: .applicants) {
+            self.applicants = applicants
+        } else {
+            self.applicants = try container.decodeIfPresent([ReferrerApplicant].self, forKey: .items)
+        }
+        companies = try container.decodeIfPresent([ReferrerCompany].self, forKey: .companies)
+        error = try container.decodeIfPresent(String.self, forKey: .error)
+    }
 }
 
 struct ReferrerFeedbackResponse: APIResult {
@@ -135,20 +158,117 @@ struct ReferrerSummary: Decodable {
     let firstName: String
     let lastName: String
     let email: String
+    let company: String?
+
+    var displayName: String {
+        let name = [firstName, lastName]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        return name.isEmpty ? irref : name
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case irref
+        case firstName
+        case lastName
+        case name
+        case email
+        case company
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        irref = try container.decode(String.self, forKey: .irref)
+        email = try container.decodeIfPresent(String.self, forKey: .email) ?? ""
+        company = try container.decodeIfPresent(String.self, forKey: .company)
+
+        let decodedFirst = (try container.decodeIfPresent(String.self, forKey: .firstName) ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let decodedLast = (try container.decodeIfPresent(String.self, forKey: .lastName) ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let fullName = (try container.decodeIfPresent(String.self, forKey: .name) ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if !decodedFirst.isEmpty || !decodedLast.isEmpty {
+            firstName = decodedFirst
+            lastName = decodedLast
+        } else if !fullName.isEmpty {
+            firstName = fullName
+            lastName = ""
+        } else {
+            firstName = ""
+            lastName = ""
+        }
+    }
 }
 
 struct ReferrerApplicant: Identifiable, Decodable {
-    var id: String { irain }
+    let id: String
     let irain: String
+    let applicationId: String?
     let firstName: String?
     let lastName: String?
+    let applicantName: String?
     let email: String?
     let status: String?
     let phone: String?
 
     var displayName: String {
+        if let applicantName, !applicantName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return applicantName
+        }
         let parts = [firstName, lastName].compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
         let name = parts.joined(separator: " ")
-        return name.isEmpty ? irain : name
+        let fallback = irain.isEmpty ? id : irain
+        return name.isEmpty ? fallback : name
     }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case applicationId
+        case irain
+        case applicantId
+        case firstName
+        case lastName
+        case applicantName
+        case email
+        case applicantEmail
+        case status
+        case phone
+        case applicantPhone
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+
+        let primaryApplicationId = try container.decodeIfPresent(String.self, forKey: .applicationId)
+        let fallbackApplicationId = try container.decodeIfPresent(String.self, forKey: .id)
+        let decodedApplicationId = primaryApplicationId ?? fallbackApplicationId
+
+        let primaryApplicantId = try container.decodeIfPresent(String.self, forKey: .irain)
+        let fallbackApplicantId = try container.decodeIfPresent(String.self, forKey: .applicantId)
+        let decodedApplicantId = primaryApplicantId ?? fallbackApplicantId
+
+        applicationId = decodedApplicationId
+        irain = decodedApplicantId ?? ""
+        id = decodedApplicationId ?? decodedApplicantId ?? ""
+
+        firstName = try container.decodeIfPresent(String.self, forKey: .firstName)
+        lastName = try container.decodeIfPresent(String.self, forKey: .lastName)
+        applicantName = try container.decodeIfPresent(String.self, forKey: .applicantName)
+        let primaryEmail = try container.decodeIfPresent(String.self, forKey: .email)
+        let fallbackEmail = try container.decodeIfPresent(String.self, forKey: .applicantEmail)
+        email = primaryEmail ?? fallbackEmail
+        status = try container.decodeIfPresent(String.self, forKey: .status)
+        let primaryPhone = try container.decodeIfPresent(String.self, forKey: .phone)
+        let fallbackPhone = try container.decodeIfPresent(String.self, forKey: .applicantPhone)
+        phone = primaryPhone ?? fallbackPhone
+    }
+}
+
+struct ReferrerCompany: Identifiable, Decodable {
+    let id: String
+    let name: String
+    let ircrn: String
 }
