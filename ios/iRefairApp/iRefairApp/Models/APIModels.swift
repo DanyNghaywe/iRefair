@@ -53,8 +53,30 @@ struct HiringCompany: Identifiable, Decodable {
 
 struct ReferrerRegistrationResponse: APIResult {
     let ok: Bool
-    let irref: String?
+    let iRref: String?
+    let isExisting: Bool?
+    let newCompanyAdded: Bool?
     let error: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case ok
+        case iRref
+        case irref
+        case isExisting
+        case newCompanyAdded
+        case error
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        ok = try container.decode(Bool.self, forKey: .ok)
+        let primaryIRref = try container.decodeIfPresent(String.self, forKey: .iRref)
+        let fallbackIRref = try container.decodeIfPresent(String.self, forKey: .irref)
+        iRref = primaryIRref ?? fallbackIRref
+        isExisting = try container.decodeIfPresent(Bool.self, forKey: .isExisting)
+        newCompanyAdded = try container.decodeIfPresent(Bool.self, forKey: .newCompanyAdded)
+        error = try container.decodeIfPresent(String.self, forKey: .error)
+    }
 }
 
 struct ReferrerPortalLinkResponse: APIResult {

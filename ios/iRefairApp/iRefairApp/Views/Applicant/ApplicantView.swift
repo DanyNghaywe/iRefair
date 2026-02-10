@@ -42,6 +42,9 @@ struct ApplicantView: View {
     @State private var errorMessage: String?
     @State private var fieldErrors: [String: String] = [:]
     @State private var validationScrollTarget: String?
+    @State private var showSuccessModal = false
+    @State private var successModalVariant: SubmissionSuccessVariant = .default
+    @State private var submittedEmail = ""
 
     private let languageValues = ["English", "Arabic", "French", "Other"]
     private let employmentValues = ["Yes", "No", "Temporary Work"]
@@ -402,6 +405,13 @@ struct ApplicantView: View {
                 }
             }
         }
+        .overlay {
+            SubmissionSuccessPresentation(
+                isPresented: $showSuccessModal,
+                variant: successModalVariant,
+                email: submittedEmail
+            )
+        }
     }
 
     private func errorText(_ key: String) -> some View {
@@ -753,6 +763,9 @@ struct ApplicantView: View {
         fieldErrors = [:]
         errorMessage = nil
         statusMessage = nil
+        showSuccessModal = false
+        submittedEmail = ""
+        successModalVariant = .default
     }
 
     private func buildPayload() -> [String: String] {
@@ -809,6 +822,16 @@ struct ApplicantView: View {
                 resume: resumeFile
             )
             statusMessage = response.message ?? l("We've received your request. We'll follow up by email soon.")
+            submittedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+            let confirmationStatus = response.confirmationEmailStatus?.lowercased()
+            if confirmationStatus == "recent" {
+                successModalVariant = .confirmationLinkRecent
+            } else if confirmationStatus == "first" {
+                successModalVariant = .default
+            } else {
+                successModalVariant = .confirmationLink
+            }
+            showSuccessModal = true
             if !updateToken.isEmpty && !updateAppId.isEmpty {
                 updatePurpose = ""
                 updateToken = ""

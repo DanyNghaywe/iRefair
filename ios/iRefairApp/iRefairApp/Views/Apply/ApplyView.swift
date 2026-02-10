@@ -25,6 +25,7 @@ struct ApplyView: View {
     @State private var errorMessage: String?
     @State private var fieldErrors: [String: String] = [:]
     @State private var validationScrollTarget: String?
+    @State private var showSuccessModal = false
 
     var body: some View {
         NavigationStack {
@@ -178,6 +179,12 @@ struct ApplyView: View {
                     }
                 }
             }
+        }
+        .overlay {
+            SubmissionSuccessPresentation(
+                isPresented: $showSuccessModal,
+                variant: .default
+            )
         }
     }
 
@@ -336,6 +343,7 @@ struct ApplyView: View {
         fieldErrors = [:]
         errorMessage = nil
         statusMessage = nil
+        showSuccessModal = false
     }
 
     private func buildPayload() -> [String: String] {
@@ -376,6 +384,7 @@ struct ApplyView: View {
                 resume: resumeFile
             )
             statusMessage = response.message ?? l("Application submitted. We'll log it and follow up with next steps.")
+            showSuccessModal = true
             Telemetry.track("apply_submit_success")
         } catch {
             Telemetry.capture(error)

@@ -24,6 +24,8 @@ struct ReferrerRegistrationView: View {
     @State private var errorMessage: String?
     @State private var fieldErrors: [String: String] = [:]
     @State private var validationScrollTarget: String?
+    @State private var showSuccessModal = false
+    @State private var successModalVariant: SubmissionSuccessVariant = .referrerNew
 
     private let companyIndustryValues = [
         "Technology",
@@ -65,49 +67,59 @@ struct ReferrerRegistrationView: View {
                     }
                 }
 
-                IRefairSection(l("Become a referrer")) {
-                    IRefairField(l("Full name *")) {
+                IRefairSection(l("Personal Information")) {
+                    IRefairField(l("Full Name")) {
                         IRefairTextField("", text: $fullName)
-                            .accessibilityLabel(l("Full name *"))
+                            .accessibilityLabel(l("Full Name"))
                     }
                     .id(fieldAnchorId(for: "name"))
                     errorText("name")
-                    IRefairField(l("Work email *")) {
+                    IRefairField(l("Email address")) {
                         IRefairTextField("", text: $email)
                             .keyboardType(.emailAddress)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
-                            .accessibilityLabel(l("Work email *"))
+                            .accessibilityLabel(l("Email address"))
                     }
                     .id(fieldAnchorId(for: "email"))
                     errorText("email")
-                    IRefairField(l("Phone")) {
+                    IRefairField(l("Phone Number")) {
                         IRefairTextField(l("+1-XXX-XXXX or +961-XX-XXXXXX"), text: $phone)
-                            .accessibilityLabel(l("Phone"))
+                            .accessibilityLabel(l("Phone Number"))
                     }
                     .id(fieldAnchorId(for: "phone"))
                     errorText("phone")
-                    IRefairField(l("Country")) {
-                        IRefairTextField(l("Select"), text: $country)
-                            .accessibilityLabel(l("Country"))
+                    IRefairMenuPicker(
+                        l("Country of Origin"),
+                        displayValue: country.isEmpty ? l("Select") : country,
+                        isPlaceholder: country.isEmpty,
+                        selection: $country
+                    ) {
+                        Text(l("Select")).tag("")
+                        ForEach(CountryData.all, id: \.self) { item in
+                            Text(item).tag(item)
+                        }
                     }
                     .id(fieldAnchorId(for: "country"))
                     errorText("country")
-                    IRefairField(l("Company name")) {
-                        IRefairTextField("", text: $company)
-                            .accessibilityLabel(l("Company name"))
-                    }
-                    IRefairField(l("Careers portal URL")) {
-                        IRefairTextField(l("https://company.com/careers"), text: $careersPortal)
+                    IRefairField(l("LinkedIn Profile (optional)")) {
+                        IRefairTextField(l("https://linkedin.com/in/"), text: $linkedIn)
                             .keyboardType(.URL)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
-                            .accessibilityLabel(l("Careers portal URL"))
+                            .accessibilityLabel(l("LinkedIn Profile (optional)"))
                     }
-                    .id(fieldAnchorId(for: "careersPortal"))
-                    errorText("careersPortal")
+                    .id(fieldAnchorId(for: "linkedIn"))
+                    errorText("linkedIn")
+                }
+
+                IRefairSection(l("Company Details")) {
+                    IRefairField(l("Company Name (optional)")) {
+                        IRefairTextField("", text: $company)
+                            .accessibilityLabel(l("Company Name (optional)"))
+                    }
                     IRefairMenuPicker(
-                        l("Company industry"),
+                        l("Industry of the company"),
                         displayValue: pickerDisplayValue(companyIndustry, options: companyIndustryOptions),
                         isPlaceholder: companyIndustry.isEmpty,
                         selection: $companyIndustry
@@ -120,15 +132,15 @@ struct ReferrerRegistrationView: View {
                     .id(fieldAnchorId(for: "companyIndustry"))
                     errorText("companyIndustry")
                     if companyIndustry == "Other" {
-                        IRefairField(l("Other industry")) {
+                        IRefairField(l("Other company industry")) {
                             IRefairTextField(l("Please specify"), text: $companyIndustryOther)
-                                .accessibilityLabel(l("Other industry"))
+                                .accessibilityLabel(l("Other company industry"))
                         }
                         .id(fieldAnchorId(for: "companyIndustryOther"))
                         errorText("companyIndustryOther")
                     }
                     IRefairMenuPicker(
-                        l("Work type"),
+                        l("Type of work"),
                         displayValue: pickerDisplayValue(workType, options: workTypeOptions),
                         isPlaceholder: workType.isEmpty,
                         selection: $workType
@@ -140,15 +152,16 @@ struct ReferrerRegistrationView: View {
                     }
                     .id(fieldAnchorId(for: "workType"))
                     errorText("workType")
-                    IRefairField(l("LinkedIn profile")) {
-                        IRefairTextField(l("https://linkedin.com/in/"), text: $linkedIn)
+
+                    IRefairField(l("Careers Portal URL")) {
+                        IRefairTextField(l("https://company.com/careers"), text: $careersPortal)
                             .keyboardType(.URL)
                             .textInputAutocapitalization(.never)
                             .autocorrectionDisabled()
-                            .accessibilityLabel(l("LinkedIn profile"))
+                            .accessibilityLabel(l("Careers Portal URL"))
                     }
-                    .id(fieldAnchorId(for: "linkedIn"))
-                    errorText("linkedIn")
+                    .id(fieldAnchorId(for: "careersPortal"))
+                    errorText("careersPortal")
                 }
 
                 IRefairSection {
@@ -207,6 +220,12 @@ struct ReferrerRegistrationView: View {
                     scrollProxy.scrollTo(target, anchor: .top)
                 }
             }
+        }
+        .overlay {
+            SubmissionSuccessPresentation(
+                isPresented: $showSuccessModal,
+                variant: successModalVariant
+            )
         }
     }
 
@@ -414,6 +433,8 @@ struct ReferrerRegistrationView: View {
         fieldErrors = [:]
         errorMessage = nil
         statusMessage = nil
+        showSuccessModal = false
+        successModalVariant = .referrerNew
     }
 
     @MainActor
@@ -449,9 +470,15 @@ struct ReferrerRegistrationView: View {
                 "website": "",
             ]
             let response = try await APIClient.registerReferrer(baseURL: apiBaseURL, payload: payload)
-            statusMessage = response.irref != nil
-            ? String.localizedStringWithFormat(l("Referrer registered. Your ID: %@"), response.irref ?? "")
-            : l("Referrer registered.")
+            let isExistingReferrer = response.isExisting == true
+            let addedCompany = response.newCompanyAdded == true
+            statusMessage = isExistingReferrer
+            ? l("We've received your submission. Our admin team will review any updates and be in touch.")
+            : l("We've received your details. We'll reach out when there's an applicant match.")
+            successModalVariant = addedCompany
+            ? .referrerNewCompany
+            : (isExistingReferrer ? .referrerExisting : .referrerNew)
+            showSuccessModal = true
             Telemetry.track("referrer_register_success")
         } catch {
             Telemetry.capture(error)
