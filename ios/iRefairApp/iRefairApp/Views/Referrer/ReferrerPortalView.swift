@@ -15,6 +15,7 @@ struct ReferrerPortalView: View {
 
     @State private var selectedApplicant: ReferrerApplicant?
     private let loadingRows = 1
+    private let referrerMetaSingleColumnBreakpoint: CGFloat = 340
 
     var body: some View {
         IRefairForm {
@@ -124,11 +125,17 @@ struct ReferrerPortalView: View {
     }
 
     private var referrerMetaColumns: [GridItem] {
-        [GridItem(.adaptive(minimum: 170), spacing: 16, alignment: .leading)]
+        if UIScreen.main.bounds.width <= referrerMetaSingleColumnBreakpoint {
+            return [GridItem(.flexible(minimum: 0), spacing: 16, alignment: .leading)]
+        }
+        return [
+            GridItem(.flexible(minimum: 0), spacing: 16, alignment: .leading),
+            GridItem(.flexible(minimum: 0), spacing: 16, alignment: .leading),
+        ]
     }
 
     private func referrerMeta(_ referrer: ReferrerSummary) -> some View {
-        LazyVGrid(columns: referrerMetaColumns, alignment: .leading, spacing: 10) {
+        LazyVGrid(columns: referrerMetaColumns, alignment: .leading, spacing: 12) {
             referrerMetaItem(
                 title: l("Referrer"),
                 value: "\(referrer.displayName) - \(referrer.irref)"
