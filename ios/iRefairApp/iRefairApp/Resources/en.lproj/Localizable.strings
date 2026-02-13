@@ -9,6 +9,7 @@
 "Applicant key is required." = "Applicant key is required.";
 "Applicant referral request" = "Applicant referral request";
 "Applicants" = "Applicants";
+"Applications" = "Applications";
 "Application" = "Application";
 "Application details" = "Application details";
 "Application submitted successfully." = "Application submitted successfully.";
@@ -45,8 +46,10 @@
 "Consent & Legal Disclaimer" = "Consent & Legal Disclaimer";
 "Consent is required." = "Consent is required.";
 "By submitting this form, I agree to be contacted by iRefair when a potential applicant may align with open roles at my company. I understand and acknowledge the following:" = "By submitting this form, I agree to be contacted by iRefair when a potential applicant may align with open roles at my company. I understand and acknowledge the following:";
+"Candidate applications will appear here once they're assigned to you. Check back soon for new referrals to review." = "Candidate applications will appear here once they're assigned to you. Check back soon for new referrals to review.";
 "iRefair is a voluntary, community-driven initiative, and I am under no obligation to make any referrals." = "iRefair is a voluntary, community-driven initiative, and I am under no obligation to make any referrals.";
 "Any referral I make is based on my own discretion, and I am solely responsible for complying with my company’s internal referral or hiring policies." = "Any referral I make is based on my own discretion, and I am solely responsible for complying with my company’s internal referral or hiring policies.";
+"Approved hiring companies will appear here as they become available." = "Approved hiring companies will appear here as they become available.";
 "iRefair, &Beyond Consulting, IM Power SARL and inaspire and their legal founders assume no liability at all including but not limited to: hiring outcomes, internal processes, or employer decisions." = "iRefair, &Beyond Consulting, IM Power SARL and inaspire and their legal founders assume no liability at all including but not limited to: hiring outcomes, internal processes, or employer decisions.";
 "iRefair, &Beyond Consulting, IM Power SARL and Inaspire and their legal founders assume no liability at all including but not limited to: hiring outcomes, internal processes, or employer decisions." = "iRefair, &Beyond Consulting, IM Power SARL and Inaspire and their legal founders assume no liability at all including but not limited to: hiring outcomes, internal processes, or employer decisions.";
 "My contact and employer details will be kept confidential and will not be shared without my consent." = "My contact and employer details will be kept confidential and will not be shared without my consent.";
@@ -145,6 +148,7 @@
 "Mode" = "Mode";
 "No" = "No";
 "No applicants assigned yet." = "No applicants assigned yet.";
+"No applications assigned" = "No applications assigned";
 "No companies available yet." = "No companies available yet.";
 "No file selected" = "No file selected";
 "Need an iRCRN?" = "Need an iRCRN?";

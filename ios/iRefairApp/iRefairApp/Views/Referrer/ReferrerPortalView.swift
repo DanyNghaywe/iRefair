@@ -64,11 +64,11 @@ struct ReferrerPortalView: View {
             }
 
             if isLoading {
-                IRefairSection(l("Applicants")) {
+                IRefairSection(l("Applications")) {
                     loadingApplicantsRows
                 }
             } else if !applicants.isEmpty {
-                IRefairSection(l("Applicants")) {
+                IRefairSection(l("Applications")) {
                     ForEach(applicants) { applicant in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(applicant.displayName)
@@ -92,9 +92,12 @@ struct ReferrerPortalView: View {
                     }
                 }
             } else if referrer != nil {
-                IRefairSection {
-                    Text(l("No applicants assigned yet."))
-                        .foregroundStyle(Theme.muted)
+                IRefairSection(l("Applications")) {
+                    IRefairTableEmptyState(
+                        title: l("No applications assigned"),
+                        description: l("Candidate applications will appear here once they're assigned to you. Check back soon for new referrals to review."),
+                        tone: .darkOnLight
+                    )
                 }
             }
 

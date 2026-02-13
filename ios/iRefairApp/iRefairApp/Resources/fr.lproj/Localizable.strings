@@ -9,6 +9,7 @@
 "Applicant key is required." = "La clé du candidat est requise.";
 "Applicant referral request" = "Demande de recommandation de candidat";
 "Applicants" = "Candidats";
+"Applications" = "Candidatures";
 "Application" = "Candidature";
 "Application details" = "Détails de la candidature";
 "Application submitted successfully." = "Candidature envoyée avec succès.";
@@ -45,8 +46,10 @@
 "Consent & Legal Disclaimer" = "Consentement et avis légal";
 "Consent is required." = "Le consentement est requis.";
 "By submitting this form, I agree to be contacted by iRefair when a potential applicant may align with open roles at my company. I understand and acknowledge the following:" = "En soumettant ce formulaire, j'accepte d'être contacté par iRefair lorsqu'un candidat potentiel pourrait correspondre à des postes ouverts dans mon entreprise. Je comprends et reconnais ce qui suit :";
+"Candidate applications will appear here once they're assigned to you. Check back soon for new referrals to review." = "Les candidatures apparaîtront ici une fois qu'elles vous seront attribuées. Revenez bientôt pour consulter de nouvelles recommandations.";
 "iRefair is a voluntary, community-driven initiative, and I am under no obligation to make any referrals." = "iRefair est une initiative bénévole, portée par la communauté, et je ne suis soumis à aucune obligation de recommander qui que ce soit.";
 "Any referral I make is based on my own discretion, and I am solely responsible for complying with my company’s internal referral or hiring policies." = "Toute recommandation que je fais est à ma discrétion, et je suis seul responsable du respect des politiques internes de mon entreprise en matière de recommandation ou de recrutement.";
+"Approved hiring companies will appear here as they become available." = "Les entreprises qui recrutent approuvées apparaîtront ici au fur et à mesure de leur disponibilité.";
 "iRefair, &Beyond Consulting, IM Power SARL and inaspire and their legal founders assume no liability at all including but not limited to: hiring outcomes, internal processes, or employer decisions." = "iRefair, &Beyond Consulting, IM Power SARL et inaspire ainsi que leurs fondateurs légaux déclinent toute responsabilité (y compris, sans s'y limiter) concernant les résultats d'embauche, les processus internes ou les décisions de l'employeur.";
 "iRefair, &Beyond Consulting, IM Power SARL and Inaspire and their legal founders assume no liability at all including but not limited to: hiring outcomes, internal processes, or employer decisions." = "iRefair, &Beyond Consulting, IM Power SARL et Inaspire ainsi que leurs fondateurs légaux déclinent toute responsabilité (y compris, sans s'y limiter) concernant les résultats d'embauche, les processus internes ou les décisions de l'employeur.";
 "My contact and employer details will be kept confidential and will not be shared without my consent." = "Mes coordonnées et informations employeur resteront confidentielles et ne seront pas partagées sans mon consentement.";
@@ -145,6 +148,7 @@
 "Mode" = "Mode";
 "No" = "Non";
 "No applicants assigned yet." = "Aucun candidat assigné pour l'instant.";
+"No applications assigned" = "Aucune candidature assignée";
 "No companies available yet." = "Aucune entreprise disponible pour l'instant.";
 "No file selected" = "Aucun fichier sélectionné";
 "Need an iRCRN?" = "Besoin d'un iRCRN ?";

@@ -99,9 +99,12 @@ struct HiringCompaniesView: View {
                         }
                     }
                 } else {
-                    IRefairSection {
-                        Text(l("No companies available yet."))
-                            .foregroundStyle(lightFaintText)
+                    HiringTableContainer(border: tableBorder, fill: tableFill) {
+                        IRefairTableEmptyState(
+                            title: l("No companies available yet."),
+                            description: l("Approved hiring companies will appear here as they become available."),
+                            tone: .lightOnDark
+                        )
                     }
                 }
 
