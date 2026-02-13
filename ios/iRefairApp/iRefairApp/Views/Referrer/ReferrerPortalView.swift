@@ -59,19 +59,7 @@ struct ReferrerPortalView: View {
             }
 
             if let referrer {
-                IRefairSection(l("Referrer")) {
-                    Text(referrer.displayName)
-                    Text(referrer.email)
-                        .foregroundStyle(Theme.muted)
-                    Text("\(l("ID")): \(referrer.irref)")
-                        .font(Theme.font(.caption))
-                        .foregroundStyle(Theme.muted)
-                    if let company = referrer.company, !company.isEmpty {
-                        Text(company)
-                            .font(Theme.font(.caption))
-                            .foregroundStyle(Theme.muted)
-                    }
-                }
+                referrerMeta(referrer)
             }
 
             if isLoading {
@@ -135,6 +123,50 @@ struct ReferrerPortalView: View {
         }
     }
 
+    private var referrerMetaColumns: [GridItem] {
+        [GridItem(.adaptive(minimum: 170), spacing: 16, alignment: .leading)]
+    }
+
+    private func referrerMeta(_ referrer: ReferrerSummary) -> some View {
+        LazyVGrid(columns: referrerMetaColumns, alignment: .leading, spacing: 10) {
+            referrerMetaItem(
+                title: l("Referrer"),
+                value: "\(referrer.displayName) - \(referrer.irref)"
+            )
+            referrerMetaItem(
+                title: l("Email"),
+                value: referrer.email.isEmpty ? l("No email on file") : referrer.email
+            )
+            if let company = referrer.company?.trimmingCharacters(in: .whitespacesAndNewlines), !company.isEmpty {
+                referrerMetaItem(
+                    title: l("Company"),
+                    value: company
+                )
+            }
+            referrerMetaItem(
+                title: l("Total"),
+                value: "\(applicants.count)"
+            )
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 2)
+    }
+
+    private func referrerMetaItem(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(Theme.font(size: 11, weight: .bold))
+                .foregroundStyle(Color.white.opacity(0.82))
+                .textCase(.uppercase)
+                .kerning(2.0)
+            Text(value)
+                .font(Theme.font(size: 15, weight: .semibold))
+                .foregroundStyle(Color.white)
+                .lineLimit(nil)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var loadingApplicantsRows: some View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(0..<loadingRows, id: \.self) { index in
@@ -142,14 +174,13 @@ struct ReferrerPortalView: View {
                     IRefairSkeletonBlock(width: 32, height: 32, cornerRadius: 16, delay: Double(index) * 0.03)
 
                     VStack(alignment: .leading, spacing: 6) {
-                        IRefairSkeletonBlock(width: 180, height: 16, cornerRadius: 8, delay: Double(index) * 0.03 + 0.02)
-                        IRefairSkeletonBlock(width: 140, height: 12, cornerRadius: 999, delay: Double(index) * 0.03 + 0.04)
-                        IRefairSkeletonBlock(width: 118, height: 10, cornerRadius: 999, delay: Double(index) * 0.03 + 0.06)
+                        IRefairSkeletonBlock(height: 16, cornerRadius: 8, delay: Double(index) * 0.03 + 0.02)
+                        loadingApplicantTextLine(height: 12, trailingInset: 44, delay: Double(index) * 0.03 + 0.04)
+                        loadingApplicantTextLine(height: 10, trailingInset: 68, delay: Double(index) * 0.03 + 0.06)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                    Spacer(minLength: 8)
-
-                    IRefairSkeletonBlock(width: 96, height: 32, cornerRadius: 12, delay: Double(index) * 0.03 + 0.08)
+                    IRefairSkeletonBlock(width: 72, height: 32, cornerRadius: 12, delay: Double(index) * 0.03 + 0.08)
                 }
                 .padding(.vertical, 8)
 
@@ -161,6 +192,13 @@ struct ReferrerPortalView: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(l("Loading..."))
+    }
+
+    private func loadingApplicantTextLine(height: CGFloat, trailingInset: CGFloat, delay: Double) -> some View {
+        HStack(spacing: 0) {
+            IRefairSkeletonBlock(height: height, cornerRadius: 999, delay: delay)
+            Spacer(minLength: trailingInset)
+        }
     }
 
     private func extractToken(from input: String) -> String {

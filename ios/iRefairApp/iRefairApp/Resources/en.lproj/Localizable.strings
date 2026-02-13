@@ -34,6 +34,7 @@
 "Clear saved referrer token" = "Clear saved referrer token";
 "Cleared referrer token." = "Cleared referrer token.";
 "Close" = "Close";
+"Company" = "Company";
 "Company Name" = "Company Name";
 "Company industry" = "Company industry";
 "Company name" = "Company name (optional)";
@@ -66,6 +67,7 @@
 "Education / Academia" = "Education / Academia";
 "Eligible to move to Canada? *" = "Eligible to move to Canada?";
 "Email *" = "Email";
+"Email" = "Email";
 "Energy / Utilities" = "Energy / Utilities";
 "Engineering / Construction" = "Engineering / Construction";
 "English" = "English";
@@ -149,6 +151,7 @@
 "Not provided yet" = "Not provided yet";
 "Non-Profit / NGO" = "Non-Profit / NGO";
 "Not for profit" = "Not for profit";
+"No email on file" = "No email on file";
 "On-site" = "On-site";
 "Open careers website" = "Open careers website";
 "Other" = "Other";
@@ -227,6 +230,7 @@
 "Telecommunications" = "Telecommunications";
 "Temporary Work" = "Temporary Work";
 "Terms of Service" = "Terms of Service";
+"Total" = "Total";
 "Unable to load the selected file." = "Unable to load the selected file.";
 "Unable to load your details." = "Unable to load your details.";
 "Work email *" = "Work email";

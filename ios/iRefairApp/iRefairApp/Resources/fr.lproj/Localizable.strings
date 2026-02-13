@@ -34,6 +34,7 @@
 "Clear saved referrer token" = "Effacer le jeton enregistré";
 "Cleared referrer token." = "Jeton de référent effacé.";
 "Close" = "Fermer";
+"Company" = "Entreprise";
 "Company Name" = "Nom de l'entreprise";
 "Company industry" = "Secteur de l'entreprise";
 "Company name" = "Nom de l'entreprise (optionnel)";
@@ -66,6 +67,7 @@
 "Education / Academia" = "Éducation / Université";
 "Eligible to move to Canada? *" = "Êtes-vous prêt(e) à déménager au Canada ?";
 "Email *" = "Adresse e-mail";
+"Email" = "E-mail";
 "Energy / Utilities" = "Énergie / Services publics";
 "Engineering / Construction" = "Ingénierie / Construction";
 "English" = "Anglais";
@@ -149,6 +151,7 @@
 "Not provided yet" = "Non fourni";
 "Non-Profit / NGO" = "Organisme à but non lucratif / ONG";
 "Not for profit" = "Organisme à but non lucratif";
+"No email on file" = "Aucun e-mail enregistré";
 "On-site" = "Sur site";
 "Open careers website" = "Ouvrir le site carrières";
 "Other" = "Autre";
@@ -227,6 +230,7 @@
 "Telecommunications" = "Télécommunications";
 "Temporary Work" = "Travail temporaire";
 "Terms of Service" = "Conditions d'utilisation";
+"Total" = "Total";
 "Unable to load the selected file." = "Impossible de charger le fichier sélectionné.";
 "Unable to load your details." = "Impossible de charger vos informations.";
 "Work email *" = "E-mail professionnel";
