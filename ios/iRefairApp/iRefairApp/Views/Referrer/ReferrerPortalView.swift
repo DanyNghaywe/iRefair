@@ -64,11 +64,11 @@ struct ReferrerPortalView: View {
             }
 
             if isLoading {
-                IRefairSection(l("Applications")) {
+                applicationsSection {
                     loadingApplicantsRows
                 }
             } else if !applicants.isEmpty {
-                IRefairSection(l("Applications")) {
+                applicationsSection {
                     ForEach(applicants) { applicant in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(applicant.displayName)
@@ -92,7 +92,7 @@ struct ReferrerPortalView: View {
                     }
                 }
             } else if referrer != nil {
-                IRefairSection(l("Applications")) {
+                applicationsSection {
                     IRefairTableEmptyState(
                         title: l("No applications assigned"),
                         description: l("Candidate applications will appear here once they're assigned to you. Check back soon for new referrals to review."),
@@ -124,6 +124,20 @@ struct ReferrerPortalView: View {
             FeedbackSheet(applicant: applicant, token: storedToken) {
                 Task { await loadPortal() }
             }
+        }
+    }
+
+    private func applicationsSection<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        IRefairSection {
+            VStack(alignment: .leading, spacing: 12) {
+                Text(l("Applications"))
+                    .font(Theme.font(.caption, weight: .semibold))
+                    .foregroundStyle(Color.white.opacity(0.82))
+                    .textCase(.uppercase)
+                    .kerning(1.4)
+                content()
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
