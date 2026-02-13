@@ -10,6 +10,7 @@
 "Applicant referral request" = "Demande de recommandation de candidat";
 "Applicants" = "Candidats";
 "Applications" = "Candidatures";
+"active referrals" = "références actives";
 "Application" = "Candidature";
 "Application details" = "Détails de la candidature";
 "Application submitted successfully." = "Candidature envoyée avec succès.";
@@ -235,6 +236,7 @@
 "Temporary Work" = "Travail temporaire";
 "Terms of Service" = "Conditions d'utilisation";
 "Total" = "Total";
+"total" = "total";
 "Unable to load the selected file." = "Impossible de charger le fichier sélectionné.";
 "Unable to load your details." = "Impossible de charger vos informations.";
 "Work email *" = "E-mail professionnel";

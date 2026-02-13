@@ -9,6 +9,7 @@ struct ReferrerPortalView: View {
     @State private var tokenInput = ""
     @State private var referrer: ReferrerSummary?
     @State private var applicants: [ReferrerApplicant] = []
+    @State private var totalReferrals: Int?
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var statusMessage: String?
@@ -44,6 +45,7 @@ struct ReferrerPortalView: View {
                         tokenInput = ""
                         referrer = nil
                         applicants = []
+                        totalReferrals = nil
                         errorMessage = nil
                         statusMessage = nil
                         KeychainStore.delete(key: "referrerPortalToken")
@@ -64,11 +66,11 @@ struct ReferrerPortalView: View {
             }
 
             if isLoading {
-                applicationsSection {
+                applicationsBlock {
                     loadingApplicantsRows
                 }
             } else if !applicants.isEmpty {
-                applicationsSection {
+                applicationsBlock {
                     ForEach(applicants) { applicant in
                         VStack(alignment: .leading, spacing: 4) {
                             Text(applicant.displayName)
@@ -92,7 +94,7 @@ struct ReferrerPortalView: View {
                     }
                 }
             } else if referrer != nil {
-                applicationsSection {
+                applicationsBlock {
                     IRefairTableEmptyState(
                         title: l("No applications assigned"),
                         description: l("Candidate applications will appear here once they're assigned to you. Check back soon for new referrals to review."),
@@ -129,16 +131,61 @@ struct ReferrerPortalView: View {
 
     private func applicationsSection<Content: View>(@ViewBuilder content: () -> Content) -> some View {
         IRefairSection {
-            VStack(alignment: .leading, spacing: 12) {
-                Text(l("Applications"))
-                    .font(Theme.font(.caption, weight: .semibold))
-                    .foregroundStyle(Color.white.opacity(0.82))
-                    .textCase(.uppercase)
-                    .kerning(1.4)
+            content()
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func applicationsBlock<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            applicationsHeader
+            applicationsSection {
                 content()
+            }
+        }
+    }
+
+    private var applicationsHeader: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(l("Applications"))
+                    .font(Theme.font(size: 12, weight: .bold))
+                    .foregroundStyle(Color.white.opacity(0.85))
+                    .textCase(.uppercase)
+                    .kerning(2.4)
+                Text("\(activeReferralsCount) \(l("active referrals"))")
+                    .font(Theme.font(size: 14))
+                    .foregroundStyle(Color.white.opacity(0.75))
+            }
+
+            HStack(alignment: .center, spacing: 8) {
+                Text("\(totalReferralsCount) \(l("total"))")
+                    .font(Theme.font(size: 13, weight: .semibold))
+                    .foregroundStyle(Theme.ink)
+                    .padding(.vertical, 8)
+                    .padding(.horizontal, 14)
+                    .frame(minHeight: 36)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(Color.white.opacity(0.7))
+                            .overlay(
+                                Capsule(style: .continuous)
+                                    .stroke(Color(hex: 0x0F172A).opacity(0.12), lineWidth: 1)
+                            )
+                    )
+                    .shadow(color: Color(hex: 0x0F172A).opacity(0.06), radius: 6, x: 0, y: 2)
+                    .fixedSize(horizontal: true, vertical: false)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    private var activeReferralsCount: Int {
+        applicants.count
+    }
+
+    private var totalReferralsCount: Int {
+        totalReferrals ?? applicants.count
     }
 
     private var referrerMetaColumns: [GridItem] {
@@ -169,7 +216,7 @@ struct ReferrerPortalView: View {
             }
             referrerMetaItem(
                 title: l("Total"),
-                value: "\(applicants.count)"
+                value: "\(totalReferralsCount)"
             )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -268,6 +315,7 @@ struct ReferrerPortalView: View {
             let response = try await APIClient.loadReferrerPortal(baseURL: apiBaseURL, token: token)
             referrer = response.referrer
             applicants = response.applicants ?? []
+            totalReferrals = response.total
             statusMessage = String.localizedStringWithFormat(l("Loaded %d applicants."), applicants.count)
             Telemetry.track("referrer_portal_loaded", properties: ["count": "\(applicants.count)"])
         } catch {

@@ -89,6 +89,7 @@ struct ReferrerPortalDataResponse: APIResult {
     let ok: Bool
     let referrer: ReferrerSummary?
     let applicants: [ReferrerApplicant]?
+    let total: Int?
     let companies: [ReferrerCompany]?
     let error: String?
 
@@ -97,6 +98,7 @@ struct ReferrerPortalDataResponse: APIResult {
         case referrer
         case applicants
         case items
+        case total
         case companies
         case error
     }
@@ -109,6 +111,13 @@ struct ReferrerPortalDataResponse: APIResult {
             self.applicants = applicants
         } else {
             self.applicants = try container.decodeIfPresent([ReferrerApplicant].self, forKey: .items)
+        }
+        if let decodedTotal = try container.decodeIfPresent(Int.self, forKey: .total) {
+            total = decodedTotal
+        } else if let totalString = try container.decodeIfPresent(String.self, forKey: .total) {
+            total = Int(totalString.trimmingCharacters(in: .whitespacesAndNewlines))
+        } else {
+            total = nil
         }
         companies = try container.decodeIfPresent([ReferrerCompany].self, forKey: .companies)
         error = try container.decodeIfPresent(String.self, forKey: .error)

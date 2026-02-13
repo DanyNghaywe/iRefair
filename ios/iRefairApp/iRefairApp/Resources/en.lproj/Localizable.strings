@@ -10,6 +10,7 @@
 "Applicant referral request" = "Applicant referral request";
 "Applicants" = "Applicants";
 "Applications" = "Applications";
+"active referrals" = "active referrals";
 "Application" = "Application";
 "Application details" = "Application details";
 "Application submitted successfully." = "Application submitted successfully.";
@@ -235,6 +236,7 @@
 "Temporary Work" = "Temporary Work";
 "Terms of Service" = "Terms of Service";
 "Total" = "Total";
+"total" = "total";
 "Unable to load the selected file." = "Unable to load the selected file.";
 "Unable to load your details." = "Unable to load your details.";
 "Work email *" = "Work email";
