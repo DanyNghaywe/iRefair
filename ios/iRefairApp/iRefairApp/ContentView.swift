@@ -72,7 +72,6 @@ private struct RoleModeLandingView: View {
     private let roleOptions: [AppRoleMode] = [.applicant, .referrer]
     private let dropdownItemHeight: CGFloat = 72
     private let dropdownCornerRadius: CGFloat = 20
-    private let dropdownListVerticalPadding: CGFloat = 8
     private let dropdownDividerHeight: CGFloat = 1
 
     @State private var selectedRole: AppRoleMode?
@@ -201,7 +200,9 @@ private struct RoleModeLandingView: View {
     }
 
     private var roleDropdownList: some View {
-        VStack(spacing: 0) {
+        let shape = RoundedRectangle(cornerRadius: dropdownCornerRadius, style: .continuous)
+
+        return VStack(spacing: 0) {
             ForEach(Array(roleOptions.enumerated()), id: \.element) { index, role in
                 roleOptionButton(role)
 
@@ -212,14 +213,13 @@ private struct RoleModeLandingView: View {
                 }
             }
         }
-        .padding(.vertical, dropdownListVerticalPadding)
         .background(
-            RoundedRectangle(cornerRadius: dropdownCornerRadius, style: .continuous)
+            shape
                 .fill(Color.white.opacity(0.12))
-                .overlay(
-                    RoundedRectangle(cornerRadius: dropdownCornerRadius, style: .continuous)
-                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
-                )
+        )
+        .clipShape(shape)
+        .overlay(
+            shape.stroke(Color.white.opacity(0.15), lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.28), radius: 18, x: 0, y: 10)
     }
@@ -228,7 +228,6 @@ private struct RoleModeLandingView: View {
         let dividerCount = max(roleOptions.count - 1, 0)
         return (CGFloat(roleOptions.count) * dropdownItemHeight)
             + (CGFloat(dividerCount) * dropdownDividerHeight)
-            + (dropdownListVerticalPadding * 2)
     }
 
     private var roleDropdownContainerHeight: CGFloat {
