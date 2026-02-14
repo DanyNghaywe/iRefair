@@ -25,6 +25,7 @@ struct SettingsView: View {
                     IRefairSection(l("App data")) {
                         Button(l("Clear saved referrer token")) {
                             KeychainStore.delete(key: "referrerPortalToken")
+                            KeychainStore.delete(key: "referrerPortalRefreshToken")
                             statusMessage = l("Cleared referrer token.")
                         }
                         .buttonStyle(IRefairGhostButtonStyle())

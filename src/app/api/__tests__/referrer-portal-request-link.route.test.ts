@@ -8,6 +8,10 @@ const { getReferrerByEmail } = vi.hoisted(() => ({
   getReferrerByEmail: vi.fn(),
 }));
 
+const { hasApprovedCompany } = vi.hoisted(() => ({
+  hasApprovedCompany: vi.fn(),
+}));
+
 const { ensureReferrerPortalTokenVersion, buildReferrerPortalLink, sendReferrerPortalLinkEmail } = vi.hoisted(() => ({
   ensureReferrerPortalTokenVersion: vi.fn(),
   buildReferrerPortalLink: vi.fn(),
@@ -16,6 +20,7 @@ const { ensureReferrerPortalTokenVersion, buildReferrerPortalLink, sendReferrerP
 
 vi.mock('@/lib/sheets', () => ({
   getReferrerByEmail,
+  hasApprovedCompany,
 }));
 
 vi.mock('@/lib/referrerPortalLink', () => ({
@@ -36,11 +41,13 @@ const makeRequest = (body: unknown, raw = false) =>
 beforeEach(() => {
   resetProcessEnv(ORIGINAL_ENV);
   getReferrerByEmail.mockReset();
+  hasApprovedCompany.mockReset();
   ensureReferrerPortalTokenVersion.mockReset();
   buildReferrerPortalLink.mockReset();
   sendReferrerPortalLinkEmail.mockReset();
 
   getReferrerByEmail.mockResolvedValue(null);
+  hasApprovedCompany.mockResolvedValue(false);
   ensureReferrerPortalTokenVersion.mockResolvedValue(1);
   buildReferrerPortalLink.mockReturnValue('https://example.com/referrer/portal?token=abc');
 });
@@ -62,6 +69,14 @@ describe('POST /api/referrer/portal/request-link', () => {
 
   it('rate limits after 3 requests per hour', async () => {
     const email = 'limit@example.com';
+    getReferrerByEmail.mockResolvedValue({
+      record: {
+        irref: 'IR-LIMIT',
+        name: 'Rate Limit Referrer',
+        archived: 'false',
+      },
+    });
+    hasApprovedCompany.mockResolvedValue(true);
 
     const first = await POST(makeRequest({ email }));
     const second = await POST(makeRequest({ email }));
@@ -78,7 +93,20 @@ describe('POST /api/referrer/portal/request-link', () => {
     });
   });
 
-  it('sends a portal link email for known referrers', async () => {
+  it('returns 404 when no referrer matches the email', async () => {
+    getReferrerByEmail.mockResolvedValue(null);
+
+    const response = await POST(makeRequest({ email: 'unknown@example.com' }));
+
+    expect(response.status).toBe(404);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      error: 'No referrer account found for this email.',
+    });
+    expect(sendReferrerPortalLinkEmail).not.toHaveBeenCalled();
+  });
+
+  it('returns 403 when referrer is not accepted', async () => {
     getReferrerByEmail.mockResolvedValue({
       record: {
         irref: 'IR123',
@@ -86,13 +114,53 @@ describe('POST /api/referrer/portal/request-link', () => {
         archived: 'false',
       },
     });
+    hasApprovedCompany.mockResolvedValue(false);
+
+    const response = await POST(makeRequest({ email: 'referrer@example.com' }));
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      error: 'This referrer account is not accepted yet.',
+    });
+    expect(sendReferrerPortalLinkEmail).not.toHaveBeenCalled();
+  });
+
+  it('returns 403 when referrer is archived', async () => {
+    getReferrerByEmail.mockResolvedValue({
+      record: {
+        irref: 'IR123',
+        name: 'Jane Referrer',
+        archived: 'true',
+      },
+    });
+
+    const response = await POST(makeRequest({ email: 'referrer@example.com' }));
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      error: 'This referrer account has been archived and cannot access the portal.',
+    });
+    expect(sendReferrerPortalLinkEmail).not.toHaveBeenCalled();
+  });
+
+  it('sends a portal link email for matched and accepted referrers', async () => {
+    getReferrerByEmail.mockResolvedValue({
+      record: {
+        irref: 'IR123',
+        name: 'Jane Referrer',
+        archived: 'false',
+      },
+    });
+    hasApprovedCompany.mockResolvedValue(true);
     ensureReferrerPortalTokenVersion.mockResolvedValue(2);
     buildReferrerPortalLink.mockReturnValue('https://example.com/referrer/portal?token=abc');
 
     const response = await POST(makeRequest({ email: 'referrer@example.com' }));
 
     expect(response.status).toBe(200);
-    await expect(response.json()).resolves.toEqual({ ok: true });
+    await expect(response.json()).resolves.toEqual({ ok: true, message: 'Portal access email sent.' });
     expect(sendReferrerPortalLinkEmail).toHaveBeenCalledWith({
       to: 'referrer@example.com',
       name: 'Jane Referrer',

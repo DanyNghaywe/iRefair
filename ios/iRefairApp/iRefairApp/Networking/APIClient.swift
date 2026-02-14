@@ -43,6 +43,51 @@ enum APIClient {
         return try await sendJSON(url: url, payload: ["email": email])
     }
 
+    static func requestReferrerMobileSignInLink(baseURL: String, email: String) async throws -> ReferrerPortalLinkResponse {
+        let url = try makeURL(baseURL: baseURL, path: "/api/referrer/mobile/auth/request-link")
+        return try await sendJSON(url: url, payload: ["email": email])
+    }
+
+    static func requestReferrerSignInLink(baseURL: String, email: String) async throws -> ReferrerPortalLinkResponse {
+        do {
+            return try await requestReferrerMobileSignInLink(baseURL: baseURL, email: email)
+        } catch {
+            guard shouldFallbackToLegacyRequestLink(error) else {
+                throw error
+            }
+            return try await requestReferrerLink(baseURL: baseURL, email: email)
+        }
+    }
+
+    static func exchangeReferrerMobileSession(
+        baseURL: String,
+        loginToken: String? = nil,
+        portalToken: String? = nil
+    ) async throws -> ReferrerMobileAuthExchangeResponse {
+        let url = try makeURL(baseURL: baseURL, path: "/api/referrer/mobile/auth/exchange")
+        var payload: [String: String] = [:]
+        if let loginToken, !loginToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            payload["loginToken"] = loginToken
+        }
+        if let portalToken, !portalToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            payload["portalToken"] = portalToken
+        }
+        if payload.isEmpty {
+            throw APIError(message: "Missing login credentials.")
+        }
+        return try await sendJSON(url: url, payload: payload)
+    }
+
+    static func refreshReferrerMobileSession(baseURL: String, refreshToken: String) async throws -> ReferrerMobileAuthRefreshResponse {
+        let url = try makeURL(baseURL: baseURL, path: "/api/referrer/mobile/auth/refresh")
+        return try await sendJSON(url: url, payload: ["refreshToken": refreshToken])
+    }
+
+    static func logoutReferrerMobileSession(baseURL: String, refreshToken: String) async throws -> ReferrerMobileAuthLogoutResponse {
+        let url = try makeURL(baseURL: baseURL, path: "/api/referrer/mobile/auth/logout")
+        return try await sendJSON(url: url, payload: ["refreshToken": refreshToken])
+    }
+
     static func loadReferrerPortal(baseURL: String, token: String) async throws -> ReferrerPortalDataResponse {
         let url = try makeURL(baseURL: baseURL, path: "/api/referrer/portal/data")
         var request = URLRequest(url: url)
@@ -111,6 +156,23 @@ enum APIClient {
         request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         return try await send(request)
+    }
+
+    /// Supports older deployments that expose only /api/referrer/portal/request-link.
+    private static func shouldFallbackToLegacyRequestLink(_ error: Error) -> Bool {
+        guard let apiError = error as? APIError else {
+            return false
+        }
+
+        let message = apiError.message.lowercased()
+        return message.contains("http 404")
+            || message.contains("http 405")
+            || message.contains("status 404")
+            || message.contains("status 405")
+            || message.contains("not found")
+            || message.contains("method not allowed")
+            || message.contains("api host redirected")
+            || message.contains("api request was redirected")
     }
 
     private static func send<T: APIResult>(_ request: URLRequest) async throws -> T {

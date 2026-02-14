@@ -35,8 +35,14 @@ struct iRefairApp: App {
         }
 
         let isPortalLink = host.contains("portal") || host.contains("referrer") || path.contains("portal") || path.contains("referrer")
+        if isPortalLink, let mobileLoginToken = query["mobilelogintoken"] ?? query["mobile_login_token"] {
+            appState.pendingReferrerLoginToken = mobileLoginToken
+            appState.selectedTab = .referrer
+            return
+        }
+
         if isPortalLink, let token = query["token"] ?? query["referrertoken"] {
-            KeychainStore.save(token, key: "referrerPortalToken")
+            appState.pendingReferrerPortalToken = token
             appState.selectedTab = .referrer
             return
         }

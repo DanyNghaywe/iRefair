@@ -53,3 +53,34 @@ model SheetSyncIssue {
   @@index([status])
   @@index([dedupeKey])
 }
+
+model ReferrerMobileLoginToken {
+  id         String   @id @default(cuid())
+  irref      String
+  tokenHash  String   @unique
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  @@index([irref])
+  @@index([expiresAt])
+  @@index([consumedAt])
+}
+
+model ReferrerMobileSession {
+  id                    String   @id
+  irref                 String
+  refreshTokenHash      String
+  refreshTokenExpiresAt DateTime
+  sessionExpiresAt      DateTime
+  userAgent             String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  lastUsedAt            DateTime?
+  revokedAt             DateTime?
+
+  @@index([irref])
+  @@index([refreshTokenExpiresAt])
+  @@index([sessionExpiresAt])
+  @@index([revokedAt])
+}

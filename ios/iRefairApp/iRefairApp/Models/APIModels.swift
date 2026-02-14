@@ -85,6 +85,30 @@ struct ReferrerPortalLinkResponse: APIResult {
     let error: String?
 }
 
+struct ReferrerMobileAuthExchangeResponse: APIResult {
+    let ok: Bool
+    let accessToken: String?
+    let accessTokenExpiresIn: Int?
+    let refreshToken: String?
+    let refreshTokenExpiresIn: Int?
+    let referrer: ReferrerSummary?
+    let error: String?
+}
+
+struct ReferrerMobileAuthRefreshResponse: APIResult {
+    let ok: Bool
+    let accessToken: String?
+    let accessTokenExpiresIn: Int?
+    let refreshToken: String?
+    let refreshTokenExpiresIn: Int?
+    let error: String?
+}
+
+struct ReferrerMobileAuthLogoutResponse: APIResult {
+    let ok: Bool
+    let error: String?
+}
+
 struct ReferrerPortalDataResponse: APIResult {
     let ok: Bool
     let referrer: ReferrerSummary?

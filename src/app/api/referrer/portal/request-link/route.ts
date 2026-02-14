@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getReferrerByEmail } from '@/lib/sheets';
+import { getReferrerByEmail, hasApprovedCompany } from '@/lib/sheets';
 import {
   buildReferrerPortalLink,
   ensureReferrerPortalTokenVersion,
@@ -67,16 +67,25 @@ export async function POST(request: NextRequest) {
     // Look up referrer by email
     const referrer = await getReferrerByEmail(email);
     if (!referrer) {
-      // SECURITY: Don't reveal whether email exists or not
-      // Return success even if email not found (prevent email enumeration)
-      console.log(`Portal link requested for non-existent email: ${email}`);
-      return NextResponse.json({ ok: true });
+      return NextResponse.json(
+        { ok: false, error: 'No referrer account found for this email.' },
+        { status: 404 },
+      );
     }
 
-    // SECURITY: Silently skip archived referrers (same as non-existent email handling)
     if (referrer.record.archived?.toLowerCase() === 'true') {
-      console.log(`Portal link requested for archived referrer: ${referrer.record.irref} (${email})`);
-      return NextResponse.json({ ok: true });
+      return NextResponse.json(
+        { ok: false, error: 'This referrer account has been archived and cannot access the portal.' },
+        { status: 403 },
+      );
+    }
+
+    const accepted = await hasApprovedCompany(referrer.record.irref);
+    if (!accepted) {
+      return NextResponse.json(
+        { ok: false, error: 'This referrer account is not accepted yet.' },
+        { status: 403 },
+      );
     }
 
     const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrer.record.irref);
@@ -89,8 +98,7 @@ export async function POST(request: NextRequest) {
       link: portalLink,
     });
 
-    console.log(`Portal link sent to referrer: ${referrer.record.irref} (${email})`);
-    return NextResponse.json({ ok: true });
+    return NextResponse.json({ ok: true, message: 'Portal access email sent.' });
   } catch (err) {
     console.error('Error sending referrer portal link:', err);
     return NextResponse.json(
