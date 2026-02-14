@@ -99,7 +99,7 @@ private struct RoleModeLandingView: View {
                             .frame(maxWidth: .infinity, alignment: .trailing)
                             .multilineTextAlignment(.trailing)
                     }
-                        .tint(Theme.accentPrimary)
+                    .toggleStyle(RoleModeSwitchToggleStyle())
 
                     Button(l("Continue")) {
                         guard let selectedRole else { return }
@@ -283,6 +283,50 @@ private struct RoleModeLandingView: View {
 
     private func l(_ key: String) -> String {
         NSLocalizedString(key, comment: "")
+    }
+}
+
+private struct RoleModeSwitchToggleStyle: ToggleStyle {
+    private let trackWidth: CGFloat = 51
+    private let trackHeight: CGFloat = 31
+    private let thumbInset: CGFloat = 2
+    private let thumbSize: CGFloat = 27
+
+    func makeBody(configuration: Configuration) -> some View {
+        Button {
+            withAnimation(.easeInOut(duration: 0.18)) {
+                configuration.isOn.toggle()
+            }
+        } label: {
+            HStack(alignment: .center, spacing: 12) {
+                configuration.label
+                switchTrack(isOn: configuration.isOn)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private func switchTrack(isOn: Bool) -> some View {
+        let thumbTravel = trackWidth - thumbSize - (thumbInset * 2)
+
+        return ZStack(alignment: .leading) {
+            Capsule(style: .continuous)
+                .fill(isOn ? Theme.accentPrimary : Color.white.opacity(0.2))
+                .overlay(
+                    Capsule(style: .continuous)
+                        .stroke(isOn ? Theme.accentPrimary.opacity(0.95) : Color.white.opacity(0.34), lineWidth: 1)
+                )
+
+            Circle()
+                .fill(Color.white)
+                .frame(width: thumbSize, height: thumbSize)
+                .shadow(color: Color.black.opacity(0.18), radius: 1.5, x: 0, y: 1)
+                .offset(x: isOn ? thumbTravel : 0)
+                .padding(.leading, thumbInset)
+        }
+        .frame(width: trackWidth, height: trackHeight)
     }
 }
 
