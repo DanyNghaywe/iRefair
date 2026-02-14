@@ -16,13 +16,6 @@ type RequestBody = {
   portalToken?: string;
 };
 
-function normalizedRefreshTtlFromPortalToken(exp: number) {
-  const now = Math.floor(Date.now() / 1000);
-  const secondsRemaining = exp - now;
-  if (secondsRemaining <= 0) return 0;
-  return Math.max(60, secondsRemaining);
-}
-
 export async function POST(request: NextRequest) {
   const rate = await rateLimit(request, {
     keyPrefix: 'referrer-mobile-exchange',
@@ -53,7 +46,6 @@ export async function POST(request: NextRequest) {
   }
 
   let irref = '';
-  let portalTokenExp: number | undefined;
   let portalTokenVersion: number | undefined;
 
   if (loginToken) {
@@ -66,7 +58,6 @@ export async function POST(request: NextRequest) {
     try {
       const payload = verifyLegacyReferrerPortalToken(portalToken);
       irref = payload.irref;
-      portalTokenExp = payload.exp;
       portalTokenVersion = normalizePortalTokenVersion(String(payload.v));
     } catch {
       return NextResponse.json({ ok: false, error: 'Invalid or expired token.' }, { status: 401 });
@@ -93,15 +84,9 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const portalTokenRefreshTtl = portalTokenExp ? normalizedRefreshTtlFromPortalToken(portalTokenExp) : undefined;
-  if (portalTokenExp && (!portalTokenRefreshTtl || portalTokenRefreshTtl <= 0)) {
-    return NextResponse.json({ ok: false, error: 'Invalid or expired token.' }, { status: 401 });
-  }
-
+  // Keep iOS sessions independent from the one-time portal link token lifetime.
   const session = await issueReferrerMobileSession(referrer.record.irref, expectedVersion, {
     userAgent: request.headers.get('user-agent'),
-    refreshTtlSeconds: portalTokenRefreshTtl,
-    sessionTtlSeconds: portalTokenRefreshTtl,
   });
 
   const response = NextResponse.json({
