@@ -313,16 +313,12 @@ private struct RoleModeSwitchToggleStyle: ToggleStyle {
 
         return ZStack(alignment: .leading) {
             Capsule(style: .continuous)
-                .fill(isOn ? Theme.accentPrimary : Color.white.opacity(0.2))
-                .overlay(
-                    Capsule(style: .continuous)
-                        .stroke(isOn ? Theme.accentPrimary.opacity(0.95) : Color.white.opacity(0.34), lineWidth: 1)
-                )
+                .fill(isOn ? Theme.accentPrimary : Color(hex: 0xE5E5EA))
 
             Circle()
                 .fill(Color.white)
                 .frame(width: thumbSize, height: thumbSize)
-                .shadow(color: Color.black.opacity(0.18), radius: 1.5, x: 0, y: 1)
+                .shadow(color: Color.black.opacity(0.12), radius: 1, x: 0, y: 1)
                 .offset(x: isOn ? thumbTravel : 0)
                 .padding(.leading, thumbInset)
         }
