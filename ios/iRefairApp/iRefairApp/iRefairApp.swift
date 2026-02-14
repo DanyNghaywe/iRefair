@@ -37,13 +37,15 @@ struct iRefairApp: App {
         let isPortalLink = host.contains("portal") || host.contains("referrer") || path.contains("portal") || path.contains("referrer")
         if isPortalLink, let mobileLoginToken = query["mobilelogintoken"] ?? query["mobile_login_token"] {
             appState.pendingReferrerLoginToken = mobileLoginToken
-            appState.selectedTab = .referrer
+            appState.suggestRoleMode(.referrer)
+            appState.selectTab(.referrer)
             return
         }
 
         if isPortalLink, let token = query["token"] ?? query["referrertoken"] {
             appState.pendingReferrerPortalToken = token
-            appState.selectedTab = .referrer
+            appState.suggestRoleMode(.referrer)
+            appState.selectTab(.referrer)
             return
         }
 
@@ -54,7 +56,8 @@ struct iRefairApp: App {
             if !updateToken.isEmpty && !appId.isEmpty {
                 UserDefaults.standard.set(updateToken, forKey: "applicantUpdateToken")
                 UserDefaults.standard.set(appId, forKey: "applicantUpdateAppId")
-                appState.selectedTab = .applicant
+                appState.suggestRoleMode(.applicant)
+                appState.selectTab(.applicant)
             }
         } else if host.contains("irefair") {
             // Fallback for universal links with tokens in query
@@ -63,7 +66,8 @@ struct iRefairApp: App {
             if !updateToken.isEmpty && !appId.isEmpty {
                 UserDefaults.standard.set(updateToken, forKey: "applicantUpdateToken")
                 UserDefaults.standard.set(appId, forKey: "applicantUpdateAppId")
-                appState.selectedTab = .applicant
+                appState.suggestRoleMode(.applicant)
+                appState.selectTab(.applicant)
             }
         }
     }
