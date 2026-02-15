@@ -2,7 +2,7 @@ import { randomBytes, randomUUID } from 'crypto';
 
 import { db } from '@/lib/db';
 import { createReferrerToken, normalizePortalTokenVersion, verifyReferrerToken } from '@/lib/referrerPortalToken';
-import { createOpaqueToken, hashOpaqueToken } from '@/lib/tokens';
+import { hashOpaqueToken } from '@/lib/tokens';
 
 const parsePositiveInt = (value: string | undefined, fallback: number) => {
   const parsed = Number.parseInt((value || '').trim(), 10);
@@ -11,10 +11,6 @@ const parsePositiveInt = (value: string | undefined, fallback: number) => {
 
 const ACCESS_TOKEN_TTL_SECONDS = parsePositiveInt(
   process.env.REFERRER_MOBILE_ACCESS_TOKEN_TTL_SECONDS,
-  15 * 60,
-);
-const LOGIN_TOKEN_TTL_SECONDS = parsePositiveInt(
-  process.env.REFERRER_MOBILE_LOGIN_TOKEN_TTL_SECONDS,
   15 * 60,
 );
 const REFRESH_TOKEN_TTL_SECONDS = parsePositiveInt(
@@ -105,66 +101,6 @@ function sanitizeUserAgent(value?: string | null) {
   const trimmed = (value || '').trim();
   if (!trimmed) return null;
   return trimmed.slice(0, 512);
-}
-
-export function buildReferrerMobileAppLink(loginToken: string) {
-  const scheme = (process.env.IOS_APP_SCHEME || 'irefair').trim() || 'irefair';
-  return `${scheme}://referrer/mobile-login?mobileLoginToken=${encodeURIComponent(loginToken)}`;
-}
-
-export async function createReferrerMobileLoginToken(irref: string) {
-  const token = createOpaqueToken();
-  const tokenHash = hashOpaqueToken(token);
-
-  await db.referrerMobileLoginToken.create({
-    data: {
-      irref,
-      tokenHash,
-      expiresAt: nowPlusSeconds(LOGIN_TOKEN_TTL_SECONDS),
-    },
-  });
-
-  return token;
-}
-
-export async function consumeReferrerMobileLoginToken(token: string) {
-  const trimmed = token.trim();
-  if (!trimmed) return null;
-
-  const tokenHash = hashOpaqueToken(trimmed);
-  const now = new Date();
-
-  return db.$transaction(async (tx) => {
-    const loginToken = await tx.referrerMobileLoginToken.findFirst({
-      where: {
-        tokenHash,
-        consumedAt: null,
-        expiresAt: { gt: now },
-      },
-      select: {
-        id: true,
-        irref: true,
-      },
-    });
-
-    if (!loginToken) return null;
-
-    const consumed = await tx.referrerMobileLoginToken.updateMany({
-      where: {
-        id: loginToken.id,
-        consumedAt: null,
-      },
-      data: {
-        consumedAt: now,
-      },
-    });
-
-    if (consumed.count !== 1) return null;
-
-    return {
-      irref: loginToken.irref,
-    };
-  });
 }
 
 export function issueReferrerMobileAccessToken(irref: string, tokenVersion: number) {

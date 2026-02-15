@@ -115,10 +115,6 @@ struct ReferrerPortalView: View {
             didBootstrapSession = true
             Task { await bootstrapSession() }
         }
-        .onChange(of: appState.pendingReferrerLoginToken) { newValue in
-            guard newValue != nil else { return }
-            Task { await bootstrapSession() }
-        }
         .onChange(of: appState.pendingReferrerPortalToken) { newValue in
             guard newValue != nil else { return }
             Task { await bootstrapSession() }
@@ -403,13 +399,8 @@ struct ReferrerPortalView: View {
             return
         }
 
-        if let pendingLoginToken = appState.consumePendingReferrerLoginToken() {
-            await exchangeSession(loginToken: pendingLoginToken, portalToken: nil, messageTarget: .global)
-            return
-        }
-
         if let pendingPortalToken = appState.consumePendingReferrerPortalToken() {
-            await exchangeSession(loginToken: nil, portalToken: pendingPortalToken, messageTarget: .global)
+            await exchangeSession(portalToken: pendingPortalToken, messageTarget: .global)
             return
         }
 
@@ -492,11 +483,11 @@ struct ReferrerPortalView: View {
             return
         }
 
-        await exchangeSession(loginToken: nil, portalToken: token, messageTarget: .tokenSignIn)
+        await exchangeSession(portalToken: token, messageTarget: .tokenSignIn)
     }
 
     @MainActor
-    private func exchangeSession(loginToken: String?, portalToken: String?, messageTarget: MessageTarget?) async {
+    private func exchangeSession(portalToken: String, messageTarget: MessageTarget?) async {
         if let messageTarget {
             clearMessage(for: messageTarget)
         }
@@ -512,7 +503,6 @@ struct ReferrerPortalView: View {
         do {
             let response = try await APIClient.exchangeReferrerMobileSession(
                 baseURL: apiBaseURL,
-                loginToken: loginToken,
                 portalToken: portalToken
             )
 

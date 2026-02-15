@@ -44,11 +44,25 @@ struct ContentView: View {
             }
 
             if appState.roleMode == .referrer {
-                ReferrerView()
-                    .tabItem {
-                        Label(l("Referrer"), systemImage: "person.2")
+                NavigationStack {
+                    IRefairScreen {
+                        ReferrerRegistrationView()
                     }
-                    .tag(AppTab.referrer)
+                }
+                    .tabItem {
+                        Label(l("Register"), systemImage: "square.and.pencil")
+                    }
+                    .tag(AppTab.referrerForm)
+
+                NavigationStack {
+                    IRefairScreen {
+                        ReferrerPortalView()
+                    }
+                }
+                .tabItem {
+                    Label(l("Portal"), systemImage: "person.2")
+                }
+                .tag(AppTab.referrerPortal)
             }
 
             SettingsView()

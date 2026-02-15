@@ -3,7 +3,8 @@ import Foundation
 enum AppTab: Hashable {
     case applicant
     case apply
-    case referrer
+    case referrerForm
+    case referrerPortal
     case settings
 }
 
@@ -16,7 +17,7 @@ enum AppRoleMode: String, Hashable, CaseIterable {
         case .applicant:
             return .applicant
         case .referrer:
-            return .referrer
+            return .referrerForm
         }
     }
 
@@ -25,7 +26,7 @@ enum AppRoleMode: String, Hashable, CaseIterable {
         case .applicant:
             return [.applicant, .apply, .settings]
         case .referrer:
-            return [.referrer, .settings]
+            return [.referrerForm, .referrerPortal, .settings]
         }
     }
 }
@@ -37,7 +38,6 @@ final class AppState: ObservableObject {
     @Published private(set) var selectedTab: AppTab
     @Published private(set) var roleMode: AppRoleMode?
     @Published var suggestedRoleMode: AppRoleMode?
-    @Published var pendingReferrerLoginToken: String?
     @Published var pendingReferrerPortalToken: String?
 
     init(userDefaults: UserDefaults = .standard) {
@@ -84,12 +84,6 @@ final class AppState: ObservableObject {
         if !roleMode.availableTabs.contains(selectedTab) {
             selectedTab = roleMode.defaultTab
         }
-    }
-
-    func consumePendingReferrerLoginToken() -> String? {
-        let token = pendingReferrerLoginToken
-        pendingReferrerLoginToken = nil
-        return token
     }
 
     func consumePendingReferrerPortalToken() -> String? {
