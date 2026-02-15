@@ -160,22 +160,23 @@ struct ApplicantView: View {
                         }
 
                         IRefairSection(l("Languages")) {
-                            Color.clear
-                                .frame(height: 0)
-                                .id(fieldAnchorId(for: "languages"))
-                            ForEach(languageOptions, id: \.value) { option in
-                                Toggle(option.label, isOn: Binding(
-                                    get: { languages.contains(option.value) },
-                                    set: { isSelected in
-                                        if isSelected {
-                                            languages.insert(option.value)
-                                        } else {
-                                            languages.remove(option.value)
+                            Group {
+                                ForEach(languageOptions, id: \.value) { option in
+                                    Toggle(option.label, isOn: Binding(
+                                        get: { languages.contains(option.value) },
+                                        set: { isSelected in
+                                            if isSelected {
+                                                languages.insert(option.value)
+                                            } else {
+                                                languages.remove(option.value)
+                                            }
                                         }
-                                    }
-                                ))
-                                .toggleStyle(IRefairCheckboxToggleStyle())
+                                    ))
+                                    .toggleStyle(IRefairCheckboxToggleStyle())
+                                }
                             }
+                            .padding(.top, 1)
+                            .id(fieldAnchorId(for: "languages"))
                             errorText("languages")
                             if languages.contains("Other") {
                                 IRefairField(l("Other languages *")) {
