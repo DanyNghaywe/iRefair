@@ -4,8 +4,10 @@ struct ReferrerPortalView: View {
     private enum MessageTarget: Hashable {
         case sendLink
         case tokenSignIn
+        case switchAccount
         case loadPortal
         case signOut
+        case signOutAll
         case global
     }
 
@@ -15,11 +17,10 @@ struct ReferrerPortalView: View {
     }
 
     private let apiBaseURL: String = APIConfig.baseURL
-    private let refreshTokenKey = "referrerPortalRefreshToken"
-    private let legacyPortalTokenKey = "referrerPortalToken"
 
     @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var networkMonitor: NetworkMonitor
+    @EnvironmentObject private var referrerPortalAccountStore: ReferrerPortalAccountStore
 
     @State private var accessToken = ""
     @State private var loginEmail = ""
@@ -27,6 +28,7 @@ struct ReferrerPortalView: View {
     @State private var didBootstrapSession = false
     @State private var isRequestingLink = false
     @State private var isSigningOut = false
+    @State private var isSigningOutAll = false
 
     @State private var referrer: ReferrerSummary?
     @State private var applicants: [ReferrerApplicant] = []
@@ -37,6 +39,26 @@ struct ReferrerPortalView: View {
     @State private var selectedApplicant: ReferrerApplicant?
     private let loadingRows = 1
     private let referrerMetaSingleColumnBreakpoint: CGFloat = 340
+
+    private var hasActiveAccount: Bool {
+        referrerPortalAccountStore.activeAccount != nil
+    }
+
+    private var activeAccount: ReferrerPortalAccount? {
+        referrerPortalAccountStore.activeAccount
+    }
+
+    private var activeAccountLabel: String {
+        activeAccount?.pickerLabel ?? l("No portal selected")
+    }
+
+    private var isBusySigningOut: Bool {
+        isSigningOut || isSigningOutAll
+    }
+
+    private var hasAnySavedAccounts: Bool {
+        !referrerPortalAccountStore.accounts.isEmpty
+    }
 
     private var isAuthenticated: Bool {
         !accessToken.isEmpty
@@ -56,11 +78,14 @@ struct ReferrerPortalView: View {
                 }
             }
 
-            if isAuthenticated {
-                authenticatedSessionSection
-            } else {
-                signInSection
+            if hasAnySavedAccounts {
+                accountSwitcherSection
             }
+
+            if hasActiveAccount {
+                authenticatedSessionSection
+            }
+            signInSection
 
             if let referrer {
                 referrerMeta(referrer)
@@ -115,8 +140,8 @@ struct ReferrerPortalView: View {
             didBootstrapSession = true
             Task { await bootstrapSession() }
         }
-        .onChange(of: appState.pendingReferrerPortalToken) { newValue in
-            guard newValue != nil else { return }
+        .onChange(of: appState.pendingReferrerPortalTokens.count) { count in
+            guard count > 0 else { return }
             Task { await bootstrapSession() }
         }
         .sheet(item: $selectedApplicant) { applicant in
@@ -126,8 +151,39 @@ struct ReferrerPortalView: View {
         }
     }
 
+    private var accountSwitcherSection: some View {
+        IRefairSection(l("Portal accounts")) {
+            if referrerPortalAccountStore.accounts.count > 1 {
+                IRefairField(l("Active portal")) {
+                    Picker(
+                        l("Active portal"),
+                        selection: Binding(
+                            get: { activeAccount?.normalizedIrref ?? "" },
+                            set: { selectedIrref in
+                                Task { await switchPortalAccount(to: selectedIrref) }
+                            }
+                        )
+                    ) {
+                        ForEach(referrerPortalAccountStore.accounts) { account in
+                            Text(account.pickerLabel).tag(account.normalizedIrref)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                }
+            } else {
+                Text(activeAccountLabel)
+                    .font(Theme.font(.subheadline, weight: .semibold))
+                    .foregroundStyle(Color.white)
+            }
+
+            if let message = messages[.switchAccount] {
+                StatusBanner(text: message.text, style: message.style)
+            }
+        }
+    }
+
     private var signInSection: some View {
-        IRefairSection(l("Sign in to your portal")) {
+        IRefairSection(hasActiveAccount ? l("Add another portal account") : l("Sign in to your portal")) {
             IRefairField(l("Email")) {
                 IRefairTextField(l("your.email@example.com"), text: $loginEmail)
                     .textInputAutocapitalization(.never)
@@ -149,7 +205,7 @@ struct ReferrerPortalView: View {
                     .frame(maxWidth: .infinity)
                 }
                 .buttonStyle(IRefairPrimaryButtonStyle(fillWidth: true))
-                .disabled(isRequestingLink || !networkMonitor.isConnected)
+                .disabled(isRequestingLink || !networkMonitor.isConnected || isBusySigningOut)
             }
 
             if let message = messages[.sendLink] {
@@ -187,7 +243,7 @@ struct ReferrerPortalView: View {
                     Task { await signInWithPortalToken() }
                 }
                 .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
-                .disabled(isRequestingLink || !networkMonitor.isConnected)
+                .disabled(isRequestingLink || !networkMonitor.isConnected || isBusySigningOut)
             }
 
             if let message = messages[.tokenSignIn] {
@@ -198,13 +254,24 @@ struct ReferrerPortalView: View {
 
     private var authenticatedSessionSection: some View {
         IRefairSection(l("Session")) {
+            if let activeAccount {
+                Text(
+                    String.localizedStringWithFormat(
+                        l("Active portal: %@"),
+                        activeAccount.pickerLabel
+                    )
+                )
+                .font(Theme.font(.subheadline))
+                .foregroundStyle(Color.white.opacity(0.86))
+            }
+
             HStack(alignment: .top, spacing: 12) {
                 VStack(alignment: .leading, spacing: 8) {
                     Button(l("Load portal data")) {
                         Task { await loadPortal(messageTarget: .loadPortal) }
                     }
                     .buttonStyle(IRefairPrimaryButtonStyle(fillWidth: true))
-                    .disabled(isLoading || !networkMonitor.isConnected || isSigningOut)
+                    .disabled(isLoading || !networkMonitor.isConnected || isBusySigningOut)
 
                     if let message = messages[.loadPortal] {
                         StatusBanner(text: message.text, style: message.style)
@@ -213,17 +280,29 @@ struct ReferrerPortalView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 VStack(alignment: .leading, spacing: 8) {
-                    Button(l("Sign out")) {
+                    Button(l("Sign out this portal")) {
                         Task { await signOut() }
                     }
                     .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
-                    .disabled(isSigningOut)
+                    .disabled(isBusySigningOut)
 
                     if let message = messages[.signOut] {
                         StatusBanner(text: message.text, style: message.style)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            if referrerPortalAccountStore.accounts.count > 1 {
+                Button(l("Sign out all portals")) {
+                    Task { await signOutAll() }
+                }
+                .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
+                .disabled(isBusySigningOut)
+
+                if let message = messages[.signOutAll] {
+                    StatusBanner(text: message.text, style: message.style)
+                }
             }
         }
     }
@@ -391,6 +470,20 @@ struct ReferrerPortalView: View {
     }
 
     @MainActor
+    private func switchPortalAccount(to irref: String) async {
+        clearMessage(for: .switchAccount)
+
+        let normalized = irref.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !normalized.isEmpty else { return }
+        guard activeAccount?.normalizedIrref != normalized else { return }
+
+        referrerPortalAccountStore.setActive(irref: normalized)
+        accessToken = ""
+        clearPortalData()
+        await loadPortal(messageTarget: .switchAccount)
+    }
+
+    @MainActor
     private func bootstrapSession() async {
         clearMessage(for: .global)
 
@@ -399,14 +492,15 @@ struct ReferrerPortalView: View {
             return
         }
 
-        if let pendingPortalToken = appState.consumePendingReferrerPortalToken() {
+        while let pendingPortalToken = appState.consumeNextPendingReferrerPortalToken() {
             await exchangeSession(portalToken: pendingPortalToken, messageTarget: .global)
-            return
         }
 
-        if isAuthenticated { return }
+        guard !isAuthenticated else { return }
+        guard networkMonitor.isConnected else { return }
+        guard let activeAccount else { return }
 
-        _ = await refreshSession()
+        _ = await refreshSession(for: activeAccount.normalizedIrref)
     }
 
     @MainActor
@@ -492,6 +586,8 @@ struct ReferrerPortalView: View {
             clearMessage(for: messageTarget)
         }
         clearMessage(for: .signOut)
+        clearMessage(for: .signOutAll)
+        clearMessage(for: .switchAccount)
 
         guard networkMonitor.isConnected else {
             if let messageTarget {
@@ -513,13 +609,17 @@ struct ReferrerPortalView: View {
                 throw APIError(message: l("Unable to establish session. Please try again."))
             }
 
-            accessToken = newAccessToken
-            _ = KeychainStore.save(newRefreshToken, key: refreshTokenKey)
-            KeychainStore.delete(key: legacyPortalTokenKey)
-
-            if let referrer = response.referrer {
-                self.referrer = referrer
+            guard let responseReferrer = response.referrer else {
+                throw APIError(message: l("Unable to identify referrer account. Please request a fresh sign-in link."))
             }
+
+            accessToken = newAccessToken
+            referrerPortalAccountStore.upsertAccount(
+                from: responseReferrer,
+                refreshToken: newRefreshToken,
+                makeActive: true
+            )
+            referrer = responseReferrer
 
             if let messageTarget {
                 setMessage(l("Signed in. Loading portal data..."), style: .success, for: messageTarget)
@@ -527,9 +627,6 @@ struct ReferrerPortalView: View {
             await loadPortal(messageTarget: messageTarget)
         } catch {
             Telemetry.capture(error)
-            clearPortalData()
-            accessToken = ""
-            KeychainStore.delete(key: refreshTokenKey)
             if let messageTarget {
                 setMessage(error.localizedDescription, style: .error, for: messageTarget)
             }
@@ -537,8 +634,8 @@ struct ReferrerPortalView: View {
     }
 
     @MainActor
-    private func refreshSession() async -> Bool {
-        let refreshToken = (KeychainStore.read(key: refreshTokenKey) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    private func refreshSession(for irref: String) async -> Bool {
+        let refreshToken = referrerPortalAccountStore.refreshToken(for: irref)
         guard !refreshToken.isEmpty else {
             return false
         }
@@ -553,13 +650,13 @@ struct ReferrerPortalView: View {
             }
 
             accessToken = newAccessToken
-            _ = KeychainStore.save(newRefreshToken, key: refreshTokenKey)
+            _ = referrerPortalAccountStore.saveRefreshToken(newRefreshToken, for: irref)
             return true
         } catch {
             Telemetry.capture(error)
             accessToken = ""
             clearPortalData()
-            KeychainStore.delete(key: refreshTokenKey)
+            referrerPortalAccountStore.clearRefreshToken(for: irref)
             return false
         }
     }
@@ -567,19 +664,56 @@ struct ReferrerPortalView: View {
     @MainActor
     private func signOut() async {
         clearMessage(for: .signOut)
+        clearMessage(for: .switchAccount)
+
+        guard let activeAccount else {
+            setMessage(l("No portal account selected."), style: .error, for: .signOut)
+            return
+        }
 
         isSigningOut = true
         defer { isSigningOut = false }
 
-        let refreshToken = (KeychainStore.read(key: refreshTokenKey) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let refreshToken = referrerPortalAccountStore.refreshToken(for: activeAccount.normalizedIrref)
         if !refreshToken.isEmpty {
             _ = try? await APIClient.logoutReferrerMobileSession(baseURL: apiBaseURL, refreshToken: refreshToken)
         }
 
+        referrerPortalAccountStore.removeAccount(irref: activeAccount.normalizedIrref)
         accessToken = ""
         clearPortalData()
-        KeychainStore.delete(key: refreshTokenKey)
-        KeychainStore.delete(key: legacyPortalTokenKey)
+
+        if referrerPortalAccountStore.activeAccount != nil {
+            setMessage(l("Signed out of this portal account."), style: .success, for: .signOut)
+            if networkMonitor.isConnected {
+                await loadPortal(messageTarget: .switchAccount)
+            }
+        } else {
+            setMessage(l("Signed out."), style: .success, for: .signOut)
+        }
+    }
+
+    @MainActor
+    private func signOutAll() async {
+        clearMessage(for: .signOutAll)
+        clearMessage(for: .signOut)
+        clearMessage(for: .switchAccount)
+
+        isSigningOutAll = true
+        defer { isSigningOutAll = false }
+
+        let accounts = referrerPortalAccountStore.accounts
+        for account in accounts {
+            let refreshToken = referrerPortalAccountStore.refreshToken(for: account.normalizedIrref)
+            if !refreshToken.isEmpty {
+                _ = try? await APIClient.logoutReferrerMobileSession(baseURL: apiBaseURL, refreshToken: refreshToken)
+            }
+        }
+
+        referrerPortalAccountStore.removeAllAccounts()
+        accessToken = ""
+        clearPortalData()
+        setMessage(l("Signed out of all portal accounts."), style: .success, for: .signOutAll)
     }
 
     @MainActor
@@ -587,6 +721,14 @@ struct ReferrerPortalView: View {
         if let messageTarget {
             clearMessage(for: messageTarget)
         }
+
+        guard let activeAccount else {
+            if let messageTarget {
+                setMessage(l("No portal account selected."), style: .error, for: messageTarget)
+            }
+            return
+        }
+        let activeIrref = activeAccount.normalizedIrref
 
         guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
             if let messageTarget {
@@ -602,7 +744,7 @@ struct ReferrerPortalView: View {
         }
 
         if accessToken.isEmpty {
-            let refreshed = await refreshSession()
+            let refreshed = await refreshSession(for: activeIrref)
             if !refreshed {
                 if let messageTarget {
                     setMessage(l("Session expired. Please sign in again."), style: .error, for: messageTarget)
@@ -616,7 +758,13 @@ struct ReferrerPortalView: View {
 
         do {
             let response = try await APIClient.loadReferrerPortal(baseURL: apiBaseURL, token: accessToken)
-            referrer = response.referrer
+            guard referrerPortalAccountStore.activeAccountIrref == activeIrref else { return }
+            if let responseReferrer = response.referrer {
+                referrer = responseReferrer
+                referrerPortalAccountStore.upsertAccount(from: responseReferrer, makeActive: false)
+            } else {
+                referrer = nil
+            }
             applicants = response.applicants ?? []
             totalReferrals = response.total
             if let messageTarget {
@@ -628,11 +776,17 @@ struct ReferrerPortalView: View {
             }
             Telemetry.track("referrer_portal_loaded", properties: ["count": "\(applicants.count)"])
         } catch {
-            let refreshed = await refreshSession()
+            let refreshed = await refreshSession(for: activeIrref)
             if refreshed {
                 do {
                     let retryResponse = try await APIClient.loadReferrerPortal(baseURL: apiBaseURL, token: accessToken)
-                    referrer = retryResponse.referrer
+                    guard referrerPortalAccountStore.activeAccountIrref == activeIrref else { return }
+                    if let retryReferrer = retryResponse.referrer {
+                        referrer = retryReferrer
+                        referrerPortalAccountStore.upsertAccount(from: retryReferrer, makeActive: false)
+                    } else {
+                        referrer = nil
+                    }
                     applicants = retryResponse.applicants ?? []
                     totalReferrals = retryResponse.total
                     if let messageTarget {
@@ -665,4 +819,5 @@ struct ReferrerPortalView: View {
     ReferrerPortalView()
         .environmentObject(AppState())
         .environmentObject(NetworkMonitor())
+        .environmentObject(ReferrerPortalAccountStore())
 }

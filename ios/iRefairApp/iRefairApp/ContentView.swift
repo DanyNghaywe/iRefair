@@ -293,4 +293,5 @@ private struct RoleModeLandingView: View {
     ContentView()
         .environmentObject(AppState())
         .environmentObject(NetworkMonitor())
+        .environmentObject(ReferrerPortalAccountStore())
 }

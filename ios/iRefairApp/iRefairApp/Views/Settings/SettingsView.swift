@@ -2,6 +2,7 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject private var appState: AppState
+    @EnvironmentObject private var referrerPortalAccountStore: ReferrerPortalAccountStore
     @State private var statusMessage: String?
     @State private var showRoleSwitchConfirmation = false
     @State private var rolePendingConfirmation: AppRoleMode = .applicant
@@ -58,10 +59,11 @@ struct SettingsView: View {
                     }
 
                     IRefairSection(l("App data")) {
-                        Button(l("Clear saved referrer token")) {
+                        Button(l("Clear saved referrer portals")) {
                             KeychainStore.delete(key: "referrerPortalToken")
                             KeychainStore.delete(key: "referrerPortalRefreshToken")
-                            statusMessage = l("Cleared referrer token.")
+                            referrerPortalAccountStore.removeAllAccounts()
+                            statusMessage = l("Cleared saved referrer portals.")
                         }
                         .buttonStyle(IRefairGhostButtonStyle())
                     }
@@ -114,4 +116,5 @@ struct SettingsView: View {
     SettingsView()
         .environmentObject(AppState())
         .environmentObject(NetworkMonitor())
+        .environmentObject(ReferrerPortalAccountStore())
 }

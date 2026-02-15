@@ -58,5 +58,7 @@ struct ReferrerView: View {
 
 #Preview {
     ReferrerView()
+        .environmentObject(AppState())
         .environmentObject(NetworkMonitor())
+        .environmentObject(ReferrerPortalAccountStore())
 }

@@ -4,8 +4,8 @@ import { NextRequest } from 'next/server';
 import { resetProcessEnv } from '../../../lib/__tests__/testUtils';
 import { POST } from '../referrer/portal/request-link/route';
 
-const { getReferrerByEmail } = vi.hoisted(() => ({
-  getReferrerByEmail: vi.fn(),
+const { getReferrersByEmail } = vi.hoisted(() => ({
+  getReferrersByEmail: vi.fn(),
 }));
 
 const { hasApprovedCompany } = vi.hoisted(() => ({
@@ -19,7 +19,7 @@ const { ensureReferrerPortalTokenVersion, buildReferrerPortalLink, sendReferrerP
 }));
 
 vi.mock('@/lib/sheets', () => ({
-  getReferrerByEmail,
+  getReferrersByEmail,
   hasApprovedCompany,
 }));
 
@@ -40,13 +40,13 @@ const makeRequest = (body: unknown, raw = false) =>
 
 beforeEach(() => {
   resetProcessEnv(ORIGINAL_ENV);
-  getReferrerByEmail.mockReset();
+  getReferrersByEmail.mockReset();
   hasApprovedCompany.mockReset();
   ensureReferrerPortalTokenVersion.mockReset();
   buildReferrerPortalLink.mockReset();
   sendReferrerPortalLinkEmail.mockReset();
 
-  getReferrerByEmail.mockResolvedValue(null);
+  getReferrersByEmail.mockResolvedValue([]);
   hasApprovedCompany.mockResolvedValue(false);
   ensureReferrerPortalTokenVersion.mockResolvedValue(1);
   buildReferrerPortalLink.mockReturnValue('https://example.com/referrer/portal?token=abc');
@@ -69,13 +69,16 @@ describe('POST /api/referrer/portal/request-link', () => {
 
   it('rate limits after 3 requests per hour', async () => {
     const email = 'limit@example.com';
-    getReferrerByEmail.mockResolvedValue({
-      record: {
-        irref: 'IR-LIMIT',
-        name: 'Rate Limit Referrer',
-        archived: 'false',
+    getReferrersByEmail.mockResolvedValue([
+      {
+        rowIndex: 2,
+        record: {
+          irref: 'IR-LIMIT',
+          name: 'Rate Limit Referrer',
+          archived: 'false',
+        },
       },
-    });
+    ]);
     hasApprovedCompany.mockResolvedValue(true);
 
     const first = await POST(makeRequest({ email }));
@@ -94,7 +97,7 @@ describe('POST /api/referrer/portal/request-link', () => {
   });
 
   it('returns 404 when no referrer matches the email', async () => {
-    getReferrerByEmail.mockResolvedValue(null);
+    getReferrersByEmail.mockResolvedValue([]);
 
     const response = await POST(makeRequest({ email: 'unknown@example.com' }));
 
@@ -106,14 +109,25 @@ describe('POST /api/referrer/portal/request-link', () => {
     expect(sendReferrerPortalLinkEmail).not.toHaveBeenCalled();
   });
 
-  it('returns 403 when referrer is not accepted', async () => {
-    getReferrerByEmail.mockResolvedValue({
-      record: {
-        irref: 'IR123',
-        name: 'Jane Referrer',
-        archived: 'false',
+  it('returns 403 when no active referrer account is accepted', async () => {
+    getReferrersByEmail.mockResolvedValue([
+      {
+        rowIndex: 2,
+        record: {
+          irref: 'IR123',
+          name: 'Jane Referrer',
+          archived: 'false',
+        },
       },
-    });
+      {
+        rowIndex: 3,
+        record: {
+          irref: 'IR124',
+          name: 'John Referrer',
+          archived: 'false',
+        },
+      },
+    ]);
     hasApprovedCompany.mockResolvedValue(false);
 
     const response = await POST(makeRequest({ email: 'referrer@example.com' }));
@@ -121,38 +135,52 @@ describe('POST /api/referrer/portal/request-link', () => {
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({
       ok: false,
-      error: 'This referrer account is not accepted yet.',
+      error: 'No accepted referrer account found for this email.',
     });
     expect(sendReferrerPortalLinkEmail).not.toHaveBeenCalled();
   });
 
-  it('returns 403 when referrer is archived', async () => {
-    getReferrerByEmail.mockResolvedValue({
-      record: {
-        irref: 'IR123',
-        name: 'Jane Referrer',
-        archived: 'true',
+  it('returns 403 when all matched referrer accounts are archived', async () => {
+    getReferrersByEmail.mockResolvedValue([
+      {
+        rowIndex: 2,
+        record: {
+          irref: 'IR123',
+          name: 'Jane Referrer',
+          archived: 'true',
+        },
       },
-    });
+      {
+        rowIndex: 3,
+        record: {
+          irref: 'IR124',
+          name: 'John Referrer',
+          archived: 'true',
+        },
+      },
+    ]);
 
     const response = await POST(makeRequest({ email: 'referrer@example.com' }));
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({
       ok: false,
-      error: 'This referrer account has been archived and cannot access the portal.',
+      error: 'All referrer accounts for this email are archived and cannot access the portal.',
     });
     expect(sendReferrerPortalLinkEmail).not.toHaveBeenCalled();
   });
 
-  it('sends a portal link email for matched and accepted referrers', async () => {
-    getReferrerByEmail.mockResolvedValue({
-      record: {
-        irref: 'IR123',
-        name: 'Jane Referrer',
-        archived: 'false',
+  it('sends a portal link email for a single accepted referrer account', async () => {
+    getReferrersByEmail.mockResolvedValue([
+      {
+        rowIndex: 2,
+        record: {
+          irref: 'IR123',
+          name: 'Jane Referrer',
+          archived: 'false',
+        },
       },
-    });
+    ]);
     hasApprovedCompany.mockResolvedValue(true);
     ensureReferrerPortalTokenVersion.mockResolvedValue(2);
     buildReferrerPortalLink.mockReturnValue('https://example.com/referrer/portal?token=abc');
@@ -167,5 +195,85 @@ describe('POST /api/referrer/portal/request-link', () => {
       irref: 'IR123',
       link: 'https://example.com/referrer/portal?token=abc',
     });
+  });
+
+  it('sends portal link emails for all eligible referrer accounts tied to the email', async () => {
+    getReferrersByEmail.mockResolvedValue([
+      {
+        rowIndex: 2,
+        record: {
+          irref: 'IR123',
+          name: 'Jane Referrer',
+          archived: 'false',
+        },
+      },
+      {
+        rowIndex: 3,
+        record: {
+          irref: 'IR124',
+          name: 'John Referrer',
+          archived: 'false',
+        },
+      },
+      {
+        rowIndex: 4,
+        record: {
+          irref: 'IR125',
+          name: 'Archived Referrer',
+          archived: 'true',
+        },
+      },
+    ]);
+    hasApprovedCompany.mockImplementation(async (irref: string) => irref !== 'IR124');
+    ensureReferrerPortalTokenVersion.mockResolvedValue(3);
+    buildReferrerPortalLink.mockImplementation((irref: string) => `https://example.com/referrer/portal?token=${irref}`);
+
+    const response = await POST(makeRequest({ email: 'multi@example.com' }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      message: 'Portal access email sent.',
+    });
+    expect(sendReferrerPortalLinkEmail).toHaveBeenCalledTimes(1);
+    expect(sendReferrerPortalLinkEmail).toHaveBeenCalledWith({
+      to: 'multi@example.com',
+      name: 'Jane Referrer',
+      irref: 'IR123',
+      link: 'https://example.com/referrer/portal?token=IR123',
+    });
+  });
+
+  it('returns plural success message when multiple eligible accounts are emailed', async () => {
+    getReferrersByEmail.mockResolvedValue([
+      {
+        rowIndex: 2,
+        record: {
+          irref: 'IR123',
+          name: 'Jane Referrer',
+          archived: 'false',
+        },
+      },
+      {
+        rowIndex: 3,
+        record: {
+          irref: 'IR124',
+          name: 'John Referrer',
+          archived: 'false',
+        },
+      },
+    ]);
+    hasApprovedCompany.mockResolvedValue(true);
+    ensureReferrerPortalTokenVersion.mockResolvedValue(4);
+    buildReferrerPortalLink.mockImplementation((irref: string) => `https://example.com/referrer/portal?token=${irref}`);
+
+    const response = await POST(makeRequest({ email: 'multi@example.com' }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      message: 'Portal access emails sent for 2 referrer accounts.',
+    });
+    expect(sendReferrerPortalLinkEmail).toHaveBeenCalledTimes(2);
   });
 });

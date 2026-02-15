@@ -5,6 +5,7 @@ import UIKit
 struct iRefairApp: App {
     @StateObject private var appState = AppState()
     @StateObject private var networkMonitor = NetworkMonitor()
+    @StateObject private var referrerPortalAccountStore = ReferrerPortalAccountStore()
 
     init() {
         Telemetry.configure()
@@ -16,6 +17,7 @@ struct iRefairApp: App {
             ContentView()
                 .environmentObject(appState)
                 .environmentObject(networkMonitor)
+                .environmentObject(referrerPortalAccountStore)
                 .onOpenURL { url in
                     handleDeepLink(url)
                 }
@@ -36,7 +38,7 @@ struct iRefairApp: App {
 
         let isPortalLink = host.contains("portal") || host.contains("referrer") || path.contains("portal") || path.contains("referrer")
         if isPortalLink, let token = query["token"] ?? query["referrertoken"] {
-            appState.pendingReferrerPortalToken = token
+            appState.enqueuePendingReferrerPortalToken(token)
             appState.suggestRoleMode(.referrer)
             appState.selectTab(.referrerPortal)
             return

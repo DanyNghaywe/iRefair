@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getReferrerByEmail, hasApprovedCompany } from '@/lib/sheets';
+import { getReferrersByEmail, hasApprovedCompany } from '@/lib/sheets';
 import {
   buildReferrerPortalLink,
   ensureReferrerPortalTokenVersion,
@@ -64,41 +64,77 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    // Look up referrer by email
-    const referrer = await getReferrerByEmail(email);
-    if (!referrer) {
+    // Look up all referrer accounts by email.
+    const referrers = await getReferrersByEmail(email);
+    if (!referrers.length) {
       return NextResponse.json(
         { ok: false, error: 'No referrer account found for this email.' },
         { status: 404 },
       );
     }
 
-    if (referrer.record.archived?.toLowerCase() === 'true') {
+    const activeReferrers = referrers.filter(
+      (referrer) => referrer.record.archived?.toLowerCase() !== 'true',
+    );
+    if (!activeReferrers.length) {
       return NextResponse.json(
-        { ok: false, error: 'This referrer account has been archived and cannot access the portal.' },
+        { ok: false, error: 'All referrer accounts for this email are archived and cannot access the portal.' },
         { status: 403 },
       );
     }
 
-    const accepted = await hasApprovedCompany(referrer.record.irref);
-    if (!accepted) {
+    const acceptedResults = await Promise.all(
+      activeReferrers.map(async (referrer) => ({
+        referrer,
+        accepted: await hasApprovedCompany(referrer.record.irref),
+      })),
+    );
+    const eligibleReferrers = acceptedResults
+      .filter((result) => result.accepted)
+      .map((result) => result.referrer);
+
+    if (!eligibleReferrers.length) {
       return NextResponse.json(
-        { ok: false, error: 'This referrer account is not accepted yet.' },
+        { ok: false, error: 'No accepted referrer account found for this email.' },
         { status: 403 },
       );
     }
 
-    const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrer.record.irref);
-    const portalLink = buildReferrerPortalLink(referrer.record.irref, portalTokenVersion);
+    let sentCount = 0;
+    for (const referrer of eligibleReferrers) {
+      try {
+        const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrer.record.irref);
+        const portalLink = buildReferrerPortalLink(referrer.record.irref, portalTokenVersion);
+        await sendReferrerPortalLinkEmail({
+          to: email,
+          name: referrer.record.name,
+          irref: referrer.record.irref,
+          link: portalLink,
+        });
+        sentCount += 1;
+      } catch (error) {
+        console.error('Error sending referrer portal link email', {
+          email,
+          irref: referrer.record.irref,
+          error,
+        });
+      }
+    }
 
-    await sendReferrerPortalLinkEmail({
-      to: email,
-      name: referrer.record.name,
-      irref: referrer.record.irref,
-      link: portalLink,
+    if (sentCount < 1) {
+      return NextResponse.json(
+        { ok: false, error: 'Unable to send link. Please try again later.' },
+        { status: 500 },
+      );
+    }
+
+    if (sentCount === 1) {
+      return NextResponse.json({ ok: true, message: 'Portal access email sent.' });
+    }
+    return NextResponse.json({
+      ok: true,
+      message: `Portal access emails sent for ${sentCount} referrer accounts.`,
     });
-
-    return NextResponse.json({ ok: true, message: 'Portal access email sent.' });
   } catch (err) {
     console.error('Error sending referrer portal link:', err);
     return NextResponse.json(

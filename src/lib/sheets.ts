@@ -4171,6 +4171,36 @@ export async function getReferrerByIrref(irref: string, options: SheetReadOption
   const { headers, rows } = await getSheetDataWithRowIndex(REFERRER_SHEET_NAME, options);
   if (!headers.length) return null;
 
+  const buildRecord = (
+    headerMap: Map<string, number>,
+    values: (string | number | null | undefined)[],
+  ): ReferrerRecord => ({
+    irref: getHeaderValue(headerMap, values, 'iRREF'),
+    timestamp: getHeaderValue(headerMap, values, 'Timestamp'),
+    name: getHeaderValue(headerMap, values, 'Name'),
+    email: getHeaderValue(headerMap, values, 'Email'),
+    phone: getHeaderValue(headerMap, values, 'Phone'),
+    country: getHeaderValue(headerMap, values, 'Country'),
+    company: getHeaderValue(headerMap, values, 'Company'),
+    companyIrcrn: getHeaderValue(headerMap, values, 'Company iRCRN'),
+    companyApproval: getHeaderValue(headerMap, values, 'Company Approval'),
+    companyIndustry: getHeaderValue(headerMap, values, 'Company Industry'),
+    careersPortal: getHeaderValue(headerMap, values, 'Careers Portal'),
+    workType: getHeaderValue(headerMap, values, 'Work Type'),
+    linkedin: getHeaderValue(headerMap, values, 'LinkedIn'),
+    locale: getHeaderValue(headerMap, values, REFERRER_LOCALE_HEADER),
+    portalTokenVersion: getHeaderValue(headerMap, values, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
+    pendingUpdates: getHeaderValue(headerMap, values, REFERRER_PENDING_UPDATES_HEADER),
+    status: getHeaderValue(headerMap, values, 'Status'),
+    ownerNotes: getHeaderValue(headerMap, values, 'Owner Notes'),
+    tags: getHeaderValue(headerMap, values, 'Tags'),
+    lastContactedAt: getHeaderValue(headerMap, values, 'Last Contacted At'),
+    nextActionAt: getHeaderValue(headerMap, values, 'Next Action At'),
+    archived: getHeaderValue(headerMap, values, 'Archived'),
+    archivedAt: getHeaderValue(headerMap, values, 'ArchivedAt'),
+    archivedBy: getHeaderValue(headerMap, values, 'ArchivedBy'),
+  });
+
   const headerMap = buildHeaderMap(headers);
   for (const row of rows) {
     const values = row.values ?? [];
@@ -4178,84 +4208,74 @@ export async function getReferrerByIrref(irref: string, options: SheetReadOption
     if (value === irref.trim().toLowerCase()) {
       return {
         rowIndex: row.rowIndex,
-        record: {
-          irref: getHeaderValue(headerMap, values, 'iRREF'),
-          timestamp: getHeaderValue(headerMap, values, 'Timestamp'),
-          name: getHeaderValue(headerMap, values, 'Name'),
-          email: getHeaderValue(headerMap, values, 'Email'),
-          phone: getHeaderValue(headerMap, values, 'Phone'),
-          country: getHeaderValue(headerMap, values, 'Country'),
-          company: getHeaderValue(headerMap, values, 'Company'),
-          companyIrcrn: getHeaderValue(headerMap, values, 'Company iRCRN'),
-          companyApproval: getHeaderValue(headerMap, values, 'Company Approval'),
-          companyIndustry: getHeaderValue(headerMap, values, 'Company Industry'),
-          careersPortal: getHeaderValue(headerMap, values, 'Careers Portal'),
-          workType: getHeaderValue(headerMap, values, 'Work Type'),
-          linkedin: getHeaderValue(headerMap, values, 'LinkedIn'),
-          locale: getHeaderValue(headerMap, values, REFERRER_LOCALE_HEADER),
-          portalTokenVersion: getHeaderValue(headerMap, values, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
-          pendingUpdates: getHeaderValue(headerMap, values, REFERRER_PENDING_UPDATES_HEADER),
-          status: getHeaderValue(headerMap, values, 'Status'),
-          ownerNotes: getHeaderValue(headerMap, values, 'Owner Notes'),
-          tags: getHeaderValue(headerMap, values, 'Tags'),
-          lastContactedAt: getHeaderValue(headerMap, values, 'Last Contacted At'),
-          nextActionAt: getHeaderValue(headerMap, values, 'Next Action At'),
-          archived: getHeaderValue(headerMap, values, 'Archived'),
-          archivedAt: getHeaderValue(headerMap, values, 'ArchivedAt'),
-          archivedBy: getHeaderValue(headerMap, values, 'ArchivedBy'),
-        },
+        record: buildRecord(headerMap, values),
       };
     }
   }
   return null;
 }
 
-export async function getReferrerByEmail(email: string, options: SheetReadOptions = {}) {
+export async function getReferrersByEmail(email: string, options: SheetReadOptions = {}) {
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
   await ensureColumns(REFERRER_SHEET_NAME, REFERRER_SECURITY_COLUMNS);
   const { headers, rows } = await getSheetDataWithRowIndex(REFERRER_SHEET_NAME, options);
-  if (!headers.length) return null;
+  if (!headers.length) return [];
 
   const normalizedEmail = email.trim().toLowerCase();
   const headerMap = buildHeaderMap(headers);
   const emailColIndex = headerMap.get('Email');
 
-  if (emailColIndex === undefined) return null;
+  if (emailColIndex === undefined) return [];
+
+  const buildRecord = (
+    values: (string | number | null | undefined)[],
+  ): ReferrerRecord => ({
+    irref: getHeaderValue(headerMap, values, 'iRREF'),
+    timestamp: getHeaderValue(headerMap, values, 'Timestamp'),
+    name: getHeaderValue(headerMap, values, 'Name'),
+    email: getHeaderValue(headerMap, values, 'Email'),
+    phone: getHeaderValue(headerMap, values, 'Phone'),
+    country: getHeaderValue(headerMap, values, 'Country'),
+    company: getHeaderValue(headerMap, values, 'Company'),
+    companyIrcrn: getHeaderValue(headerMap, values, 'Company iRCRN'),
+    companyApproval: getHeaderValue(headerMap, values, 'Company Approval'),
+    companyIndustry: getHeaderValue(headerMap, values, 'Company Industry'),
+    careersPortal: getHeaderValue(headerMap, values, 'Careers Portal'),
+    workType: getHeaderValue(headerMap, values, 'Work Type'),
+    linkedin: getHeaderValue(headerMap, values, 'LinkedIn'),
+    locale: getHeaderValue(headerMap, values, REFERRER_LOCALE_HEADER),
+    portalTokenVersion: getHeaderValue(headerMap, values, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
+    pendingUpdates: getHeaderValue(headerMap, values, REFERRER_PENDING_UPDATES_HEADER),
+    status: getHeaderValue(headerMap, values, 'Status'),
+    ownerNotes: getHeaderValue(headerMap, values, 'Owner Notes'),
+    tags: getHeaderValue(headerMap, values, 'Tags'),
+    lastContactedAt: getHeaderValue(headerMap, values, 'Last Contacted At'),
+    nextActionAt: getHeaderValue(headerMap, values, 'Next Action At'),
+    archived: getHeaderValue(headerMap, values, 'Archived'),
+    archivedAt: getHeaderValue(headerMap, values, 'ArchivedAt'),
+    archivedBy: getHeaderValue(headerMap, values, 'ArchivedBy'),
+  });
+
+  const matches: Array<{ rowIndex: number; record: ReferrerRecord }> = [];
 
   for (const row of rows) {
     const values = row.values ?? [];
     const value = cellValue(values, emailColIndex).toLowerCase();
     if (value === normalizedEmail) {
-      return {
+      matches.push({
         rowIndex: row.rowIndex,
-        record: {
-          irref: getHeaderValue(headerMap, values, 'iRREF'),
-          timestamp: getHeaderValue(headerMap, values, 'Timestamp'),
-          name: getHeaderValue(headerMap, values, 'Name'),
-          email: getHeaderValue(headerMap, values, 'Email'),
-          phone: getHeaderValue(headerMap, values, 'Phone'),
-          country: getHeaderValue(headerMap, values, 'Country'),
-          company: getHeaderValue(headerMap, values, 'Company'),
-          companyIrcrn: getHeaderValue(headerMap, values, 'Company iRCRN'),
-          companyApproval: getHeaderValue(headerMap, values, 'Company Approval'),
-          companyIndustry: getHeaderValue(headerMap, values, 'Company Industry'),
-          careersPortal: getHeaderValue(headerMap, values, 'Careers Portal'),
-          workType: getHeaderValue(headerMap, values, 'Work Type'),
-          linkedin: getHeaderValue(headerMap, values, 'LinkedIn'),
-          locale: getHeaderValue(headerMap, values, REFERRER_LOCALE_HEADER),
-          portalTokenVersion: getHeaderValue(headerMap, values, REFERRER_PORTAL_TOKEN_VERSION_HEADER),
-          pendingUpdates: getHeaderValue(headerMap, values, REFERRER_PENDING_UPDATES_HEADER),
-          status: getHeaderValue(headerMap, values, 'Status'),
-          ownerNotes: getHeaderValue(headerMap, values, 'Owner Notes'),
-          tags: getHeaderValue(headerMap, values, 'Tags'),
-          lastContactedAt: getHeaderValue(headerMap, values, 'Last Contacted At'),
-          nextActionAt: getHeaderValue(headerMap, values, 'Next Action At'),
-          archived: getHeaderValue(headerMap, values, 'Archived'),
-        },
-      };
+        record: buildRecord(values),
+      });
     }
   }
-  return null;
+
+  return matches;
+}
+
+export async function getReferrerByEmail(email: string, options: SheetReadOptions = {}) {
+  const matches = await getReferrersByEmail(email, options);
+  if (!matches.length) return null;
+  return matches[0];
 }
 
 export type PendingReferrerUpdate = {
