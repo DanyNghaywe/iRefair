@@ -219,6 +219,11 @@
 "Session expired. Please sign in again." = "Session expirée. Veuillez vous reconnecter.";
 "App configuration is missing API base URL." = "La configuration de l'application ne contient pas d'URL de base API.";
 "Settings" = "Paramètres";
+"Switch app mode?" = "Changer le mode de l'application ?";
+"Switch to %@ mode" = "Passer en mode %@";
+"Switch to %@" = "Passer en mode %@";
+"Switched app mode to %@." = "Mode de l'application changé en %@.";
+"This will change the available tabs and open %@ mode." = "Cela changera les onglets disponibles et ouvrira le mode %@.";
 "Share feedback" = "Partagez votre avis";
 "Sign in to your portal" = "Connectez-vous à votre portail";
 "Sign in with token" = "Se connecter avec un jeton";
@@ -341,7 +346,6 @@
 "Looking for referrals to Canadian companies." = "Je cherche des recommandations vers des entreprises canadiennes.";
 "Ready to help newcomers get hired." = "Je suis prêt(e) à aider des nouveaux arrivants à être recrutés.";
 "I confirm this is my permanent role on this device." = "Je confirme que c'est mon rôle permanent sur cet appareil.";
-"I confirm my role." = "Je confirme mon rôle.";
 "Continue" = "Continuer";
 "Confirm role selection" = "Confirmer le choix du rôle";
 "Confirm %@ mode" = "Confirmer le mode %@";

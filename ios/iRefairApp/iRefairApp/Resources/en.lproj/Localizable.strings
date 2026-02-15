@@ -219,6 +219,11 @@
 "Session expired. Please sign in again." = "Session expired. Please sign in again.";
 "App configuration is missing API base URL." = "App configuration is missing API base URL.";
 "Settings" = "Settings";
+"Switch app mode?" = "Switch app mode?";
+"Switch to %@ mode" = "Switch to %@ mode";
+"Switch to %@" = "Switch to %@";
+"Switched app mode to %@." = "Switched app mode to %@.";
+"This will change the available tabs and open %@ mode." = "This will change the available tabs and open %@ mode.";
 "Share feedback" = "Share feedback";
 "Sign in to your portal" = "Sign in to your portal";
 "Sign in with token" = "Sign in with token";
@@ -341,7 +346,6 @@
 "Looking for referrals to Canadian companies." = "Looking for referrals to Canadian companies.";
 "Ready to help newcomers get hired." = "Ready to help newcomers get hired.";
 "I confirm this is my permanent role on this device." = "I confirm this is my permanent role on this device.";
-"I confirm my role." = "I confirm my role.";
 "Continue" = "Continue";
 "Confirm role selection" = "Confirm role selection";
 "Confirm %@ mode" = "Confirm %@ mode";

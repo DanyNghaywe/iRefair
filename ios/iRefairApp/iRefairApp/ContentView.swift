@@ -76,7 +76,6 @@ private struct RoleModeLandingView: View {
 
     @State private var selectedRole: AppRoleMode?
     @State private var isDropdownOpen = false
-    @State private var hasAcknowledgedPermanentChoice = false
     @State private var showConfirmation = false
     @State private var rolePendingConfirmation: AppRoleMode = .applicant
 
@@ -92,22 +91,13 @@ private struct RoleModeLandingView: View {
                 IRefairSection(l("I am a...")) {
                     roleDropdown
 
-                    Toggle(isOn: $hasAcknowledgedPermanentChoice) {
-                        Text(l("I confirm my role."))
-                            .font(Theme.font(size: 16, weight: .medium))
-                            .foregroundStyle(Color.white.opacity(0.9))
-                            .frame(maxWidth: .infinity, alignment: .trailing)
-                            .multilineTextAlignment(.trailing)
-                    }
-                    .toggleStyle(RoleModeSwitchToggleStyle())
-
                     Button(l("Continue")) {
                         guard let selectedRole else { return }
                         rolePendingConfirmation = selectedRole
                         showConfirmation = true
                     }
                     .buttonStyle(IRefairPrimaryButtonStyle())
-                    .disabled(selectedRole == nil || !hasAcknowledgedPermanentChoice)
+                    .disabled(selectedRole == nil)
                 }
             }
         }
@@ -237,7 +227,6 @@ private struct RoleModeLandingView: View {
     private func roleOptionButton(_ role: AppRoleMode) -> some View {
         Button {
             selectedRole = role
-            hasAcknowledgedPermanentChoice = false
             withAnimation(.easeInOut(duration: 0.2)) {
                 isDropdownOpen = false
             }
@@ -283,46 +272,6 @@ private struct RoleModeLandingView: View {
 
     private func l(_ key: String) -> String {
         NSLocalizedString(key, comment: "")
-    }
-}
-
-private struct RoleModeSwitchToggleStyle: ToggleStyle {
-    private let trackWidth: CGFloat = 51
-    private let trackHeight: CGFloat = 31
-    private let thumbInset: CGFloat = 2
-    private let thumbSize: CGFloat = 27
-
-    func makeBody(configuration: Configuration) -> some View {
-        Button {
-            withAnimation(.easeInOut(duration: 0.18)) {
-                configuration.isOn.toggle()
-            }
-        } label: {
-            HStack(alignment: .center, spacing: 12) {
-                configuration.label
-                switchTrack(isOn: configuration.isOn)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    private func switchTrack(isOn: Bool) -> some View {
-        let thumbTravel = trackWidth - thumbSize - (thumbInset * 2)
-
-        return ZStack(alignment: .leading) {
-            Capsule(style: .continuous)
-                .fill(isOn ? Theme.accentPrimary : Color(hex: 0xE5E5EA))
-
-            Circle()
-                .fill(Color.white)
-                .frame(width: thumbSize, height: thumbSize)
-                .shadow(color: Color.black.opacity(0.12), radius: 1, x: 0, y: 1)
-                .offset(x: isOn ? thumbTravel : 0)
-                .padding(.leading, thumbInset)
-        }
-        .frame(width: trackWidth, height: trackHeight)
     }
 }
 
