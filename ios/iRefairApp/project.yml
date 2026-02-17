@@ -27,6 +27,7 @@ targets:
       path: iRefairApp/iRefairApp.entitlements
     dependencies:
       - package: Sentry
+        product: Sentry-Dynamic
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.irefair.app

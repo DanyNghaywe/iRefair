@@ -17,7 +17,7 @@
 		2CCE2CF3A67D0D55DB3131E6 /* CountryData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C66919B14E812CEDA1A0F /* CountryData.swift */; };
 		3120372A76F9F30A8AD588D3 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3526C4D3FC073C79ED03B293 /* AppState.swift */; };
 		314469237E73EDB8324551E4 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = E141D93A7E08DE450C6ED81F /* APIClient.swift */; };
-		33307821AE8D39529D5C3DBA /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 41FDF510170AFF76E32F2C0F /* Sentry */; };
+		33307821AE8D39529D5C3DBA /* Sentry-Dynamic in Frameworks */ = {isa = PBXBuildFile; productRef = 41FDF510170AFF76E32F2C0F /* Sentry-Dynamic */; };
 		3338326BCD08AD1556DF3E22 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C5026EADAE06C7187546D475 /* Assets.xcassets */; };
 		468CAE4DBA3FA1915FFD92E7 /* ReferrerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AE0C8F11B767D285AFB881F /* ReferrerView.swift */; };
 		4B11D2BF90ECEE60817DB08A /* FileReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0BC0692168CE582EA4AF047 /* FileReader.swift */; };
@@ -101,7 +101,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				33307821AE8D39529D5C3DBA /* Sentry in Frameworks */,
+				33307821AE8D39529D5C3DBA /* Sentry-Dynamic in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -277,7 +277,7 @@
 			);
 			name = iRefair;
 			packageProductDependencies = (
-				41FDF510170AFF76E32F2C0F /* Sentry */,
+				41FDF510170AFF76E32F2C0F /* Sentry-Dynamic */,
 			);
 			productName = iRefair;
 			productReference = 445C438DB495C6AA7140E474 /* iRefair.app */;
@@ -593,10 +593,10 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		41FDF510170AFF76E32F2C0F /* Sentry */ = {
+		41FDF510170AFF76E32F2C0F /* Sentry-Dynamic */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3793435ED326579598C0A828 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
-			productName = Sentry;
+			productName = "Sentry-Dynamic";
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
