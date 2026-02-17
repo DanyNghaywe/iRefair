@@ -2843,6 +2843,7 @@ type ApplicationListParams = {
   status?: string;
   ircrn?: string;
   referrerIrref?: string;
+  applicantId?: string;
   limit?: number;
   offset?: number;
   includeArchived?: boolean;
@@ -3456,6 +3457,7 @@ export async function listApplications(
   const statusFilter = normalizeSearch(params.status);
   const ircrnFilter = normalizeSearch(params.ircrn);
   const referrerFilter = normalizeSearch(params.referrerIrref);
+  const applicantFilter = normalizeSearch(params.applicantId);
 
   const items: ApplicationListItem[] = rows
     .map((row) => {
@@ -3517,6 +3519,7 @@ export async function listApplications(
       if (statusFilter && record.status.toLowerCase() !== statusFilter) return false;
       if (ircrnFilter && record.iCrn.toLowerCase() !== ircrnFilter) return false;
       if (referrerFilter && record.referrerIrref.toLowerCase() !== referrerFilter) return false;
+      if (applicantFilter && record.applicantId.toLowerCase() !== applicantFilter) return false;
       return true;
     });
 

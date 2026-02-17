@@ -36,6 +36,8 @@ struct ApplicantView: View {
     @State private var updateAppId = ""
     @State private var updatePurpose = ""
     @State private var isPrefillLoading = false
+    @State private var applications: [ApplicantPortalApplication] = []
+    @State private var applicationsPage = 1
 
     @State private var isSubmitting = false
     @State private var statusMessage: String?
@@ -47,6 +49,7 @@ struct ApplicantView: View {
     @State private var submittedEmail = ""
 
     private let languageValues = ["English", "Arabic", "French", "Other"]
+    private let applicationsPageSize = 10
     private let employmentValues = ["Yes", "No", "Temporary Work"]
     private let industryValues = [
         "Information Technology (IT)",
@@ -94,6 +97,55 @@ struct ApplicantView: View {
         "My participation is entirely optional, and I can opt out at any time by contacting us via email.",
     ]
 
+    private static let isoTimestampFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    private static let isoTimestampFallbackFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
+    private func parseTimestamp(_ value: String?) -> Date {
+        let trimmed = (value ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            return .distantPast
+        }
+        if let parsed = Self.isoTimestampFormatter.date(from: trimmed) {
+            return parsed
+        }
+        if let parsed = Self.isoTimestampFallbackFormatter.date(from: trimmed) {
+            return parsed
+        }
+        return .distantPast
+    }
+
+    private var sortedApplications: [ApplicantPortalApplication] {
+        applications.sorted { lhs, rhs in
+            let lhsDate = parseTimestamp(lhs.timestamp)
+            let rhsDate = parseTimestamp(rhs.timestamp)
+            return lhsDate > rhsDate
+        }
+    }
+
+    private var applicationsTotalPages: Int {
+        max(1, Int(ceil(Double(max(sortedApplications.count, 1)) / Double(applicationsPageSize))))
+    }
+
+    private var validApplicationsPage: Int {
+        min(max(1, applicationsPage), applicationsTotalPages)
+    }
+
+    private var paginatedApplications: [ApplicantPortalApplication] {
+        let start = (validApplicationsPage - 1) * applicationsPageSize
+        guard start < sortedApplications.count else { return [] }
+        let end = min(start + applicationsPageSize, sortedApplications.count)
+        return Array(sortedApplications[start..<end])
+    }
+
     var body: some View {
         NavigationStack {
             ScrollViewReader { scrollProxy in
@@ -109,6 +161,10 @@ struct ApplicantView: View {
                             IRefairSection {
                                 StatusBanner(text: l("You're offline. Connect to the internet to submit the form."), style: .warning)
                             }
+                        }
+
+                        if !updateToken.isEmpty && !updateAppId.isEmpty {
+                            applicantApplicationsBlock
                         }
 
                         IRefairSection(l("Personal information")) {
@@ -390,18 +446,27 @@ struct ApplicantView: View {
                     updateAppId = storedUpdateAppId
                     if !updateToken.isEmpty && !updateAppId.isEmpty {
                         Task { await loadPrefill() }
+                    } else {
+                        applications = []
+                        applicationsPage = 1
                     }
                 }
                 .onChange(of: storedUpdateToken) { value in
                     updateToken = value
                     if !updateToken.isEmpty && !updateAppId.isEmpty {
                         Task { await loadPrefill() }
+                    } else {
+                        applications = []
+                        applicationsPage = 1
                     }
                 }
                 .onChange(of: storedUpdateAppId) { value in
                     updateAppId = value
                     if !updateToken.isEmpty && !updateAppId.isEmpty {
                         Task { await loadPrefill() }
+                    } else {
+                        applications = []
+                        applicationsPage = 1
                     }
                 }
             }
@@ -441,6 +506,208 @@ struct ApplicantView: View {
         }
     }
 
+    private var applicantApplicationsBlock: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            applicantApplicationsHeader
+            IRefairSection {
+                if isPrefillLoading {
+                    loadingApplicantApplicationsRows
+                } else if sortedApplications.isEmpty {
+                    IRefairTableEmptyState(
+                        title: l("No applications yet"),
+                        description: l("Your submitted applications will appear here once they are available."),
+                        tone: .darkOnLight
+                    )
+                } else {
+                    VStack(alignment: .leading, spacing: 12) {
+                        ForEach(paginatedApplications) { application in
+                            applicantApplicationRow(application)
+                        }
+                    }
+                    if applicationsTotalPages > 1 {
+                        HStack(spacing: 10) {
+                            Button {
+                                applicationsPage = 1
+                            } label: {
+                                Text("<<")
+                            }
+                            .buttonStyle(IRefairGhostButtonStyle())
+                            .disabled(validApplicationsPage == 1)
+
+                            Button {
+                                applicationsPage = max(1, validApplicationsPage - 1)
+                            } label: {
+                                Text("<")
+                            }
+                            .buttonStyle(IRefairGhostButtonStyle())
+                            .disabled(validApplicationsPage == 1)
+
+                            Text(
+                                String.localizedStringWithFormat(
+                                    l("Page %d of %d"),
+                                    validApplicationsPage,
+                                    applicationsTotalPages
+                                )
+                            )
+                            .font(Theme.font(size: 13, weight: .semibold))
+                            .foregroundStyle(Theme.ink)
+
+                            Button {
+                                applicationsPage = min(applicationsTotalPages, validApplicationsPage + 1)
+                            } label: {
+                                Text(">")
+                            }
+                            .buttonStyle(IRefairGhostButtonStyle())
+                            .disabled(validApplicationsPage == applicationsTotalPages)
+
+                            Button {
+                                applicationsPage = applicationsTotalPages
+                            } label: {
+                                Text(">>")
+                            }
+                            .buttonStyle(IRefairGhostButtonStyle())
+                            .disabled(validApplicationsPage == applicationsTotalPages)
+                        }
+                        .padding(.top, 8)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                    }
+                }
+            }
+        }
+    }
+
+    private var applicantApplicationsHeader: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(l("My applications"))
+                    .font(Theme.font(size: 12, weight: .bold))
+                    .foregroundStyle(Color.white.opacity(0.85))
+                    .textCase(.uppercase)
+                    .kerning(2.4)
+                Text("\(sortedApplications.count) \(l("active applications"))")
+                    .font(Theme.font(size: 14))
+                    .foregroundStyle(Color.white.opacity(0.75))
+            }
+
+            Text("\(applications.count) \(l("total"))")
+                .font(Theme.font(size: 13, weight: .semibold))
+                .foregroundStyle(Theme.ink)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 14)
+                .frame(minHeight: 36)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.white.opacity(0.7))
+                        .overlay(
+                            Capsule(style: .continuous)
+                                .stroke(Color(hex: 0x0F172A).opacity(0.12), lineWidth: 1)
+                        )
+                )
+                .shadow(color: Color(hex: 0x0F172A).opacity(0.06), radius: 6, x: 0, y: 2)
+                .fixedSize(horizontal: true, vertical: false)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var loadingApplicantApplicationsRows: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(0..<2, id: \.self) { index in
+                VStack(alignment: .leading, spacing: 8) {
+                    IRefairSkeletonBlock(height: 16, cornerRadius: 8, delay: Double(index) * 0.04)
+                    IRefairSkeletonBlock(height: 12, cornerRadius: 8, delay: Double(index) * 0.04 + 0.03)
+                    IRefairSkeletonBlock(height: 12, cornerRadius: 8, delay: Double(index) * 0.04 + 0.06)
+                }
+                .padding(14)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.white.opacity(0.6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Color(hex: 0x0F172A).opacity(0.09), lineWidth: 1)
+                        )
+                )
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(l("Loading..."))
+    }
+
+    private func applicantApplicationRow(_ application: ApplicantPortalApplication) -> some View {
+        let normalizedStatus = (application.status ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let hasMeeting = normalizedStatus == "meeting scheduled"
+            && !(application.meetingDate ?? "").isEmpty
+            && !(application.meetingTime ?? "").isEmpty
+        let timestamp = parseTimestamp(application.timestamp)
+        let dateLabel = timestamp == .distantPast
+            ? ""
+            : DateFormatter.localizedString(from: timestamp, dateStyle: .medium, timeStyle: .none)
+        let meetingDetails = hasMeeting
+            ? formatMeetingDetails(date: application.meetingDate, time: application.meetingTime, timezone: application.meetingTimezone)
+            : l("No meeting scheduled")
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(application.id)
+                        .font(Theme.font(.headline, weight: .semibold))
+                        .foregroundStyle(Theme.ink)
+                    if !dateLabel.isEmpty {
+                        Text(dateLabel)
+                            .font(Theme.font(.caption))
+                            .foregroundStyle(Theme.muted)
+                    }
+                }
+                Spacer(minLength: 12)
+                Text(localizedApplicationStatus(application.status))
+                    .font(Theme.font(size: 12, weight: .semibold))
+                    .foregroundStyle(statusColor(for: application.status))
+                    .padding(.vertical, 5)
+                    .padding(.horizontal, 10)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(statusColor(for: application.status).opacity(0.12))
+                            .overlay(
+                                Capsule(style: .continuous)
+                                    .stroke(statusColor(for: application.status).opacity(0.28), lineWidth: 1)
+                            )
+                    )
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(application.position?.isEmpty == false ? application.position ?? "" : "-")
+                    .font(Theme.font(size: 15, weight: .semibold))
+                    .foregroundStyle(Theme.ink)
+                Text("\(l("iRCRN")): \(application.iCrn?.isEmpty == false ? application.iCrn ?? "" : "-")")
+                    .font(Theme.font(.caption))
+                    .foregroundStyle(Theme.muted)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(l("Meeting"))
+                    .font(Theme.font(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.muted)
+                Text(meetingDetails)
+                    .font(Theme.font(size: 13))
+                    .foregroundStyle(hasMeeting ? Theme.ink : Theme.muted)
+                if hasMeeting, let urlString = application.meetingUrl, let meetingURL = URL(string: urlString), !urlString.isEmpty {
+                    Link(l("Join"), destination: meetingURL)
+                        .font(Theme.font(size: 13, weight: .semibold))
+                        .foregroundStyle(Theme.accentPrimary)
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.7))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color(hex: 0x0F172A).opacity(0.1), lineWidth: 1)
+                )
+        )
+    }
+
     private var useLandscapeActionRow: Bool {
         verticalSizeClass == .compact || horizontalSizeClass == .regular
     }
@@ -470,6 +737,96 @@ struct ApplicantView: View {
         .frame(maxWidth: fillWidth ? .infinity : nil)
         .buttonStyle(IRefairPrimaryButtonStyle(fillWidth: fillWidth))
         .disabled(isSubmitting || !networkMonitor.isConnected)
+    }
+
+    private func localizedApplicationStatus(_ status: String?) -> String {
+        let normalized = (status ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let fr = AppLocale.languageCode == "fr"
+        switch normalized {
+        case "new":
+            return fr ? "Nouveau" : "New"
+        case "meeting requested":
+            return fr ? "Réunion demandée" : "Meeting Requested"
+        case "meeting scheduled":
+            return fr ? "Réunion planifiée" : "Meeting Scheduled"
+        case "needs reschedule":
+            return fr ? "À replanifier" : "Needs Reschedule"
+        case "met with referrer", "interviewed":
+            return fr ? "Rencontré avec le référent" : "Met with Referrer"
+        case "submitted cv to hr":
+            return fr ? "CV transmis aux RH" : "Submitted CV to HR"
+        case "interviews being conducted":
+            return fr ? "Entretiens en cours" : "Interviews Being Conducted"
+        case "job offered":
+            return fr ? "Offre d'emploi" : "Job Offered"
+        case "landed job":
+            return fr ? "Poste accepté" : "Landed Job"
+        case "not a good fit":
+            return fr ? "Profil non retenu" : "Not a Good Fit"
+        case "applicant no longer interested":
+            return fr ? "Le candidat n'est plus intéressé" : "Applicant No Longer Interested"
+        case "applicant decided not to move forward":
+            return fr ? "Le candidat a décidé de ne pas poursuivre" : "Applicant Decided Not to Move Forward"
+        case "hr decided not to proceed":
+            return fr ? "Les RH ont décidé de ne pas poursuivre" : "HR Decided Not to Proceed"
+        case "another applicant was a better fit":
+            return fr ? "Un autre candidat correspondait mieux" : "Another Applicant Was a Better Fit"
+        case "candidate did not accept offer":
+            return fr ? "Le candidat n'a pas accepté l'offre" : "Candidate Did Not Accept Offer"
+        case "cv mismatch":
+            return fr ? "CV inadapté" : "CV Mismatch"
+        case "cv update requested":
+            return fr ? "Mise à jour CV demandée" : "CV Update Requested"
+        case "cv updated":
+            return fr ? "CV mis à jour" : "CV Updated"
+        case "info requested":
+            return fr ? "Informations demandées" : "Info Requested"
+        case "info updated":
+            return fr ? "Informations mises à jour" : "Info Updated"
+        case "ineligible":
+            return fr ? "Non admissible" : "Ineligible"
+        default:
+            let fallback = status?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return fallback.isEmpty ? (fr ? "Nouveau" : "New") : fallback
+        }
+    }
+
+    private func statusColor(for status: String?) -> Color {
+        let normalized = (status ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch normalized {
+        case "new", "meeting requested", "submitted cv to hr", "interviews being conducted":
+            return Theme.info
+        case "meeting scheduled", "met with referrer", "interviewed", "job offered", "landed job", "cv updated", "info updated":
+            return Theme.success
+        case "needs reschedule", "cv mismatch", "cv update requested", "info requested":
+            return Theme.warning
+        case "not a good fit", "hr decided not to proceed", "ineligible":
+            return Theme.error
+        default:
+            return Theme.muted
+        }
+    }
+
+    private func formatMeetingDetails(date: String?, time: String?, timezone: String?) -> String {
+        let cleanDate = (date ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanTime = (time ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if cleanDate.isEmpty || cleanTime.isEmpty {
+            return l("No meeting scheduled")
+        }
+
+        let cleanTimezone = (timezone ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let timezoneLabel = cleanTimezone
+            .split(separator: "/")
+            .last
+            .map { $0.replacingOccurrences(of: "_", with: " ") } ?? ""
+        if timezoneLabel.isEmpty {
+            return AppLocale.languageCode == "fr"
+                ? "\(cleanDate) à \(cleanTime)"
+                : "\(cleanDate) at \(cleanTime)"
+        }
+        return AppLocale.languageCode == "fr"
+            ? "\(cleanDate) à \(cleanTime) (\(timezoneLabel))"
+            : "\(cleanDate) at \(cleanTime) (\(timezoneLabel))"
     }
 
     private func l(_ key: String) -> String {
@@ -629,9 +986,12 @@ struct ApplicantView: View {
                 appId: updateAppId
             )
             guard let data = response.data else {
+                applications = []
                 errorMessage = l("Unable to load your details.")
                 return
             }
+            applications = response.applications ?? []
+            applicationsPage = 1
             updatePurpose = response.updatePurpose ?? "cv"
             if updatePurpose.lowercased() == "info" {
                 fieldErrors["resume"] = nil
@@ -664,6 +1024,7 @@ struct ApplicantView: View {
             Telemetry.track("applicant_prefill_loaded", properties: ["purpose": updatePurpose])
         } catch {
             Telemetry.capture(error)
+            applications = []
             errorMessage = error.localizedDescription
         }
     }
@@ -839,6 +1200,8 @@ struct ApplicantView: View {
                 updateAppId = ""
                 storedUpdateToken = ""
                 storedUpdateAppId = ""
+                applications = []
+                applicationsPage = 1
             }
             Telemetry.track("applicant_submit_success")
         } catch {

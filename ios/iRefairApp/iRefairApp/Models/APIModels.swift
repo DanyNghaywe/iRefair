@@ -158,6 +158,7 @@ struct ApplicantPrefillResponse: APIResult {
     let ok: Bool
     let updatePurpose: String?
     let data: ApplicantPrefillData?
+    let applications: [ApplicantPortalApplication]?
     let error: String?
 }
 
@@ -184,6 +185,52 @@ struct ApplicantPrefillData: Decodable {
     let hasPostings: String
     let postingNotes: String
     let pitch: String
+}
+
+struct ApplicantPortalApplication: Identifiable, Decodable {
+    let id: String
+    let timestamp: String?
+    let position: String?
+    let iCrn: String?
+    let status: String?
+    let meetingDate: String?
+    let meetingTime: String?
+    let meetingTimezone: String?
+    let meetingUrl: String?
+    let resumeFileName: String?
+    let referrerIrref: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case timestamp
+        case position
+        case iCrn
+        case iCRN
+        case status
+        case meetingDate
+        case meetingTime
+        case meetingTimezone
+        case meetingUrl
+        case resumeFileName
+        case referrerIrref
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        timestamp = try container.decodeIfPresent(String.self, forKey: .timestamp)
+        position = try container.decodeIfPresent(String.self, forKey: .position)
+        let primaryICrn = try container.decodeIfPresent(String.self, forKey: .iCrn)
+        let fallbackICrn = try container.decodeIfPresent(String.self, forKey: .iCRN)
+        iCrn = primaryICrn ?? fallbackICrn
+        status = try container.decodeIfPresent(String.self, forKey: .status)
+        meetingDate = try container.decodeIfPresent(String.self, forKey: .meetingDate)
+        meetingTime = try container.decodeIfPresent(String.self, forKey: .meetingTime)
+        meetingTimezone = try container.decodeIfPresent(String.self, forKey: .meetingTimezone)
+        meetingUrl = try container.decodeIfPresent(String.self, forKey: .meetingUrl)
+        resumeFileName = try container.decodeIfPresent(String.self, forKey: .resumeFileName)
+        referrerIrref = try container.decodeIfPresent(String.self, forKey: .referrerIrref)
+    }
 }
 
 struct ReferrerSummary: Decodable {

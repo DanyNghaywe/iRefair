@@ -10,6 +10,8 @@
 "Applicant referral request" = "Applicant referral request";
 "Applicants" = "Applicants";
 "Applications" = "Applications";
+"My applications" = "My applications";
+"active applications" = "active applications";
 "active referrals" = "active referrals";
 "Application" = "Application";
 "Application details" = "Application details";
@@ -150,6 +152,8 @@
 "No" = "No";
 "No applicants assigned yet." = "No applicants assigned yet.";
 "No applications assigned" = "No applications assigned";
+"No applications yet" = "No applications yet";
+"Your submitted applications will appear here once they are available." = "Your submitted applications will appear here once they are available.";
 "No companies available yet." = "No companies available yet.";
 "No file selected" = "No file selected";
 "Need an iRCRN?" = "Need an iRCRN?";
@@ -233,6 +237,9 @@
 "Specify other languages." = "Specify other languages.";
 "Specify the industry." = "Specify the industry.";
 "Status" = "Status";
+"Meeting" = "Meeting";
+"No meeting scheduled" = "No meeting scheduled";
+"Join" = "Join";
 "Portal access email sent." = "Portal access email sent.";
 "Request received. If your account is accepted, we'll email your portal link and token." = "Request received. If your account is accepted, we'll email your portal link and token.";
 "Unable to establish session. Please try again." = "Unable to establish session. Please try again.";

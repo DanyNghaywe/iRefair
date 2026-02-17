@@ -10,6 +10,8 @@
 "Applicant referral request" = "Demande de recommandation de candidat";
 "Applicants" = "Candidats";
 "Applications" = "Candidatures";
+"My applications" = "Mes candidatures";
+"active applications" = "candidatures actives";
 "active referrals" = "références actives";
 "Application" = "Candidature";
 "Application details" = "Détails de la candidature";
@@ -150,6 +152,8 @@
 "No" = "Non";
 "No applicants assigned yet." = "Aucun candidat assigné pour l'instant.";
 "No applications assigned" = "Aucune candidature assignée";
+"No applications yet" = "Aucune candidature";
+"Your submitted applications will appear here once they are available." = "Vos candidatures apparaîtront ici dès qu’elles seront disponibles.";
 "No companies available yet." = "Aucune entreprise disponible pour l'instant.";
 "No file selected" = "Aucun fichier sélectionné";
 "Need an iRCRN?" = "Besoin d'un iRCRN ?";
@@ -233,6 +237,9 @@
 "Specify other languages." = "Précisez les autres langues.";
 "Specify the industry." = "Précisez le secteur.";
 "Status" = "Statut";
+"Meeting" = "Réunion";
+"No meeting scheduled" = "Aucune réunion prévue";
+"Join" = "Rejoindre";
 "Portal access email sent." = "E-mail d'accès au portail envoyé.";
 "Request received. If your account is accepted, we'll email your portal link and token." = "Demande recue. Si votre compte est accepte, nous enverrons votre lien de portail et votre jeton par e-mail.";
 "Unable to establish session. Please try again." = "Impossible d'établir la session. Veuillez réessayer.";

@@ -111,30 +111,41 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ ok: false, error: 'Invalid or expired token' }, { status: 401 });
   }
 
-  const referrer = await getReferrerByIrref(payload.irref);
-  if (!referrer) {
-    return NextResponse.json({ ok: false, error: 'Referrer not found' }, { status: 404 });
-  }
-  const expectedVersion = normalizePortalTokenVersion(referrer.record.portalTokenVersion);
-  if (payload.v !== expectedVersion) {
-    return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
-  }
-  if (referrer.record.archived?.toLowerCase() === 'true') {
+  try {
+    const referrer = await getReferrerByIrref(payload.irref);
+    if (!referrer) {
+      return NextResponse.json({ ok: false, error: 'Referrer not found' }, { status: 404 });
+    }
+    const expectedVersion = normalizePortalTokenVersion(referrer.record.portalTokenVersion);
+    if (payload.v !== expectedVersion) {
+      return NextResponse.json({ ok: false, error: 'Forbidden' }, { status: 403 });
+    }
+    if (referrer.record.archived?.toLowerCase() === 'true') {
+      return NextResponse.json(
+        { ok: false, error: 'This referrer account has been archived and portal access is no longer available.' },
+        { status: 403 },
+      );
+    }
+
+    const data = await buildItems(payload.irref);
+    return NextResponse.json({
+      ok: true,
+      referrer: {
+        irref: payload.irref,
+        name: referrer.record.name,
+        email: referrer.record.email,
+        company: referrer.record.company,
+      },
+      ...data,
+    });
+  } catch (error) {
+    console.error('Failed to load referrer portal data:', {
+      irref: payload.irref,
+      error,
+    });
     return NextResponse.json(
-      { ok: false, error: 'This referrer account has been archived and portal access is no longer available.' },
-      { status: 403 },
+      { ok: false, error: 'Unable to load portal data. Please try again later.' },
+      { status: 500 },
     );
   }
-
-  const data = await buildItems(payload.irref);
-  return NextResponse.json({
-    ok: true,
-    referrer: {
-      irref: payload.irref,
-      name: referrer.record.name,
-      email: referrer.record.email,
-      company: referrer.record.company,
-    },
-    ...data,
-  });
 }

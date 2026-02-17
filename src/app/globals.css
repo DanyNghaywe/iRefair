@@ -1470,6 +1470,34 @@ body:has(.board--transparent) {
   color: #fef3c7;
 }
 
+.applicant-applications-card {
+  margin-bottom: 20px;
+}
+
+.applicant-applications-table-wrapper {
+  margin-top: 8px;
+}
+
+.applicant-applications-empty {
+  max-width: 440px;
+  margin: 0 auto;
+  padding: 20px 16px;
+  text-align: center;
+}
+
+.applicant-applications-empty__title {
+  margin: 0;
+  font-size: var(--font-size-md);
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.applicant-applications-empty__description {
+  margin: 8px 0 0;
+  color: #334155;
+  line-height: 1.6;
+}
+
 /* ==========================================================================
    Update CV Page
    ========================================================================== */

@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { getApplicationById, findApplicantByIdentifier } from '@/lib/sheets';
+import {
+  findApplicantByIdentifier,
+  getApplicationById,
+  listApplications,
+  normalizeStatus,
+} from '@/lib/sheets';
 import { hashOpaqueToken, isExpired } from '@/lib/tokens';
 
 export const dynamic = 'force-dynamic';
+
+function timestampToMs(value: string): number {
+  const parsed = Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+}
 
 /**
  * GET /api/applicant/data?updateToken=xxx&appId=yyy
@@ -70,6 +80,51 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    const normalizedApplicantIds = Array.from(
+      new Set(
+        [
+          applicantId,
+          applicant.record.id,
+          applicant.record.legacyApplicantId,
+        ]
+          .map((value) => (value || '').trim())
+          .filter(Boolean),
+      ),
+    );
+
+    const applicationGroups = await Promise.all(
+      normalizedApplicantIds.map((id) =>
+        listApplications({
+          applicantId: id,
+          limit: 0,
+        }),
+      ),
+    );
+
+    const applicationMap = new Map<string, (typeof applicationGroups)[number]['items'][number]>();
+    for (const group of applicationGroups) {
+      for (const item of group.items) {
+        if (!item.id || applicationMap.has(item.id)) continue;
+        applicationMap.set(item.id, item);
+      }
+    }
+
+    const applications = Array.from(applicationMap.values())
+      .sort((a, b) => timestampToMs(b.timestamp) - timestampToMs(a.timestamp))
+      .map((app) => ({
+        id: app.id,
+        timestamp: app.timestamp || '',
+        position: app.position || '',
+        iCrn: app.iCrn || '',
+        status: normalizeStatus(app.status),
+        meetingDate: app.meetingDate || '',
+        meetingTime: app.meetingTime || '',
+        meetingTimezone: app.meetingTimezone || '',
+        meetingUrl: app.meetingUrl || '',
+        resumeFileName: app.resumeFileName || '',
+        referrerIrref: app.referrerIrref || '',
+      }));
+
     // Return applicant data (excluding sensitive fields)
     const { record } = applicant;
     const updatePurpose = application.record.updateRequestPurpose || 'cv';
@@ -77,6 +132,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       ok: true,
       updatePurpose,
+      applications,
       data: {
         firstName: record.firstName || '',
         middleName: record.middleName || '',

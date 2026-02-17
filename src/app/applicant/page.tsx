@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
-import { ChangeEvent, FormEvent, Suspense, useEffect, useRef, useState } from 'react';
+import { ChangeEvent, FormEvent, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { ActionBtn } from '@/components/ActionBtn';
 import { AppShell } from '@/components/AppShell';
 import { Confetti, useConfetti } from '@/components/Confetti';
@@ -13,8 +13,207 @@ import { SubmissionSuccessModal } from '@/components/SubmissionSuccessModal';
 import { useNavigationLoader } from '@/components/NavigationLoader';
 import { countryOptions } from '@/lib/countries';
 import { formMessages } from '@/lib/translations';
+import '../referrer/portal/portal.css';
 
 type Language = 'en' | 'fr';
+type ApplicantApplicationsSortColumn = 'id' | 'position' | 'status';
+type ApplicantApplicationsSortDirection = 'asc' | 'desc';
+type ApplicantPortalApplication = {
+  id: string;
+  timestamp: string;
+  position: string;
+  iCrn: string;
+  status: string;
+  meetingDate: string;
+  meetingTime: string;
+  meetingTimezone: string;
+  meetingUrl: string;
+  resumeFileName: string;
+  referrerIrref: string;
+};
+
+const APPLICANT_APPLICATIONS_PAGE_SIZE = 10;
+const APPLICANT_STATUS_VARIANTS: Record<string, 'info' | 'success' | 'warning' | 'error' | 'neutral'> = {
+  new: 'info',
+  'meeting requested': 'info',
+  'meeting scheduled': 'success',
+  'needs reschedule': 'warning',
+  'met with referrer': 'success',
+  interviewed: 'success',
+  'submitted cv to hr': 'info',
+  'interviews being conducted': 'info',
+  'job offered': 'success',
+  'landed job': 'success',
+  'not a good fit': 'error',
+  'applicant no longer interested': 'neutral',
+  'applicant decided not to move forward': 'neutral',
+  'hr decided not to proceed': 'error',
+  'another applicant was a better fit': 'neutral',
+  'candidate did not accept offer': 'neutral',
+  'cv mismatch': 'warning',
+  'cv update requested': 'warning',
+  'cv updated': 'success',
+  'info requested': 'warning',
+  'info updated': 'success',
+  ineligible: 'error',
+};
+
+const applicantApplicationsCopy: Record<
+  Language,
+  {
+    title: string;
+    subtitle: (count: number) => string;
+    total: string;
+    labels: {
+      id: string;
+      position: string;
+      status: string;
+      meeting: string;
+      iRCRN: string;
+    };
+    empty: {
+      title: string;
+      description: string;
+    };
+    page: {
+      label: string;
+      of: string;
+      first: string;
+      previous: string;
+      next: string;
+      last: string;
+    };
+    join: string;
+    noMeeting: string;
+    statuses: Record<string, string>;
+  }
+> = {
+  en: {
+    title: 'My applications',
+    subtitle: (count) => `${count} active applications`,
+    total: 'total',
+    labels: {
+      id: 'App ID',
+      position: 'Position / iRCRN',
+      status: 'Status',
+      meeting: 'Meeting',
+      iRCRN: 'iRCRN',
+    },
+    empty: {
+      title: 'No applications yet',
+      description: 'Your submitted applications will appear here once they are available.',
+    },
+    page: {
+      label: 'Page',
+      of: 'of',
+      first: 'Go to first page',
+      previous: 'Go to previous page',
+      next: 'Go to next page',
+      last: 'Go to last page',
+    },
+    join: 'Join',
+    noMeeting: 'No meeting scheduled',
+    statuses: {
+      new: 'New',
+      'meeting requested': 'Meeting Requested',
+      'meeting scheduled': 'Meeting Scheduled',
+      'needs reschedule': 'Needs Reschedule',
+      'met with referrer': 'Met with Referrer',
+      interviewed: 'Met with Referrer',
+      'submitted cv to hr': 'Submitted CV to HR',
+      'interviews being conducted': 'Interviews Being Conducted',
+      'job offered': 'Job Offered',
+      'landed job': 'Landed Job',
+      'not a good fit': 'Not a Good Fit',
+      'applicant no longer interested': 'Applicant No Longer Interested',
+      'applicant decided not to move forward': 'Applicant Decided Not to Move Forward',
+      'hr decided not to proceed': 'HR Decided Not to Proceed',
+      'another applicant was a better fit': 'Another Applicant Was a Better Fit',
+      'candidate did not accept offer': 'Candidate Did Not Accept Offer',
+      'cv mismatch': 'CV Mismatch',
+      'cv update requested': 'CV Update Requested',
+      'cv updated': 'CV Updated',
+      'info requested': 'Info Requested',
+      'info updated': 'Info Updated',
+      ineligible: 'Ineligible',
+    },
+  },
+  fr: {
+    title: 'Mes candidatures',
+    subtitle: (count) => `${count} candidatures actives`,
+    total: 'total',
+    labels: {
+      id: 'ID candidature',
+      position: 'Poste / iRCRN',
+      status: 'Statut',
+      meeting: 'Réunion',
+      iRCRN: 'iRCRN',
+    },
+    empty: {
+      title: 'Aucune candidature',
+      description: 'Vos candidatures apparaîtront ici dès qu’elles seront disponibles.',
+    },
+    page: {
+      label: 'Page',
+      of: 'sur',
+      first: 'Aller à la première page',
+      previous: 'Aller à la page précédente',
+      next: 'Aller à la page suivante',
+      last: 'Aller à la dernière page',
+    },
+    join: 'Rejoindre',
+    noMeeting: 'Aucune réunion prévue',
+    statuses: {
+      new: 'Nouveau',
+      'meeting requested': 'Réunion demandée',
+      'meeting scheduled': 'Réunion planifiée',
+      'needs reschedule': 'À replanifier',
+      'met with referrer': 'Rencontré avec le référent',
+      interviewed: 'Rencontré avec le référent',
+      'submitted cv to hr': 'CV transmis aux RH',
+      'interviews being conducted': 'Entretiens en cours',
+      'job offered': "Offre d'emploi",
+      'landed job': 'Poste accepté',
+      'not a good fit': 'Profil non retenu',
+      'applicant no longer interested': "Le candidat n'est plus intéressé",
+      'applicant decided not to move forward': 'Le candidat a décidé de ne pas poursuivre',
+      'hr decided not to proceed': 'Les RH ont décidé de ne pas poursuivre',
+      'another applicant was a better fit': 'Un autre candidat correspondait mieux',
+      'candidate did not accept offer': "Le candidat n'a pas accepté l'offre",
+      'cv mismatch': 'CV inadapté',
+      'cv update requested': 'Mise à jour CV demandée',
+      'cv updated': 'CV mis à jour',
+      'info requested': 'Informations demandées',
+      'info updated': 'Informations mises à jour',
+      ineligible: 'Non admissible',
+    },
+  },
+};
+
+function ApplicantStatusBadge({
+  status,
+  language,
+}: {
+  status: string;
+  language: Language;
+}) {
+  const normalized = status?.toLowerCase().trim() || 'new';
+  const variant = APPLICANT_STATUS_VARIANTS[normalized] || 'neutral';
+  const label = applicantApplicationsCopy[language].statuses[normalized] || status || applicantApplicationsCopy[language].statuses.new;
+  return <span className={`portal-badge portal-badge--${variant}`}>{label}</span>;
+}
+
+function formatApplicantMeetingDisplay(
+  date: string | undefined,
+  time: string | undefined,
+  timezone: string | undefined,
+  language: Language,
+): string {
+  if (!date || !time) return '';
+  const atLabel = language === 'fr' ? 'a' : 'at';
+  const tzLabel = timezone ? timezone.split('/').pop()?.replace('_', ' ') : '';
+  return tzLabel ? `${date} ${atLabel} ${time} (${tzLabel})` : `${date} ${atLabel} ${time}`;
+}
 
 // Stable values; labels are localized below
 const LANGUAGE_VALUES = ['English', 'Arabic', 'French', 'Other'] as const;
@@ -419,9 +618,14 @@ function ApplicantPageContent() {
   const [prefillLoading, setPrefillLoading] = useState(hasUpdateRequest);
   const [prefillError, setPrefillError] = useState('');
   const [updatePurpose, setUpdatePurpose] = useState<'cv' | 'info'>('cv');
+  const [applications, setApplications] = useState<ApplicantPortalApplication[]>([]);
+  const [applicationsSortColumn, setApplicationsSortColumn] = useState<ApplicantApplicationsSortColumn>('id');
+  const [applicationsSortDirection, setApplicationsSortDirection] = useState<ApplicantApplicationsSortDirection>('desc');
+  const [applicationsPage, setApplicationsPage] = useState(1);
 
   const t = translations[language];
   const formCopy = formMessages.applicant[language];
+  const applicationsCopy = applicantApplicationsCopy[language];
   const resumeRequired = !(hasUpdateRequest && updatePurpose === 'info');
 
   const fieldClass = (base: string, field: string) => `${base}${errors[field] ? ' has-error' : ''}`;
@@ -434,6 +638,45 @@ function ApplicantPageContent() {
       return next;
     });
   };
+
+  const handleApplicationsSort = (column: ApplicantApplicationsSortColumn) => {
+    if (applicationsSortColumn === column) {
+      setApplicationsSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
+      return;
+    }
+    setApplicationsSortColumn(column);
+    setApplicationsSortDirection('asc');
+  };
+
+  const sortedApplications = useMemo(() => {
+    return [...applications].sort((a, b) => {
+      let comparison = 0;
+      if (applicationsSortColumn === 'id') {
+        comparison = (a.id || '').localeCompare(b.id || '');
+      } else if (applicationsSortColumn === 'position') {
+        comparison = (a.position || '').localeCompare(b.position || '');
+      } else {
+        comparison = (a.status || '').localeCompare(b.status || '');
+      }
+      return applicationsSortDirection === 'asc' ? comparison : -comparison;
+    });
+  }, [applications, applicationsSortColumn, applicationsSortDirection]);
+
+  const applicantApplicationsTotalPages = Math.ceil(
+    sortedApplications.length / APPLICANT_APPLICATIONS_PAGE_SIZE,
+  );
+  const applicantApplicationsPage = Math.min(
+    Math.max(1, applicationsPage),
+    Math.max(1, applicantApplicationsTotalPages),
+  );
+  const paginatedApplications = useMemo(() => {
+    const startIndex = (applicantApplicationsPage - 1) * APPLICANT_APPLICATIONS_PAGE_SIZE;
+    return sortedApplications.slice(startIndex, startIndex + APPLICANT_APPLICATIONS_PAGE_SIZE);
+  }, [sortedApplications, applicantApplicationsPage]);
+
+  useEffect(() => {
+    setApplicationsPage(1);
+  }, [applications.length]);
 
   const scrollToFirstError = () => {
     requestAnimationFrame(() => {
@@ -467,9 +710,16 @@ function ApplicantPageContent() {
 
   // Fetch existing applicant data for prefill when update token is present
   useEffect(() => {
-    if (!hasUpdateRequest) return;
+    if (!hasUpdateRequest) {
+      setApplications([]);
+      setPrefillLoading(false);
+      setPrefillError('');
+      return;
+    }
 
     const fetchPrefillData = async () => {
+      setPrefillLoading(true);
+      setPrefillError('');
       try {
         const res = await fetch(`/api/applicant/data?updateToken=${encodeURIComponent(updateToken)}&appId=${encodeURIComponent(updateAppId)}`);
         const json = await res.json();
@@ -481,6 +731,22 @@ function ApplicantPageContent() {
         }
 
         const data = json.data;
+        const nextApplications: ApplicantPortalApplication[] = Array.isArray(json.applications)
+          ? json.applications.map((item: Partial<ApplicantPortalApplication>) => ({
+              id: String(item.id || ''),
+              timestamp: String(item.timestamp || ''),
+              position: String(item.position || ''),
+              iCrn: String(item.iCrn || ''),
+              status: String(item.status || ''),
+              meetingDate: String(item.meetingDate || ''),
+              meetingTime: String(item.meetingTime || ''),
+              meetingTimezone: String(item.meetingTimezone || ''),
+              meetingUrl: String(item.meetingUrl || ''),
+              resumeFileName: String(item.resumeFileName || ''),
+              referrerIrref: String(item.referrerIrref || ''),
+            }))
+          : [];
+        setApplications(nextApplications);
 
         // Set the update purpose (cv or info)
         if (json.updatePurpose) {
@@ -530,6 +796,7 @@ function ApplicantPageContent() {
         setPrefillLoading(false);
       } catch (err) {
         console.error('Error fetching prefill data:', err);
+        setApplications([]);
         setPrefillError(formCopy.errors.prefillLoadFailed);
         setPrefillLoading(false);
       }
@@ -835,6 +1102,8 @@ function ApplicantPageContent() {
     }
   };
 
+  const showApplicantApplicationsTable = hasUpdateRequest && !prefillLoading && !prefillError;
+
   return (
     <AppShell>
       <main>
@@ -942,6 +1211,195 @@ function ApplicantPageContent() {
                 </svg>
               </button>
             </div>
+          )}
+
+          {showApplicantApplicationsTable && (
+            <section className="portal-table-card applicant-applications-card" aria-live="polite">
+              <div className="portal-table-header">
+                <div>
+                  <p className="portal-table-title">{applicationsCopy.title}</p>
+                  <p className="portal-table-sub">{applicationsCopy.subtitle(sortedApplications.length)}</p>
+                </div>
+                <div className="portal-table-meta">
+                  <span className="portal-count-pill">{applications.length} {applicationsCopy.total}</span>
+                  {applicantApplicationsTotalPages > 1 && (
+                    <span className="portal-page-info">
+                      {applicationsCopy.page.label} {applicantApplicationsPage} / {applicantApplicationsTotalPages}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div className="portal-table-wrapper applicant-applications-table-wrapper">
+                <div className="founder-table portal-table">
+                  <div className="founder-table__container portal-table__scroll">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th className="portal-col-sortable" onClick={() => handleApplicationsSort('id')}>
+                            <span className="portal-th-content">
+                              {applicationsCopy.labels.id}
+                              <svg
+                                className={`portal-sort-icon ${applicationsSortColumn === 'id' ? 'portal-sort-icon--active' : ''} ${applicationsSortColumn === 'id' && applicationsSortDirection === 'desc' ? 'portal-sort-icon--desc' : ''}`}
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M12 5v14M5 12l7-7 7 7" />
+                              </svg>
+                            </span>
+                          </th>
+                          <th className="portal-col-sortable" onClick={() => handleApplicationsSort('position')}>
+                            <span className="portal-th-content">
+                              {applicationsCopy.labels.position}
+                              <svg
+                                className={`portal-sort-icon ${applicationsSortColumn === 'position' ? 'portal-sort-icon--active' : ''} ${applicationsSortColumn === 'position' && applicationsSortDirection === 'desc' ? 'portal-sort-icon--desc' : ''}`}
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M12 5v14M5 12l7-7 7 7" />
+                              </svg>
+                            </span>
+                          </th>
+                          <th className="portal-col-sortable" onClick={() => handleApplicationsSort('status')}>
+                            <span className="portal-th-content">
+                              {applicationsCopy.labels.status}
+                              <svg
+                                className={`portal-sort-icon ${applicationsSortColumn === 'status' ? 'portal-sort-icon--active' : ''} ${applicationsSortColumn === 'status' && applicationsSortDirection === 'desc' ? 'portal-sort-icon--desc' : ''}`}
+                                width="12"
+                                height="12"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M12 5v14M5 12l7-7 7 7" />
+                              </svg>
+                            </span>
+                          </th>
+                          <th>{applicationsCopy.labels.meeting}</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {paginatedApplications.length === 0 ? (
+                          <tr>
+                            <td colSpan={4} className="portal-table-empty">
+                              <div className="applicant-applications-empty">
+                                <p className="applicant-applications-empty__title">{applicationsCopy.empty.title}</p>
+                                <p className="applicant-applications-empty__description">{applicationsCopy.empty.description}</p>
+                              </div>
+                            </td>
+                          </tr>
+                        ) : (
+                          paginatedApplications.map((item) => {
+                            const normalizedStatus = item.status?.toLowerCase().trim() || 'new';
+                            const hasMeeting = normalizedStatus === 'meeting scheduled' && item.meetingDate && item.meetingTime;
+                            const submittedAt = item.timestamp
+                              ? new Date(item.timestamp).toLocaleDateString(language === 'fr' ? 'fr-CA' : 'en-CA', {
+                                  year: 'numeric',
+                                  month: 'short',
+                                  day: 'numeric',
+                                })
+                              : '';
+                            return (
+                              <tr key={item.id}>
+                                <td>
+                                  <div className="portal-cell-title">{item.id}</div>
+                                  {submittedAt ? <div className="portal-cell-sub">{submittedAt}</div> : null}
+                                </td>
+                                <td>
+                                  <div className="portal-cell-title">{item.position || '-'}</div>
+                                  <div className="portal-cell-sub">{applicationsCopy.labels.iRCRN}: {item.iCrn || '-'}</div>
+                                </td>
+                                <td>
+                                  <ApplicantStatusBadge status={item.status} language={language} />
+                                </td>
+                                <td>
+                                  {hasMeeting ? (
+                                    <div className="portal-meeting-info">
+                                      <span className="portal-meeting-date">
+                                        {formatApplicantMeetingDisplay(
+                                          item.meetingDate,
+                                          item.meetingTime,
+                                          item.meetingTimezone,
+                                          language,
+                                        )}
+                                      </span>
+                                      {item.meetingUrl ? (
+                                        <a href={item.meetingUrl} target="_blank" rel="noreferrer" className="portal-meeting-link">
+                                          <span className="portal-meeting-link-text">{applicationsCopy.join}</span>
+                                        </a>
+                                      ) : null}
+                                    </div>
+                                  ) : (
+                                    <span className="portal-muted">{applicationsCopy.noMeeting}</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+              {applicantApplicationsTotalPages > 1 && (
+                <div className="portal-pagination">
+                  <button
+                    type="button"
+                    className="portal-pagination-btn"
+                    onClick={() => setApplicationsPage(1)}
+                    disabled={applicantApplicationsPage === 1}
+                    aria-label={applicationsCopy.page.first}
+                  >
+                    &laquo;
+                  </button>
+                  <button
+                    type="button"
+                    className="portal-pagination-btn"
+                    onClick={() => setApplicationsPage(Math.max(1, applicantApplicationsPage - 1))}
+                    disabled={applicantApplicationsPage === 1}
+                    aria-label={applicationsCopy.page.previous}
+                  >
+                    &lsaquo;
+                  </button>
+                  <span className="portal-pagination-info">
+                    {applicationsCopy.page.label} {applicantApplicationsPage} {applicationsCopy.page.of} {applicantApplicationsTotalPages}
+                  </span>
+                  <button
+                    type="button"
+                    className="portal-pagination-btn"
+                    onClick={() => setApplicationsPage(Math.min(applicantApplicationsTotalPages, applicantApplicationsPage + 1))}
+                    disabled={applicantApplicationsPage === applicantApplicationsTotalPages}
+                    aria-label={applicationsCopy.page.next}
+                  >
+                    &rsaquo;
+                  </button>
+                  <button
+                    type="button"
+                    className="portal-pagination-btn"
+                    onClick={() => setApplicationsPage(applicantApplicationsTotalPages)}
+                    disabled={applicantApplicationsPage === applicantApplicationsTotalPages}
+                    aria-label={applicationsCopy.page.last}
+                  >
+                    &raquo;
+                  </button>
+                </div>
+              )}
+            </section>
           )}
 
             <form
