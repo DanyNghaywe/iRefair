@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import {
   issueReferrerMobileSession,
+  issueStatelessReferrerMobileSession,
+  type IssuedReferrerMobileSession,
   verifyLegacyReferrerPortalToken,
 } from '@/lib/referrerMobileAuth';
 import { RATE_LIMITS, rateLimit, rateLimitHeaders } from '@/lib/rateLimit';
-import { mapReferrerMobileAuthError } from '@/lib/referrerMobileAuthErrors';
+import { isReferrerMobileSessionStoreUnavailable, mapReferrerMobileAuthError } from '@/lib/referrerMobileAuthErrors';
 import { normalizePortalTokenVersion } from '@/lib/referrerPortalToken';
 import { getReferrerByIrref } from '@/lib/sheets';
 
@@ -75,9 +77,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Keep iOS sessions independent from the one-time portal link token lifetime.
-    const session = await issueReferrerMobileSession(referrer.record.irref, expectedVersion, {
-      userAgent: request.headers.get('user-agent'),
-    });
+    // If the session table is temporarily unavailable, degrade to stateless refresh tokens.
+    let session: IssuedReferrerMobileSession;
+    try {
+      session = await issueReferrerMobileSession(referrer.record.irref, expectedVersion, {
+        userAgent: request.headers.get('user-agent'),
+      });
+    } catch (error) {
+      if (!isReferrerMobileSessionStoreUnavailable(error)) {
+        throw error;
+      }
+      console.warn('Referrer mobile session store unavailable, using stateless session fallback.', {
+        irref: referrer.record.irref,
+        error,
+      });
+      session = issueStatelessReferrerMobileSession(referrer.record.irref, expectedVersion);
+    }
 
     const response = NextResponse.json({
       ok: true,

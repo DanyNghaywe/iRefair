@@ -44,11 +44,15 @@ function isTemporaryDatabaseFailure(error: unknown): boolean {
   return code ? TEMPORARY_DB_ERROR_CODES.has(code) : false;
 }
 
+export function isReferrerMobileSessionStoreUnavailable(error: unknown): boolean {
+  return isMissingReferrerMobileSessionTable(error) || isTemporaryDatabaseFailure(error);
+}
+
 export function mapReferrerMobileAuthError(
   error: unknown,
   operation: ReferrerMobileAuthOperation,
 ): MappedReferrerMobileAuthError {
-  if (isMissingReferrerMobileSessionTable(error) || isTemporaryDatabaseFailure(error)) {
+  if (isReferrerMobileSessionStoreUnavailable(error)) {
     return {
       status: 503,
       message: 'Mobile portal sign-in is temporarily unavailable. Please try again in a few minutes.',

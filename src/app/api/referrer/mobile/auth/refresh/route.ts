@@ -2,8 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import {
   issueReferrerMobileAccessToken,
+  issueStatelessReferrerMobileRefreshToken,
   revokeReferrerMobileSessionByRefreshToken,
   rotateReferrerMobileRefreshToken,
+  validateStatelessReferrerMobileRefreshToken,
   validateReferrerMobileRefreshToken,
 } from '@/lib/referrerMobileAuth';
 import { RATE_LIMITS, rateLimit, rateLimitHeaders } from '@/lib/rateLimit';
@@ -42,6 +44,38 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    const statelessValidated = validateStatelessReferrerMobileRefreshToken(refreshToken);
+    if (statelessValidated) {
+      const referrer = await getReferrerByIrref(statelessValidated.irref);
+      if (!referrer) {
+        return NextResponse.json({ ok: false, error: 'Referrer not found.' }, { status: 404 });
+      }
+      if (referrer.record.archived?.toLowerCase() === 'true') {
+        return NextResponse.json(
+          { ok: false, error: 'This referrer account has been archived and portal access is no longer available.' },
+          { status: 403 },
+        );
+      }
+
+      const expectedVersion = normalizePortalTokenVersion(referrer.record.portalTokenVersion);
+      if (statelessValidated.tokenVersion !== expectedVersion) {
+        return NextResponse.json({ ok: false, error: 'Invalid or expired session.' }, { status: 401 });
+      }
+
+      const access = issueReferrerMobileAccessToken(referrer.record.irref, expectedVersion);
+      const rotated = issueStatelessReferrerMobileRefreshToken(referrer.record.irref, expectedVersion);
+
+      const response = NextResponse.json({
+        ok: true,
+        accessToken: access.accessToken,
+        accessTokenExpiresIn: access.accessTokenExpiresIn,
+        refreshToken: rotated.refreshToken,
+        refreshTokenExpiresIn: rotated.refreshTokenExpiresIn,
+      });
+      rateLimitHeaders(rate).forEach((value, key) => response.headers.set(key, value));
+      return response;
+    }
+
     const validated = await validateReferrerMobileRefreshToken(refreshToken);
     if (!validated) {
       return NextResponse.json({ ok: false, error: 'Invalid or expired session.' }, { status: 401 });

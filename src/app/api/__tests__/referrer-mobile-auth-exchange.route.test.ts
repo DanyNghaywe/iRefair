@@ -8,9 +8,10 @@ const { rateLimit, rateLimitHeaders } = vi.hoisted(() => ({
   rateLimitHeaders: vi.fn(),
 }));
 
-const { verifyLegacyReferrerPortalToken, issueReferrerMobileSession } = vi.hoisted(() => ({
+const { verifyLegacyReferrerPortalToken, issueReferrerMobileSession, issueStatelessReferrerMobileSession } = vi.hoisted(() => ({
   verifyLegacyReferrerPortalToken: vi.fn(),
   issueReferrerMobileSession: vi.fn(),
+  issueStatelessReferrerMobileSession: vi.fn(),
 }));
 
 const { normalizePortalTokenVersion } = vi.hoisted(() => ({
@@ -32,6 +33,7 @@ vi.mock('@/lib/rateLimit', () => ({
 vi.mock('@/lib/referrerMobileAuth', () => ({
   verifyLegacyReferrerPortalToken,
   issueReferrerMobileSession,
+  issueStatelessReferrerMobileSession,
 }));
 
 vi.mock('@/lib/referrerPortalToken', () => ({
@@ -54,6 +56,7 @@ beforeEach(() => {
   rateLimitHeaders.mockReset();
   verifyLegacyReferrerPortalToken.mockReset();
   issueReferrerMobileSession.mockReset();
+  issueStatelessReferrerMobileSession.mockReset();
   normalizePortalTokenVersion.mockReset();
   getReferrerByIrref.mockReset();
 
@@ -90,6 +93,12 @@ beforeEach(() => {
     refreshToken: 'refresh-token',
     refreshTokenExpiresIn: 2592000,
   });
+  issueStatelessReferrerMobileSession.mockReturnValue({
+    accessToken: 'stateless-access-token',
+    accessTokenExpiresIn: 900,
+    refreshToken: 'stateless:refresh-token',
+    refreshTokenExpiresIn: 2592000,
+  });
 });
 
 describe('POST /api/referrer/mobile/auth/exchange', () => {
@@ -111,7 +120,7 @@ describe('POST /api/referrer/mobile/auth/exchange', () => {
     });
   });
 
-  it('returns structured JSON for missing mobile-session table errors', async () => {
+  it('falls back to stateless session when mobile-session table is unavailable', async () => {
     issueReferrerMobileSession.mockRejectedValue({
       code: 'P2021',
       message: 'The table `public.ReferrerMobileSession` does not exist in the current database.',
@@ -119,10 +128,18 @@ describe('POST /api/referrer/mobile/auth/exchange', () => {
 
     const response = await POST(makeRequest({ portalToken: 'valid-token' }));
 
-    expect(response.status).toBe(503);
+    expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({
-      ok: false,
-      error: 'Mobile portal sign-in is temporarily unavailable. Please try again in a few minutes.',
+      ok: true,
+      accessToken: 'stateless-access-token',
+      accessTokenExpiresIn: 900,
+      refreshToken: 'stateless:refresh-token',
+      refreshTokenExpiresIn: 2592000,
+      referrer: {
+        irref: 'iRREF0000000001',
+        name: 'Jane Referrer',
+        email: 'jane@example.com',
+      },
     });
   });
 

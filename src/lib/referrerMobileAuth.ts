@@ -21,6 +21,11 @@ const SESSION_TTL_SECONDS = parsePositiveInt(
   process.env.REFERRER_MOBILE_SESSION_TTL_SECONDS,
   30 * 24 * 60 * 60,
 );
+const STATELESS_REFRESH_TOKEN_TTL_SECONDS = parsePositiveInt(
+  process.env.REFERRER_MOBILE_STATELESS_REFRESH_TOKEN_TTL_SECONDS,
+  REFRESH_TOKEN_TTL_SECONDS,
+);
+const STATELESS_REFRESH_TOKEN_PREFIX = 'stateless:';
 
 export type IssuedReferrerMobileSession = {
   accessToken: string;
@@ -36,6 +41,11 @@ export type ValidatedReferrerMobileRefreshToken = {
   sessionExpiresAt: Date;
 };
 
+export type ValidatedStatelessReferrerMobileRefreshToken = {
+  irref: string;
+  tokenVersion: number;
+};
+
 type RefreshTokenParts = {
   sessionId: string;
   tokenHash: string;
@@ -48,6 +58,7 @@ function nowPlusSeconds(seconds: number) {
 function parseRefreshToken(refreshToken: string): RefreshTokenParts | null {
   const trimmed = refreshToken.trim();
   if (!trimmed) return null;
+  if (trimmed.startsWith(STATELESS_REFRESH_TOKEN_PREFIX)) return null;
 
   const separator = trimmed.indexOf('.');
   if (separator <= 0 || separator >= trimmed.length - 1) return null;
@@ -109,6 +120,51 @@ export function issueReferrerMobileAccessToken(irref: string, tokenVersion: numb
     accessToken: createReferrerToken(irref, normalizedVersion, ACCESS_TOKEN_TTL_SECONDS),
     accessTokenExpiresIn: ACCESS_TOKEN_TTL_SECONDS,
   };
+}
+
+export function issueStatelessReferrerMobileRefreshToken(irref: string, tokenVersion: number) {
+  const normalizedVersion = normalizePortalTokenVersion(String(tokenVersion));
+  return {
+    refreshToken: `${STATELESS_REFRESH_TOKEN_PREFIX}${createReferrerToken(
+      irref,
+      normalizedVersion,
+      STATELESS_REFRESH_TOKEN_TTL_SECONDS,
+    )}`,
+    refreshTokenExpiresIn: STATELESS_REFRESH_TOKEN_TTL_SECONDS,
+  };
+}
+
+export function issueStatelessReferrerMobileSession(irref: string, tokenVersion: number): IssuedReferrerMobileSession {
+  const access = issueReferrerMobileAccessToken(irref, tokenVersion);
+  const refresh = issueStatelessReferrerMobileRefreshToken(irref, tokenVersion);
+  return {
+    accessToken: access.accessToken,
+    accessTokenExpiresIn: access.accessTokenExpiresIn,
+    refreshToken: refresh.refreshToken,
+    refreshTokenExpiresIn: refresh.refreshTokenExpiresIn,
+  };
+}
+
+export function validateStatelessReferrerMobileRefreshToken(
+  refreshToken: string,
+): ValidatedStatelessReferrerMobileRefreshToken | null {
+  const trimmed = refreshToken.trim();
+  if (!trimmed || !trimmed.startsWith(STATELESS_REFRESH_TOKEN_PREFIX)) {
+    return null;
+  }
+
+  const token = trimmed.slice(STATELESS_REFRESH_TOKEN_PREFIX.length).trim();
+  if (!token) return null;
+
+  try {
+    const payload = verifyReferrerToken(token);
+    return {
+      irref: payload.irref,
+      tokenVersion: normalizePortalTokenVersion(String(payload.v)),
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function issueReferrerMobileSession(
