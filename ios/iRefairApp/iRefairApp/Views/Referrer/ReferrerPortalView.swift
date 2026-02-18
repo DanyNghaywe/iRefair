@@ -573,6 +573,11 @@ struct ReferrerPortalView: View {
         clearMessage(for: .signOutAll)
         clearMessage(for: .switchAccount)
 
+        // Show the same applicants table skeleton while we exchange the portal token.
+        // This keeps deep-link sign-ins visually consistent with regular portal loads.
+        isLoading = true
+        defer { isLoading = false }
+
         guard networkMonitor.isConnected else {
             if let messageTarget {
                 setMessage(l("You're offline. Connect to the internet and try again."), style: .error, for: messageTarget)
