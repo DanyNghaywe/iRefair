@@ -18,7 +18,7 @@ enum AppRoleMode: String, Hashable, CaseIterable {
         case .applicant:
             return .applicant
         case .referrer:
-            return .referrerForm
+            return .referrerPortal
         }
     }
 

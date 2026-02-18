@@ -476,15 +476,25 @@ struct ReferrerPortalView: View {
             return
         }
 
+        var handledPendingPortalToken = false
         while let pendingPortalToken = appState.consumeNextPendingReferrerPortalToken() {
+            handledPendingPortalToken = true
             await exchangeSession(portalToken: pendingPortalToken, messageTarget: .global)
         }
 
-        guard !isAuthenticated else { return }
         guard networkMonitor.isConnected else { return }
         guard let activeAccount else { return }
 
-        _ = await refreshSession(for: activeAccount.normalizedIrref)
+        if handledPendingPortalToken && !accessToken.isEmpty {
+            return
+        }
+
+        if accessToken.isEmpty {
+            let refreshed = await refreshSession(for: activeAccount.normalizedIrref)
+            guard refreshed else { return }
+        }
+
+        await loadPortal(messageTarget: nil)
     }
 
     @MainActor
