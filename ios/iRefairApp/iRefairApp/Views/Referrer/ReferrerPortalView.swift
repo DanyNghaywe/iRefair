@@ -82,9 +82,6 @@ struct ReferrerPortalView: View {
                 accountSwitcherSection
             }
 
-            if hasActiveAccount {
-                authenticatedSessionSection
-            }
             signInSection
 
             if let referrer {
@@ -179,6 +176,48 @@ struct ReferrerPortalView: View {
             if let message = messages[.switchAccount] {
                 StatusBanner(text: message.text, style: message.style)
             }
+
+            if hasActiveAccount {
+                HStack(alignment: .top, spacing: 12) {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Button(l("Load portal data")) {
+                            Task { await loadPortal(messageTarget: .loadPortal) }
+                        }
+                        .buttonStyle(IRefairPrimaryButtonStyle(fillWidth: true))
+                        .disabled(isLoading || !networkMonitor.isConnected || isBusySigningOut)
+
+                        if let message = messages[.loadPortal] {
+                            StatusBanner(text: message.text, style: message.style)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    VStack(alignment: .leading, spacing: 8) {
+                        Button(l("Sign out this portal")) {
+                            Task { await signOut() }
+                        }
+                        .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
+                        .disabled(isBusySigningOut)
+
+                        if let message = messages[.signOut] {
+                            StatusBanner(text: message.text, style: message.style)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                if referrerPortalAccountStore.accounts.count > 1 {
+                    Button(l("Sign out all portals")) {
+                        Task { await signOutAll() }
+                    }
+                    .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
+                    .disabled(isBusySigningOut)
+
+                    if let message = messages[.signOutAll] {
+                        StatusBanner(text: message.text, style: message.style)
+                    }
+                }
+            }
         }
     }
 
@@ -212,7 +251,7 @@ struct ReferrerPortalView: View {
                 StatusBanner(text: message.text, style: message.style)
             }
 
-            Text(l("We'll send another email with your \"Open portal\" link and token."))
+            Text(l("We'll send another email with your \"Open portal\" link."))
                 .font(Theme.font(.caption))
                 .foregroundStyle(Color.white.opacity(0.86))
 
@@ -232,14 +271,14 @@ struct ReferrerPortalView: View {
             }
             .padding(.vertical, 6)
 
-            IRefairField(l("Paste token or portal link")) {
+            IRefairField(l("Paste portal link")) {
                 IRefairTextField("", text: $portalTokenInput)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .accessibilityLabel(l("Paste token or portal link"))
+                    .accessibilityLabel(l("Paste portal link"))
             }
             HStack(spacing: 12) {
-                Button(l("Sign in with token")) {
+                Button(l("Sign in with link")) {
                     Task { await signInWithPortalToken() }
                 }
                 .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
@@ -248,61 +287,6 @@ struct ReferrerPortalView: View {
 
             if let message = messages[.tokenSignIn] {
                 StatusBanner(text: message.text, style: message.style)
-            }
-        }
-    }
-
-    private var authenticatedSessionSection: some View {
-        IRefairSection(l("Session")) {
-            if let activeAccount {
-                Text(
-                    String.localizedStringWithFormat(
-                        l("Active portal: %@"),
-                        activeAccount.pickerLabel
-                    )
-                )
-                .font(Theme.font(.subheadline))
-                .foregroundStyle(Color.white.opacity(0.86))
-            }
-
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 8) {
-                    Button(l("Load portal data")) {
-                        Task { await loadPortal(messageTarget: .loadPortal) }
-                    }
-                    .buttonStyle(IRefairPrimaryButtonStyle(fillWidth: true))
-                    .disabled(isLoading || !networkMonitor.isConnected || isBusySigningOut)
-
-                    if let message = messages[.loadPortal] {
-                        StatusBanner(text: message.text, style: message.style)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Button(l("Sign out this portal")) {
-                        Task { await signOut() }
-                    }
-                    .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
-                    .disabled(isBusySigningOut)
-
-                    if let message = messages[.signOut] {
-                        StatusBanner(text: message.text, style: message.style)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-
-            if referrerPortalAccountStore.accounts.count > 1 {
-                Button(l("Sign out all portals")) {
-                    Task { await signOutAll() }
-                }
-                .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
-                .disabled(isBusySigningOut)
-
-                if let message = messages[.signOutAll] {
-                    StatusBanner(text: message.text, style: message.style)
-                }
             }
         }
     }
@@ -533,7 +517,7 @@ struct ReferrerPortalView: View {
                 setMessage(successText, style: .success, for: .sendLink)
             } else {
                 setMessage(
-                    l("Request received. If your account is accepted, we'll email your portal link and token."),
+                    l("Request received. If your account is accepted, we'll email your portal link."),
                     style: .info,
                     for: .sendLink
                 )
@@ -563,7 +547,7 @@ struct ReferrerPortalView: View {
 
         let token = extractPortalToken(from: portalTokenInput)
         guard !token.isEmpty else {
-            setMessage(l("Enter a token first."), style: .error, for: .tokenSignIn)
+            setMessage(l("Paste a portal link first."), style: .error, for: .tokenSignIn)
             return
         }
 

@@ -82,6 +82,7 @@
 "Enter the iRCRN" = "Enter the iRCRN";
 "e.g. Software Engineer" = "e.g. Software Engineer";
 "Enter a token first." = "Enter a token first.";
+"Paste a portal link first." = "Paste a portal link first.";
 "Enter a valid LinkedIn profile URL." = "Enter a valid LinkedIn profile URL.";
 "Enter a valid careers portal URL." = "Enter a valid careers portal URL.";
 "Enter a valid email." = "Enter a valid email.";
@@ -168,6 +169,7 @@
 "Other industry" = "Other industry";
 "Other languages *" = "Other languages";
 "Paste token or portal link" = "Paste token or portal link";
+"Paste portal link" = "Paste portal link";
 "Personal information" = "Personal information";
 "Phone" = "Phone";
 "Phone *" = "Phone";
@@ -220,7 +222,7 @@
 "Send portal access email" = "Send portal access email";
 "Set your API base URL in Settings before submitting." = "Set your API base URL in Settings before submitting.";
 "Session" = "Session";
-"Session expired. Please sign in again." = "Session expired. Please sign in again.";
+"Session expired. Please sign in again." = "Sign-in expired. Please sign in again.";
 "App configuration is missing API base URL." = "App configuration is missing API base URL.";
 "Settings" = "Settings";
 "Switch app mode?" = "Switch app mode?";
@@ -231,6 +233,7 @@
 "Share feedback" = "Share feedback";
 "Sign in to your portal" = "Sign in to your portal";
 "Sign in with token" = "Sign in with token";
+"Sign in with link" = "Sign in with link";
 "Sign out" = "Sign out";
 "Signed in. Loading portal data..." = "Signed in. Loading portal data...";
 "Signed out." = "Signed out.";
@@ -242,8 +245,10 @@
 "Join" = "Join";
 "Portal access email sent." = "Portal access email sent.";
 "Request received. If your account is accepted, we'll email your portal link and token." = "Request received. If your account is accepted, we'll email your portal link and token.";
-"Unable to establish session. Please try again." = "Unable to establish session. Please try again.";
+"Request received. If your account is accepted, we'll email your portal link." = "Request received. If your account is accepted, we'll email your portal link.";
+"Unable to establish session. Please try again." = "Unable to sign in. Please try again.";
 "We'll send another email with your \"Open portal\" link and token." = "We'll send another email with your \"Open portal\" link and token.";
+"We'll send another email with your \"Open portal\" link." = "We'll send another email with your \"Open portal\" link.";
 "your.email@example.com" = "your.email@example.com";
 "Submission language" = "Submission language";
 "Submit Applicant Profile" = "Submit Applicant Profile";

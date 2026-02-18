@@ -82,6 +82,7 @@
 "Enter the iRCRN" = "Entrez l'iRCRN";
 "e.g. Software Engineer" = "ex. Ingénieur logiciel";
 "Enter a token first." = "Entrez d'abord un jeton.";
+"Paste a portal link first." = "Collez d'abord un lien du portail.";
 "Enter a valid LinkedIn profile URL." = "Entrez une URL LinkedIn valide.";
 "Enter a valid careers portal URL." = "Entrez une URL valide du portail carrières.";
 "Enter a valid email." = "Veuillez entrer un e-mail valide.";
@@ -168,6 +169,7 @@
 "Other industry" = "Autre secteur";
 "Other languages *" = "Autres langues";
 "Paste token or portal link" = "Collez le jeton ou le lien du portail";
+"Paste portal link" = "Collez le lien du portail";
 "Personal information" = "Informations personnelles";
 "Phone" = "Téléphone";
 "Phone *" = "Téléphone";
@@ -220,7 +222,7 @@
 "Send portal access email" = "Envoyer l'e-mail d'accès au portail";
 "Set your API base URL in Settings before submitting." = "Définissez l'URL de base de l'API dans Paramètres avant d'envoyer.";
 "Session" = "Session";
-"Session expired. Please sign in again." = "Session expirée. Veuillez vous reconnecter.";
+"Session expired. Please sign in again." = "Connexion expirée. Veuillez vous reconnecter.";
 "App configuration is missing API base URL." = "La configuration de l'application ne contient pas d'URL de base API.";
 "Settings" = "Paramètres";
 "Switch app mode?" = "Changer le mode de l'application ?";
@@ -231,6 +233,7 @@
 "Share feedback" = "Partagez votre avis";
 "Sign in to your portal" = "Connectez-vous à votre portail";
 "Sign in with token" = "Se connecter avec un jeton";
+"Sign in with link" = "Se connecter avec le lien";
 "Sign out" = "Se déconnecter";
 "Signed in. Loading portal data..." = "Connecté. Chargement des données du portail...";
 "Signed out." = "Déconnecté.";
@@ -242,7 +245,9 @@
 "Join" = "Rejoindre";
 "Portal access email sent." = "E-mail d'accès au portail envoyé.";
 "Request received. If your account is accepted, we'll email your portal link and token." = "Demande recue. Si votre compte est accepte, nous enverrons votre lien de portail et votre jeton par e-mail.";
-"Unable to establish session. Please try again." = "Impossible d'établir la session. Veuillez réessayer.";
+"Request received. If your account is accepted, we'll email your portal link." = "Demande recue. Si votre compte est accepte, nous enverrons votre lien de portail par e-mail.";
+"Unable to establish session. Please try again." = "Impossible de vous connecter. Veuillez réessayer.";
+"We'll send another email with your \"Open portal\" link." = "Nous vous enverrons un autre e-mail avec votre lien \"Ouvrir le portail\".";
 "We'll send another email with your \"Open portal\" link and token." = "Nous vous enverrons un autre e-mail avec votre lien \"Ouvrir le portail\" et votre jeton.";
 "your.email@example.com" = "votre.email@exemple.com";
 "Submission language" = "Langue de soumission";
