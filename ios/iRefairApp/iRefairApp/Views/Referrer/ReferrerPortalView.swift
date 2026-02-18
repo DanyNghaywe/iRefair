@@ -742,6 +742,11 @@ struct ReferrerPortalView: View {
             return
         }
 
+        // Keep the existing applicants table skeleton visible for the full load path,
+        // including silent session refresh before fetching portal data.
+        isLoading = true
+        defer { isLoading = false }
+
         if accessToken.isEmpty {
             let refreshed = await refreshSession(for: activeIrref)
             if !refreshed {
@@ -751,9 +756,6 @@ struct ReferrerPortalView: View {
                 return
             }
         }
-
-        isLoading = true
-        defer { isLoading = false }
 
         do {
             let response = try await APIClient.loadReferrerPortal(baseURL: apiBaseURL, token: accessToken)
