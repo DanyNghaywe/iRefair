@@ -243,6 +243,10 @@
 "Meeting" = "Réunion";
 "No meeting scheduled" = "Aucune réunion prévue";
 "Join" = "Rejoindre";
+"Portal account" = "Compte du portail";
+"Manage portal accounts" = "Gérer les comptes du portail";
+"Add portal account" = "Ajouter un compte du portail";
+"Add your portal account to review applicants and manage referrals." = "Ajoutez votre compte du portail pour consulter les candidats et gérer vos recommandations.";
 "Portal access email sent." = "E-mail d'accès au portail envoyé.";
 "Request received. If your account is accepted, we'll email your portal link and token." = "Demande recue. Si votre compte est accepte, nous enverrons votre lien de portail et votre jeton par e-mail.";
 "Request received. If your account is accepted, we'll email your portal link." = "Demande recue. Si votre compte est accepte, nous enverrons votre lien de portail par e-mail.";

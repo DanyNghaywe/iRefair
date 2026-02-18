@@ -243,6 +243,10 @@
 "Meeting" = "Meeting";
 "No meeting scheduled" = "No meeting scheduled";
 "Join" = "Join";
+"Portal account" = "Portal account";
+"Manage portal accounts" = "Manage portal accounts";
+"Add portal account" = "Add portal account";
+"Add your portal account to review applicants and manage referrals." = "Add your portal account to review applicants and manage referrals.";
 "Portal access email sent." = "Portal access email sent.";
 "Request received. If your account is accepted, we'll email your portal link and token." = "Request received. If your account is accepted, we'll email your portal link and token.";
 "Request received. If your account is accepted, we'll email your portal link." = "Request received. If your account is accepted, we'll email your portal link.";

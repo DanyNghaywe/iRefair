@@ -36,6 +36,7 @@ struct ReferrerPortalView: View {
     @State private var isLoading = false
     @State private var messages: [MessageTarget: InlineMessage] = [:]
 
+    @State private var isAccountManagerPresented = false
     @State private var selectedApplicant: ReferrerApplicant?
     private let loadingRows = 1
     private let referrerMetaSingleColumnBreakpoint: CGFloat = 340
@@ -60,10 +61,6 @@ struct ReferrerPortalView: View {
         !referrerPortalAccountStore.accounts.isEmpty
     }
 
-    private var isAuthenticated: Bool {
-        !accessToken.isEmpty
-    }
-
     var body: some View {
         IRefairForm {
             IRefairCardHeader(
@@ -79,51 +76,51 @@ struct ReferrerPortalView: View {
             }
 
             if hasAnySavedAccounts {
-                accountSwitcherSection
-            }
+                accountTopBarSection
 
-            signInSection
-
-            if let referrer {
-                referrerMeta(referrer)
-            }
-
-            if isLoading {
-                applicationsBlock {
-                    loadingApplicantsRows
+                if let referrer {
+                    referrerMeta(referrer)
                 }
-            } else if !applicants.isEmpty {
-                applicationsBlock {
-                    ForEach(applicants) { applicant in
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(applicant.displayName)
-                                .font(Theme.font(.headline, weight: .semibold))
-                            if let email = applicant.email {
-                                Text(email)
-                                    .font(Theme.font(.subheadline))
-                                    .foregroundStyle(Theme.muted)
+
+                if isLoading {
+                    applicationsBlock {
+                        loadingApplicantsRows
+                    }
+                } else if !applicants.isEmpty {
+                    applicationsBlock {
+                        ForEach(applicants) { applicant in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(applicant.displayName)
+                                    .font(Theme.font(.headline, weight: .semibold))
+                                if let email = applicant.email {
+                                    Text(email)
+                                        .font(Theme.font(.subheadline))
+                                        .foregroundStyle(Theme.muted)
+                                }
+                                if let status = applicant.status {
+                                    Text("\(l("Status")): \(status)")
+                                        .font(Theme.font(.caption))
+                                        .foregroundStyle(Theme.muted)
+                                }
+                                Button(l("Send feedback")) {
+                                    selectedApplicant = applicant
+                                }
+                                .buttonStyle(IRefairGhostButtonStyle())
                             }
-                            if let status = applicant.status {
-                                Text("\(l("Status")): \(status)")
-                                    .font(Theme.font(.caption))
-                                    .foregroundStyle(Theme.muted)
-                            }
-                            Button(l("Send feedback")) {
-                                selectedApplicant = applicant
-                            }
-                            .buttonStyle(IRefairGhostButtonStyle())
+                            .padding(.vertical, 4)
                         }
-                        .padding(.vertical, 4)
+                    }
+                } else if referrer != nil {
+                    applicationsBlock {
+                        IRefairTableEmptyState(
+                            title: l("No applications assigned"),
+                            description: l("Candidate applications will appear here once they're assigned to you. Check back soon for new referrals to review."),
+                            tone: .darkOnLight
+                        )
                     }
                 }
-            } else if referrer != nil {
-                applicationsBlock {
-                    IRefairTableEmptyState(
-                        title: l("No applications assigned"),
-                        description: l("Candidate applications will appear here once they're assigned to you. Check back soon for new referrals to review."),
-                        tone: .darkOnLight
-                    )
-                }
+            } else {
+                portalEmptyStateSection
             }
 
             if let globalMessage = messages[.global] {
@@ -141,9 +138,122 @@ struct ReferrerPortalView: View {
             guard count > 0 else { return }
             Task { await bootstrapSession() }
         }
+        .sheet(isPresented: $isAccountManagerPresented) {
+            portalAccountManagementSheet
+        }
         .sheet(item: $selectedApplicant) { applicant in
             FeedbackSheet(applicant: applicant, token: accessToken) {
                 Task { await loadPortal(messageTarget: nil) }
+            }
+        }
+    }
+
+    private var accountTopBarSection: some View {
+        IRefairSection {
+            HStack(alignment: .center, spacing: 10) {
+                Menu {
+                    ForEach(referrerPortalAccountStore.accounts) { account in
+                        Button {
+                            Task { await switchPortalAccount(to: account.normalizedIrref) }
+                        } label: {
+                            if account.normalizedIrref == activeAccount?.normalizedIrref {
+                                Label(account.pickerLabel, systemImage: "checkmark")
+                            } else {
+                                Text(account.pickerLabel)
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 10) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(l("Portal account"))
+                                .font(Theme.font(size: 11, weight: .bold))
+                                .foregroundStyle(Color.white.opacity(0.78))
+                                .textCase(.uppercase)
+                                .kerning(2.0)
+                            Text(activeAccountLabel)
+                                .font(Theme.font(.subheadline, weight: .semibold))
+                                .foregroundStyle(Color.white)
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        if referrerPortalAccountStore.accounts.count > 1 {
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.white.opacity(0.78))
+                        }
+                    }
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.white.opacity(0.08))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(referrerPortalAccountStore.accounts.count < 2)
+
+                Button {
+                    isAccountManagerPresented = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(Color.white)
+                        .frame(width: 44, height: 44)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color.white.opacity(0.12))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(Color.white.opacity(0.24), lineWidth: 1)
+                                )
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(l("Manage portal accounts"))
+            }
+
+            if let message = messages[.switchAccount] {
+                StatusBanner(text: message.text, style: message.style)
+            }
+        }
+    }
+
+    private var portalEmptyStateSection: some View {
+        IRefairSection {
+            IRefairTableEmptyState(
+                title: l("Sign in to your portal"),
+                description: l("Add your portal account to review applicants and manage referrals."),
+                tone: .lightOnDark
+            )
+            Button(l("Add portal account")) {
+                isAccountManagerPresented = true
+            }
+            .buttonStyle(IRefairPrimaryButtonStyle(fillWidth: true))
+            .disabled(isBusySigningOut)
+        }
+    }
+
+    private var portalAccountManagementSheet: some View {
+        NavigationStack {
+            IRefairScreen {
+                IRefairForm {
+                    if hasAnySavedAccounts {
+                        accountSwitcherSection
+                    }
+                    signInSection
+                }
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(l("Close")) { isAccountManagerPresented = false }
+                    }
+                }
             }
         }
     }
