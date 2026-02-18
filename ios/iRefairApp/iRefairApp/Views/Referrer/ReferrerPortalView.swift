@@ -568,9 +568,12 @@ struct ReferrerPortalView: View {
     @MainActor
     private func bootstrapSession() async {
         clearMessage(for: .global)
+        clearMessage(for: .switchAccount)
+
+        let startupMessageTarget: MessageTarget = hasAnySavedAccounts ? .switchAccount : .global
 
         guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
-            setMessage(l("App configuration is missing API base URL."), style: .error, for: .global)
+            setMessage(l("App configuration is missing API base URL."), style: .error, for: startupMessageTarget)
             return
         }
 
@@ -581,7 +584,10 @@ struct ReferrerPortalView: View {
         }
 
         guard networkMonitor.isConnected else { return }
-        guard let activeAccount else { return }
+        guard let activeAccount else {
+            setMessage(l("No portal account selected."), style: .error, for: startupMessageTarget)
+            return
+        }
 
         if handledPendingPortalToken && !accessToken.isEmpty {
             return
@@ -589,10 +595,13 @@ struct ReferrerPortalView: View {
 
         if accessToken.isEmpty {
             let refreshed = await refreshSession(for: activeAccount.normalizedIrref)
-            guard refreshed else { return }
+            guard refreshed else {
+                setMessage(l("Session expired. Please sign in again."), style: .error, for: startupMessageTarget)
+                return
+            }
         }
 
-        await loadPortal(messageTarget: nil)
+        await loadPortal(messageTarget: startupMessageTarget, showSuccessMessage: false)
     }
 
     @MainActor
@@ -818,7 +827,7 @@ struct ReferrerPortalView: View {
     }
 
     @MainActor
-    private func loadPortal(messageTarget: MessageTarget? = .loadPortal) async {
+    private func loadPortal(messageTarget: MessageTarget? = .loadPortal, showSuccessMessage: Bool = true) async {
         if let messageTarget {
             clearMessage(for: messageTarget)
         }
@@ -870,7 +879,13 @@ struct ReferrerPortalView: View {
             }
             applicants = response.applicants ?? []
             totalReferrals = response.total
-            if let messageTarget {
+            if referrer == nil, applicants.isEmpty {
+                if let messageTarget {
+                    setMessage(l("Unable to load your details."), style: .error, for: messageTarget)
+                }
+                return
+            }
+            if let messageTarget, showSuccessMessage {
                 setMessage(
                     String.localizedStringWithFormat(l("Loaded %d applicants."), applicants.count),
                     style: .success,
@@ -892,7 +907,13 @@ struct ReferrerPortalView: View {
                     }
                     applicants = retryResponse.applicants ?? []
                     totalReferrals = retryResponse.total
-                    if let messageTarget {
+                    if referrer == nil, applicants.isEmpty {
+                        if let messageTarget {
+                            setMessage(l("Unable to load your details."), style: .error, for: messageTarget)
+                        }
+                        return
+                    }
+                    if let messageTarget, showSuccessMessage {
                         setMessage(
                             String.localizedStringWithFormat(l("Loaded %d applicants."), applicants.count),
                             style: .success,
