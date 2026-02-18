@@ -260,74 +260,62 @@ struct ReferrerPortalView: View {
 
     private var accountSwitcherSection: some View {
         IRefairSection(l("Portal accounts")) {
-            if referrerPortalAccountStore.accounts.count > 1 {
-                IRefairField(l("Active portal")) {
-                    Picker(
-                        l("Active portal"),
-                        selection: Binding(
-                            get: { activeAccount?.normalizedIrref ?? "" },
-                            set: { selectedIrref in
-                                Task { await switchPortalAccount(to: selectedIrref) }
-                            }
-                        )
-                    ) {
-                        ForEach(referrerPortalAccountStore.accounts) { account in
-                            Text(account.pickerLabel).tag(account.normalizedIrref)
-                        }
-                    }
-                    .pickerStyle(.menu)
+            ForEach(referrerPortalAccountStore.accounts) { account in
+                portalAccountRow(account)
+                if account.id != referrerPortalAccountStore.accounts.last?.id {
+                    Divider()
+                        .background(Color.white.opacity(0.16))
                 }
-            } else {
-                Text(activeAccountLabel)
-                    .font(Theme.font(.subheadline, weight: .semibold))
-                    .foregroundStyle(Color.white)
             }
 
-            if let message = messages[.switchAccount] {
+            if let message = messages[.signOut] {
                 StatusBanner(text: message.text, style: message.style)
             }
 
-            if hasActiveAccount {
-                HStack(alignment: .top, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Button(l("Load portal data")) {
-                            Task { await loadPortal(messageTarget: .loadPortal) }
-                        }
-                        .buttonStyle(IRefairPrimaryButtonStyle(fillWidth: true))
-                        .disabled(isLoading || !networkMonitor.isConnected || isBusySigningOut)
-
-                        if let message = messages[.loadPortal] {
-                            StatusBanner(text: message.text, style: message.style)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    VStack(alignment: .leading, spacing: 8) {
-                        Button(l("Sign out this portal")) {
-                            Task { await signOut() }
-                        }
-                        .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
-                        .disabled(isBusySigningOut)
-
-                        if let message = messages[.signOut] {
-                            StatusBanner(text: message.text, style: message.style)
-                        }
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            if referrerPortalAccountStore.accounts.count > 1 {
+                Button(l("Sign out all portals")) {
+                    Task { await signOutAll() }
                 }
+                .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
+                .disabled(isBusySigningOut)
 
-                if referrerPortalAccountStore.accounts.count > 1 {
-                    Button(l("Sign out all portals")) {
-                        Task { await signOutAll() }
-                    }
-                    .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
-                    .disabled(isBusySigningOut)
-
-                    if let message = messages[.signOutAll] {
-                        StatusBanner(text: message.text, style: message.style)
-                    }
+                if let message = messages[.signOutAll] {
+                    StatusBanner(text: message.text, style: message.style)
                 }
             }
+        }
+    }
+
+    private func portalAccountRow(_ account: ReferrerPortalAccount) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .center, spacing: 8) {
+                    if account.normalizedIrref == activeAccount?.normalizedIrref {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Theme.accentPrimary)
+                    }
+
+                    Text(account.pickerLabel)
+                        .font(Theme.font(.subheadline, weight: .semibold))
+                        .foregroundStyle(Color.white)
+                        .lineLimit(2)
+                }
+
+                if !account.email.isEmpty {
+                    Text(account.email)
+                        .font(Theme.font(.caption))
+                        .foregroundStyle(Color.white.opacity(0.78))
+                        .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button(l("Sign out")) {
+                Task { await signOutPortalAccount(irref: account.normalizedIrref) }
+            }
+            .buttonStyle(IRefairGhostButtonStyle())
+            .disabled(isBusySigningOut)
         }
     }
 
@@ -771,34 +759,38 @@ struct ReferrerPortalView: View {
     }
 
     @MainActor
-    private func signOut() async {
+    private func signOutPortalAccount(irref: String) async {
         clearMessage(for: .signOut)
+        clearMessage(for: .signOutAll)
         clearMessage(for: .switchAccount)
 
-        guard let activeAccount else {
+        let normalizedIrref = irref.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !normalizedIrref.isEmpty else {
             setMessage(l("No portal account selected."), style: .error, for: .signOut)
             return
         }
+        guard referrerPortalAccountStore.account(for: normalizedIrref) != nil else { return }
 
         isSigningOut = true
         defer { isSigningOut = false }
 
-        let refreshToken = referrerPortalAccountStore.refreshToken(for: activeAccount.normalizedIrref)
+        let refreshToken = referrerPortalAccountStore.refreshToken(for: normalizedIrref)
         if !refreshToken.isEmpty {
             _ = try? await APIClient.logoutReferrerMobileSession(baseURL: apiBaseURL, refreshToken: refreshToken)
         }
 
-        referrerPortalAccountStore.removeAccount(irref: activeAccount.normalizedIrref)
-        accessToken = ""
-        clearPortalData()
+        let wasActiveAccount = activeAccount?.normalizedIrref == normalizedIrref
+        referrerPortalAccountStore.removeAccount(irref: normalizedIrref)
 
-        if referrerPortalAccountStore.activeAccount != nil {
-            setMessage(l("Signed out of this portal account."), style: .success, for: .signOut)
-            if networkMonitor.isConnected {
-                await loadPortal(messageTarget: .switchAccount)
-            }
-        } else {
+        if wasActiveAccount {
+            accessToken = ""
+            clearPortalData()
+        }
+
+        if referrerPortalAccountStore.accounts.isEmpty {
             setMessage(l("Signed out."), style: .success, for: .signOut)
+        } else {
+            setMessage(l("Signed out of this portal account."), style: .success, for: .signOut)
         }
     }
 
