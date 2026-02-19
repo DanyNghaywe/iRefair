@@ -1552,12 +1552,12 @@ struct ApplicantPortalView: View {
     private var signInSection: some View {
         IRefairSection(l("Sign in to your applicant portal")) {
             IRefairField(l("Applicant ID (iRAIN) *")) {
-                IRefairTextField(l("Enter your iRAIN (legacy CAND-... also accepted)"), text: $loginIrain)
+                IRefairTextField("", text: $loginIrain)
                     .textInputAutocapitalization(.characters)
                     .autocorrectionDisabled()
             }
             IRefairField(l("Applicant Key *")) {
-                IRefairSecureField(l("Enter the Applicant Key from your email"), text: $loginApplicantKey)
+                IRefairSecureField("", text: $loginApplicantKey)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
             }
@@ -1576,6 +1576,7 @@ struct ApplicantPortalView: View {
                 .frame(maxWidth: .infinity)
             }
             .buttonStyle(IRefairPrimaryButtonStyle(fillWidth: true))
+            .padding(.top, Theme.fieldLabelGap)
             .disabled(isSigningIn || !networkMonitor.isConnected || isBusySigningOut)
 
             if let message = messages[.signIn] {
