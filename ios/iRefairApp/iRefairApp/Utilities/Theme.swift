@@ -26,11 +26,15 @@ enum Theme {
     static let info = accentPrimary
 
     static let backgroundBase = Color(hex: 0x0F343C)
-    static let backgroundStart = Color(red: 223.0 / 255.0, green: 243.0 / 255.0, blue: 248.0 / 255.0).opacity(0.54)
-    static let backgroundMid = Color(red: 19.0 / 255.0, green: 80.0 / 255.0, blue: 88.0 / 255.0).opacity(0.62)
-    static let backgroundEnd = Color(hex: 0x0B2B32)
-    static let backgroundOverlayStart = Color(red: 19.0 / 255.0, green: 80.0 / 255.0, blue: 88.0 / 255.0).opacity(0.22)
-    static let backgroundOverlayEnd = Color(red: 19.0 / 255.0, green: 80.0 / 255.0, blue: 88.0 / 255.0).opacity(0.82)
+    static let backgroundBodyStart = Color(red: 223.0 / 255.0, green: 243.0 / 255.0, blue: 248.0 / 255.0).opacity(0.42)
+    static let backgroundBodyMid = Color(red: 19.0 / 255.0, green: 80.0 / 255.0, blue: 88.0 / 255.0).opacity(0.58)
+    static let backgroundBodyEnd = Color(hex: 0x0F343C)
+    static let backgroundHeroStart = Color(red: 223.0 / 255.0, green: 243.0 / 255.0, blue: 248.0 / 255.0).opacity(0.36)
+    static let backgroundHeroMid = Color(red: 19.0 / 255.0, green: 80.0 / 255.0, blue: 88.0 / 255.0).opacity(0.62)
+    static let backgroundHeroEnd = Color(hex: 0x0B2B32)
+    static let backgroundHeroOpacity = 0.88
+    static let backgroundOverlayStart = Color(red: 19.0 / 255.0, green: 80.0 / 255.0, blue: 88.0 / 255.0).opacity(0.10)
+    static let backgroundOverlayEnd = Color(red: 19.0 / 255.0, green: 80.0 / 255.0, blue: 88.0 / 255.0).opacity(0.64)
 
     static let boardRadius: CGFloat = 24
     static let glassRadius: CGFloat = 20
@@ -158,36 +162,123 @@ enum Theme {
 struct IRefairBackground: View {
     var body: some View {
         GeometryReader { proxy in
-            let size = max(proxy.size.width, proxy.size.height)
+            let viewportSize = resolvedViewportSize(fallback: proxy.size)
             ZStack {
-                Group {
-                    Theme.backgroundBase
-                    RadialGradient(
-                        gradient: Gradient(stops: [
-                            .init(color: Theme.backgroundStart, location: 0),
-                            .init(color: Theme.backgroundMid, location: 0.44),
-                            .init(color: Theme.backgroundEnd, location: 1),
-                        ]),
-                        center: UnitPoint(x: 0.5, y: 0.32),
-                        startRadius: 0,
-                        endRadius: size
-                    )
-                }
-                .opacity(0.88)
-                RadialGradient(
-                    gradient: Gradient(stops: [
-                        .init(color: Theme.backgroundOverlayStart, location: 0),
-                        .init(color: Theme.backgroundOverlayEnd, location: 0.7),
-                    ]),
-                    center: .center,
-                    startRadius: 0,
-                    endRadius: size
+                Theme.backgroundBase
+                EllipticalRadialGradientLayer(
+                    stops: [
+                        .init(color: Theme.backgroundBodyStart, location: 0),
+                        .init(color: Theme.backgroundBodyMid, location: 0.42),
+                        .init(color: Theme.backgroundBodyEnd, location: 1),
+                    ],
+                    center: UnitPoint(x: 0.5, y: 0.30)
                 )
-                .blendMode(.screen)
-                ParticlesBackground(size: proxy.size)
+                ZStack {
+                    EllipticalRadialGradientLayer(
+                        stops: [
+                            .init(color: Theme.backgroundHeroStart, location: 0),
+                            .init(color: Theme.backgroundHeroMid, location: 0.44),
+                            .init(color: Theme.backgroundHeroEnd, location: 1),
+                        ],
+                        center: UnitPoint(x: 0.5, y: 0.32)
+                    )
+                    EllipticalRadialGradientLayer(
+                        stops: [
+                            .init(color: Theme.backgroundOverlayStart, location: 0),
+                            .init(color: Theme.backgroundOverlayEnd, location: 0.7),
+                        ],
+                        center: .center
+                    )
+                    .blendMode(.screen)
+                }
+                .opacity(Theme.backgroundHeroOpacity)
+                ParticlesBackground(size: viewportSize)
             }
+            .frame(width: viewportSize.width, height: viewportSize.height, alignment: .topLeading)
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
             .ignoresSafeArea()
         }
+    }
+}
+
+private func resolvedViewportSize(fallback: CGSize) -> CGSize {
+    #if os(iOS)
+    let sceneSize = UIApplication.shared.connectedScenes
+        .compactMap { $0 as? UIWindowScene }
+        .flatMap { $0.windows }
+        .first(where: { $0.isKeyWindow })?
+        .bounds
+        .size
+    let screenSize = UIScreen.main.bounds.size
+    let width = max(fallback.width, sceneSize?.width ?? 0, screenSize.width)
+    let height = max(fallback.height, sceneSize?.height ?? 0, screenSize.height)
+    return CGSize(width: width, height: height)
+    #else
+    return fallback
+    #endif
+}
+
+private struct EllipticalRadialGradientLayer: View {
+    let stops: [Gradient.Stop]
+    let center: UnitPoint
+
+    var body: some View {
+        Canvas { context, size in
+            guard size.width > 0, size.height > 0 else { return }
+
+            let centerPoint = CGPoint(x: size.width * center.x, y: size.height * center.y)
+            let baseXRadius = max(centerPoint.x, size.width - centerPoint.x)
+            let baseYRadius = max(centerPoint.y, size.height - centerPoint.y)
+            guard baseXRadius > 0, baseYRadius > 0 else { return }
+
+            // CSS `radial-gradient(ellipse ...)` defaults to `farthest-corner`.
+            // Scale side-based radii so the ellipse reaches the farthest corner.
+            let corners: [CGPoint] = [
+                .init(x: 0, y: 0),
+                .init(x: size.width, y: 0),
+                .init(x: 0, y: size.height),
+                .init(x: size.width, y: size.height),
+            ]
+            let farthestCornerScale = corners
+                .map { corner -> CGFloat in
+                    let dx = abs(corner.x - centerPoint.x) / baseXRadius
+                    let dy = abs(corner.y - centerPoint.y) / baseYRadius
+                    return sqrt((dx * dx) + (dy * dy))
+                }
+                .max() ?? 1
+
+            let xRadius = baseXRadius * farthestCornerScale
+            let yRadius = baseYRadius * farthestCornerScale
+            let maxRadius = max(xRadius, yRadius)
+            guard maxRadius > 0 else { return }
+
+            let scaleX = xRadius / maxRadius
+            let scaleY = yRadius / maxRadius
+            let shading = GraphicsContext.Shading.radialGradient(
+                Gradient(stops: stops),
+                center: centerPoint,
+                startRadius: 0,
+                endRadius: maxRadius
+            )
+
+            context.drawLayer { layer in
+                var transform = CGAffineTransform.identity
+                transform = transform.translatedBy(x: centerPoint.x, y: centerPoint.y)
+                transform = transform.scaledBy(x: scaleX, y: scaleY)
+                transform = transform.translatedBy(x: -centerPoint.x, y: -centerPoint.y)
+                layer.concatenate(transform)
+
+                let padding = maxRadius * 2
+                let fillRect = CGRect(
+                    x: -padding,
+                    y: -padding,
+                    width: size.width + (padding * 2),
+                    height: size.height + (padding * 2)
+                )
+                layer.fill(Path(fillRect), with: shading)
+            }
+        }
+        .allowsHitTesting(false)
     }
 }
 
