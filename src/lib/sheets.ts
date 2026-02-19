@@ -770,6 +770,84 @@ function formatSheetSyncActionLabel(action: SheetSyncAction) {
   }
 }
 
+async function reconcileMissingSheetUpdateFromDb(
+  action: Extract<SheetSyncAction, { type: 'updateRowById' }>,
+): Promise<'appended' | 'source_missing' | 'unavailable'> {
+  if (!SHEET_DB_ENABLED) {
+    return 'unavailable';
+  }
+
+  let sourceHeaders = await getCachedHeaders(action.sheetName, 'db');
+  if (!sourceHeaders.length) {
+    if (action.headers?.length) {
+      sourceHeaders = action.headers;
+    } else {
+      sourceHeaders = getDefaultHeadersForSheet(action.sheetName);
+    }
+  }
+  if (!sourceHeaders.length) {
+    return 'unavailable';
+  }
+
+  const idIndex = headerIndex(sourceHeaders, action.idHeaderName);
+  if (idIndex === -1) {
+    return 'unavailable';
+  }
+
+  const normalizedId = action.idValue.trim().toLowerCase();
+  const rows = await db.sheetRow.findMany({
+    where: { sheetName: action.sheetName, deletedAt: null },
+    select: { values: true },
+  });
+  const sourceRow = rows.find((row) => {
+    const values = Array.isArray(row.values) ? (row.values as SheetRows[number]) : [];
+    return cellValue(values, idIndex).toLowerCase() === normalizedId;
+  });
+
+  if (!sourceRow) {
+    return 'source_missing';
+  }
+
+  const sourceValues = Array.isArray(sourceRow.values) ? (sourceRow.values as SheetRows[number]) : [];
+  const sourceMap = buildHeaderMap(sourceHeaders);
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+  const headerRow = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: `${action.sheetName}!1:1`,
+  });
+  let targetHeaders = (headerRow.data.values?.[0] ?? []).map((value) => String(value));
+  if (targetHeaders.length) {
+    headersCache.set(action.sheetName, targetHeaders);
+  }
+  if (!targetHeaders.length) {
+    targetHeaders = action.headers?.length ? action.headers : sourceHeaders;
+  }
+  if (!targetHeaders.length) {
+    return 'unavailable';
+  }
+
+  const rowToAppend = targetHeaders.map((header) => {
+    const index = sourceMap.get(header);
+    const value = index === undefined ? '' : sourceValues[index];
+    if (value === null || value === undefined) return '';
+    if (typeof value === 'number') return value;
+    return String(value);
+  });
+
+  const targetIdIndex = headerIndex(targetHeaders, action.idHeaderName);
+  if (targetIdIndex >= 0) {
+    const idValue = rowToAppend[targetIdIndex];
+    const normalized = String(idValue ?? '').trim().toLowerCase();
+    if (!normalized) {
+      rowToAppend[targetIdIndex] = action.idValue;
+    }
+  }
+
+  await appendRowInSheets(action.sheetName, rowToAppend);
+  return 'appended';
+}
+
 async function executeSheetSyncAction(action: SheetSyncAction) {
   const normalized = normalizeSheetSyncAction(action);
   switch (normalized.type) {
@@ -800,6 +878,13 @@ async function executeSheetSyncAction(action: SheetSyncAction) {
         normalized.patch,
       );
       if (!result.updated && result.reason === 'not_found') {
+        const reconcileResult = await reconcileMissingSheetUpdateFromDb(normalized);
+        if (reconcileResult === 'appended') {
+          return;
+        }
+        if (reconcileResult === 'source_missing') {
+          return;
+        }
         throw new Error(
           `Unable to update row in sheet "${normalized.sheetName}" for ${normalized.idHeaderName}.`,
         );
