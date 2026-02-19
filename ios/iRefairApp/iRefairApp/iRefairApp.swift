@@ -6,6 +6,7 @@ struct iRefairApp: App {
     @StateObject private var appState = AppState()
     @StateObject private var networkMonitor = NetworkMonitor()
     @StateObject private var referrerPortalAccountStore = ReferrerPortalAccountStore()
+    @StateObject private var applicantPortalAccountStore = ApplicantPortalAccountStore()
 
     init() {
         Telemetry.configure()
@@ -18,6 +19,7 @@ struct iRefairApp: App {
                 .environmentObject(appState)
                 .environmentObject(networkMonitor)
                 .environmentObject(referrerPortalAccountStore)
+                .environmentObject(applicantPortalAccountStore)
                 .onOpenURL { url in
                     handleDeepLink(url)
                 }
@@ -41,6 +43,13 @@ struct iRefairApp: App {
             appState.enqueuePendingReferrerPortalToken(token)
             appState.suggestRoleMode(.referrer)
             appState.selectTab(.referrerPortal)
+            return
+        }
+
+        let isApplicantPortalLink = (host.contains("applicant") || path.contains("applicant")) && (host.contains("portal") || path.contains("portal"))
+        if isApplicantPortalLink {
+            appState.suggestRoleMode(.applicant)
+            appState.selectTab(.applicantPortal)
             return
         }
 

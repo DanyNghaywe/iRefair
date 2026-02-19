@@ -72,6 +72,24 @@ struct IRefairTextField: View {
     }
 }
 
+struct IRefairSecureField: View {
+    private let title: String
+    @Binding private var text: String
+
+    @FocusState private var isFocused: Bool
+
+    init(_ title: String, text: Binding<String>) {
+        self.title = title
+        self._text = text
+    }
+
+    var body: some View {
+        SecureField(title, text: $text)
+            .focused($isFocused)
+            .environment(\.irefairInputFocused, isFocused)
+    }
+}
+
 struct IRefairTextFieldStyle: TextFieldStyle {
     @Environment(\.irefairInputFocused) private var isFocused
 

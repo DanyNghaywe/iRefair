@@ -55,8 +55,33 @@ enum APIClient {
         return try await sendJSON(url: url, payload: ["portalToken": trimmedPortalToken])
     }
 
+    static func exchangeApplicantMobileSession(
+        baseURL: String,
+        applicantId: String,
+        applicantKey: String
+    ) async throws -> ApplicantMobileAuthExchangeResponse {
+        let url = try makeURL(baseURL: baseURL, path: "/api/applicant/mobile/auth/exchange")
+        let trimmedApplicantId = applicantId.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedApplicantKey = applicantKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedApplicantId.isEmpty || trimmedApplicantKey.isEmpty {
+            throw APIError(message: "Missing applicant credentials.")
+        }
+        return try await sendJSON(
+            url: url,
+            payload: [
+                "applicantId": trimmedApplicantId,
+                "applicantKey": trimmedApplicantKey,
+            ]
+        )
+    }
+
     static func refreshReferrerMobileSession(baseURL: String, refreshToken: String) async throws -> ReferrerMobileAuthRefreshResponse {
         let url = try makeURL(baseURL: baseURL, path: "/api/referrer/mobile/auth/refresh")
+        return try await sendJSON(url: url, payload: ["refreshToken": refreshToken])
+    }
+
+    static func refreshApplicantMobileSession(baseURL: String, refreshToken: String) async throws -> ApplicantMobileAuthRefreshResponse {
+        let url = try makeURL(baseURL: baseURL, path: "/api/applicant/mobile/auth/refresh")
         return try await sendJSON(url: url, payload: ["refreshToken": refreshToken])
     }
 
@@ -65,8 +90,21 @@ enum APIClient {
         return try await sendJSON(url: url, payload: ["refreshToken": refreshToken])
     }
 
+    static func logoutApplicantMobileSession(baseURL: String, refreshToken: String) async throws -> ApplicantMobileAuthLogoutResponse {
+        let url = try makeURL(baseURL: baseURL, path: "/api/applicant/mobile/auth/logout")
+        return try await sendJSON(url: url, payload: ["refreshToken": refreshToken])
+    }
+
     static func loadReferrerPortal(baseURL: String, token: String) async throws -> ReferrerPortalDataResponse {
         let url = try makeURL(baseURL: baseURL, path: "/api/referrer/portal/data")
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        return try await sendWithRetry(request, retries: 2)
+    }
+
+    static func loadApplicantPortal(baseURL: String, token: String) async throws -> ApplicantPortalDataResponse {
+        let url = try makeURL(baseURL: baseURL, path: "/api/applicant/mobile/portal/data")
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")

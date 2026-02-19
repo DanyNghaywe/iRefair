@@ -584,10 +584,7 @@ struct ReferrerPortalView: View {
         }
 
         guard networkMonitor.isConnected else { return }
-        guard let activeAccount else {
-            setMessage(l("No portal account selected."), style: .error, for: startupMessageTarget)
-            return
-        }
+        guard let activeAccount else { return }
 
         if handledPendingPortalToken && !accessToken.isEmpty {
             return
@@ -832,12 +829,7 @@ struct ReferrerPortalView: View {
             clearMessage(for: messageTarget)
         }
 
-        guard let activeAccount else {
-            if let messageTarget {
-                setMessage(l("No portal account selected."), style: .error, for: messageTarget)
-            }
-            return
-        }
+        guard let activeAccount else { return }
         let activeIrref = activeAccount.normalizedIrref
 
         guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {

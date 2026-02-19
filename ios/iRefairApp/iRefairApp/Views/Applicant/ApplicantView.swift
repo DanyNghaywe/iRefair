@@ -1215,3 +1215,1064 @@ struct ApplicantView: View {
     ApplicantView()
         .environmentObject(NetworkMonitor())
 }
+
+struct ApplicantPortalView: View {
+    private enum MessageTarget: Hashable {
+        case signIn
+        case switchAccount
+        case loadPortal
+        case signOut
+        case signOutAll
+        case global
+    }
+
+    private struct InlineMessage {
+        let text: String
+        let style: StatusBanner.Style
+    }
+
+    private let apiBaseURL: String = APIConfig.baseURL
+    private let applicationsPageSize = 10
+    private let loadingRows = 2
+
+    @EnvironmentObject private var networkMonitor: NetworkMonitor
+    @EnvironmentObject private var applicantPortalAccountStore: ApplicantPortalAccountStore
+
+    @State private var accessToken = ""
+    @State private var loginIrain = ""
+    @State private var loginApplicantKey = ""
+    @State private var didBootstrapSession = false
+    @State private var isSigningIn = false
+    @State private var isSigningOut = false
+    @State private var isSigningOutAll = false
+
+    @State private var applicant: ApplicantPortalSummary?
+    @State private var applications: [ApplicantPortalApplication] = []
+    @State private var totalApplications: Int?
+    @State private var isLoading = false
+    @State private var messages: [MessageTarget: InlineMessage] = [:]
+    @State private var applicationsPage = 1
+
+    @State private var isAccountManagerPresented = false
+
+    private static let isoTimestampFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    private static let isoTimestampFallbackFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime]
+        return formatter
+    }()
+
+    private var hasAnySavedAccounts: Bool {
+        !applicantPortalAccountStore.accounts.isEmpty
+    }
+
+    private var activeAccount: ApplicantPortalAccount? {
+        applicantPortalAccountStore.activeAccount
+    }
+
+    private var activeAccountLabel: String {
+        activeAccount?.pickerLabel ?? l("No portal account selected.")
+    }
+
+    private var isBusySigningOut: Bool {
+        isSigningOut || isSigningOutAll
+    }
+
+    private var sortedApplications: [ApplicantPortalApplication] {
+        applications.sorted { lhs, rhs in
+            let lhsDate = parseTimestamp(lhs.timestamp)
+            let rhsDate = parseTimestamp(rhs.timestamp)
+            return lhsDate > rhsDate
+        }
+    }
+
+    private var applicationsTotalPages: Int {
+        max(1, Int(ceil(Double(max(sortedApplications.count, 1)) / Double(applicationsPageSize))))
+    }
+
+    private var validApplicationsPage: Int {
+        min(max(1, applicationsPage), applicationsTotalPages)
+    }
+
+    private var paginatedApplications: [ApplicantPortalApplication] {
+        let start = (validApplicationsPage - 1) * applicationsPageSize
+        guard start < sortedApplications.count else { return [] }
+        let end = min(start + applicationsPageSize, sortedApplications.count)
+        return Array(sortedApplications[start..<end])
+    }
+
+    private var totalApplicationsCount: Int {
+        totalApplications ?? applications.count
+    }
+
+    var body: some View {
+        IRefairForm {
+            IRefairCardHeader(
+                eyebrow: l("Applicant portal"),
+                title: l("Track your applications"),
+                lead: l("Review every iRefair application you've submitted from one place.")
+            )
+
+            if !networkMonitor.isConnected {
+                IRefairSection {
+                    StatusBanner(text: l("You're offline. Connect to the internet to load portal data."), style: .warning)
+                }
+            }
+
+            if hasAnySavedAccounts {
+                accountTopBarSection
+
+                if let applicant {
+                    applicantMeta(applicant)
+                }
+
+                if isLoading {
+                    applicationsBlock {
+                        loadingApplicantApplicationsRows
+                    }
+                } else if !sortedApplications.isEmpty {
+                    applicationsBlock {
+                        VStack(alignment: .leading, spacing: 12) {
+                            ForEach(paginatedApplications) { application in
+                                applicantApplicationRow(application)
+                            }
+                        }
+                        if applicationsTotalPages > 1 {
+                            paginationControls
+                        }
+                    }
+                } else if applicant != nil {
+                    applicationsBlock {
+                        IRefairTableEmptyState(
+                            title: l("No applications yet"),
+                            description: l("Your submitted applications will appear here once they are available."),
+                            tone: .darkOnLight
+                        )
+                    }
+                }
+            } else {
+                portalEmptyStateSection
+            }
+
+            if let globalMessage = messages[.global] {
+                IRefairSection {
+                    StatusBanner(text: globalMessage.text, style: globalMessage.style)
+                }
+            }
+        }
+        .onAppear {
+            guard !didBootstrapSession else { return }
+            didBootstrapSession = true
+            Task { await bootstrapSession() }
+        }
+        .onChange(of: applicantPortalAccountStore.activeAccountIrain) { _ in
+            applicationsPage = 1
+        }
+        .sheet(isPresented: $isAccountManagerPresented) {
+            portalAccountManagementSheet
+        }
+    }
+
+    private var accountTopBarSection: some View {
+        IRefairSection {
+            HStack(alignment: .center, spacing: 10) {
+                Menu {
+                    ForEach(applicantPortalAccountStore.accounts) { account in
+                        Button {
+                            Task { await switchPortalAccount(to: account.normalizedIrain) }
+                        } label: {
+                            if account.normalizedIrain == activeAccount?.normalizedIrain {
+                                Label(account.pickerLabel, systemImage: "checkmark")
+                            } else {
+                                Text(account.pickerLabel)
+                            }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 10) {
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(l("Portal account"))
+                                .font(Theme.font(size: 11, weight: .bold))
+                                .foregroundStyle(Color.white.opacity(0.78))
+                                .textCase(.uppercase)
+                                .kerning(2.0)
+                            Text(activeAccountLabel)
+                                .font(Theme.font(.subheadline, weight: .semibold))
+                                .foregroundStyle(Color.white)
+                                .lineLimit(1)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        if applicantPortalAccountStore.accounts.count > 1 {
+                            Image(systemName: "chevron.down")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(Color.white.opacity(0.78))
+                        }
+                    }
+                    .padding(.vertical, 10)
+                    .padding(.horizontal, 12)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.white.opacity(0.08))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+                .disabled(applicantPortalAccountStore.accounts.count < 2)
+
+                Button {
+                    isAccountManagerPresented = true
+                } label: {
+                    Image(systemName: "plus")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(Color.white)
+                        .frame(width: 44, height: 44)
+                        .background(
+                            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                .fill(Color.white.opacity(0.12))
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                                        .stroke(Color.white.opacity(0.24), lineWidth: 1)
+                                )
+                        )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel(l("Manage portal accounts"))
+            }
+
+            if let message = messages[.switchAccount] {
+                StatusBanner(text: message.text, style: message.style)
+            }
+        }
+    }
+
+    private var portalEmptyStateSection: some View {
+        IRefairSection {
+            IRefairTableEmptyState(
+                title: l("Sign in to your applicant portal"),
+                description: l("Add your applicant portal account to review all submitted applications."),
+                tone: .lightOnDark
+            )
+            Button(l("Add portal account")) {
+                isAccountManagerPresented = true
+            }
+            .buttonStyle(IRefairPrimaryButtonStyle(fillWidth: true))
+            .disabled(isBusySigningOut)
+        }
+    }
+
+    private var portalAccountManagementSheet: some View {
+        NavigationStack {
+            IRefairScreen {
+                IRefairForm {
+                    if hasAnySavedAccounts {
+                        accountSwitcherSection
+                    }
+                    signInSection
+                }
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button(l("Close")) { isAccountManagerPresented = false }
+                    }
+                }
+            }
+        }
+    }
+
+    private var accountSwitcherSection: some View {
+        IRefairSection(l("Portal accounts")) {
+            ForEach(applicantPortalAccountStore.accounts) { account in
+                portalAccountRow(account)
+                if account.id != applicantPortalAccountStore.accounts.last?.id {
+                    Divider()
+                        .background(Color.white.opacity(0.16))
+                }
+            }
+
+            if let message = messages[.signOut] {
+                StatusBanner(text: message.text, style: message.style)
+            }
+
+            if applicantPortalAccountStore.accounts.count > 1 {
+                Button(l("Sign out all portals")) {
+                    Task { await signOutAll() }
+                }
+                .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
+                .disabled(isBusySigningOut)
+
+                if let message = messages[.signOutAll] {
+                    StatusBanner(text: message.text, style: message.style)
+                }
+            }
+        }
+    }
+
+    private func portalAccountRow(_ account: ApplicantPortalAccount) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .center, spacing: 8) {
+                    if account.normalizedIrain == activeAccount?.normalizedIrain {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(Theme.accentPrimary)
+                    }
+
+                    Text(account.pickerLabel)
+                        .font(Theme.font(.subheadline, weight: .semibold))
+                        .foregroundStyle(Color.white)
+                        .lineLimit(2)
+                }
+
+                if !account.email.isEmpty {
+                    Text(account.email)
+                        .font(Theme.font(.caption))
+                        .foregroundStyle(Color.white.opacity(0.78))
+                        .lineLimit(1)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Button(l("Sign out")) {
+                Task { await signOutPortalAccount(irain: account.normalizedIrain) }
+            }
+            .buttonStyle(IRefairGhostButtonStyle())
+            .disabled(isBusySigningOut)
+        }
+    }
+
+    private var signInSection: some View {
+        IRefairSection(l("Sign in to your applicant portal")) {
+            IRefairField(l("Applicant ID (iRAIN) *")) {
+                IRefairTextField(l("Enter your iRAIN (legacy CAND-... also accepted)"), text: $loginIrain)
+                    .textInputAutocapitalization(.characters)
+                    .autocorrectionDisabled()
+            }
+            IRefairField(l("Applicant Key *")) {
+                IRefairSecureField(l("Enter the Applicant Key from your email"), text: $loginApplicantKey)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+            }
+
+            Button {
+                Task { await signInToPortal() }
+            } label: {
+                HStack(spacing: 8) {
+                    if isSigningIn {
+                        ProgressView()
+                            .tint(.white)
+                            .scaleEffect(0.9)
+                    }
+                    Text(isSigningIn ? l("Signing in...") : l("Sign in to portal"))
+                }
+                .frame(maxWidth: .infinity)
+            }
+            .buttonStyle(IRefairPrimaryButtonStyle(fillWidth: true))
+            .disabled(isSigningIn || !networkMonitor.isConnected || isBusySigningOut)
+
+            if let message = messages[.signIn] {
+                StatusBanner(text: message.text, style: message.style)
+            }
+
+            Text(l("Use the iRAIN and Applicant Key from your registration email."))
+                .font(Theme.font(.caption))
+                .foregroundStyle(Color.white.opacity(0.86))
+        }
+    }
+
+    private func applicationsSection<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        IRefairSection {
+            content()
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    private func applicationsBlock<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            applicationsHeader
+            applicationsSection {
+                content()
+            }
+        }
+    }
+
+    private var applicationsHeader: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text(l("My applications"))
+                    .font(Theme.font(size: 12, weight: .bold))
+                    .foregroundStyle(Color.white.opacity(0.85))
+                    .textCase(.uppercase)
+                    .kerning(2.4)
+                Text("\(sortedApplications.count) \(l("active applications"))")
+                    .font(Theme.font(size: 14))
+                    .foregroundStyle(Color.white.opacity(0.75))
+            }
+
+            Text("\(totalApplicationsCount) \(l("total"))")
+                .font(Theme.font(size: 13, weight: .semibold))
+                .foregroundStyle(Theme.ink)
+                .padding(.vertical, 8)
+                .padding(.horizontal, 14)
+                .frame(minHeight: 36)
+                .background(
+                    Capsule(style: .continuous)
+                        .fill(Color.white.opacity(0.7))
+                        .overlay(
+                            Capsule(style: .continuous)
+                                .stroke(Color(hex: 0x0F172A).opacity(0.12), lineWidth: 1)
+                        )
+                )
+                .shadow(color: Color(hex: 0x0F172A).opacity(0.06), radius: 6, x: 0, y: 2)
+                .fixedSize(horizontal: true, vertical: false)
+        }
+    }
+
+    private func applicantMeta(_ applicant: ApplicantPortalSummary) -> some View {
+        LazyVGrid(
+            columns: [
+                GridItem(.flexible(minimum: 0), spacing: 16, alignment: .leading),
+                GridItem(.flexible(minimum: 0), spacing: 16, alignment: .leading),
+            ],
+            alignment: .leading,
+            spacing: 12
+        ) {
+            metaItem(
+                title: l("Applicant"),
+                value: "\(applicant.displayName) - \(applicant.irain)"
+            )
+            metaItem(
+                title: l("Email"),
+                value: applicant.email.isEmpty ? l("No email on file") : applicant.email
+            )
+            metaItem(
+                title: l("Total"),
+                value: "\(totalApplicationsCount)"
+            )
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 2)
+    }
+
+    private func metaItem(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Text(title)
+                .font(Theme.font(size: 11, weight: .bold))
+                .foregroundStyle(Color.white.opacity(0.82))
+                .textCase(.uppercase)
+                .kerning(2.0)
+            Text(value)
+                .font(Theme.font(size: 15, weight: .semibold))
+                .foregroundStyle(Color.white)
+                .lineLimit(nil)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var loadingApplicantApplicationsRows: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            ForEach(0..<loadingRows, id: \.self) { index in
+                VStack(alignment: .leading, spacing: 8) {
+                    IRefairSkeletonBlock(height: 16, cornerRadius: 8, delay: Double(index) * 0.04)
+                    IRefairSkeletonBlock(height: 12, cornerRadius: 8, delay: Double(index) * 0.04 + 0.03)
+                    IRefairSkeletonBlock(height: 12, cornerRadius: 8, delay: Double(index) * 0.04 + 0.06)
+                }
+                .padding(14)
+                .background(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .fill(Color.white.opacity(0.6))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(Color(hex: 0x0F172A).opacity(0.09), lineWidth: 1)
+                        )
+                )
+            }
+        }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(l("Loading..."))
+    }
+
+    private var paginationControls: some View {
+        HStack(spacing: 10) {
+            Button {
+                applicationsPage = 1
+            } label: {
+                Text("<<")
+            }
+            .buttonStyle(IRefairGhostButtonStyle())
+            .disabled(validApplicationsPage == 1)
+
+            Button {
+                applicationsPage = max(1, validApplicationsPage - 1)
+            } label: {
+                Text("<")
+            }
+            .buttonStyle(IRefairGhostButtonStyle())
+            .disabled(validApplicationsPage == 1)
+
+            Text(
+                String.localizedStringWithFormat(
+                    l("Page %d of %d"),
+                    validApplicationsPage,
+                    applicationsTotalPages
+                )
+            )
+            .font(Theme.font(size: 13, weight: .semibold))
+            .foregroundStyle(Theme.ink)
+
+            Button {
+                applicationsPage = min(applicationsTotalPages, validApplicationsPage + 1)
+            } label: {
+                Text(">")
+            }
+            .buttonStyle(IRefairGhostButtonStyle())
+            .disabled(validApplicationsPage == applicationsTotalPages)
+
+            Button {
+                applicationsPage = applicationsTotalPages
+            } label: {
+                Text(">>")
+            }
+            .buttonStyle(IRefairGhostButtonStyle())
+            .disabled(validApplicationsPage == applicationsTotalPages)
+        }
+        .padding(.top, 8)
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+
+    private func applicantApplicationRow(_ application: ApplicantPortalApplication) -> some View {
+        let normalizedStatus = (application.status ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let hasMeeting = normalizedStatus == "meeting scheduled"
+            && !(application.meetingDate ?? "").isEmpty
+            && !(application.meetingTime ?? "").isEmpty
+        let timestamp = parseTimestamp(application.timestamp)
+        let dateLabel = timestamp == .distantPast
+            ? ""
+            : DateFormatter.localizedString(from: timestamp, dateStyle: .medium, timeStyle: .none)
+        let meetingDetails = hasMeeting
+            ? formatMeetingDetails(date: application.meetingDate, time: application.meetingTime, timezone: application.meetingTimezone)
+            : l("No meeting scheduled")
+
+        return VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 10) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(application.id)
+                        .font(Theme.font(.headline, weight: .semibold))
+                        .foregroundStyle(Theme.ink)
+                    if !dateLabel.isEmpty {
+                        Text(dateLabel)
+                            .font(Theme.font(.caption))
+                            .foregroundStyle(Theme.muted)
+                    }
+                }
+                Spacer(minLength: 12)
+                Text(localizedApplicationStatus(application.status))
+                    .font(Theme.font(size: 12, weight: .semibold))
+                    .foregroundStyle(statusColor(for: application.status))
+                    .padding(.vertical, 5)
+                    .padding(.horizontal, 10)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(statusColor(for: application.status).opacity(0.12))
+                            .overlay(
+                                Capsule(style: .continuous)
+                                    .stroke(statusColor(for: application.status).opacity(0.28), lineWidth: 1)
+                            )
+                    )
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(application.position?.isEmpty == false ? application.position ?? "" : "-")
+                    .font(Theme.font(size: 15, weight: .semibold))
+                    .foregroundStyle(Theme.ink)
+                Text("\(l("iRCRN")): \(application.iCrn?.isEmpty == false ? application.iCrn ?? "" : "-")")
+                    .font(Theme.font(.caption))
+                    .foregroundStyle(Theme.muted)
+            }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(l("Meeting"))
+                    .font(Theme.font(size: 12, weight: .semibold))
+                    .foregroundStyle(Theme.muted)
+                Text(meetingDetails)
+                    .font(Theme.font(size: 13))
+                    .foregroundStyle(hasMeeting ? Theme.ink : Theme.muted)
+                if hasMeeting,
+                   let urlString = application.meetingUrl,
+                   let meetingURL = URL(string: urlString),
+                   !urlString.isEmpty
+                {
+                    Link(l("Join"), destination: meetingURL)
+                        .font(Theme.font(size: 13, weight: .semibold))
+                        .foregroundStyle(Theme.accentPrimary)
+                }
+            }
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.white.opacity(0.7))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color(hex: 0x0F172A).opacity(0.1), lineWidth: 1)
+                )
+        )
+    }
+
+    private func parseTimestamp(_ value: String?) -> Date {
+        let trimmed = (value ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmed.isEmpty {
+            return .distantPast
+        }
+        if let parsed = Self.isoTimestampFormatter.date(from: trimmed) {
+            return parsed
+        }
+        if let parsed = Self.isoTimestampFallbackFormatter.date(from: trimmed) {
+            return parsed
+        }
+        return .distantPast
+    }
+
+    private func localizedApplicationStatus(_ status: String?) -> String {
+        let normalized = (status ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let fr = AppLocale.languageCode == "fr"
+        switch normalized {
+        case "new":
+            return fr ? "Nouveau" : "New"
+        case "meeting requested":
+            return fr ? "Réunion demandée" : "Meeting Requested"
+        case "meeting scheduled":
+            return fr ? "Réunion planifiée" : "Meeting Scheduled"
+        case "needs reschedule":
+            return fr ? "À replanifier" : "Needs Reschedule"
+        case "met with referrer", "interviewed":
+            return fr ? "Rencontré avec le référent" : "Met with Referrer"
+        case "submitted cv to hr":
+            return fr ? "CV transmis aux RH" : "Submitted CV to HR"
+        case "interviews being conducted":
+            return fr ? "Entretiens en cours" : "Interviews Being Conducted"
+        case "job offered":
+            return fr ? "Offre d'emploi" : "Job Offered"
+        case "landed job":
+            return fr ? "Poste accepté" : "Landed Job"
+        case "not a good fit":
+            return fr ? "Profil non retenu" : "Not a Good Fit"
+        case "applicant no longer interested":
+            return fr ? "Le candidat n'est plus intéressé" : "Applicant No Longer Interested"
+        case "applicant decided not to move forward":
+            return fr ? "Le candidat a décidé de ne pas poursuivre" : "Applicant Decided Not to Move Forward"
+        case "hr decided not to proceed":
+            return fr ? "Les RH ont décidé de ne pas poursuivre" : "HR Decided Not to Proceed"
+        case "another applicant was a better fit":
+            return fr ? "Un autre candidat correspondait mieux" : "Another Applicant Was a Better Fit"
+        case "candidate did not accept offer":
+            return fr ? "Le candidat n'a pas accepté l'offre" : "Candidate Did Not Accept Offer"
+        case "cv mismatch":
+            return fr ? "CV inadapté" : "CV Mismatch"
+        case "cv update requested":
+            return fr ? "Mise à jour CV demandée" : "CV Update Requested"
+        case "cv updated":
+            return fr ? "CV mis à jour" : "CV Updated"
+        case "info requested":
+            return fr ? "Informations demandées" : "Info Requested"
+        case "info updated":
+            return fr ? "Informations mises à jour" : "Info Updated"
+        case "ineligible":
+            return fr ? "Non admissible" : "Ineligible"
+        default:
+            let fallback = status?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return fallback.isEmpty ? (fr ? "Nouveau" : "New") : fallback
+        }
+    }
+
+    private func statusColor(for status: String?) -> Color {
+        let normalized = (status ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        switch normalized {
+        case "new", "meeting requested", "submitted cv to hr", "interviews being conducted":
+            return Theme.info
+        case "meeting scheduled", "met with referrer", "interviewed", "job offered", "landed job", "cv updated", "info updated":
+            return Theme.success
+        case "needs reschedule", "cv mismatch", "cv update requested", "info requested":
+            return Theme.warning
+        case "not a good fit", "hr decided not to proceed", "ineligible":
+            return Theme.error
+        default:
+            return Theme.muted
+        }
+    }
+
+    private func formatMeetingDetails(date: String?, time: String?, timezone: String?) -> String {
+        let cleanDate = (date ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanTime = (time ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        if cleanDate.isEmpty || cleanTime.isEmpty {
+            return l("No meeting scheduled")
+        }
+
+        let cleanTimezone = (timezone ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let timezoneLabel = cleanTimezone
+            .split(separator: "/")
+            .last
+            .map { $0.replacingOccurrences(of: "_", with: " ") } ?? ""
+        if timezoneLabel.isEmpty {
+            return AppLocale.languageCode == "fr"
+                ? "\(cleanDate) à \(cleanTime)"
+                : "\(cleanDate) at \(cleanTime)"
+        }
+        return AppLocale.languageCode == "fr"
+            ? "\(cleanDate) à \(cleanTime) (\(timezoneLabel))"
+            : "\(cleanDate) at \(cleanTime) (\(timezoneLabel))"
+    }
+
+    private func setMessage(_ text: String, style: StatusBanner.Style, for target: MessageTarget) {
+        messages[target] = InlineMessage(text: text, style: style)
+    }
+
+    private func clearMessage(for target: MessageTarget) {
+        messages.removeValue(forKey: target)
+    }
+
+    private func clearPortalData() {
+        applicant = nil
+        applications = []
+        totalApplications = nil
+        applicationsPage = 1
+    }
+
+    @MainActor
+    private func switchPortalAccount(to irain: String) async {
+        clearMessage(for: .switchAccount)
+
+        let normalized = irain.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !normalized.isEmpty else { return }
+        guard activeAccount?.normalizedIrain != normalized else { return }
+
+        applicantPortalAccountStore.setActive(irain: normalized)
+        accessToken = ""
+        clearPortalData()
+        await loadPortal(messageTarget: .switchAccount)
+    }
+
+    @MainActor
+    private func bootstrapSession() async {
+        clearMessage(for: .global)
+        clearMessage(for: .switchAccount)
+
+        let startupMessageTarget: MessageTarget = hasAnySavedAccounts ? .switchAccount : .global
+
+        guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
+            setMessage(l("App configuration is missing API base URL."), style: .error, for: startupMessageTarget)
+            return
+        }
+
+        guard networkMonitor.isConnected else { return }
+        guard let activeAccount else { return }
+
+        if accessToken.isEmpty {
+            let refreshed = await refreshSession(for: activeAccount.normalizedIrain)
+            guard refreshed else {
+                setMessage(l("Session expired. Please sign in again."), style: .error, for: startupMessageTarget)
+                return
+            }
+        }
+
+        await loadPortal(messageTarget: startupMessageTarget, showSuccessMessage: false)
+    }
+
+    @MainActor
+    private func signInToPortal() async {
+        clearMessage(for: .signIn)
+
+        let applicantId = loginIrain.trimmingCharacters(in: .whitespacesAndNewlines)
+        let applicantKey = loginApplicantKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !applicantId.isEmpty, !applicantKey.isEmpty else {
+            setMessage(l("Missing applicant credentials."), style: .error, for: .signIn)
+            return
+        }
+
+        guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
+            setMessage(l("App configuration is missing API base URL."), style: .error, for: .signIn)
+            return
+        }
+
+        guard networkMonitor.isConnected else {
+            setMessage(l("You're offline. Connect to the internet and try again."), style: .error, for: .signIn)
+            return
+        }
+
+        isSigningIn = true
+        defer { isSigningIn = false }
+
+        await exchangeSession(applicantId: applicantId, applicantKey: applicantKey, messageTarget: .signIn)
+    }
+
+    @MainActor
+    private func exchangeSession(applicantId: String, applicantKey: String, messageTarget: MessageTarget?) async {
+        if let messageTarget {
+            clearMessage(for: messageTarget)
+        }
+        clearMessage(for: .signOut)
+        clearMessage(for: .signOutAll)
+        clearMessage(for: .switchAccount)
+
+        isLoading = true
+        defer { isLoading = false }
+
+        guard networkMonitor.isConnected else {
+            if let messageTarget {
+                setMessage(l("You're offline. Connect to the internet and try again."), style: .error, for: messageTarget)
+            }
+            return
+        }
+
+        do {
+            let response = try await APIClient.exchangeApplicantMobileSession(
+                baseURL: apiBaseURL,
+                applicantId: applicantId,
+                applicantKey: applicantKey
+            )
+
+            guard let newAccessToken = response.accessToken,
+                  !newAccessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  let newRefreshToken = response.refreshToken,
+                  !newRefreshToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw APIError(message: l("Unable to establish session. Please try again."))
+            }
+
+            guard let responseApplicant = response.applicant else {
+                throw APIError(message: l("Unable to load your details."))
+            }
+
+            accessToken = newAccessToken
+            applicantPortalAccountStore.upsertAccount(
+                from: responseApplicant,
+                refreshToken: newRefreshToken,
+                makeActive: true
+            )
+            applicant = responseApplicant
+            loginApplicantKey = ""
+
+            if let messageTarget {
+                setMessage(l("Signed in. Loading portal data..."), style: .success, for: messageTarget)
+            }
+            await loadPortal(messageTarget: messageTarget)
+        } catch {
+            Telemetry.capture(error)
+            if let messageTarget {
+                setMessage(error.localizedDescription, style: .error, for: messageTarget)
+            }
+        }
+    }
+
+    @MainActor
+    private func refreshSession(for irain: String) async -> Bool {
+        let refreshToken = applicantPortalAccountStore.refreshToken(for: irain)
+        guard !refreshToken.isEmpty else {
+            return false
+        }
+
+        do {
+            let response = try await APIClient.refreshApplicantMobileSession(baseURL: apiBaseURL, refreshToken: refreshToken)
+            guard let newAccessToken = response.accessToken,
+                  !newAccessToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+                  let newRefreshToken = response.refreshToken,
+                  !newRefreshToken.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+                throw APIError(message: l("Session expired. Please sign in again."))
+            }
+
+            accessToken = newAccessToken
+            _ = applicantPortalAccountStore.saveRefreshToken(newRefreshToken, for: irain)
+            return true
+        } catch {
+            Telemetry.capture(error)
+            accessToken = ""
+            clearPortalData()
+            applicantPortalAccountStore.clearRefreshToken(for: irain)
+            return false
+        }
+    }
+
+    @MainActor
+    private func signOutPortalAccount(irain: String) async {
+        clearMessage(for: .signOut)
+        clearMessage(for: .signOutAll)
+        clearMessage(for: .switchAccount)
+
+        let normalizedIrain = irain.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !normalizedIrain.isEmpty else {
+            setMessage(l("No portal account selected."), style: .error, for: .signOut)
+            return
+        }
+        guard applicantPortalAccountStore.account(for: normalizedIrain) != nil else { return }
+
+        isSigningOut = true
+        defer { isSigningOut = false }
+
+        let refreshToken = applicantPortalAccountStore.refreshToken(for: normalizedIrain)
+        if !refreshToken.isEmpty {
+            _ = try? await APIClient.logoutApplicantMobileSession(baseURL: apiBaseURL, refreshToken: refreshToken)
+        }
+
+        let wasActiveAccount = activeAccount?.normalizedIrain == normalizedIrain
+        applicantPortalAccountStore.removeAccount(irain: normalizedIrain)
+
+        if wasActiveAccount {
+            accessToken = ""
+            clearPortalData()
+        }
+
+        if applicantPortalAccountStore.accounts.isEmpty {
+            setMessage(l("Signed out."), style: .success, for: .signOut)
+        } else {
+            setMessage(l("Signed out of this portal account."), style: .success, for: .signOut)
+        }
+    }
+
+    @MainActor
+    private func signOutAll() async {
+        clearMessage(for: .signOutAll)
+        clearMessage(for: .signOut)
+        clearMessage(for: .switchAccount)
+
+        isSigningOutAll = true
+        defer { isSigningOutAll = false }
+
+        let accounts = applicantPortalAccountStore.accounts
+        for account in accounts {
+            let refreshToken = applicantPortalAccountStore.refreshToken(for: account.normalizedIrain)
+            if !refreshToken.isEmpty {
+                _ = try? await APIClient.logoutApplicantMobileSession(baseURL: apiBaseURL, refreshToken: refreshToken)
+            }
+        }
+
+        applicantPortalAccountStore.removeAllAccounts()
+        accessToken = ""
+        clearPortalData()
+        setMessage(l("Signed out of all portal accounts."), style: .success, for: .signOutAll)
+    }
+
+    @MainActor
+    private func loadPortal(messageTarget: MessageTarget? = .loadPortal, showSuccessMessage: Bool = true) async {
+        if let messageTarget {
+            clearMessage(for: messageTarget)
+        }
+
+        guard let activeAccount else { return }
+        let activeIrain = activeAccount.normalizedIrain
+
+        guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else {
+            if let messageTarget {
+                setMessage(l("App configuration is missing API base URL."), style: .error, for: messageTarget)
+            }
+            return
+        }
+        guard networkMonitor.isConnected else {
+            if let messageTarget {
+                setMessage(l("You're offline. Connect to the internet and try again."), style: .error, for: messageTarget)
+            }
+            return
+        }
+
+        isLoading = true
+        defer { isLoading = false }
+
+        if accessToken.isEmpty {
+            let refreshed = await refreshSession(for: activeIrain)
+            if !refreshed {
+                if let messageTarget {
+                    setMessage(l("Session expired. Please sign in again."), style: .error, for: messageTarget)
+                }
+                return
+            }
+        }
+
+        do {
+            let response = try await APIClient.loadApplicantPortal(baseURL: apiBaseURL, token: accessToken)
+            guard applicantPortalAccountStore.activeAccountIrain == activeIrain else { return }
+            if let responseApplicant = response.applicant {
+                applicant = responseApplicant
+                applicantPortalAccountStore.upsertAccount(from: responseApplicant, makeActive: false)
+            } else {
+                applicant = nil
+            }
+            applications = response.applications ?? []
+            totalApplications = response.total
+            applicationsPage = 1
+            if applicant == nil, applications.isEmpty {
+                if let messageTarget {
+                    setMessage(l("Unable to load your details."), style: .error, for: messageTarget)
+                }
+                return
+            }
+            if let messageTarget, showSuccessMessage {
+                setMessage(
+                    String.localizedStringWithFormat(l("Loaded %d applications."), applications.count),
+                    style: .success,
+                    for: messageTarget
+                )
+            }
+            Telemetry.track("applicant_portal_loaded", properties: ["count": "\(applications.count)"])
+        } catch {
+            let refreshed = await refreshSession(for: activeIrain)
+            if refreshed {
+                do {
+                    let retryResponse = try await APIClient.loadApplicantPortal(baseURL: apiBaseURL, token: accessToken)
+                    guard applicantPortalAccountStore.activeAccountIrain == activeIrain else { return }
+                    if let retryApplicant = retryResponse.applicant {
+                        applicant = retryApplicant
+                        applicantPortalAccountStore.upsertAccount(from: retryApplicant, makeActive: false)
+                    } else {
+                        applicant = nil
+                    }
+                    applications = retryResponse.applications ?? []
+                    totalApplications = retryResponse.total
+                    applicationsPage = 1
+                    if applicant == nil, applications.isEmpty {
+                        if let messageTarget {
+                            setMessage(l("Unable to load your details."), style: .error, for: messageTarget)
+                        }
+                        return
+                    }
+                    if let messageTarget, showSuccessMessage {
+                        setMessage(
+                            String.localizedStringWithFormat(l("Loaded %d applications."), applications.count),
+                            style: .success,
+                            for: messageTarget
+                        )
+                    }
+                    Telemetry.track("applicant_portal_loaded", properties: ["count": "\(applications.count)"])
+                    return
+                } catch {
+                    Telemetry.capture(error)
+                    if let messageTarget {
+                        setMessage(error.localizedDescription, style: .error, for: messageTarget)
+                    }
+                    return
+                }
+            }
+
+            Telemetry.capture(error)
+            if let messageTarget {
+                setMessage(error.localizedDescription, style: .error, for: messageTarget)
+            }
+        }
+    }
+
+    private func l(_ key: String) -> String {
+        NSLocalizedString(key, comment: "")
+    }
+}
+
+#Preview("Applicant Portal") {
+    ApplicantPortalView()
+        .environmentObject(NetworkMonitor())
+        .environmentObject(ApplicantPortalAccountStore())
+}

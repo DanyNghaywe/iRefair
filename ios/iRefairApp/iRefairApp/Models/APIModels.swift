@@ -109,6 +109,30 @@ struct ReferrerMobileAuthLogoutResponse: APIResult {
     let error: String?
 }
 
+struct ApplicantMobileAuthExchangeResponse: APIResult {
+    let ok: Bool
+    let accessToken: String?
+    let accessTokenExpiresIn: Int?
+    let refreshToken: String?
+    let refreshTokenExpiresIn: Int?
+    let applicant: ApplicantPortalSummary?
+    let error: String?
+}
+
+struct ApplicantMobileAuthRefreshResponse: APIResult {
+    let ok: Bool
+    let accessToken: String?
+    let accessTokenExpiresIn: Int?
+    let refreshToken: String?
+    let refreshTokenExpiresIn: Int?
+    let error: String?
+}
+
+struct ApplicantMobileAuthLogoutResponse: APIResult {
+    let ok: Bool
+    let error: String?
+}
+
 struct ReferrerPortalDataResponse: APIResult {
     let ok: Bool
     let referrer: ReferrerSummary?
@@ -144,6 +168,42 @@ struct ReferrerPortalDataResponse: APIResult {
             total = nil
         }
         companies = try container.decodeIfPresent([ReferrerCompany].self, forKey: .companies)
+        error = try container.decodeIfPresent(String.self, forKey: .error)
+    }
+}
+
+struct ApplicantPortalDataResponse: APIResult {
+    let ok: Bool
+    let applicant: ApplicantPortalSummary?
+    let applications: [ApplicantPortalApplication]?
+    let total: Int?
+    let error: String?
+
+    private enum CodingKeys: String, CodingKey {
+        case ok
+        case applicant
+        case applications
+        case items
+        case total
+        case error
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        ok = try container.decode(Bool.self, forKey: .ok)
+        applicant = try container.decodeIfPresent(ApplicantPortalSummary.self, forKey: .applicant)
+        if let applications = try container.decodeIfPresent([ApplicantPortalApplication].self, forKey: .applications) {
+            self.applications = applications
+        } else {
+            self.applications = try container.decodeIfPresent([ApplicantPortalApplication].self, forKey: .items)
+        }
+        if let decodedTotal = try container.decodeIfPresent(Int.self, forKey: .total) {
+            total = decodedTotal
+        } else if let totalString = try container.decodeIfPresent(String.self, forKey: .total) {
+            total = Int(totalString.trimmingCharacters(in: .whitespacesAndNewlines))
+        } else {
+            total = nil
+        }
         error = try container.decodeIfPresent(String.self, forKey: .error)
     }
 }
@@ -230,6 +290,53 @@ struct ApplicantPortalApplication: Identifiable, Decodable {
         meetingUrl = try container.decodeIfPresent(String.self, forKey: .meetingUrl)
         resumeFileName = try container.decodeIfPresent(String.self, forKey: .resumeFileName)
         referrerIrref = try container.decodeIfPresent(String.self, forKey: .referrerIrref)
+    }
+}
+
+struct ApplicantPortalSummary: Decodable {
+    let irain: String
+    let firstName: String
+    let lastName: String
+    let email: String
+
+    var displayName: String {
+        let name = [firstName, lastName]
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: " ")
+        return name.isEmpty ? irain : name
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case irain
+        case firstName
+        case lastName
+        case name
+        case email
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        irain = try container.decode(String.self, forKey: .irain)
+        email = try container.decodeIfPresent(String.self, forKey: .email) ?? ""
+
+        let decodedFirst = (try container.decodeIfPresent(String.self, forKey: .firstName) ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let decodedLast = (try container.decodeIfPresent(String.self, forKey: .lastName) ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let fullName = (try container.decodeIfPresent(String.self, forKey: .name) ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if !decodedFirst.isEmpty || !decodedLast.isEmpty {
+            firstName = decodedFirst
+            lastName = decodedLast
+        } else if !fullName.isEmpty {
+            firstName = fullName
+            lastName = ""
+        } else {
+            firstName = ""
+            lastName = ""
+        }
     }
 }
 

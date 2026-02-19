@@ -21,6 +21,7 @@ This folder contains a SwiftUI native iOS client for iRefair. It talks to the ex
 
 - Applicant registration/update (multipart form with resume upload)
 - Application submission (iRCRN + resume upload)
+- Applicant portal: sign in with iRAIN + Applicant Key and view all submitted applications
 - Referrer registration + portal link request
 - Referrer portal: view applicants and send feedback
 - Deep links:

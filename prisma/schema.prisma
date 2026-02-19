@@ -71,3 +71,21 @@ model ReferrerMobileSession {
   @@index([sessionExpiresAt])
   @@index([revokedAt])
 }
+
+model ApplicantMobileSession {
+  id                    String   @id
+  irain                 String
+  refreshTokenHash      String
+  refreshTokenExpiresAt DateTime
+  sessionExpiresAt      DateTime
+  userAgent             String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  lastUsedAt            DateTime?
+  revokedAt             DateTime?
+
+  @@index([irain])
+  @@index([refreshTokenExpiresAt])
+  @@index([sessionExpiresAt])
+  @@index([revokedAt])
+}

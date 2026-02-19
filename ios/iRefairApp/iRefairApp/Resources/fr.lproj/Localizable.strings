@@ -370,3 +370,17 @@
 "Role mode" = "Mode de rôle";
 "Current app mode: %@" = "Mode actuel de l'application : %@";
 "This mode is saved on this device to prevent accidental switching." = "Ce mode est enregistré sur cet appareil pour éviter les changements accidentels.";
+"Applicant portal" = "Portail candidat";
+"Track your applications" = "Suivez vos candidatures";
+"Review every iRefair application you've submitted from one place." = "Consultez toutes vos candidatures iRefair soumises depuis un seul endroit.";
+"Sign in to your applicant portal" = "Connectez-vous à votre portail candidat";
+"Add your applicant portal account to review all submitted applications." = "Ajoutez votre compte portail candidat pour consulter toutes les candidatures soumises.";
+"Sign in to portal" = "Se connecter au portail";
+"Use the iRAIN and Applicant Key from your registration email." = "Utilisez le iRAIN et la clé candidat reçus dans votre e-mail d'inscription.";
+"Signing in..." = "Connexion...";
+"Loaded %d applications." = "%d candidatures chargées.";
+"No portal account selected." = "Aucun compte portail sélectionné.";
+"Signed out of this portal account." = "Déconnecté de ce compte portail.";
+"Signed out of all portal accounts." = "Déconnecté de tous les comptes portail.";
+"Portal accounts" = "Comptes portail";
+"Missing applicant credentials." = "Identifiants candidat manquants.";

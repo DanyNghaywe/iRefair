@@ -370,3 +370,17 @@
 "Role mode" = "Role mode";
 "Current app mode: %@" = "Current app mode: %@";
 "This mode is saved on this device to prevent accidental switching." = "This mode is saved on this device to prevent accidental switching.";
+"Applicant portal" = "Applicant portal";
+"Track your applications" = "Track your applications";
+"Review every iRefair application you've submitted from one place." = "Review every iRefair application you've submitted from one place.";
+"Sign in to your applicant portal" = "Sign in to your applicant portal";
+"Add your applicant portal account to review all submitted applications." = "Add your applicant portal account to review all submitted applications.";
+"Sign in to portal" = "Sign in to portal";
+"Use the iRAIN and Applicant Key from your registration email." = "Use the iRAIN and Applicant Key from your registration email.";
+"Signing in..." = "Signing in...";
+"Loaded %d applications." = "Loaded %d applications.";
+"No portal account selected." = "No portal account selected.";
+"Signed out of this portal account." = "Signed out of this portal account.";
+"Signed out of all portal accounts." = "Signed out of all portal accounts.";
+"Portal accounts" = "Portal accounts";
+"Missing applicant credentials." = "Missing applicant credentials.";

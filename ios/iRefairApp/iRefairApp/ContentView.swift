@@ -41,6 +41,16 @@ struct ContentView: View {
                         Label(l("Apply"), systemImage: "paperplane")
                     }
                     .tag(AppTab.apply)
+
+                NavigationStack {
+                    IRefairScreen {
+                        ApplicantPortalView()
+                    }
+                }
+                .tabItem {
+                    Label(l("Portal"), systemImage: "rectangle.stack.person.crop")
+                }
+                .tag(AppTab.applicantPortal)
             }
 
             if appState.roleMode == .referrer {
@@ -294,4 +304,5 @@ private struct RoleModeLandingView: View {
         .environmentObject(AppState())
         .environmentObject(NetworkMonitor())
         .environmentObject(ReferrerPortalAccountStore())
+        .environmentObject(ApplicantPortalAccountStore())
 }
