@@ -32,8 +32,9 @@ struct ParticlesBackground: View {
                 guard !particles.isEmpty else { return }
 
                 let isSmallScreen = canvasSize.width < 720
-                let maxDistance: CGFloat = isSmallScreen ? 90 : 120
-                let linkOpacityBase: CGFloat = (reduceMotion || isSmallScreen) ? 0 : 0.2
+                let maxDistance: CGFloat = isSmallScreen ? 82 : 120
+                // Keep links subtle on compact screens instead of disabling them entirely.
+                let linkOpacityBase: CGFloat = reduceMotion ? 0 : (isSmallScreen ? 0.12 : 0.2)
                 let elapsed = (reduceMotion || !isActive) ? pausedElapsed : timeline.date.timeIntervalSince(startTime)
 
                 var positions: [CGPoint] = []
