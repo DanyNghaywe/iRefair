@@ -81,7 +81,7 @@ export async function POST(
     try {
       const companies = await listReferrerCompanies(irref);
       const pendingCompanies = companies.filter(
-        (c) => (c.companyApproval || 'pending').toLowerCase() === 'pending'
+        (c) => (c.companyApproval || 'pending').trim().toLowerCase() === 'pending'
       );
       for (const company of pendingCompanies) {
         await updateCompanyApproval(company.id, approval as 'approved' | 'denied');

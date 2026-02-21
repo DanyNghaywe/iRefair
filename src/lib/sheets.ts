@@ -3033,6 +3033,15 @@ function normalizeSearch(value?: string) {
   return value ? value.trim().toLowerCase() : '';
 }
 
+function isApprovedStatus(value?: string) {
+  const normalized = normalizeSearch(value);
+  return normalized === '' || normalized === 'approved';
+}
+
+function isArchivedStatus(value?: string) {
+  return normalizeSearch(value) === 'true';
+}
+
 export async function listApplicants(params: ApplicantListParams) {
   await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
 
@@ -3431,14 +3440,16 @@ export class ReferrerLookupError extends Error {
   }
 }
 
-export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookupResult | null> {
-  const normalizedIrcrn = ircrn.trim().toLowerCase();
-  if (!normalizedIrcrn) return null;
+async function findApprovedReferrerMatchesByIrcrnInSource(
+  normalizedIrcrn: string,
+  options: SheetReadOptions = {},
+): Promise<ReferrerLookupResult[]> {
+  const writeOptions: SheetWriteOptions = options.source ? { source: options.source } : {};
+  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS, false, writeOptions);
+  await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN', 'Company Approval'], writeOptions);
 
-  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
-  await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN', 'Company Approval']);
-  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_SHEET_NAME);
-  if (!headers.length) return null;
+  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_SHEET_NAME, options);
+  if (!headers.length) return [];
 
   const headerMap = buildHeaderMap(headers);
 
@@ -3453,29 +3464,70 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
     archived: getHeaderValue(headerMap, row, 'Archived'),
   });
 
-  const isApproved = (row: (string | number | null | undefined)[]) => {
-    const approval = getHeaderValue(headerMap, row, 'Company Approval').toLowerCase();
-    return approval === '' || approval === 'approved';
-  };
+  return rows
+    .filter((row) => {
+      const rowIrcrn = normalizeSearch(getHeaderValue(headerMap, row, 'Company iRCRN'));
+      if (!rowIrcrn || rowIrcrn !== normalizedIrcrn) return false;
+      if (!isApprovedStatus(getHeaderValue(headerMap, row, 'Company Approval'))) return false;
+      if (isArchivedStatus(getHeaderValue(headerMap, row, 'Archived'))) return false;
+      return true;
+    })
+    .map((row) => pickRecord(row));
+}
 
-  const isArchived = (row: (string | number | null | undefined)[]) => {
-    return getHeaderValue(headerMap, row, 'Archived').toLowerCase() === 'true';
-  };
+async function inspectLegacyReferrerIrcrnStateInSource(
+  normalizedIrcrn: string,
+  options: SheetReadOptions = {},
+): Promise<'not_approved' | 'archived' | null> {
+  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_SHEET_NAME, options);
+  if (!headers.length) return null;
+
+  const headerMap = buildHeaderMap(headers);
+  let hasNotApproved = false;
+  let hasArchived = false;
 
   for (const row of rows) {
-    const rowIrcrn = getHeaderValue(headerMap, row, 'Company iRCRN').toLowerCase();
-    if (rowIrcrn && rowIrcrn === normalizedIrcrn) {
-      if (!isApproved(row) || isArchived(row)) continue;
-      const record = pickRecord(row);
-      if (record.email) return record;
+    const rowIrcrn = normalizeSearch(getHeaderValue(headerMap, row, 'Company iRCRN'));
+    if (rowIrcrn !== normalizedIrcrn) continue;
+
+    if (isArchivedStatus(getHeaderValue(headerMap, row, 'Archived'))) {
+      hasArchived = true;
+      continue;
     }
+
+    if (!isApprovedStatus(getHeaderValue(headerMap, row, 'Company Approval'))) {
+      hasNotApproved = true;
+    }
+  }
+
+  if (hasNotApproved) return 'not_approved';
+  if (hasArchived) return 'archived';
+  return null;
+}
+
+export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookupResult | null> {
+  const normalizedIrcrn = normalizeSearch(ircrn);
+  if (!normalizedIrcrn) return null;
+
+  const primaryMatches = await findApprovedReferrerMatchesByIrcrnInSource(normalizedIrcrn);
+  const primaryWithEmail = primaryMatches.find((record) => Boolean(record.email));
+  if (primaryWithEmail) return primaryWithEmail;
+
+  if (SHEET_DB_READS_ENABLED) {
+    const sheetsMatches = await findApprovedReferrerMatchesByIrcrnInSource(normalizedIrcrn, {
+      source: 'sheets',
+      bypassCache: true,
+      allowSheetFallback: false,
+    });
+    const sheetsWithEmail = sheetsMatches.find((record) => Boolean(record.email));
+    if (sheetsWithEmail) return sheetsWithEmail;
   }
 
   return null;
 }
 
 export async function findReferrerByIrcrnStrict(ircrn: string): Promise<ReferrerLookupResult> {
-  const normalizedIrcrn = ircrn.trim().toLowerCase();
+  const normalizedIrcrn = normalizeSearch(ircrn);
   if (!normalizedIrcrn) {
     throw new ReferrerLookupError('missing_ircrn', 'Missing iRCRN.');
   }
@@ -3483,43 +3535,36 @@ export async function findReferrerByIrcrnStrict(ircrn: string): Promise<Referrer
     throw new ReferrerLookupError('invalid_ircrn', 'Invalid iRCRN format.');
   }
 
-  await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
-  await ensureColumns(REFERRER_SHEET_NAME, ['Company iRCRN', 'Company Approval']);
-  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_SHEET_NAME);
-  if (!headers.length) {
-    throw new ReferrerLookupError('not_found', 'Referrer sheet is missing headers.');
+  let matches = await findApprovedReferrerMatchesByIrcrnInSource(normalizedIrcrn);
+  if (!matches.length && SHEET_DB_READS_ENABLED) {
+    matches = await findApprovedReferrerMatchesByIrcrnInSource(normalizedIrcrn, {
+      source: 'sheets',
+      bypassCache: true,
+      allowSheetFallback: false,
+    });
   }
 
-  const headerMap = buildHeaderMap(headers);
-
-  const pickRecord = (row: (string | number | null | undefined)[]) => ({
-    irref: getHeaderValue(headerMap, row, 'iRREF'),
-    name: getHeaderValue(headerMap, row, 'Name'),
-    email: getHeaderValue(headerMap, row, 'Email'),
-    phone: getHeaderValue(headerMap, row, 'Phone'),
-    company: getHeaderValue(headerMap, row, 'Company'),
-    companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN'),
-    locale: getHeaderValue(headerMap, row, REFERRER_LOCALE_HEADER),
-    archived: getHeaderValue(headerMap, row, 'Archived'),
-  });
-
-  const isApproved = (row: (string | number | null | undefined)[]) => {
-    const approval = getHeaderValue(headerMap, row, 'Company Approval').toLowerCase();
-    return approval === '' || approval === 'approved';
-  };
-
-  const isArchived = (row: (string | number | null | undefined)[]) => {
-    return getHeaderValue(headerMap, row, 'Archived').toLowerCase() === 'true';
-  };
-
-  const matches = rows
-    .filter((row) => {
-      const rowIrcrn = getHeaderValue(headerMap, row, 'Company iRCRN').toLowerCase();
-      return rowIrcrn && rowIrcrn === normalizedIrcrn && isApproved(row) && !isArchived(row);
-    })
-    .map((row) => pickRecord(row));
-
   if (!matches.length) {
+    let hint = await inspectLegacyReferrerIrcrnStateInSource(normalizedIrcrn);
+    if (!hint && SHEET_DB_READS_ENABLED) {
+      hint = await inspectLegacyReferrerIrcrnStateInSource(normalizedIrcrn, {
+        source: 'sheets',
+        bypassCache: true,
+        allowSheetFallback: false,
+      });
+    }
+    if (hint === 'not_approved') {
+      throw new ReferrerLookupError(
+        'not_found',
+        'A company with this iRCRN exists, but it is not approved yet.',
+      );
+    }
+    if (hint === 'archived') {
+      throw new ReferrerLookupError(
+        'not_found',
+        'This iRCRN is archived and cannot receive applications.',
+      );
+    }
     throw new ReferrerLookupError('not_found', 'No approved referrer found for this iRCRN.');
   }
   if (matches.length > 1) {
@@ -5499,15 +5544,15 @@ export async function listReferrerCompanies(
   if (!headers.length) return [];
 
   const headerMap = buildHeaderMap(headers);
-  const normalizedIrref = referrerIrref.trim().toLowerCase();
+  const normalizedIrref = normalizeSearch(referrerIrref);
   const results: ReferrerCompanyRecord[] = [];
 
   for (const row of rows) {
-    const rowIrref = getHeaderValue(headerMap, row, 'Referrer iRREF').toLowerCase();
+    const rowIrref = normalizeSearch(getHeaderValue(headerMap, row, 'Referrer iRREF'));
     if (rowIrref !== normalizedIrref) continue;
 
     const archived = getHeaderValue(headerMap, row, 'Archived');
-    if (!includeArchived && archived === 'true') continue;
+    if (!includeArchived && isArchivedStatus(archived)) continue;
 
     results.push({
       id: getHeaderValue(headerMap, row, 'ID'),
@@ -5573,26 +5618,33 @@ export async function getReferrerCompanyById(
  * Find a referrer company by its iRCRN.
  * Returns both the company record and the associated referrer.
  */
-export async function findReferrerCompanyByIrcrn(
-  ircrn: string,
-): Promise<{ company: ReferrerCompanyRecord; referrer: ReferrerRecord } | null> {
-  await ensureHeaders(REFERRER_COMPANIES_SHEET_NAME, REFERRER_COMPANIES_HEADERS);
+type ReferrerCompanyIrcrnLookupHint =
+  | 'not_approved'
+  | 'archived'
+  | 'referrer_inactive';
 
-  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_COMPANIES_SHEET_NAME);
+async function findReferrerCompanyByIrcrnInSource(
+  normalizedIrcrn: string,
+  options: SheetReadOptions = {},
+): Promise<{ company: ReferrerCompanyRecord; referrer: ReferrerRecord } | null> {
+  const writeOptions: SheetWriteOptions = options.source ? { source: options.source } : {};
+  await ensureHeaders(REFERRER_COMPANIES_SHEET_NAME, REFERRER_COMPANIES_HEADERS, false, writeOptions);
+
+  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_COMPANIES_SHEET_NAME, options);
   if (!headers.length) return null;
 
   const headerMap = buildHeaderMap(headers);
-  const normalizedIrcrn = ircrn.trim().toLowerCase();
 
   for (const row of rows) {
-    const rowIrcrn = getHeaderValue(headerMap, row, 'Company iRCRN').toLowerCase();
+    const rowIrcrn = normalizeSearch(getHeaderValue(headerMap, row, 'Company iRCRN'));
     if (rowIrcrn !== normalizedIrcrn) continue;
 
     const archived = getHeaderValue(headerMap, row, 'Archived');
-    if (archived === 'true') continue;
+    if (isArchivedStatus(archived)) continue;
 
-    const approval = getHeaderValue(headerMap, row, 'Company Approval').toLowerCase();
-    if (approval !== 'approved' && approval !== '') continue;
+    const approvalRaw = getHeaderValue(headerMap, row, 'Company Approval');
+    if (!isApprovedStatus(approvalRaw)) continue;
+    const approval = normalizeSearch(approvalRaw);
 
     const company: ReferrerCompanyRecord = {
       id: getHeaderValue(headerMap, row, 'ID'),
@@ -5607,12 +5659,81 @@ export async function findReferrerCompanyByIrcrn(
       archived: archived || undefined,
     };
 
-    // Fetch the associated referrer
-    const referrer = await getReferrerByIrref(company.referrerIrref);
+    // Keep source alignment (db vs sheets) to avoid stale-cache mismatches.
+    const referrer = await getReferrerByIrref(company.referrerIrref, options);
     if (!referrer) continue;
-    if (referrer.record.archived === 'true') continue;
+    if (isArchivedStatus(referrer.record.archived)) continue;
 
     return { company, referrer: referrer.record };
+  }
+
+  return null;
+}
+
+async function inspectReferrerCompanyIrcrnStateInSource(
+  normalizedIrcrn: string,
+  options: SheetReadOptions = {},
+): Promise<ReferrerCompanyIrcrnLookupHint | null> {
+  const { headers, rows } = await getSheetDataWithHeaders(REFERRER_COMPANIES_SHEET_NAME, options);
+  if (!headers.length) return null;
+
+  const headerMap = buildHeaderMap(headers);
+  let hasNotApproved = false;
+  let hasArchived = false;
+  let hasInactiveReferrer = false;
+
+  for (const row of rows) {
+    const rowIrcrn = normalizeSearch(getHeaderValue(headerMap, row, 'Company iRCRN'));
+    if (rowIrcrn !== normalizedIrcrn) continue;
+
+    if (isArchivedStatus(getHeaderValue(headerMap, row, 'Archived'))) {
+      hasArchived = true;
+      continue;
+    }
+
+    if (!isApprovedStatus(getHeaderValue(headerMap, row, 'Company Approval'))) {
+      hasNotApproved = true;
+      continue;
+    }
+
+    const referrerIrref = getHeaderValue(headerMap, row, 'Referrer iRREF').trim();
+    if (!referrerIrref) {
+      hasInactiveReferrer = true;
+      continue;
+    }
+
+    const referrer = await getReferrerByIrref(referrerIrref, options);
+    if (!referrer || isArchivedStatus(referrer.record.archived)) {
+      hasInactiveReferrer = true;
+    }
+  }
+
+  if (hasNotApproved) return 'not_approved';
+  if (hasArchived) return 'archived';
+  if (hasInactiveReferrer) return 'referrer_inactive';
+  return null;
+}
+
+export async function findReferrerCompanyByIrcrn(
+  ircrn: string,
+): Promise<{ company: ReferrerCompanyRecord; referrer: ReferrerRecord } | null> {
+  const normalizedIrcrn = normalizeSearch(ircrn);
+  if (!normalizedIrcrn) return null;
+
+  const primary = await findReferrerCompanyByIrcrnInSource(normalizedIrcrn);
+  if (primary) {
+    return primary;
+  }
+
+  if (SHEET_DB_READS_ENABLED) {
+    const fromSheets = await findReferrerCompanyByIrcrnInSource(normalizedIrcrn, {
+      source: 'sheets',
+      bypassCache: true,
+      allowSheetFallback: false,
+    });
+    if (fromSheets) {
+      return fromSheets;
+    }
   }
 
   return null;
@@ -5626,6 +5747,7 @@ export async function findReferrerCompanyByIrcrnStrict(ircrn: string): Promise<{
   referrer: ReferrerRecord;
 }> {
   const trimmed = ircrn.trim();
+  const normalizedIrcrn = normalizeSearch(trimmed);
   if (!trimmed) {
     throw new ReferrerLookupError('missing_ircrn', 'Company reference number is required.');
   }
@@ -5644,7 +5766,14 @@ export async function findReferrerCompanyByIrcrnStrict(ircrn: string): Promise<{
   const legacyResult = await findReferrerByIrcrn(trimmed);
   if (legacyResult) {
     // Fetch full referrer record to get all fields
-    const fullReferrer = await getReferrerByIrref(legacyResult.irref);
+    let fullReferrer = await getReferrerByIrref(legacyResult.irref);
+    if (!fullReferrer && SHEET_DB_READS_ENABLED) {
+      fullReferrer = await getReferrerByIrref(legacyResult.irref, {
+        source: 'sheets',
+        bypassCache: true,
+        allowSheetFallback: false,
+      });
+    }
     if (fullReferrer) {
       // Convert legacy result to new format
       return {
@@ -5662,6 +5791,54 @@ export async function findReferrerCompanyByIrcrnStrict(ircrn: string): Promise<{
         referrer: fullReferrer.record,
       };
     }
+  }
+
+  let companyHint = await inspectReferrerCompanyIrcrnStateInSource(normalizedIrcrn);
+  if (!companyHint && SHEET_DB_READS_ENABLED) {
+    companyHint = await inspectReferrerCompanyIrcrnStateInSource(normalizedIrcrn, {
+      source: 'sheets',
+      bypassCache: true,
+      allowSheetFallback: false,
+    });
+  }
+  if (companyHint === 'not_approved') {
+    throw new ReferrerLookupError(
+      'not_found',
+      'A company with this reference number exists, but it is not approved yet.',
+    );
+  }
+  if (companyHint === 'archived') {
+    throw new ReferrerLookupError(
+      'not_found',
+      'This company reference number is archived and cannot receive applications.',
+    );
+  }
+  if (companyHint === 'referrer_inactive') {
+    throw new ReferrerLookupError(
+      'not_found',
+      'This company is linked to an inactive referrer. Please contact support.',
+    );
+  }
+
+  let legacyHint = await inspectLegacyReferrerIrcrnStateInSource(normalizedIrcrn);
+  if (!legacyHint && SHEET_DB_READS_ENABLED) {
+    legacyHint = await inspectLegacyReferrerIrcrnStateInSource(normalizedIrcrn, {
+      source: 'sheets',
+      bypassCache: true,
+      allowSheetFallback: false,
+    });
+  }
+  if (legacyHint === 'not_approved') {
+    throw new ReferrerLookupError(
+      'not_found',
+      'A legacy company with this reference number exists, but it is not approved yet.',
+    );
+  }
+  if (legacyHint === 'archived') {
+    throw new ReferrerLookupError(
+      'not_found',
+      'This reference number belongs to an archived legacy company.',
+    );
   }
 
   throw new ReferrerLookupError('not_found', 'No approved company found with this reference number.');
@@ -5777,14 +5954,14 @@ export async function listApprovedCompanies(): Promise<CompanyRow[]> {
   const items: CompanyRow[] = [];
 
   for (const row of rows) {
-    const approval = getHeaderValue(headerMap, row, 'Company Approval').toLowerCase();
-    if (approval !== 'approved') continue;
+    const approval = getHeaderValue(headerMap, row, 'Company Approval');
+    if (normalizeSearch(approval) !== 'approved') continue;
 
     const archived = getHeaderValue(headerMap, row, 'Archived');
-    if (archived === 'true') continue;
+    if (isArchivedStatus(archived)) continue;
 
-    const code = getHeaderValue(headerMap, row, 'Company iRCRN');
-    const name = getHeaderValue(headerMap, row, 'Company Name');
+    const code = getHeaderValue(headerMap, row, 'Company iRCRN').trim();
+    const name = getHeaderValue(headerMap, row, 'Company Name').trim();
     if (!code || !name) continue;
 
     items.push({
@@ -5814,7 +5991,7 @@ export async function listApprovedCompanies(): Promise<CompanyRow[]> {
  */
 export async function hasApprovedCompany(referrerIrref: string): Promise<boolean> {
   const companies = await listReferrerCompanies(referrerIrref);
-  return companies.some((c) => c.companyApproval === 'approved');
+  return companies.some((c) => normalizeSearch(c.companyApproval) === 'approved');
 }
 
 /**
