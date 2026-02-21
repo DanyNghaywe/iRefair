@@ -1067,9 +1067,6 @@ export function referrerAlreadyExistsEmail(params: ReferrerAlreadyExistsParams):
     locale
   );
 
-  const contactLabel = t('Contact Admin', 'Contacter l\'administrateur', locale);
-  const contactEmail = 'irefair@andbeyondca.com';
-
   const portalCtaText = t(
     'Access your referrer portal',
     'Accéder à votre portail de recommandateur',
@@ -1077,6 +1074,14 @@ export function referrerAlreadyExistsEmail(params: ReferrerAlreadyExistsParams):
   );
   const portalCtaButton = t('Open portal', 'Ouvrir le portail', locale);
   const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
+  const meetFounderText = t(
+    'Want to learn how we work or discuss how you can best support candidates?',
+    'Vous voulez savoir comment nous travaillons ou discuter de la meilleure façon de soutenir les candidats?',
+    locale
+  );
+  const meetFounderButton = t('Meet the founder', 'Rencontrer le fondateur', locale);
+  const meetLink = process.env.FOUNDER_MEET_LINK || '';
+  const normalizedMeetLink = meetLink ? normalizeHttpUrl(meetLink) : null;
 
   const content = `
     <h1 style="margin:0 0 14px 0;font-size:22px;line-height:1.5;font-weight:700;color:#1f2a37;">
@@ -1100,12 +1105,14 @@ export function referrerAlreadyExistsEmail(params: ReferrerAlreadyExistsParams):
       </div>
       ${divider}
     ` : ''}
-    <div style="text-align:center;margin:0 0 20px 0;">
-      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#3b4251;">
-        ${escapeHtml(contactLabel)}:
+    ${normalizedMeetLink ? `
+      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#3b4251;text-align:center;">
+        ${escapeHtml(meetFounderText)}
       </p>
-      <a href="mailto:${contactEmail}" style="display:inline-block;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;background:transparent;color:#1f2a37;border:2px solid #e6e9f0;">${contactEmail}</a>
-    </div>
+      <div style="text-align:center;margin:0 0 20px 0;">
+        ${button(meetFounderButton, normalizedMeetLink, 'primary')}
+      </div>
+    ` : ''}
   `;
 
   const customHeader = `
@@ -1134,7 +1141,7 @@ ${mainText3}
 
 ${iRrefLabel}: ${iRref}
 
-${normalizedPortalUrl ? `${portalCtaText}\n${portalCtaButton}: ${normalizedPortalUrl}\n\n` : ''}${contactLabel}: ${contactEmail}
+${normalizedPortalUrl ? `${portalCtaText}\n${portalCtaButton}: ${normalizedPortalUrl}\n\n` : ''}${normalizedMeetLink ? `${meetFounderText}\n${meetFounderButton}: ${normalizedMeetLink}\n\n` : ''}
 
 - ${t('The iRefair team', 'L\'équipe iRefair', locale)}`;
 
@@ -1181,9 +1188,6 @@ export function referrerNewCompanyEmail(params: ReferrerNewCompanyParams): Templ
     locale
   );
 
-  const contactLabel = t('Contact Admin', 'Contacter l\'administrateur', locale);
-  const contactEmail = 'irefair@andbeyondca.com';
-
   const portalCtaText = t(
     'Access your referrer portal',
     'Accéder à votre portail de recommandateur',
@@ -1191,6 +1195,14 @@ export function referrerNewCompanyEmail(params: ReferrerNewCompanyParams): Templ
   );
   const portalCtaButton = t('Open portal', 'Ouvrir le portail', locale);
   const normalizedPortalUrl = portalUrl ? normalizeHttpUrl(portalUrl) : null;
+  const meetFounderText = t(
+    'Want to learn how we work or discuss how you can best support candidates?',
+    'Vous voulez savoir comment nous travaillons ou discuter de la meilleure façon de soutenir les candidats?',
+    locale
+  );
+  const meetFounderButton = t('Meet the founder', 'Rencontrer le fondateur', locale);
+  const meetLink = process.env.FOUNDER_MEET_LINK || '';
+  const normalizedMeetLink = meetLink ? normalizeHttpUrl(meetLink) : null;
 
   const content = `
     <h1 style="margin:0 0 14px 0;font-size:22px;line-height:1.5;font-weight:700;color:#1f2a37;">
@@ -1214,12 +1226,14 @@ export function referrerNewCompanyEmail(params: ReferrerNewCompanyParams): Templ
       </div>
       ${divider}
     ` : ''}
-    <div style="text-align:center;margin:0 0 20px 0;">
-      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#3b4251;">
-        ${escapeHtml(contactLabel)}:
+    ${normalizedMeetLink ? `
+      <p style="margin:0 0 12px 0;font-size:14px;line-height:1.7;color:#3b4251;text-align:center;">
+        ${escapeHtml(meetFounderText)}
       </p>
-      <a href="mailto:${contactEmail}" style="display:inline-block;padding:12px 20px;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none;background:transparent;color:#1f2a37;border:2px solid #e6e9f0;">${contactEmail}</a>
-    </div>
+      <div style="text-align:center;margin:0 0 20px 0;">
+        ${button(meetFounderButton, normalizedMeetLink, 'primary')}
+      </div>
+    ` : ''}
   `;
 
   const customHeader = `
@@ -1250,7 +1264,7 @@ ${mainText3}
 ${iRrefLabel}: ${iRref}
 ${companyLabel}: ${newCompany}
 
-${normalizedPortalUrl ? `${portalCtaText}\n${portalCtaButton}: ${normalizedPortalUrl}\n\n` : ''}${contactLabel}: ${contactEmail}
+${normalizedPortalUrl ? `${portalCtaText}\n${portalCtaButton}: ${normalizedPortalUrl}\n\n` : ''}${normalizedMeetLink ? `${meetFounderText}\n${meetFounderButton}: ${normalizedMeetLink}\n\n` : ''}
 
 - ${t('The iRefair team', 'L\'équipe iRefair', locale)}`;
 
