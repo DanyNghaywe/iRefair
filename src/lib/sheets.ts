@@ -1141,6 +1141,8 @@ const SHEET_DB_PRIMARY =
     !['false', '0', 'no'].includes((process.env.SHEET_DB_PRIMARY || '').toLowerCase()));
 const SHEET_DB_READS_ENABLED = SHEET_DB_ENABLED;
 const SHEET_DB_WRITEBACK_ENABLED = SHEET_DB_PRIMARY && !SHEETS_SYNC_ONLY_MODE;
+// Product requirement: app runtime reads must stay SQL-only (no implicit DB->Sheets fallback).
+const SHEETS_FALLBACK_READS_ENABLED = false;
 const SHEET_KEY_HEADERS: Record<string, string> = {
   [APPLICANT_SHEET_NAME]: 'iRAIN',
   [REFERRER_SHEET_NAME]: 'iRREF',
@@ -1408,7 +1410,8 @@ async function getSheetDataWithHeaders(
 }> {
   const source: SheetDataSource =
     options.source || (SHEET_DB_READS_ENABLED ? 'db' : 'sheets');
-  const allowSheetFallback = options.allowSheetFallback ?? !SHEETS_SYNC_ONLY_MODE;
+  const allowSheetFallback =
+    SHEETS_FALLBACK_READS_ENABLED && (options.allowSheetFallback ?? !SHEETS_SYNC_ONLY_MODE);
   const cacheKey = makeCacheKey(sheetName, source);
 
   if (!options.bypassCache && SHEET_DATA_CACHE_TTL_MS > 0) {
@@ -1487,7 +1490,8 @@ async function getSheetDataWithRowIndex(
 ): Promise<{ headers: string[]; rows: SheetRowWithIndex[] }> {
   const source: SheetDataSource =
     options.source || (SHEET_DB_READS_ENABLED ? 'db' : 'sheets');
-  const allowSheetFallback = options.allowSheetFallback ?? !SHEETS_SYNC_ONLY_MODE;
+  const allowSheetFallback =
+    SHEETS_FALLBACK_READS_ENABLED && (options.allowSheetFallback ?? !SHEETS_SYNC_ONLY_MODE);
 
   if (source === 'db') {
     const headers = await getCachedHeaders(sheetName, 'db');
@@ -2979,13 +2983,22 @@ type ApplicationListItem = {
 
 const DEFAULT_LIMIT = 50;
 
+function normalizeHeaderName(value: string) {
+  return String(value ?? '').trim().toLowerCase();
+}
+
 function headerIndex(headers: string[], name: string) {
-  return headers.findIndex((header) => header.trim() === name.trim());
+  const normalizedName = normalizeHeaderName(name);
+  return headers.findIndex((header) => normalizeHeaderName(header) === normalizedName);
 }
 
 function buildHeaderMap(headers: string[]) {
   const map = new Map<string, number>();
-  headers.forEach((header, index) => map.set(header, index));
+  headers.forEach((header, index) => {
+    const normalizedHeader = normalizeHeaderName(header);
+    if (!normalizedHeader || map.has(normalizedHeader)) return;
+    map.set(normalizedHeader, index);
+  });
   return map;
 }
 
@@ -2994,7 +3007,7 @@ function getHeaderValue(
   row: (string | number | null | undefined)[],
   name: string,
 ) {
-  const index = headers.get(name);
+  const index = headers.get(normalizeHeaderName(name));
   if (index === undefined || index < 0) return '';
   return cellValue(row, index);
 }
@@ -3005,7 +3018,7 @@ function setByHeader(
   headerName: string,
   value: string | number | null | undefined,
 ) {
-  const index = headerMap.get(headerName.trim());
+  const index = headerMap.get(normalizeHeaderName(headerName));
   if (index !== undefined && index >= 0 && index < rowValues.length) {
     rowValues[index] = value ?? '';
   }
@@ -3513,16 +3526,6 @@ export async function findReferrerByIrcrn(ircrn: string): Promise<ReferrerLookup
   const primaryWithEmail = primaryMatches.find((record) => Boolean(record.email));
   if (primaryWithEmail) return primaryWithEmail;
 
-  if (SHEET_DB_READS_ENABLED) {
-    const sheetsMatches = await findApprovedReferrerMatchesByIrcrnInSource(normalizedIrcrn, {
-      source: 'sheets',
-      bypassCache: true,
-      allowSheetFallback: false,
-    });
-    const sheetsWithEmail = sheetsMatches.find((record) => Boolean(record.email));
-    if (sheetsWithEmail) return sheetsWithEmail;
-  }
-
   return null;
 }
 
@@ -3536,23 +3539,9 @@ export async function findReferrerByIrcrnStrict(ircrn: string): Promise<Referrer
   }
 
   let matches = await findApprovedReferrerMatchesByIrcrnInSource(normalizedIrcrn);
-  if (!matches.length && SHEET_DB_READS_ENABLED) {
-    matches = await findApprovedReferrerMatchesByIrcrnInSource(normalizedIrcrn, {
-      source: 'sheets',
-      bypassCache: true,
-      allowSheetFallback: false,
-    });
-  }
 
   if (!matches.length) {
     let hint = await inspectLegacyReferrerIrcrnStateInSource(normalizedIrcrn);
-    if (!hint && SHEET_DB_READS_ENABLED) {
-      hint = await inspectLegacyReferrerIrcrnStateInSource(normalizedIrcrn, {
-        source: 'sheets',
-        bypassCache: true,
-        allowSheetFallback: false,
-      });
-    }
     if (hint === 'not_approved') {
       throw new ReferrerLookupError(
         'not_found',
@@ -5725,17 +5714,6 @@ export async function findReferrerCompanyByIrcrn(
     return primary;
   }
 
-  if (SHEET_DB_READS_ENABLED) {
-    const fromSheets = await findReferrerCompanyByIrcrnInSource(normalizedIrcrn, {
-      source: 'sheets',
-      bypassCache: true,
-      allowSheetFallback: false,
-    });
-    if (fromSheets) {
-      return fromSheets;
-    }
-  }
-
   return null;
 }
 
@@ -5767,13 +5745,6 @@ export async function findReferrerCompanyByIrcrnStrict(ircrn: string): Promise<{
   if (legacyResult) {
     // Fetch full referrer record to get all fields
     let fullReferrer = await getReferrerByIrref(legacyResult.irref);
-    if (!fullReferrer && SHEET_DB_READS_ENABLED) {
-      fullReferrer = await getReferrerByIrref(legacyResult.irref, {
-        source: 'sheets',
-        bypassCache: true,
-        allowSheetFallback: false,
-      });
-    }
     if (fullReferrer) {
       // Convert legacy result to new format
       return {
@@ -5794,13 +5765,6 @@ export async function findReferrerCompanyByIrcrnStrict(ircrn: string): Promise<{
   }
 
   let companyHint = await inspectReferrerCompanyIrcrnStateInSource(normalizedIrcrn);
-  if (!companyHint && SHEET_DB_READS_ENABLED) {
-    companyHint = await inspectReferrerCompanyIrcrnStateInSource(normalizedIrcrn, {
-      source: 'sheets',
-      bypassCache: true,
-      allowSheetFallback: false,
-    });
-  }
   if (companyHint === 'not_approved') {
     throw new ReferrerLookupError(
       'not_found',
@@ -5821,13 +5785,6 @@ export async function findReferrerCompanyByIrcrnStrict(ircrn: string): Promise<{
   }
 
   let legacyHint = await inspectLegacyReferrerIrcrnStateInSource(normalizedIrcrn);
-  if (!legacyHint && SHEET_DB_READS_ENABLED) {
-    legacyHint = await inspectLegacyReferrerIrcrnStateInSource(normalizedIrcrn, {
-      source: 'sheets',
-      bypassCache: true,
-      allowSheetFallback: false,
-    });
-  }
   if (legacyHint === 'not_approved') {
     throw new ReferrerLookupError(
       'not_found',
