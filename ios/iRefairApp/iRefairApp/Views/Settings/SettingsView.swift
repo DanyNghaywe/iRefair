@@ -45,10 +45,16 @@ struct SettingsView: View {
 
                     IRefairSection(l("Legal")) {
                         if let privacyUrl = URL(string: "\(APIConfig.baseURL)/privacy") {
-                            Link(l("Privacy Policy"), destination: privacyUrl)
+                            legalLinkButton(
+                                title: l("Privacy Policy"),
+                                destination: privacyUrl
+                            )
                         }
                         if let termsUrl = URL(string: "\(APIConfig.baseURL)/terms") {
-                            Link(l("Terms of Service"), destination: termsUrl)
+                            legalLinkButton(
+                                title: l("Terms of Service"),
+                                destination: termsUrl
+                            )
                         }
                     }
 
@@ -109,6 +115,18 @@ struct SettingsView: View {
 
     private func alternateRole(for roleMode: AppRoleMode) -> AppRoleMode {
         roleMode == .applicant ? .referrer : .applicant
+    }
+
+    private func legalLinkButton(title: String, destination: URL) -> some View {
+        Link(destination: destination) {
+            HStack(spacing: 8) {
+                Text(title)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                Image(systemName: "arrow.up.right")
+                    .font(Theme.font(size: 13, weight: .semibold))
+            }
+        }
+        .buttonStyle(IRefairGhostButtonStyle(fillWidth: true))
     }
 }
 
