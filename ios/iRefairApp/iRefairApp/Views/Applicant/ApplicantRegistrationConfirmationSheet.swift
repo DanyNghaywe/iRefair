@@ -36,8 +36,10 @@ struct ApplicantRegistrationConfirmationSheet: View {
                         content
                     }
 
-                    IRefairSection {
-                        actionButtons
+                    if !isLoadingState {
+                        IRefairSection {
+                            actionButtons
+                        }
                     }
                 }
                 .toolbar {
@@ -52,6 +54,13 @@ struct ApplicantRegistrationConfirmationSheet: View {
         }
         .presentationDetents([.large])
         .presentationDragIndicator(.visible)
+    }
+
+    private var isLoadingState: Bool {
+        if case .loading = state {
+            return true
+        }
+        return false
     }
 
     @ViewBuilder
