@@ -849,6 +849,9 @@ async function reconcileMissingSheetUpdateFromDb(
 }
 
 async function executeSheetSyncAction(action: SheetSyncAction) {
+  if (SHEETS_SYNC_ONLY_MODE) {
+    throw new Error('Sheet writeback actions are disabled in SQL-only mode.');
+  }
   const normalized = normalizeSheetSyncAction(action);
   switch (normalized.type) {
     case 'ensureHeaders':
@@ -1130,10 +1133,14 @@ function enqueueSheetTask(
 }
 
 const SHEET_DB_ENABLED = Boolean(process.env.DATABASE_URL);
+export const SHEETS_SYNC_ONLY_MODE =
+  !['false', '0', 'no'].includes((process.env.SHEETS_SYNC_ONLY_MODE || 'true').toLowerCase());
 const SHEET_DB_PRIMARY =
   SHEET_DB_ENABLED &&
-  !['false', '0', 'no'].includes((process.env.SHEET_DB_PRIMARY || '').toLowerCase());
+  (SHEETS_SYNC_ONLY_MODE ||
+    !['false', '0', 'no'].includes((process.env.SHEET_DB_PRIMARY || '').toLowerCase()));
 const SHEET_DB_READS_ENABLED = SHEET_DB_ENABLED;
+const SHEET_DB_WRITEBACK_ENABLED = SHEET_DB_PRIMARY && !SHEETS_SYNC_ONLY_MODE;
 const SHEET_KEY_HEADERS: Record<string, string> = {
   [APPLICANT_SHEET_NAME]: 'iRAIN',
   [REFERRER_SHEET_NAME]: 'iRREF',
@@ -1401,7 +1408,7 @@ async function getSheetDataWithHeaders(
 }> {
   const source: SheetDataSource =
     options.source || (SHEET_DB_READS_ENABLED ? 'db' : 'sheets');
-  const allowSheetFallback = options.allowSheetFallback ?? true;
+  const allowSheetFallback = options.allowSheetFallback ?? !SHEETS_SYNC_ONLY_MODE;
   const cacheKey = makeCacheKey(sheetName, source);
 
   if (!options.bypassCache && SHEET_DATA_CACHE_TTL_MS > 0) {
@@ -1480,7 +1487,7 @@ async function getSheetDataWithRowIndex(
 ): Promise<{ headers: string[]; rows: SheetRowWithIndex[] }> {
   const source: SheetDataSource =
     options.source || (SHEET_DB_READS_ENABLED ? 'db' : 'sheets');
-  const allowSheetFallback = options.allowSheetFallback ?? true;
+  const allowSheetFallback = options.allowSheetFallback ?? !SHEETS_SYNC_ONLY_MODE;
 
   if (source === 'db') {
     const headers = await getCachedHeaders(sheetName, 'db');
@@ -1769,7 +1776,7 @@ export async function ensureHeaders(
       await ensureColumns(APPLICANT_SHEET_NAME, ['LinkedIn'], { source: 'db' });
     }
 
-    if (SHEET_DB_PRIMARY && baseHeaders.length && (!existing.length || force)) {
+    if (SHEET_DB_WRITEBACK_ENABLED && baseHeaders.length && (!existing.length || force)) {
       const action: SheetSyncAction = {
         type: 'ensureHeaders',
         sheetName,
@@ -2059,7 +2066,7 @@ async function appendRow(
   invalidateSheetDataCache(sheetName);
   await markSheetUpdated(sheetName, headers);
 
-  if (SHEET_DB_PRIMARY) {
+  if (SHEET_DB_WRITEBACK_ENABLED) {
     const headersSnapshot = headers;
     const action: SheetSyncAction = {
       type: 'appendRow',
@@ -2720,6 +2727,9 @@ export async function upsertApplicantRow(row: ApplicantRow) {
 }
 
 export async function migrateLegacyApplicantIds() {
+  if (SHEETS_SYNC_ONLY_MODE) {
+    throw new Error('Applicant ID migration is disabled in SQL-only mode.');
+  }
   await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
 
   const spreadsheetId = getSpreadsheetIdOrThrow();
@@ -2784,6 +2794,9 @@ export async function migrateLegacyApplicantIds() {
 }
 
 export async function formatSheet(sheetName: string, headers: string[]) {
+  if (SHEETS_SYNC_ONLY_MODE) {
+    throw new Error('Sheet formatting is disabled in SQL-only mode.');
+  }
   await ensureHeaders(sheetName, headers, true);
   await applyProSheetFormatting(sheetName, headers);
 }
@@ -2846,7 +2859,7 @@ export async function ensureColumns(
     invalidateSheetDataCache(sheetName);
     await markSheetUpdated(sheetName, updatedHeaders);
 
-    if (SHEET_DB_PRIMARY) {
+    if (SHEET_DB_WRITEBACK_ENABLED) {
       const action: SheetSyncAction = {
         type: 'ensureColumns',
         sheetName,
@@ -4026,7 +4039,7 @@ export async function updateRowById(
   invalidateSheetDataCache(sheetName);
   await markSheetUpdated(sheetName, headers);
 
-  if (SHEET_DB_PRIMARY) {
+  if (SHEET_DB_WRITEBACK_ENABLED) {
     const patchHeaders = Object.keys(patchByHeaderName).filter(
       (header) => patchByHeaderName[header] !== undefined,
     );
@@ -4496,20 +4509,22 @@ export async function deleteReferrerByIrref(
   invalidateSheetDataCache(REFERRER_SHEET_NAME);
   await markSheetUpdated(REFERRER_SHEET_NAME);
 
-  const action: SheetSyncAction = {
-    type: 'deleteRowById',
-    sheetName: REFERRER_SHEET_NAME,
-    idHeaderName: 'iRREF',
-    idValue: irref,
-  };
-  void enqueueSheetTask(
-    REFERRER_SHEET_NAME,
-    async () => {
-      await executeSheetSyncAction(action);
-    },
-    `deleteReferrer:${irref}`,
-    action,
-  ).catch(() => undefined);
+  if (SHEET_DB_WRITEBACK_ENABLED) {
+    const action: SheetSyncAction = {
+      type: 'deleteRowById',
+      sheetName: REFERRER_SHEET_NAME,
+      idHeaderName: 'iRREF',
+      idValue: irref,
+    };
+    void enqueueSheetTask(
+      REFERRER_SHEET_NAME,
+      async () => {
+        await executeSheetSyncAction(action);
+      },
+      `deleteReferrer:${irref}`,
+      action,
+    ).catch(() => undefined);
+  }
 
   return { success: true };
 }
@@ -4538,20 +4553,22 @@ export async function deleteApplicantByIrain(
   invalidateSheetDataCache(APPLICANT_SHEET_NAME);
   await markSheetUpdated(APPLICANT_SHEET_NAME);
 
-  const action: SheetSyncAction = {
-    type: 'deleteRowById',
-    sheetName: APPLICANT_SHEET_NAME,
-    idHeaderName: 'iRAIN',
-    idValue: irain,
-  };
-  void enqueueSheetTask(
-    APPLICANT_SHEET_NAME,
-    async () => {
-      await executeSheetSyncAction(action);
-    },
-    `deleteApplicant:${irain}`,
-    action,
-  ).catch(() => undefined);
+  if (SHEET_DB_WRITEBACK_ENABLED) {
+    const action: SheetSyncAction = {
+      type: 'deleteRowById',
+      sheetName: APPLICANT_SHEET_NAME,
+      idHeaderName: 'iRAIN',
+      idValue: irain,
+    };
+    void enqueueSheetTask(
+      APPLICANT_SHEET_NAME,
+      async () => {
+        await executeSheetSyncAction(action);
+      },
+      `deleteApplicant:${irain}`,
+      action,
+    ).catch(() => undefined);
+  }
 
   return { success: true };
 }
@@ -5271,7 +5288,7 @@ export async function restoreApplicationById(
 // ============================================================================
 
 /**
- * Permanently delete an archived applicant (hard delete from sheet).
+ * Permanently delete an archived applicant (hard delete from database).
  * Also deletes all applications linked to this applicant.
  */
 export async function permanentlyDeleteApplicant(
@@ -5280,7 +5297,7 @@ export async function permanentlyDeleteApplicant(
   await ensureHeaders(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
 
-  const applicant = await getApplicantByIrain(irain, { source: 'sheets' });
+  const applicant = await getApplicantByIrain(irain, { source: 'db' });
   if (!applicant) {
     return { success: false, reason: 'not_found' };
   }
@@ -5290,48 +5307,12 @@ export async function permanentlyDeleteApplicant(
   }
 
   // Find all applications linked to this applicant (including archived ones)
-  const applications = await findApplicationsByApplicantId(irain, true, { source: 'sheets' });
-
-  // Delete applications in reverse order of rowIndex to avoid index shifting issues
-  const sortedApplications = [...applications].sort((a, b) => b.rowIndex - a.rowIndex);
-
-  let deletedApplications = 0;
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-
-  // Get the sheetId for the Applications sheet
-  const doc = await sheets.spreadsheets.get({ spreadsheetId });
-  const appSheet = doc.data.sheets?.find(
-    (sheet) => sheet.properties?.title === APPLICATION_SHEET_NAME,
-  );
-  const appSheetId = appSheet?.properties?.sheetId;
-
-  if (appSheetId !== undefined && sortedApplications.length > 0) {
-    try {
-      // Delete all applications in a single batch request (in reverse order)
-      const deleteRequests = sortedApplications.map((app) => ({
-        deleteDimension: {
-          range: {
-            sheetId: appSheetId,
-            dimension: 'ROWS' as const,
-            startIndex: app.rowIndex - 1,
-            endIndex: app.rowIndex,
-          },
-        },
-      }));
-
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        requestBody: { requests: deleteRequests },
-      });
-
-      invalidateSheetDataCache(APPLICATION_SHEET_NAME);
-      await deleteDbRows(APPLICATION_SHEET_NAME, applications.map((app) => app.id));
-      deletedApplications = sortedApplications.length;
-    } catch (error) {
-      console.error('Error deleting applicant applications', error);
-      return { success: false, reason: 'error' };
-    }
+  const applications = await findApplicationsByApplicantId(irain, true, { source: 'db' });
+  const deletedApplications = applications.length;
+  if (deletedApplications > 0) {
+    await deleteDbRows(APPLICATION_SHEET_NAME, applications.map((app) => app.id));
+    invalidateSheetDataCache(APPLICATION_SHEET_NAME);
+    await markSheetUpdated(APPLICATION_SHEET_NAME);
   }
 
   // Now delete the applicant
@@ -5344,7 +5325,7 @@ export async function permanentlyDeleteApplicant(
 }
 
 /**
- * Permanently delete an archived referrer (hard delete from sheet).
+ * Permanently delete an archived referrer (hard delete from database).
  * Also deletes all applications linked to this referrer.
  */
 export async function permanentlyDeleteReferrer(
@@ -5353,7 +5334,7 @@ export async function permanentlyDeleteReferrer(
   await ensureHeaders(REFERRER_SHEET_NAME, REFERRER_HEADERS);
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
 
-  const referrer = await getReferrerByIrref(irref, { source: 'sheets' });
+  const referrer = await getReferrerByIrref(irref, { source: 'db' });
   if (!referrer) {
     return { success: false, reason: 'not_found' };
   }
@@ -5363,48 +5344,12 @@ export async function permanentlyDeleteReferrer(
   }
 
   // Find all applications linked to this referrer (including archived ones)
-  const applications = await findApplicationsByReferrerIrref(irref, true, { source: 'sheets' });
-
-  // Delete applications in reverse order of rowIndex to avoid index shifting issues
-  const sortedApplications = [...applications].sort((a, b) => b.rowIndex - a.rowIndex);
-
-  let deletedApplications = 0;
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-
-  // Get the sheetId for the Applications sheet
-  const doc = await sheets.spreadsheets.get({ spreadsheetId });
-  const appSheet = doc.data.sheets?.find(
-    (sheet) => sheet.properties?.title === APPLICATION_SHEET_NAME,
-  );
-  const appSheetId = appSheet?.properties?.sheetId;
-
-  if (appSheetId !== undefined && sortedApplications.length > 0) {
-    try {
-      // Delete all applications in a single batch request (in reverse order)
-      const deleteRequests = sortedApplications.map((app) => ({
-        deleteDimension: {
-          range: {
-            sheetId: appSheetId,
-            dimension: 'ROWS' as const,
-            startIndex: app.rowIndex - 1,
-            endIndex: app.rowIndex,
-          },
-        },
-      }));
-
-      await sheets.spreadsheets.batchUpdate({
-        spreadsheetId,
-        requestBody: { requests: deleteRequests },
-      });
-
-      invalidateSheetDataCache(APPLICATION_SHEET_NAME);
-      await deleteDbRows(APPLICATION_SHEET_NAME, applications.map((app) => app.id));
-      deletedApplications = sortedApplications.length;
-    } catch (error) {
-      console.error('Error deleting referrer applications', error);
-      return { success: false, reason: 'error' };
-    }
+  const applications = await findApplicationsByReferrerIrref(irref, true, { source: 'db' });
+  const deletedApplications = applications.length;
+  if (deletedApplications > 0) {
+    await deleteDbRows(APPLICATION_SHEET_NAME, applications.map((app) => app.id));
+    invalidateSheetDataCache(APPLICATION_SHEET_NAME);
+    await markSheetUpdated(APPLICATION_SHEET_NAME);
   }
 
   // Now delete the referrer
@@ -5417,14 +5362,14 @@ export async function permanentlyDeleteReferrer(
 }
 
 /**
- * Permanently delete an archived application (hard delete from sheet).
+ * Permanently delete an archived application (hard delete from database).
  */
 export async function permanentlyDeleteApplication(
   id: string,
 ): Promise<{ success: boolean; reason?: 'not_found' | 'not_archived' | 'error' }> {
   await ensureHeaders(APPLICATION_SHEET_NAME, APPLICATION_HEADERS);
 
-  const application = await getApplicationById(id, { source: 'sheets' });
+  const application = await getApplicationById(id, { source: 'db' });
   if (!application) {
     return { success: false, reason: 'not_found' };
   }
@@ -5433,42 +5378,10 @@ export async function permanentlyDeleteApplication(
     return { success: false, reason: 'not_archived' };
   }
 
-  const spreadsheetId = getSpreadsheetIdOrThrow();
-  const sheets = getSheetsClient();
-
-  // Get the sheetId for the Applications sheet
-  const doc = await sheets.spreadsheets.get({ spreadsheetId });
-  const targetSheet = doc.data.sheets?.find(
-    (sheet) => sheet.properties?.title === APPLICATION_SHEET_NAME,
-  );
-  const sheetId = targetSheet?.properties?.sheetId;
-
-  if (sheetId === undefined) {
-    console.error(`Unable to find sheet "${APPLICATION_SHEET_NAME}" for deletion.`);
-    return { success: false, reason: 'error' };
-  }
-
   try {
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId,
-      requestBody: {
-        requests: [
-          {
-            deleteDimension: {
-              range: {
-                sheetId,
-                dimension: 'ROWS',
-                startIndex: application.rowIndex - 1,
-                endIndex: application.rowIndex,
-              },
-            },
-          },
-        ],
-      },
-    });
-
-    invalidateSheetDataCache(APPLICATION_SHEET_NAME);
     await deleteDbRows(APPLICATION_SHEET_NAME, [id]);
+    invalidateSheetDataCache(APPLICATION_SHEET_NAME);
+    await markSheetUpdated(APPLICATION_SHEET_NAME);
     return { success: true };
   } catch (error) {
     console.error('Error permanently deleting application', error);
@@ -6095,6 +6008,7 @@ export type SheetSyncIssueSummary = {
 };
 
 export async function listSheetSyncIssues(limit = 10): Promise<SheetSyncIssueSummary[]> {
+  if (SHEETS_SYNC_ONLY_MODE) return [];
   if (!SHEET_DB_ENABLED) return [];
   const issues = await db.sheetSyncIssue.findMany({
     where: { resolvedAt: null },
@@ -6120,6 +6034,9 @@ export async function listSheetSyncIssues(limit = 10): Promise<SheetSyncIssueSum
 export async function retrySheetSyncIssue(
   issueId: string,
 ): Promise<{ ok: boolean; error?: string }> {
+  if (SHEETS_SYNC_ONLY_MODE) {
+    return { ok: false, error: 'Sheet writeback is disabled in SQL-only mode.' };
+  }
   if (!SHEET_DB_ENABLED) {
     return { ok: false, error: 'Database is not configured.' };
   }

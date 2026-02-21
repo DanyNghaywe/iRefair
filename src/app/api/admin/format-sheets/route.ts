@@ -1,11 +1,4 @@
 import { NextResponse } from 'next/server';
-import {
-  formatSheet,
-  APPLICANT_HEADERS,
-  REFERRER_HEADERS,
-  APPLICANT_SHEET_NAME,
-  REFERRER_SHEET_NAME,
-} from '@/lib/sheets';
 
 export async function GET(request: Request) {
   const token = request.headers.get('x-admin-token');
@@ -15,13 +8,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 
-  try {
-    await formatSheet(APPLICANT_SHEET_NAME, APPLICANT_HEADERS);
-    await formatSheet(REFERRER_SHEET_NAME, REFERRER_HEADERS);
-
-    return NextResponse.json({ ok: true });
-  } catch (error) {
-    console.error('Admin format-sheets error', error);
-    return NextResponse.json({ ok: false, error: 'Failed to format sheets' }, { status: 500 });
-  }
+  return NextResponse.json(
+    { ok: false, error: 'Sheet formatting endpoint is disabled in SQL-only mode.' },
+    { status: 410 },
+  );
 }

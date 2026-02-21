@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import { migrateLegacyApplicantIds } from '@/lib/sheets';
 
 const ADMIN_HEADER = 'x-admin-token';
 
@@ -11,14 +10,8 @@ export async function GET(request: Request) {
     return NextResponse.json({ ok: false, error: 'Unauthorized' }, { status: 401 });
   }
 
-  try {
-    const result = await migrateLegacyApplicantIds();
-    return NextResponse.json({ ok: true, ...result });
-  } catch (error) {
-    console.error('Applicant ID migration failed', error);
-    return NextResponse.json(
-      { ok: false, error: 'Failed to migrate applicant IDs. Check server logs for details.' },
-      { status: 500 },
-    );
-  }
+  return NextResponse.json(
+    { ok: false, error: 'Applicant ID migration endpoint is disabled in SQL-only mode.' },
+    { status: 410 },
+  );
 }
