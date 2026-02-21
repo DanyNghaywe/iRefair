@@ -2987,6 +2987,25 @@ function normalizeHeaderName(value: string) {
   return String(value ?? '').trim().toLowerCase();
 }
 
+function extractIrrefToken(value?: string) {
+  const match = /iRREF\d{10}/i.exec(String(value ?? '').trim());
+  return match ? match[0] : '';
+}
+
+function normalizeIrrefLookup(value?: string) {
+  const token = extractIrrefToken(value);
+  if (token) return token.toLowerCase();
+  return String(value ?? '').trim().toLowerCase();
+}
+
+function findIrrefTokenInRow(row: (string | number | null | undefined)[]) {
+  for (const value of row) {
+    const token = extractIrrefToken(String(value ?? ''));
+    if (token) return token;
+  }
+  return '';
+}
+
 function headerIndex(headers: string[], name: string) {
   const normalizedName = normalizeHeaderName(name);
   return headers.findIndex((header) => normalizeHeaderName(header) === normalizedName);
@@ -2996,7 +3015,7 @@ function buildHeaderMap(headers: string[]) {
   const map = new Map<string, number>();
   headers.forEach((header, index) => {
     const normalizedHeader = normalizeHeaderName(header);
-    if (!normalizedHeader || map.has(normalizedHeader)) return;
+    if (!normalizedHeader) return;
     map.set(normalizedHeader, index);
   });
   return map;
@@ -4339,17 +4358,33 @@ export async function getReferrerByIrref(irref: string, options: SheetReadOption
   });
 
   const headerMap = buildHeaderMap(headers);
-  const irrefColIndex = headerMap.get(normalizeHeaderName('iRREF'));
-  if (irrefColIndex === undefined) return null;
+  const targetIrref = normalizeIrrefLookup(irref);
+  if (!targetIrref) return null;
+
+  const normalizedIrrefHeader = normalizeHeaderName('iRREF');
+  const irrefColIndexes: number[] = [];
+  headers.forEach((header, index) => {
+    if (normalizeHeaderName(header) === normalizedIrrefHeader) {
+      irrefColIndexes.push(index);
+    }
+  });
+  if (!irrefColIndexes.length) {
+    irrefColIndexes.push(0);
+  }
+
   for (const row of rows) {
     const values = row.values ?? [];
-    const value = cellValue(values, irrefColIndex).toLowerCase();
-    if (value === irref.trim().toLowerCase()) {
-      return {
-        rowIndex: row.rowIndex,
-        record: buildRecord(headerMap, values),
-      };
-    }
+    const columnMatch = irrefColIndexes.some(
+      (index) => normalizeIrrefLookup(cellValue(values, index)) === targetIrref,
+    );
+    const rowScanMatch =
+      !columnMatch && values.some((value) => normalizeIrrefLookup(String(value ?? '')) === targetIrref);
+    if (!columnMatch && !rowScanMatch) continue;
+
+    return {
+      rowIndex: row.rowIndex,
+      record: buildRecord(headerMap, values),
+    };
   }
   return null;
 }
@@ -5639,10 +5674,16 @@ async function findReferrerCompanyByIrcrnInSource(
     if (!isApprovedStatus(approvalRaw)) continue;
     const approval = normalizeSearch(approvalRaw);
 
+    const referrerIrrefRaw = getHeaderValue(headerMap, row, 'Referrer iRREF');
+    const resolvedReferrerIrref =
+      extractIrrefToken(referrerIrrefRaw) ||
+      findIrrefTokenInRow(row) ||
+      referrerIrrefRaw.trim();
+
     const company: ReferrerCompanyRecord = {
       id: getHeaderValue(headerMap, row, 'ID'),
       timestamp: getHeaderValue(headerMap, row, 'Timestamp'),
-      referrerIrref: getHeaderValue(headerMap, row, 'Referrer iRREF'),
+      referrerIrref: resolvedReferrerIrref,
       companyName: getHeaderValue(headerMap, row, 'Company Name'),
       companyIrcrn: getHeaderValue(headerMap, row, 'Company iRCRN') || undefined,
       companyApproval: approval as ReferrerCompanyRecord['companyApproval'],
@@ -5689,7 +5730,11 @@ async function inspectReferrerCompanyIrcrnStateInSource(
       continue;
     }
 
-    const referrerIrref = getHeaderValue(headerMap, row, 'Referrer iRREF').trim();
+    const referrerIrrefRaw = getHeaderValue(headerMap, row, 'Referrer iRREF');
+    const referrerIrref =
+      extractIrrefToken(referrerIrrefRaw) ||
+      findIrrefTokenInRow(row) ||
+      referrerIrrefRaw.trim();
     if (!referrerIrref) {
       hasInactiveReferrer = true;
       continue;
