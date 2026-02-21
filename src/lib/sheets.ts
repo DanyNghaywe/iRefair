@@ -3375,6 +3375,8 @@ export async function listApprovedReferrerCompanies(): Promise<CompanyRow[]> {
   const items: CompanyRow[] = [];
 
   for (const row of rows) {
+    if (isArchivedStatus(getHeaderValue(headerMap, row, 'Archived'))) continue;
+
     const approval = getHeaderValue(headerMap, row, 'Company Approval').toLowerCase();
     if (approval !== 'approved') continue;
 
@@ -5969,6 +5971,22 @@ export async function listApprovedCompanies(): Promise<CompanyRow[]> {
     const code = getHeaderValue(headerMap, row, 'Company iRCRN').trim();
     const name = getHeaderValue(headerMap, row, 'Company Name').trim();
     if (!code || !name) continue;
+
+    // Keep hiring list consistent with apply eligibility (active linked referrer required).
+    const referrerIrrefRaw = getHeaderValue(headerMap, row, 'Referrer iRREF');
+    const companyRecord: Pick<ReferrerCompanyRecord, 'referrerIrref' | 'companyName' | 'companyIrcrn'> = {
+      referrerIrref:
+        extractIrrefToken(referrerIrrefRaw) ||
+        findIrrefTokenInRow(row) ||
+        referrerIrrefRaw.trim(),
+      companyName: name,
+      companyIrcrn: code,
+    };
+    const activeReferrer = await resolveActiveReferrerForCompanyLookup(
+      companyRecord,
+      normalizeSearch(code),
+    );
+    if (!activeReferrer) continue;
 
     items.push({
       code,
