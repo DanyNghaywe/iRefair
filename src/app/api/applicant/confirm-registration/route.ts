@@ -625,21 +625,9 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     return errorResponse(msg, 404, isGetRequest, locale);
   }
 
-  const storedTokenHash = applicant.record.updateTokenHash?.trim() || "";
-  const storedReminderTokenHash = applicant.record.reminderTokenHash?.trim() || "";
-
-  // Verify token hash matches EITHER the original token OR the reminder token
-  const matchesOriginal = safeCompareHash(storedTokenHash, tokenHash);
-  const matchesReminder = safeCompareHash(storedReminderTokenHash, tokenHash);
-
-  if (!matchesOriginal && !matchesReminder) {
-    const msg = locale === 'fr'
-      ? 'Ce lien de confirmation n\'est plus valide. Veuillez vous inscrire à nouveau <a href="/applicant" style="text-decoration:underline;">ici</a>.'
-      : 'This confirmation link is no longer valid. Please register again <a href="/applicant" style="text-decoration:underline;">here</a>.';
-    return errorResponse(msg, 403, isGetRequest, locale);
-  }
-
-  // Check if already confirmed
+  // Check if already confirmed before validating stored token hashes.
+  // Tokens are cleared after first confirmation, so repeat clicks should
+  // render an "already confirmed" state instead of "invalid link".
   const registrationStatus = applicant.record.registrationStatus?.trim() || "";
   if (registrationStatus !== "Pending Confirmation") {
     // Already confirmed - show appropriate page based on eligibility
@@ -656,30 +644,30 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
       const translations = wasIneligible
         ? {
             en: {
-              pageTitle: 'Profile Created',
-              heading: 'Profile Created',
-              description: "Your iRefair profile has been created. However, based on the information you provided, we're unable to match you with referrers at this time.",
-              footer: 'Check your email for more details about your eligibility status.',
+              pageTitle: 'Already Confirmed',
+              heading: 'Account Already Confirmed',
+              description: "This account was already confirmed previously. Your iRefair profile is already created, but based on your information, we're unable to match you with referrers at this time.",
+              footer: 'Please check the confirmation email you already received for your account details.',
             },
             fr: {
-              pageTitle: 'Profil créé',
-              heading: 'Profil créé',
-              description: "Votre profil iRefair a été créé. Cependant, en fonction des informations que vous avez fournies, nous ne sommes pas en mesure de vous jumeler avec des recommandateurs pour le moment.",
-              footer: 'Consultez votre courriel pour plus de détails sur votre statut d\'éligibilité.',
+              pageTitle: 'Déjà confirmé',
+              heading: 'Compte déjà confirmé',
+              description: "Ce compte a déjà été confirmé auparavant. Votre profil iRefair est déjà créé, mais en fonction des informations que vous avez fournies, nous ne sommes pas en mesure de vous jumeler avec des recommandateurs pour le moment.",
+              footer: 'Veuillez consulter le courriel de confirmation que vous avez déjà reçu pour les détails de votre compte.',
             },
           }
         : {
             en: {
-              pageTitle: 'Registration Confirmed',
-              heading: 'Registration Confirmed!',
-              description: 'Your iRefair profile has been successfully activated. You can now apply for referral opportunities.',
-              footer: "You'll receive a confirmation email shortly with your credentials.",
+              pageTitle: 'Already Confirmed',
+              heading: 'Account Already Confirmed',
+              description: 'This account was already confirmed previously. Your iRefair profile is already active.',
+              footer: 'Please use the iRAIN and Applicant Key from your confirmation email to access your account.',
             },
             fr: {
-              pageTitle: 'Inscription confirmée',
-              heading: 'Inscription confirmée!',
-              description: 'Votre profil iRefair a été activé avec succès. Vous pouvez maintenant postuler pour des opportunités de recommandation.',
-              footer: 'Vous recevrez bientôt un courriel de confirmation avec vos identifiants.',
+              pageTitle: 'Déjà confirmé',
+              heading: 'Compte déjà confirmé',
+              description: 'Ce compte a déjà été confirmé auparavant. Votre profil iRefair est déjà actif.',
+              footer: 'Veuillez utiliser le iRAIN et la clé candidat de votre courriel de confirmation pour accéder à votre compte.',
             },
           };
       const t = translations[locale];
@@ -696,6 +684,20 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
       });
     }
     return NextResponse.json({ ok: true, alreadyConfirmed: true });
+  }
+
+  const storedTokenHash = applicant.record.updateTokenHash?.trim() || "";
+  const storedReminderTokenHash = applicant.record.reminderTokenHash?.trim() || "";
+
+  // Verify token hash matches EITHER the original token OR the reminder token
+  const matchesOriginal = safeCompareHash(storedTokenHash, tokenHash);
+  const matchesReminder = safeCompareHash(storedReminderTokenHash, tokenHash);
+
+  if (!matchesOriginal && !matchesReminder) {
+    const msg = locale === 'fr'
+      ? 'Ce lien de confirmation n\'est plus valide. Veuillez vous inscrire à nouveau <a href="/applicant" style="text-decoration:underline;">ici</a>.'
+      : 'This confirmation link is no longer valid. Please register again <a href="/applicant" style="text-decoration:underline;">here</a>.';
+    return errorResponse(msg, 403, isGetRequest, locale);
   }
 
   // Check token expiry

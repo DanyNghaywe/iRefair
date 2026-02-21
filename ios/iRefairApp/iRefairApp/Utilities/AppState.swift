@@ -14,15 +14,6 @@ enum AppRoleMode: String, Hashable, CaseIterable {
     case applicant
     case referrer
 
-    var defaultTab: AppTab {
-        switch self {
-        case .applicant:
-            return .applicant
-        case .referrer:
-            return .referrerPortal
-        }
-    }
-
     var availableTabs: [AppTab] {
         switch self {
         case .applicant:
@@ -35,6 +26,8 @@ enum AppRoleMode: String, Hashable, CaseIterable {
 
 final class AppState: ObservableObject {
     private static let roleModeStorageKey = "irefair.appRoleMode"
+    private static let referrerPortalAccountsStorageKey = "irefair.referrerPortal.accounts"
+    private static let applicantPortalAccountsStorageKey = "irefair.applicantPortal.accounts"
     private let userDefaults: UserDefaults
 
     @Published private(set) var selectedTab: AppTab
@@ -49,7 +42,7 @@ final class AppState: ObservableObject {
             let storedRole = AppRoleMode(rawValue: rawValue)
         {
             roleMode = storedRole
-            selectedTab = storedRole.defaultTab
+            selectedTab = Self.defaultTab(for: storedRole, userDefaults: userDefaults)
         } else {
             roleMode = nil
             selectedTab = .settings
@@ -64,7 +57,7 @@ final class AppState: ObservableObject {
         roleMode = mode
         suggestedRoleMode = nil
         userDefaults.set(mode.rawValue, forKey: Self.roleModeStorageKey)
-        selectedTab = mode.defaultTab
+        selectedTab = Self.defaultTab(for: mode, userDefaults: userDefaults)
     }
 
     func suggestRoleMode(_ mode: AppRoleMode) {
@@ -77,14 +70,14 @@ final class AppState: ObservableObject {
         if roleMode.availableTabs.contains(tab) {
             selectedTab = tab
         } else {
-            selectedTab = roleMode.defaultTab
+            selectedTab = Self.defaultTab(for: roleMode, userDefaults: userDefaults)
         }
     }
 
     func ensureValidSelectedTab() {
         guard let roleMode else { return }
         if !roleMode.availableTabs.contains(selectedTab) {
-            selectedTab = roleMode.defaultTab
+            selectedTab = Self.defaultTab(for: roleMode, userDefaults: userDefaults)
         }
     }
 
@@ -97,6 +90,37 @@ final class AppState: ObservableObject {
     func consumeNextPendingReferrerPortalToken() -> String? {
         guard !pendingReferrerPortalTokens.isEmpty else { return nil }
         return pendingReferrerPortalTokens.removeFirst()
+    }
+
+    private static func defaultTab(for mode: AppRoleMode, userDefaults: UserDefaults) -> AppTab {
+        switch mode {
+        case .applicant:
+            return hasStoredApplicantPortalAccount(userDefaults: userDefaults) ? .applicantPortal : .applicant
+        case .referrer:
+            return hasStoredReferrerPortalAccount(userDefaults: userDefaults) ? .referrerPortal : .referrerForm
+        }
+    }
+
+    private static func hasStoredReferrerPortalAccount(userDefaults: UserDefaults) -> Bool {
+        guard
+            let data = userDefaults.data(forKey: Self.referrerPortalAccountsStorageKey),
+            let storedAccounts = try? JSONDecoder().decode([ReferrerPortalAccount].self, from: data)
+        else {
+            return false
+        }
+
+        return storedAccounts.contains { !ReferrerPortalAccount.normalize($0.irref).isEmpty }
+    }
+
+    private static func hasStoredApplicantPortalAccount(userDefaults: UserDefaults) -> Bool {
+        guard
+            let data = userDefaults.data(forKey: Self.applicantPortalAccountsStorageKey),
+            let storedAccounts = try? JSONDecoder().decode([ApplicantPortalAccount].self, from: data)
+        else {
+            return false
+        }
+
+        return storedAccounts.contains { !ApplicantPortalAccount.normalize($0.irain).isEmpty }
     }
 }
 
