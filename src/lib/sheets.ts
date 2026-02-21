@@ -5945,6 +5945,32 @@ export async function archiveReferrerCompany(
   return { success: result.updated, reason: result.reason };
 }
 
+async function resolveActiveReferrerForCompanyLookup(
+  company: Pick<ReferrerCompanyRecord, 'referrerIrref' | 'companyName' | 'companyIrcrn'>,
+  normalizedIrcrn: string,
+): Promise<ReferrerRecord | null> {
+  const linkedIrref = company.referrerIrref.trim();
+  if (linkedIrref) {
+    const linkedReferrer = await getReferrerByIrref(linkedIrref);
+    if (linkedReferrer && !isArchivedStatus(linkedReferrer.record.archived)) {
+      return linkedReferrer.record;
+    }
+  }
+
+  if (!normalizedIrcrn) return null;
+
+  // Fallback for legacy/partial data where row linkage is missing but iRCRN still maps to a live referrer.
+  const fallbackReferrer = await findReferrerByIrcrn(normalizedIrcrn);
+  if (!fallbackReferrer?.irref) return null;
+
+  const fullReferrer = await getReferrerByIrref(fallbackReferrer.irref);
+  if (!fullReferrer || isArchivedStatus(fullReferrer.record.archived)) {
+    return null;
+  }
+
+  return fullReferrer.record;
+}
+
 /**
  * List all approved companies from the Referrer Companies sheet.
  * This is the new source for the hiring companies list.
