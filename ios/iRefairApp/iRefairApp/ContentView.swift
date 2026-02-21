@@ -16,6 +16,18 @@ struct ContentView: View {
         .tint(Theme.accentPrimary)
         .environment(\.font, Theme.font(.body))
         .preferredColorScheme(.light)
+        .sheet(
+            item: Binding(
+                get: { appState.applicantRegistrationConfirmationRequest },
+                set: { value in
+                    if value == nil {
+                        appState.applicantRegistrationConfirmationRequest = nil
+                    }
+                }
+            )
+        ) { request in
+            ApplicantRegistrationConfirmationSheet(request: request)
+        }
     }
 
     private func l(_ key: String) -> String {

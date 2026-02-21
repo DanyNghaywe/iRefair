@@ -53,6 +53,18 @@ struct iRefairApp: App {
             return
         }
 
+        let isRegistrationConfirmationLink =
+            (path.contains("confirm-registration") && (path.contains("applicant") || host.contains("applicant")))
+            || host.contains("confirm-registration")
+        if isRegistrationConfirmationLink, let token = query["token"], !token.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            appState.presentApplicantRegistrationConfirmation(token: token)
+            appState.suggestRoleMode(.applicant)
+            if appState.roleMode == .applicant {
+                appState.selectTab(.applicant)
+            }
+            return
+        }
+
         let isUpdateLink = host.contains("applicant") || host.contains("update") || path.contains("applicant") || path.contains("update")
         if isUpdateLink {
             let updateToken = query["updatetoken"] ?? query["token"] ?? ""

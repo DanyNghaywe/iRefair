@@ -5,10 +5,12 @@
       {
         "appID": "TAUDY2MPCD.com.irefair.app",
         "paths": [
-          "*",
+          "/api/applicant/confirm-registration",
+          "/api/applicant/confirm-registration/*",
           "NOT /api/*",
           "NOT /_next/*",
-          "NOT /.well-known/*"
+          "NOT /.well-known/*",
+          "*"
         ]
       }
     ]

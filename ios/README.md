@@ -27,6 +27,7 @@ This folder contains a SwiftUI native iOS client for iRefair. It talks to the ex
 - Deep links:
   - `irefair://portal?token=...` to open the referrer portal
   - `irefair://update?updateToken=...&appId=...` to prefill applicant updates
+  - `https://irefair.andbeyondca.com/api/applicant/confirm-registration?token=...` opens a native applicant confirmation result sheet
 - Universal links (https):
   - Update the `TEAMID` in `public/.well-known/apple-app-site-association`
   - Example: `https://irefair.andbeyondca.com/referrer/portal?token=...`

@@ -65,8 +65,12 @@ function createGetRequest(token: string) {
   });
 }
 
-function createPostRequest(token: string) {
-  return new NextRequest('http://localhost:3000/api/applicant/confirm-registration', {
+function createPostRequest(token: string, queryString = '') {
+  const query = queryString.trim();
+  const url = query
+    ? `http://localhost:3000/api/applicant/confirm-registration?${query}`
+    : 'http://localhost:3000/api/applicant/confirm-registration';
+  return new NextRequest(url, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ token }),
@@ -146,6 +150,59 @@ describe('applicant confirm registration route', () => {
     await expect(response.json()).resolves.toEqual({ ok: true, alreadyConfirmed: true });
     expect(updateRowById).not.toHaveBeenCalled();
     expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it('returns structured mobile JSON when mode=mobile is requested', async () => {
+    getApplicantByEmail.mockResolvedValue({
+      rowIndex: 2,
+      record: {
+        id: 'iRAIN0000000001',
+        registrationStatus: '',
+        updateTokenHash: '',
+        reminderTokenHash: '',
+        locatedCanada: 'yes',
+        authorizedCanada: 'yes',
+        eligibleMoveCanada: '',
+      },
+    });
+
+    const { POST } = await import('../applicant/confirm-registration/route');
+    const response = await POST(createPostRequest(makeToken('en'), 'mode=mobile'));
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body).toMatchObject({
+      ok: true,
+      variant: 'already_confirmed',
+      heading: 'Account Already Confirmed',
+      iRain: 'iRAIN0000000001',
+      alreadyConfirmed: true,
+      ineligible: false,
+    });
+    expect(updateRowById).not.toHaveBeenCalled();
+    expect(sendMail).not.toHaveBeenCalled();
+  });
+
+  it('strips HTML from mobile error message payloads', async () => {
+    getApplicantByEmail.mockResolvedValue({
+      rowIndex: 2,
+      record: {
+        id: 'iRAIN0000000001',
+        registrationStatus: 'Pending Confirmation',
+        updateTokenHash: 'a'.repeat(64),
+        reminderTokenHash: '',
+        updateTokenExpiresAt: '4102444800',
+      },
+    });
+
+    const { POST } = await import('../applicant/confirm-registration/route');
+    const response = await POST(createPostRequest(makeToken('en'), 'mode=mobile'));
+    const body = await response.json();
+
+    expect(response.status).toBe(403);
+    expect(body.ok).toBe(false);
+    expect(body.variant).toBe('error');
+    expect(body.errorMessage).not.toContain('<a');
   });
 
   it('still returns invalid-link when registration is pending and token hash mismatches', async () => {

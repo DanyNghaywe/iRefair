@@ -24,6 +24,11 @@ enum AppRoleMode: String, Hashable, CaseIterable {
     }
 }
 
+struct ApplicantRegistrationConfirmationRequest: Identifiable, Hashable {
+    let id = UUID()
+    let token: String
+}
+
 final class AppState: ObservableObject {
     private static let roleModeStorageKey = "irefair.appRoleMode"
     private static let referrerPortalAccountsStorageKey = "irefair.referrerPortal.accounts"
@@ -34,6 +39,7 @@ final class AppState: ObservableObject {
     @Published private(set) var roleMode: AppRoleMode?
     @Published var suggestedRoleMode: AppRoleMode?
     @Published private(set) var pendingReferrerPortalTokens: [String] = []
+    @Published var applicantRegistrationConfirmationRequest: ApplicantRegistrationConfirmationRequest?
 
     init(userDefaults: UserDefaults = .standard) {
         self.userDefaults = userDefaults
@@ -90,6 +96,12 @@ final class AppState: ObservableObject {
     func consumeNextPendingReferrerPortalToken() -> String? {
         guard !pendingReferrerPortalTokens.isEmpty else { return nil }
         return pendingReferrerPortalTokens.removeFirst()
+    }
+
+    func presentApplicantRegistrationConfirmation(token: String) {
+        let trimmed = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        applicantRegistrationConfirmationRequest = ApplicantRegistrationConfirmationRequest(token: trimmed)
     }
 
     private static func defaultTab(for mode: AppRoleMode, userDefaults: UserDefaults) -> AppTab {

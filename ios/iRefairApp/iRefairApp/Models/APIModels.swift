@@ -30,6 +30,32 @@ struct ApplicantResponse: APIResult {
     let error: String?
 }
 
+enum ApplicantRegistrationConfirmationVariant: String, Decodable {
+    case confirmed
+    case confirmedIneligible = "confirmed_ineligible"
+    case alreadyConfirmed = "already_confirmed"
+    case alreadyConfirmedIneligible = "already_confirmed_ineligible"
+    case error
+}
+
+struct ApplicantRegistrationConfirmationResponse: APIResult {
+    let ok: Bool
+    let variant: ApplicantRegistrationConfirmationVariant?
+    let locale: String?
+    let pageTitle: String?
+    let heading: String?
+    let description: String?
+    let footer: String?
+    let iRain: String?
+    let alreadyConfirmed: Bool?
+    let ineligible: Bool?
+    let errorMessage: String?
+    let supportPrompt: String?
+    let supportLabel: String?
+    let supportEmail: String?
+    let error: String?
+}
+
 struct ApplyResponse: APIResult {
     let ok: Bool
     let applicationId: String?

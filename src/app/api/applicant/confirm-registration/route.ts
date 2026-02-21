@@ -507,7 +507,96 @@ const errorPageHtml = `<!DOCTYPE html>
 
 export const runtime = "nodejs";
 
-function getLocaleFromToken(token: string): 'en' | 'fr' {
+type Locale = "en" | "fr";
+type ConfirmRegistrationVariant =
+  | "confirmed"
+  | "confirmed_ineligible"
+  | "already_confirmed"
+  | "already_confirmed_ineligible";
+
+const supportEmail = "irefair@andbeyondca.com";
+
+const errorPageTranslations: Record<Locale, { pageTitle: string; heading: string; description: string; needHelp: string; contactSupport: string }> = {
+  en: {
+    pageTitle: "Registration Failed",
+    heading: "Registration Failed",
+    description: "We couldn't complete your registration.",
+    needHelp: "Need help?",
+    contactSupport: "Contact support",
+  },
+  fr: {
+    pageTitle: "Échec de l'inscription",
+    heading: "Échec de l'inscription",
+    description: "Nous n'avons pas pu compléter votre inscription.",
+    needHelp: "Besoin d'aide?",
+    contactSupport: "Contacter le support",
+  },
+};
+
+const resultTranslations: Record<ConfirmRegistrationVariant, Record<Locale, { pageTitle: string; heading: string; description: string; footer: string }>> = {
+  already_confirmed_ineligible: {
+    en: {
+      pageTitle: "Already Confirmed",
+      heading: "Account Already Confirmed",
+      description:
+        "This account was already confirmed previously. Your iRefair profile is already created, but based on your information, we're unable to match you with referrers at this time.",
+      footer: "Please check the confirmation email you already received for your account details.",
+    },
+    fr: {
+      pageTitle: "Déjà confirmé",
+      heading: "Compte déjà confirmé",
+      description:
+        "Ce compte a déjà été confirmé auparavant. Votre profil iRefair est déjà créé, mais en fonction des informations que vous avez fournies, nous ne sommes pas en mesure de vous jumeler avec des recommandateurs pour le moment.",
+      footer: "Veuillez consulter le courriel de confirmation que vous avez déjà reçu pour les détails de votre compte.",
+    },
+  },
+  already_confirmed: {
+    en: {
+      pageTitle: "Already Confirmed",
+      heading: "Account Already Confirmed",
+      description: "This account was already confirmed previously. Your iRefair profile is already active.",
+      footer: "Please use the iRAIN and Applicant Key from your confirmation email to access your account.",
+    },
+    fr: {
+      pageTitle: "Déjà confirmé",
+      heading: "Compte déjà confirmé",
+      description: "Ce compte a déjà été confirmé auparavant. Votre profil iRefair est déjà actif.",
+      footer: "Veuillez utiliser le iRAIN et la clé candidat de votre courriel de confirmation pour accéder à votre compte.",
+    },
+  },
+  confirmed_ineligible: {
+    en: {
+      pageTitle: "Profile Created",
+      heading: "Profile Created",
+      description:
+        "Your iRefair profile has been created. However, based on the information you provided, we're unable to match you with referrers at this time.",
+      footer: "Check your email for more details about your eligibility status.",
+    },
+    fr: {
+      pageTitle: "Profil créé",
+      heading: "Profil créé",
+      description:
+        "Votre profil iRefair a été créé. Cependant, en fonction des informations que vous avez fournies, nous ne sommes pas en mesure de vous jumeler avec des recommandateurs pour le moment.",
+      footer: "Consultez votre courriel pour plus de détails sur votre statut d'éligibilité.",
+    },
+  },
+  confirmed: {
+    en: {
+      pageTitle: "Registration Confirmed",
+      heading: "Registration Confirmed!",
+      description: "Your iRefair profile has been successfully activated. You can now apply for referral opportunities.",
+      footer: "You'll receive a confirmation email shortly with your credentials.",
+    },
+    fr: {
+      pageTitle: "Inscription confirmée",
+      heading: "Inscription confirmée!",
+      description: "Votre profil iRefair a été activé avec succès. Vous pouvez maintenant postuler pour des opportunités de recommandation.",
+      footer: "Vous recevrez bientôt un courriel de confirmation avec vos identifiants.",
+    },
+  },
+};
+
+function getLocaleFromToken(token: string): Locale {
   try {
     const parts = token.split('.');
     if (parts.length >= 2) {
@@ -518,25 +607,46 @@ function getLocaleFromToken(token: string): 'en' | 'fr' {
   return 'en';
 }
 
-function errorResponse(message: string, status: number, isGetRequest: boolean, locale: 'en' | 'fr' = 'en') {
+function isMobileRequest(request: NextRequest) {
+  const mode = (request.nextUrl.searchParams.get("mode") || "").trim().toLowerCase();
+  const client = (request.headers.get("x-irefair-client") || "").trim().toLowerCase();
+  return mode === "mobile" || client === "ios" || client === "ios-app";
+}
+
+function stripHtmlTags(value: string) {
+  return value.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+}
+
+function errorResponse(
+  message: string,
+  status: number,
+  isGetRequest: boolean,
+  locale: Locale = "en",
+  mobileMode = false,
+) {
+  if (mobileMode) {
+    const t = errorPageTranslations[locale];
+    const plainMessage = stripHtmlTags(message);
+    return NextResponse.json(
+      {
+        ok: false,
+        variant: "error",
+        locale,
+        pageTitle: t.pageTitle,
+        heading: t.heading,
+        description: t.description,
+        errorMessage: plainMessage,
+        supportPrompt: t.needHelp,
+        supportLabel: t.contactSupport,
+        supportEmail,
+        error: plainMessage,
+      },
+      { status },
+    );
+  }
+
   if (isGetRequest) {
-    const translations = {
-      en: {
-        pageTitle: 'Registration Failed',
-        heading: 'Registration Failed',
-        description: "We couldn't complete your registration.",
-        needHelp: 'Need help?',
-        contactSupport: 'Contact support',
-      },
-      fr: {
-        pageTitle: "Échec de l'inscription",
-        heading: "Échec de l'inscription",
-        description: "Nous n'avons pas pu compléter votre inscription.",
-        needHelp: "Besoin d'aide?",
-        contactSupport: 'Contacter le support',
-      },
-    };
-    const t = translations[locale];
+    const t = errorPageTranslations[locale];
     const html = errorPageHtml
       .replace('{{lang}}', locale)
       .replace('{{pageTitle}}', t.pageTitle)
@@ -548,6 +658,57 @@ function errorResponse(message: string, status: number, isGetRequest: boolean, l
     return new NextResponse(html, { status, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
   }
   return NextResponse.json({ ok: false, error: message }, { status });
+}
+
+function resultResponse({
+  variant,
+  locale,
+  iRainValue,
+  isGetRequest,
+  mobileMode,
+  mobilePayload,
+  postPayload,
+}: {
+  variant: ConfirmRegistrationVariant;
+  locale: Locale;
+  iRainValue: string;
+  isGetRequest: boolean;
+  mobileMode: boolean;
+  mobilePayload?: Record<string, unknown>;
+  postPayload?: Record<string, unknown>;
+}) {
+  const t = resultTranslations[variant][locale];
+
+  if (mobileMode) {
+    return NextResponse.json({
+      ok: true,
+      variant,
+      locale,
+      pageTitle: t.pageTitle,
+      heading: t.heading,
+      description: t.description,
+      footer: t.footer,
+      iRain: iRainValue,
+      ...(mobilePayload || {}),
+    });
+  }
+
+  if (isGetRequest) {
+    const pageHtml = variant.includes("ineligible") ? ineligiblePageHtml : successPageHtml;
+    const resultHtml = pageHtml
+      .replace("{{lang}}", locale)
+      .replace("{{pageTitle}}", t.pageTitle)
+      .replace("{{heading}}", t.heading)
+      .replace("{{description}}", t.description)
+      .replace("{{footer}}", t.footer)
+      .replace("{{iRain}}", escapeHtml(iRainValue));
+    return new NextResponse(resultHtml, {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8" },
+    });
+  }
+
+  return NextResponse.json({ ok: true, ...(postPayload || {}) });
 }
 
 function parseExpiry(value?: string) {
@@ -595,11 +756,12 @@ async function readToken(request: NextRequest) {
 }
 
 async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
+  const mobileMode = isMobileRequest(request);
   const token = await readToken(request);
   if (!token) {
     // No token means we can't determine locale, default to English
     const msg = "Missing confirmation token. Please use the link from your email.";
-    return errorResponse(msg, 400, isGetRequest, 'en');
+    return errorResponse(msg, 400, isGetRequest, "en", mobileMode);
   }
 
   const locale = getLocaleFromToken(token);
@@ -611,7 +773,7 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     const msg = locale === 'fr'
       ? 'Ce lien de confirmation est invalide ou a expiré. Veuillez vous inscrire à nouveau <a href="/applicant" style="text-decoration:underline;">ici</a>.'
       : 'This confirmation link is invalid or has expired. Please register again <a href="/applicant" style="text-decoration:underline;">here</a>.';
-    return errorResponse(msg, 401, isGetRequest, locale);
+    return errorResponse(msg, 401, isGetRequest, locale, mobileMode);
   }
 
   const tokenHash = hashToken(token);
@@ -622,7 +784,7 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     const msg = locale === 'fr'
       ? 'Nous n\'avons pas trouvé votre inscription. Veuillez vous inscrire à nouveau <a href="/applicant" style="text-decoration:underline;">ici</a>.'
       : 'We couldn\'t find your registration. Please register again <a href="/applicant" style="text-decoration:underline;">here</a>.';
-    return errorResponse(msg, 404, isGetRequest, locale);
+    return errorResponse(msg, 404, isGetRequest, locale, mobileMode);
   }
 
   // Check if already confirmed before validating stored token hashes.
@@ -632,58 +794,23 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
   if (registrationStatus !== "Pending Confirmation") {
     // Already confirmed - show appropriate page based on eligibility
     const iRainValue = applicant.record.id || "";
-    if (isGetRequest) {
-      // Check eligibility for already confirmed applicants
-      const locatedCanada = applicant.record.locatedCanada || "";
-      const authorizedCanada = applicant.record.authorizedCanada || "";
-      const eligibleMoveCanada = applicant.record.eligibleMoveCanada || "";
-      const wasIneligible =
-        (locatedCanada.toLowerCase() === "no" && eligibleMoveCanada.toLowerCase() === "no") ||
-        (locatedCanada.toLowerCase() === "yes" && authorizedCanada.toLowerCase() === "no");
-      const pageHtml = wasIneligible ? ineligiblePageHtml : successPageHtml;
-      const translations = wasIneligible
-        ? {
-            en: {
-              pageTitle: 'Already Confirmed',
-              heading: 'Account Already Confirmed',
-              description: "This account was already confirmed previously. Your iRefair profile is already created, but based on your information, we're unable to match you with referrers at this time.",
-              footer: 'Please check the confirmation email you already received for your account details.',
-            },
-            fr: {
-              pageTitle: 'Déjà confirmé',
-              heading: 'Compte déjà confirmé',
-              description: "Ce compte a déjà été confirmé auparavant. Votre profil iRefair est déjà créé, mais en fonction des informations que vous avez fournies, nous ne sommes pas en mesure de vous jumeler avec des recommandateurs pour le moment.",
-              footer: 'Veuillez consulter le courriel de confirmation que vous avez déjà reçu pour les détails de votre compte.',
-            },
-          }
-        : {
-            en: {
-              pageTitle: 'Already Confirmed',
-              heading: 'Account Already Confirmed',
-              description: 'This account was already confirmed previously. Your iRefair profile is already active.',
-              footer: 'Please use the iRAIN and Applicant Key from your confirmation email to access your account.',
-            },
-            fr: {
-              pageTitle: 'Déjà confirmé',
-              heading: 'Compte déjà confirmé',
-              description: 'Ce compte a déjà été confirmé auparavant. Votre profil iRefair est déjà actif.',
-              footer: 'Veuillez utiliser le iRAIN et la clé candidat de votre courriel de confirmation pour accéder à votre compte.',
-            },
-          };
-      const t = translations[locale];
-      const resultHtml = pageHtml
-        .replace('{{lang}}', locale)
-        .replace('{{pageTitle}}', t.pageTitle)
-        .replace('{{heading}}', t.heading)
-        .replace('{{description}}', t.description)
-        .replace('{{footer}}', t.footer)
-        .replace('{{iRain}}', escapeHtml(iRainValue));
-      return new NextResponse(resultHtml, {
-        status: 200,
-        headers: { "Content-Type": "text/html; charset=utf-8" },
-      });
-    }
-    return NextResponse.json({ ok: true, alreadyConfirmed: true });
+    const locatedCanada = applicant.record.locatedCanada || "";
+    const authorizedCanada = applicant.record.authorizedCanada || "";
+    const eligibleMoveCanada = applicant.record.eligibleMoveCanada || "";
+    const wasIneligible =
+      (locatedCanada.toLowerCase() === "no" && eligibleMoveCanada.toLowerCase() === "no") ||
+      (locatedCanada.toLowerCase() === "yes" && authorizedCanada.toLowerCase() === "no");
+    const variant: ConfirmRegistrationVariant = wasIneligible ? "already_confirmed_ineligible" : "already_confirmed";
+
+    return resultResponse({
+      variant,
+      locale,
+      iRainValue,
+      isGetRequest,
+      mobileMode,
+      mobilePayload: { alreadyConfirmed: true, ineligible: wasIneligible },
+      postPayload: { alreadyConfirmed: true },
+    });
   }
 
   const storedTokenHash = applicant.record.updateTokenHash?.trim() || "";
@@ -697,7 +824,7 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     const msg = locale === 'fr'
       ? 'Ce lien de confirmation n\'est plus valide. Veuillez vous inscrire à nouveau <a href="/applicant" style="text-decoration:underline;">ici</a>.'
       : 'This confirmation link is no longer valid. Please register again <a href="/applicant" style="text-decoration:underline;">here</a>.';
-    return errorResponse(msg, 403, isGetRequest, locale);
+    return errorResponse(msg, 403, isGetRequest, locale, mobileMode);
   }
 
   // Check token expiry
@@ -710,7 +837,7 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     const msg = locale === 'fr'
       ? 'Ce lien de confirmation a expiré. Veuillez vous inscrire à nouveau <a href="/applicant" style="text-decoration:underline;">ici</a>.'
       : 'This confirmation link has expired. Please register again <a href="/applicant" style="text-decoration:underline;">here</a>.';
-    return errorResponse(msg, 403, isGetRequest, locale);
+    return errorResponse(msg, 403, isGetRequest, locale, mobileMode);
   }
 
   // Generate applicant secret
@@ -743,7 +870,7 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     const msg = locale === 'fr'
       ? "Nous n'avons pas pu compléter votre inscription. Veuillez réessayer ou contacter le support."
       : "We couldn't complete your registration. Please try again or contact support.";
-    return errorResponse(msg, 500, isGetRequest, locale);
+    return errorResponse(msg, 500, isGetRequest, locale, mobileMode);
   }
 
   const iRainValue = applicant.record.id || "";
@@ -819,52 +946,14 @@ async function handleConfirm(request: NextRequest, isGetRequest: boolean) {
     text: emailTemplate.text,
   });
 
-  if (isGetRequest) {
-    const pageHtml = isIneligible ? ineligiblePageHtml : successPageHtml;
-    const translations = isIneligible
-      ? {
-          en: {
-            pageTitle: 'Profile Created',
-            heading: 'Profile Created',
-            description: "Your iRefair profile has been created. However, based on the information you provided, we're unable to match you with referrers at this time.",
-            footer: 'Check your email for more details about your eligibility status.',
-          },
-          fr: {
-            pageTitle: 'Profil créé',
-            heading: 'Profil créé',
-            description: "Votre profil iRefair a été créé. Cependant, en fonction des informations que vous avez fournies, nous ne sommes pas en mesure de vous jumeler avec des recommandateurs pour le moment.",
-            footer: 'Consultez votre courriel pour plus de détails sur votre statut d\'éligibilité.',
-          },
-        }
-      : {
-          en: {
-            pageTitle: 'Registration Confirmed',
-            heading: 'Registration Confirmed!',
-            description: 'Your iRefair profile has been successfully activated. You can now apply for referral opportunities.',
-            footer: "You'll receive a confirmation email shortly with your credentials.",
-          },
-          fr: {
-            pageTitle: 'Inscription confirmée',
-            heading: 'Inscription confirmée!',
-            description: 'Votre profil iRefair a été activé avec succès. Vous pouvez maintenant postuler pour des opportunités de recommandation.',
-            footer: 'Vous recevrez bientôt un courriel de confirmation avec vos identifiants.',
-          },
-        };
-    const t = translations[locale];
-    const resultHtml = pageHtml
-      .replace('{{lang}}', locale)
-      .replace('{{pageTitle}}', t.pageTitle)
-      .replace('{{heading}}', t.heading)
-      .replace('{{description}}', t.description)
-      .replace('{{footer}}', t.footer)
-      .replace('{{iRain}}', escapeHtml(iRainValue));
-    return new NextResponse(resultHtml, {
-      status: 200,
-      headers: { "Content-Type": "text/html; charset=utf-8" },
-    });
-  }
-
-  return NextResponse.json({ ok: true });
+  return resultResponse({
+    variant: isIneligible ? "confirmed_ineligible" : "confirmed",
+    locale,
+    iRainValue,
+    isGetRequest,
+    mobileMode,
+    mobilePayload: { alreadyConfirmed: false, ineligible: isIneligible },
+  });
 }
 
 export async function GET(request: NextRequest) {

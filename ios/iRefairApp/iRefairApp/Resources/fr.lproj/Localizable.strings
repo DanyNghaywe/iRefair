@@ -384,3 +384,11 @@
 "Signed out of all portal accounts." = "Déconnecté de tous les comptes portail.";
 "Portal accounts" = "Comptes portail";
 "Missing applicant credentials." = "Identifiants candidat manquants.";
+"Registration confirmation" = "Confirmation d'inscription";
+"We're checking your confirmation link and loading your result." = "Nous vérifions votre lien de confirmation et chargeons le résultat.";
+"Confirming your registration..." = "Confirmation de votre inscription...";
+"Please wait while we verify your link." = "Veuillez patienter pendant la vérification de votre lien.";
+"Retry" = "Réessayer";
+"Missing confirmation token." = "Jeton de confirmation manquant.";
+"Your iRefair profile has been created, but we're unable to match you with referrers at this time." = "Votre profil iRefair a été créé, mais nous ne pouvons pas vous jumeler avec des référents pour le moment.";
+"This account was already confirmed previously, but we're unable to match you with referrers at this time." = "Ce compte a déjà été confirmé auparavant, mais nous ne pouvons pas vous jumeler avec des référents pour le moment.";

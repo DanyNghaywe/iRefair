@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 63;
+	objectVersion = 77;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -17,83 +17,85 @@
 		2CCE2CF3A67D0D55DB3131E6 /* CountryData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 555C66919B14E812CEDA1A0F /* CountryData.swift */; };
 		3120372A76F9F30A8AD588D3 /* AppState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3526C4D3FC073C79ED03B293 /* AppState.swift */; };
 		314469237E73EDB8324551E4 /* APIClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = E141D93A7E08DE450C6ED81F /* APIClient.swift */; };
-		33307821AE8D39529D5C3DBA /* Sentry-Dynamic in Frameworks */ = {isa = PBXBuildFile; productRef = 41FDF510170AFF76E32F2C0F /* Sentry-Dynamic */; };
+		33307821AE8D39529D5C3DBA /* Sentry-Dynamic in Frameworks */ = {isa = PBXBuildFile; productRef = 3A4042D5818D760881D571E0 /* Sentry-Dynamic */; };
 		3338326BCD08AD1556DF3E22 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C5026EADAE06C7187546D475 /* Assets.xcassets */; };
 		468CAE4DBA3FA1915FFD92E7 /* ReferrerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0AE0C8F11B767D285AFB881F /* ReferrerView.swift */; };
 		4B11D2BF90ECEE60817DB08A /* FileReader.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0BC0692168CE582EA4AF047 /* FileReader.swift */; };
 		4D81CA3D1451B4BA89AFF230 /* Manrope-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = EB6810485DC434FF6E349FD5 /* Manrope-Regular.ttf */; };
 		548B8FF3BF06EB6CB74152B3 /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7B59C7BD199A141AE4833F3 /* Theme.swift */; };
-		56E26E86EF35450A9D8BCB66 /* IRefairInputStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = A254AB8F1004452F94E9C331 /* IRefairInputStyles.swift */; };
 		59BE841C9DF13A54BD235FE3 /* Manrope-Bold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 806DFDE6F12D23EC9B6BA214 /* Manrope-Bold.ttf */; };
-		6081A6285E3C460596CEA26F /* IRefairSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B07706361484B7C9E4EA8E0 /* IRefairSection.swift */; };
 		65D6D2092AEE681429E15550 /* Manrope-ExtraBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 44A8E4329C9F21005E71FD78 /* Manrope-ExtraBold.ttf */; };
 		6643679DC9CCDBB81B786909 /* iRefairApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1875FA483C7F2A9B4A88132 /* iRefairApp.swift */; };
 		6F171B620EE7E5C0E44D5912 /* Validation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5263E76882577A6A0DD62C5 /* Validation.swift */; };
 		7528C4F69271786C9B361A25 /* FeedbackSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 442C8FE20D0065C88B197A0E /* FeedbackSheet.swift */; };
+		7AA0EAA75EEFD7057548DAB3 /* HiringCompaniesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EBD33888E801BCCC53B63573 /* HiringCompaniesView.swift */; };
 		85DC4C09AE2797D28C5BD414 /* MultipartFormData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 568191C610DCD4BE013FCF54 /* MultipartFormData.swift */; };
 		89DF5A9FEA386FC5C43B7F57 /* Manrope-ExtraLight.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 68D33042B7D63CD050AEDCEF /* Manrope-ExtraLight.ttf */; };
 		8D6594F805C68A3B39502F9A /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4DD007EE943D626F834A4B0 /* ContentView.swift */; };
+		9325AEAE010C7B62D7908B59 /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = 655ABEF4A10A9FA052FF4E08 /* Localizable.strings */; };
 		93A78013420DC23B45F603A6 /* ApplyView.swift in Sources */ = {isa = PBXBuildFile; fileRef = DDE4D7C44AC4EEACAA9B422C /* ApplyView.swift */; };
 		A2EA45701FE8C4D28F6EB61A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 385A08CB88253605E5C6D000 /* SettingsView.swift */; };
 		A480740D61EF20B786598A13 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2013674F2145E9C230628611 /* NetworkMonitor.swift */; };
-		A7F1C0D8F2B44E1298B7A2C3 /* HiringCompaniesView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9F3B5C7D1A2E4F6B8C9D0E1F /* HiringCompaniesView.swift */; };
-		AD4EDD21CEFD45E5268CC09F /* Localizable.strings in Resources */ = {isa = PBXBuildFile; fileRef = CD4E954B0AC038EF087639D2 /* Localizable.strings */; };
-		B6C7D8E9F001122334455667 /* ParticlesBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1B2C3D4E5F60718293A4B5C /* ParticlesBackground.swift */; };
 		BE207861F9BB28C0BBDC300E /* DocumentPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB82BB341BAE41193A29F69A /* DocumentPicker.swift */; };
 		C3F75187AE724FC3F5DC7406 /* ReferrerRegistrationView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E744DAB140CFB0C1A13C72B6 /* ReferrerRegistrationView.swift */; };
+		CA096ED4D25C7314B2381E90 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 2AE0358C63A3E4C2A5C7F255 /* InfoPlist.strings */; };
 		CF038ECBC1A3005074C7FFD1 /* Manrope-Medium.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 415FA2C3067F0814F89C2A7E /* Manrope-Medium.ttf */; };
 		CF65460D6FEA3892980C7469 /* StatusBanner.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF4F200D6680A818277F37D0 /* StatusBanner.swift */; };
+		D05C6EC22545D780D7D456B2 /* IRefairSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20FE33173DB1C1FCFDA40D9B /* IRefairSection.swift */; };
 		D2600640B85E91F43373D8F5 /* APIModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 232A951BBA3F371CBAF2D053 /* APIModels.swift */; };
+		E471D2F7A92B0AB84C0ACFFF /* IRefairInputStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF3ACDBE8961664A5701EA6A /* IRefairInputStyles.swift */; };
 		E64F576F68877008C9C34688 /* ReferrerPortalView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4CA6D5DFC4EBE68021E45014 /* ReferrerPortalView.swift */; };
-		EE71D61FE9A0C26EBE9838AD /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 5F22F0CEA10D6EDD07A1C163 /* InfoPlist.strings */; };
 		FA419217D06AF1953B3EAA68 /* Manrope-SemiBold.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9BBAF1A75BD0FE1659D40157 /* Manrope-SemiBold.ttf */; };
+		FCC8D56B1EAA3B54A485B113 /* ApplicantRegistrationConfirmationSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = D57B9F9F45A612CE186A8BC6 /* ApplicantRegistrationConfirmationSheet.swift */; };
+		FF58DF5D18317A35A042A354 /* ParticlesBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = E4003C78A3CD0F6BC92E2DBF /* ParticlesBackground.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		0AE0C8F11B767D285AFB881F /* ReferrerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferrerView.swift; sourceTree = "<group>"; };
-		12F5BF043515B1D068508B84 /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		2013674F2145E9C230628611 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		20FE33173DB1C1FCFDA40D9B /* IRefairSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IRefairSection.swift; sourceTree = "<group>"; };
 		232A951BBA3F371CBAF2D053 /* APIModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIModels.swift; sourceTree = "<group>"; };
-		2B07706361484B7C9E4EA8E0 /* IRefairSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IRefairSection.swift; sourceTree = "<group>"; };
 		310705599E00756B500143AB /* IRefairButtonStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IRefairButtonStyles.swift; sourceTree = "<group>"; };
 		3526C4D3FC073C79ED03B293 /* AppState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppState.swift; sourceTree = "<group>"; };
 		385A08CB88253605E5C6D000 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		415FA2C3067F0814F89C2A7E /* Manrope-Medium.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Manrope-Medium.ttf"; sourceTree = "<group>"; };
 		442C8FE20D0065C88B197A0E /* FeedbackSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackSheet.swift; sourceTree = "<group>"; };
-		445C438DB495C6AA7140E474 /* iRefair.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = iRefair.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		4498986BFB4411A3B6B525D6 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		445C438DB495C6AA7140E474 /* iRefair.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = iRefair.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		44A8E4329C9F21005E71FD78 /* Manrope-ExtraBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Manrope-ExtraBold.ttf"; sourceTree = "<group>"; };
 		4CA6D5DFC4EBE68021E45014 /* ReferrerPortalView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferrerPortalView.swift; sourceTree = "<group>"; };
 		4DCB40F7C8AC9F4748B4B1D2 /* IRefairForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IRefairForm.swift; sourceTree = "<group>"; };
 		555C66919B14E812CEDA1A0F /* CountryData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CountryData.swift; sourceTree = "<group>"; };
 		568191C610DCD4BE013FCF54 /* MultipartFormData.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MultipartFormData.swift; sourceTree = "<group>"; };
-		62A813E10C7B7173C11FB63E /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		68D33042B7D63CD050AEDCEF /* Manrope-ExtraLight.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Manrope-ExtraLight.ttf"; sourceTree = "<group>"; };
 		6B4C334CC72E1A91C57A76C0 /* KeychainStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainStore.swift; sourceTree = "<group>"; };
 		806DFDE6F12D23EC9B6BA214 /* Manrope-Bold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Manrope-Bold.ttf"; sourceTree = "<group>"; };
+		86826BA84727E5092124BB1E /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
 		94FBD882B6C6C4CB9761297D /* Localization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Localization.swift; sourceTree = "<group>"; };
+		9524510C392EC302748AB228 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/Localizable.strings; sourceTree = "<group>"; };
 		9BBAF1A75BD0FE1659D40157 /* Manrope-SemiBold.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Manrope-SemiBold.ttf"; sourceTree = "<group>"; };
-		9F3B5C7D1A2E4F6B8C9D0E1F /* HiringCompaniesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HiringCompaniesView.swift; sourceTree = "<group>"; };
-		A1B2C3D4E5F60718293A4B5C /* ParticlesBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticlesBackground.swift; sourceTree = "<group>"; };
-		A254AB8F1004452F94E9C331 /* IRefairInputStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IRefairInputStyles.swift; sourceTree = "<group>"; };
+		9C66781DCF0D19187757A1D4 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		A5263E76882577A6A0DD62C5 /* Validation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Validation.swift; sourceTree = "<group>"; };
 		AB82BB341BAE41193A29F69A /* DocumentPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DocumentPicker.swift; sourceTree = "<group>"; };
 		C2D05710079E34D5B851F76F /* iRefairApp.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = iRefairApp.entitlements; sourceTree = "<group>"; };
 		C4DD007EE943D626F834A4B0 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		C5026EADAE06C7187546D475 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C7B59C7BD199A141AE4833F3 /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		D2FB6FC411BE73E3220BB2AB /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/InfoPlist.strings; sourceTree = "<group>"; };
+		D57B9F9F45A612CE186A8BC6 /* ApplicantRegistrationConfirmationSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicantRegistrationConfirmationSheet.swift; sourceTree = "<group>"; };
 		D6C1273FA556B1A018CC35B3 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		DDE4D7C44AC4EEACAA9B422C /* ApplyView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplyView.swift; sourceTree = "<group>"; };
 		E141D93A7E08DE450C6ED81F /* APIClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = APIClient.swift; sourceTree = "<group>"; };
+		E4003C78A3CD0F6BC92E2DBF /* ParticlesBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ParticlesBackground.swift; sourceTree = "<group>"; };
 		E7175E6856EE1CF8C0BF1BDA /* ApplicantView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplicantView.swift; sourceTree = "<group>"; };
 		E744DAB140CFB0C1A13C72B6 /* ReferrerRegistrationView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReferrerRegistrationView.swift; sourceTree = "<group>"; };
 		E8DD4B6A10712905F81F3EE6 /* Telemetry.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Telemetry.swift; sourceTree = "<group>"; };
 		EA17556914830773C349ABD3 /* Manrope-Light.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Manrope-Light.ttf"; sourceTree = "<group>"; };
 		EB6810485DC434FF6E349FD5 /* Manrope-Regular.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "Manrope-Regular.ttf"; sourceTree = "<group>"; };
+		EBD33888E801BCCC53B63573 /* HiringCompaniesView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HiringCompaniesView.swift; sourceTree = "<group>"; };
+		EF3ACDBE8961664A5701EA6A /* IRefairInputStyles.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IRefairInputStyles.swift; sourceTree = "<group>"; };
 		EF4F200D6680A818277F37D0 /* StatusBanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusBanner.swift; sourceTree = "<group>"; };
 		F0BC0692168CE582EA4AF047 /* FileReader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileReader.swift; sourceTree = "<group>"; };
 		F1875FA483C7F2A9B4A88132 /* iRefairApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iRefairApp.swift; sourceTree = "<group>"; };
-		FF34314CEFD6D5F1B947291B /* fr */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = fr; path = fr.lproj/Localizable.strings; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -138,9 +140,9 @@
 				AB82BB341BAE41193A29F69A /* DocumentPicker.swift */,
 				310705599E00756B500143AB /* IRefairButtonStyles.swift */,
 				4DCB40F7C8AC9F4748B4B1D2 /* IRefairForm.swift */,
-				A254AB8F1004452F94E9C331 /* IRefairInputStyles.swift */,
-				2B07706361484B7C9E4EA8E0 /* IRefairSection.swift */,
-				A1B2C3D4E5F60718293A4B5C /* ParticlesBackground.swift */,
+				EF3ACDBE8961664A5701EA6A /* IRefairInputStyles.swift */,
+				20FE33173DB1C1FCFDA40D9B /* IRefairSection.swift */,
+				E4003C78A3CD0F6BC92E2DBF /* ParticlesBackground.swift */,
 				EF4F200D6680A818277F37D0 /* StatusBanner.swift */,
 			);
 			path = Components;
@@ -183,9 +185,9 @@
 		58AAA48E87040636709AFE01 /* Resources */ = {
 			isa = PBXGroup;
 			children = (
-				5F22F0CEA10D6EDD07A1C163 /* InfoPlist.strings */,
-				CD4E954B0AC038EF087639D2 /* Localizable.strings */,
 				C5026EADAE06C7187546D475 /* Assets.xcassets */,
+				2AE0358C63A3E4C2A5C7F255 /* InfoPlist.strings */,
+				655ABEF4A10A9FA052FF4E08 /* Localizable.strings */,
 				BA2712ED1D7ECCDE7933ED13 /* Fonts */,
 			);
 			path = Resources;
@@ -235,6 +237,7 @@
 		BACC4D230AECBEE48337E6B5 /* Applicant */ = {
 			isa = PBXGroup;
 			children = (
+				D57B9F9F45A612CE186A8BC6 /* ApplicantRegistrationConfirmationSheet.swift */,
 				E7175E6856EE1CF8C0BF1BDA /* ApplicantView.swift */,
 			);
 			path = Applicant;
@@ -244,7 +247,7 @@
 			isa = PBXGroup;
 			children = (
 				DDE4D7C44AC4EEACAA9B422C /* ApplyView.swift */,
-				9F3B5C7D1A2E4F6B8C9D0E1F /* HiringCompaniesView.swift */,
+				EBD33888E801BCCC53B63573 /* HiringCompaniesView.swift */,
 			);
 			path = Apply;
 			sourceTree = "<group>";
@@ -277,7 +280,7 @@
 			);
 			name = iRefair;
 			packageProductDependencies = (
-				41FDF510170AFF76E32F2C0F /* Sentry-Dynamic */,
+				3A4042D5818D760881D571E0 /* Sentry-Dynamic */,
 			);
 			productName = iRefair;
 			productReference = 445C438DB495C6AA7140E474 /* iRefair.app */;
@@ -306,6 +309,7 @@
 			packageReferences = (
 				3793435ED326579598C0A828 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
 			);
+			preferredProjectObjectVersion = 77;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
@@ -319,9 +323,9 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				EE71D61FE9A0C26EBE9838AD /* InfoPlist.strings in Resources */,
-				AD4EDD21CEFD45E5268CC09F /* Localizable.strings in Resources */,
 				3338326BCD08AD1556DF3E22 /* Assets.xcassets in Resources */,
+				CA096ED4D25C7314B2381E90 /* InfoPlist.strings in Resources */,
+				9325AEAE010C7B62D7908B59 /* Localizable.strings in Resources */,
 				59BE841C9DF13A54BD235FE3 /* Manrope-Bold.ttf in Resources */,
 				65D6D2092AEE681429E15550 /* Manrope-ExtraBold.ttf in Resources */,
 				89DF5A9FEA386FC5C43B7F57 /* Manrope-ExtraLight.ttf in Resources */,
@@ -342,23 +346,24 @@
 				314469237E73EDB8324551E4 /* APIClient.swift in Sources */,
 				D2600640B85E91F43373D8F5 /* APIModels.swift in Sources */,
 				3120372A76F9F30A8AD588D3 /* AppState.swift in Sources */,
+				FCC8D56B1EAA3B54A485B113 /* ApplicantRegistrationConfirmationSheet.swift in Sources */,
 				29930467CDFB0EFB53C67A25 /* ApplicantView.swift in Sources */,
 				93A78013420DC23B45F603A6 /* ApplyView.swift in Sources */,
-				A7F1C0D8F2B44E1298B7A2C3 /* HiringCompaniesView.swift in Sources */,
 				8D6594F805C68A3B39502F9A /* ContentView.swift in Sources */,
 				2CCE2CF3A67D0D55DB3131E6 /* CountryData.swift in Sources */,
 				BE207861F9BB28C0BBDC300E /* DocumentPicker.swift in Sources */,
 				7528C4F69271786C9B361A25 /* FeedbackSheet.swift in Sources */,
 				4B11D2BF90ECEE60817DB08A /* FileReader.swift in Sources */,
+				7AA0EAA75EEFD7057548DAB3 /* HiringCompaniesView.swift in Sources */,
 				1CD33D758E0CDE3FF7AD41EC /* IRefairButtonStyles.swift in Sources */,
 				29E25F39FB4053DA6482E56A /* IRefairForm.swift in Sources */,
-				56E26E86EF35450A9D8BCB66 /* IRefairInputStyles.swift in Sources */,
-				6081A6285E3C460596CEA26F /* IRefairSection.swift in Sources */,
-				B6C7D8E9F001122334455667 /* ParticlesBackground.swift in Sources */,
+				E471D2F7A92B0AB84C0ACFFF /* IRefairInputStyles.swift in Sources */,
+				D05C6EC22545D780D7D456B2 /* IRefairSection.swift in Sources */,
 				0C6C56C301641119DCB0CE5A /* KeychainStore.swift in Sources */,
 				245E02D10EB00EDF87F9EAD8 /* Localization.swift in Sources */,
 				85DC4C09AE2797D28C5BD414 /* MultipartFormData.swift in Sources */,
 				A480740D61EF20B786598A13 /* NetworkMonitor.swift in Sources */,
+				FF58DF5D18317A35A042A354 /* ParticlesBackground.swift in Sources */,
 				E64F576F68877008C9C34688 /* ReferrerPortalView.swift in Sources */,
 				C3F75187AE724FC3F5DC7406 /* ReferrerRegistrationView.swift in Sources */,
 				468CAE4DBA3FA1915FFD92E7 /* ReferrerView.swift in Sources */,
@@ -374,20 +379,20 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXVariantGroup section */
-		5F22F0CEA10D6EDD07A1C163 /* InfoPlist.strings */ = {
+		2AE0358C63A3E4C2A5C7F255 /* InfoPlist.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
-				4498986BFB4411A3B6B525D6 /* en */,
-				12F5BF043515B1D068508B84 /* fr */,
+				9C66781DCF0D19187757A1D4 /* en */,
+				D2FB6FC411BE73E3220BB2AB /* fr */,
 			);
 			name = InfoPlist.strings;
 			sourceTree = "<group>";
 		};
-		CD4E954B0AC038EF087639D2 /* Localizable.strings */ = {
+		655ABEF4A10A9FA052FF4E08 /* Localizable.strings */ = {
 			isa = PBXVariantGroup;
 			children = (
-				62A813E10C7B7173C11FB63E /* en */,
-				FF34314CEFD6D5F1B947291B /* fr */,
+				9524510C392EC302748AB228 /* en */,
+				86826BA84727E5092124BB1E /* fr */,
 			);
 			name = Localizable.strings;
 			sourceTree = "<group>";
@@ -593,7 +598,7 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		41FDF510170AFF76E32F2C0F /* Sentry-Dynamic */ = {
+		3A4042D5818D760881D571E0 /* Sentry-Dynamic */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 3793435ED326579598C0A828 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
 			productName = "Sentry-Dynamic";

@@ -134,6 +134,50 @@ enum APIClient {
         return try await sendWithRetry(request, retries: 2)
     }
 
+    static func confirmApplicantRegistration(
+        baseURL: String,
+        token: String
+    ) async throws -> ApplicantRegistrationConfirmationResponse {
+        let trimmedToken = token.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedToken.isEmpty else {
+            throw APIError(message: "Missing confirmation token.")
+        }
+
+        guard var components = URLComponents(
+            url: try makeURL(baseURL: baseURL, path: "/api/applicant/confirm-registration"),
+            resolvingAgainstBaseURL: false
+        ) else {
+            throw APIError(message: "Invalid API base URL.")
+        }
+        components.queryItems = [URLQueryItem(name: "mode", value: "mobile")]
+        guard let url = components.url else {
+            throw APIError(message: "Invalid confirmation URL.")
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["token": trimmedToken], options: [])
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("ios-app", forHTTPHeaderField: "X-iRefair-Client")
+
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse else {
+                throw APIError(message: "Invalid server response.")
+            }
+            guard isLikelyJSONResponse(http: http, data: data) else {
+                throw nonJSONResponseError(for: request, response: http, data: data)
+            }
+            return try decode(ApplicantRegistrationConfirmationResponse.self, from: data)
+        } catch let error as URLError {
+            throw APIError(message: mapURLError(error))
+        } catch let error as APIError {
+            throw error
+        } catch {
+            throw APIError(message: "Unexpected server response.")
+        }
+    }
+
     static func submitReferrerFeedback(
         baseURL: String,
         token: String,
