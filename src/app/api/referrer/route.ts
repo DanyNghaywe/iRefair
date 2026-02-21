@@ -5,6 +5,7 @@ import {
   appendReferrerRow,
   generateIRREF,
   getReferrerByEmail,
+  hasApprovedCompany,
   addPendingUpdate,
   // New multi-company functions
   appendReferrerCompanyRow,
@@ -119,6 +120,7 @@ export async function POST(request: Request) {
       if (referrerIrref && storedLocale !== locale) {
         await updateReferrerFields(referrerIrref, { locale });
       }
+      const canAccessPortal = await hasApprovedCompany(referrerIrref);
       const companyIndustryResolved = resolveIndustry(companyIndustry, companyIndustryOther, companyIndustry);
 
       // Check if this company already exists for the referrer
@@ -145,9 +147,11 @@ export async function POST(request: Request) {
           await addPendingUpdate(referrerIrref, profileUpdates);
         }
 
-        // Generate portal link for existing referrer
-        const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrerIrref);
-        const portalUrl = buildReferrerPortalLink(referrerIrref, portalTokenVersion);
+        let portalUrl: string | undefined;
+        if (canAccessPortal) {
+          const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrerIrref);
+          portalUrl = buildReferrerPortalLink(referrerIrref, portalTokenVersion);
+        }
 
         // Send email informing them they already have an iRREF
         const emailTemplate = referrerAlreadyExistsEmail({
@@ -178,9 +182,11 @@ export async function POST(request: Request) {
           workType,
         });
 
-        // Generate portal link for existing referrer
-        const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrerIrref);
-        const portalUrl = buildReferrerPortalLink(referrerIrref, portalTokenVersion);
+        let portalUrl: string | undefined;
+        if (canAccessPortal) {
+          const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrerIrref);
+          portalUrl = buildReferrerPortalLink(referrerIrref, portalTokenVersion);
+        }
 
         // Send email about new company added (pending approval)
         const emailTemplate = referrerNewCompanyEmail({
@@ -215,8 +221,11 @@ export async function POST(request: Request) {
           linkedin,
         });
 
-        const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrerIrref);
-        const portalUrl = buildReferrerPortalLink(referrerIrref, portalTokenVersion);
+        let portalUrl: string | undefined;
+        if (canAccessPortal) {
+          const portalTokenVersion = await ensureReferrerPortalTokenVersion(referrerIrref);
+          portalUrl = buildReferrerPortalLink(referrerIrref, portalTokenVersion);
+        }
 
         const emailTemplate = referrerAlreadyExistsEmail({
           name: fallbackName,
