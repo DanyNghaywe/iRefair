@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct HiringCompaniesView: View {
     private let apiBaseURL: String = APIConfig.baseURL
@@ -14,6 +15,7 @@ struct HiringCompaniesView: View {
     @State private var currentPage = 1
     @State private var showCareersWarning = false
     @State private var selectedCareersUrl: URL?
+    @State private var copiedIRCRN: String?
 
     private let pageSize = 20
     private let loadingRows = 1
@@ -50,7 +52,10 @@ struct HiringCompaniesView: View {
                             LazyVStack(alignment: .leading, spacing: 10) {
                                 ForEach(paginatedCompanies, id: \.id) { company in
                                     VStack(alignment: .leading, spacing: 12) {
-                                        labeledValue(title: l("iRCRN"), value: company.code)
+                                        VStack(alignment: .leading, spacing: 6) {
+                                            labeledValue(title: l("iRCRN"), value: company.code, valueColor: linkText)
+                                            copyIRCRNButton(for: company.code)
+                                        }
                                         labeledValue(title: l("Company Name"), value: company.name)
                                         labeledValue(title: l("Industry"), value: company.industry)
                                         VStack(alignment: .leading, spacing: 6) {
@@ -315,6 +320,32 @@ struct HiringCompaniesView: View {
             return URL(string: urlString)
         }
         return URL(string: "https://\(urlString)")
+    }
+
+    @ViewBuilder
+    private func copyIRCRNButton(for code: String) -> some View {
+        let isCopied = copiedIRCRN == code
+        Button {
+            copyIRCRN(code)
+        } label: {
+            Label(isCopied ? l("Copied") : l("Copy iRCRN"), systemImage: isCopied ? "checkmark" : "doc.on.doc")
+        }
+        .buttonStyle(HiringLinkButtonStyle(color: isCopied ? Color.green.opacity(0.8) : linkText, weight: .semibold))
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityLabel(isCopied ? l("Copied") : l("Copy iRCRN"))
+    }
+
+    @MainActor
+    private func copyIRCRN(_ code: String) {
+        UIPasteboard.general.string = code
+        copiedIRCRN = code
+
+        Task { @MainActor in
+            try? await Task.sleep(nanoseconds: 1_500_000_000)
+            if copiedIRCRN == code {
+                copiedIRCRN = nil
+            }
+        }
     }
 
     private func l(_ key: String) -> String {
