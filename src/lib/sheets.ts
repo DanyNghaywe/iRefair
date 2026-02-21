@@ -3668,9 +3668,11 @@ export async function getApplicationById(id: string, options: SheetReadOptions =
   if (!headers.length) return null;
 
   const headerMap = buildHeaderMap(headers);
+  const idColIndex = headerMap.get(normalizeHeaderName('ID'));
+  if (idColIndex === undefined) return null;
   for (const row of rows) {
     const values = row.values ?? [];
-    const value = cellValue(values, 0).toLowerCase();
+    const value = cellValue(values, idColIndex).toLowerCase();
     if (value === id.trim().toLowerCase()) {
       return {
         rowIndex: row.rowIndex,
@@ -3856,7 +3858,7 @@ async function updateRowByIdInSheets(
   const updates = Object.entries(patchByHeaderName)
     .filter(([, value]) => value !== undefined)
     .map(([header, value]) => {
-      const index = headerMap.get(header);
+      const index = headerMap.get(normalizeHeaderName(header));
       if (index === undefined) return null;
       const col = toColumnLetter(index);
       return {
@@ -4029,7 +4031,7 @@ export async function updateRowById(
 
   for (const [header, value] of Object.entries(patchByHeaderName)) {
     if (value === undefined) continue;
-    const index = headerMap.get(header);
+    const index = headerMap.get(normalizeHeaderName(header));
     if (index === undefined) continue;
     const nextValue = String(value ?? '');
     if (normalizedValues[index] !== nextValue) {
@@ -4337,9 +4339,11 @@ export async function getReferrerByIrref(irref: string, options: SheetReadOption
   });
 
   const headerMap = buildHeaderMap(headers);
+  const irrefColIndex = headerMap.get(normalizeHeaderName('iRREF'));
+  if (irrefColIndex === undefined) return null;
   for (const row of rows) {
     const values = row.values ?? [];
-    const value = cellValue(values, 0).toLowerCase();
+    const value = cellValue(values, irrefColIndex).toLowerCase();
     if (value === irref.trim().toLowerCase()) {
       return {
         rowIndex: row.rowIndex,
@@ -4358,7 +4362,7 @@ export async function getReferrersByEmail(email: string, options: SheetReadOptio
 
   const normalizedEmail = email.trim().toLowerCase();
   const headerMap = buildHeaderMap(headers);
-  const emailColIndex = headerMap.get('Email');
+  const emailColIndex = headerMap.get(normalizeHeaderName('Email'));
 
   if (emailColIndex === undefined) return [];
 
