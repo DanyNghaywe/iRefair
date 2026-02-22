@@ -201,6 +201,20 @@ enum APIClient {
         return try await send(request)
     }
 
+    static func submitReferrerPortalAction(
+        baseURL: String,
+        token: String,
+        payload: [String: Any]
+    ) async throws -> ReferrerFeedbackResponse {
+        let url = try makeURL(baseURL: baseURL, path: "/api/referrer/portal/feedback")
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        return try await send(request)
+    }
+
     private static func makeURL(baseURL: String, path: String) throws -> URL {
         let sanitized = Validator.sanitizeBaseURL(baseURL)
         guard let url = URL(string: sanitized + path) else {

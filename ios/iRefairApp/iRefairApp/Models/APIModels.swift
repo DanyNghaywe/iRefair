@@ -237,6 +237,7 @@ struct ApplicantPortalDataResponse: APIResult {
 struct ReferrerFeedbackResponse: APIResult {
     let ok: Bool
     let message: String?
+    let status: String?
     let error: String?
 }
 
@@ -426,6 +427,28 @@ struct ReferrerApplicant: Identifiable, Decodable {
     let email: String?
     let status: String?
     let phone: String?
+    let position: String?
+    let iCrn: String?
+    let companyId: String?
+    let companyName: String?
+    let resumeFileName: String?
+    let resumeDownloadUrl: String?
+    let ownerNotes: String?
+    let meetingDate: String?
+    let meetingTime: String?
+    let meetingTimezone: String?
+    let meetingUrl: String?
+    let countryOfOrigin: String?
+    let languages: String?
+    let languagesOther: String?
+    let locatedCanada: String?
+    let province: String?
+    let authorizedCanada: String?
+    let eligibleMoveCanada: String?
+    let industryType: String?
+    let industryOther: String?
+    let employmentStatus: String?
+    let actionHistory: [ReferrerApplicantActionHistoryEntry]?
 
     var displayName: String {
         if let applicantName, !applicantName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
@@ -450,6 +473,28 @@ struct ReferrerApplicant: Identifiable, Decodable {
         case status
         case phone
         case applicantPhone
+        case position
+        case iCrn
+        case companyId
+        case companyName
+        case resumeFileName
+        case resumeDownloadUrl
+        case ownerNotes
+        case meetingDate
+        case meetingTime
+        case meetingTimezone
+        case meetingUrl
+        case countryOfOrigin
+        case languages
+        case languagesOther
+        case locatedCanada
+        case province
+        case authorizedCanada
+        case eligibleMoveCanada
+        case industryType
+        case industryOther
+        case employmentStatus
+        case actionHistory
     }
 
     init(from decoder: Decoder) throws {
@@ -477,7 +522,45 @@ struct ReferrerApplicant: Identifiable, Decodable {
         let primaryPhone = try container.decodeIfPresent(String.self, forKey: .phone)
         let fallbackPhone = try container.decodeIfPresent(String.self, forKey: .applicantPhone)
         phone = primaryPhone ?? fallbackPhone
+        position = try container.decodeIfPresent(String.self, forKey: .position)
+        iCrn = try container.decodeIfPresent(String.self, forKey: .iCrn)
+        companyId = try container.decodeIfPresent(String.self, forKey: .companyId)
+        companyName = try container.decodeIfPresent(String.self, forKey: .companyName)
+        resumeFileName = try container.decodeIfPresent(String.self, forKey: .resumeFileName)
+        resumeDownloadUrl = try container.decodeIfPresent(String.self, forKey: .resumeDownloadUrl)
+        ownerNotes = try container.decodeIfPresent(String.self, forKey: .ownerNotes)
+        meetingDate = try container.decodeIfPresent(String.self, forKey: .meetingDate)
+        meetingTime = try container.decodeIfPresent(String.self, forKey: .meetingTime)
+        meetingTimezone = try container.decodeIfPresent(String.self, forKey: .meetingTimezone)
+        meetingUrl = try container.decodeIfPresent(String.self, forKey: .meetingUrl)
+        countryOfOrigin = try container.decodeIfPresent(String.self, forKey: .countryOfOrigin)
+        languages = try container.decodeIfPresent(String.self, forKey: .languages)
+        languagesOther = try container.decodeIfPresent(String.self, forKey: .languagesOther)
+        locatedCanada = try container.decodeIfPresent(String.self, forKey: .locatedCanada)
+        province = try container.decodeIfPresent(String.self, forKey: .province)
+        authorizedCanada = try container.decodeIfPresent(String.self, forKey: .authorizedCanada)
+        eligibleMoveCanada = try container.decodeIfPresent(String.self, forKey: .eligibleMoveCanada)
+        industryType = try container.decodeIfPresent(String.self, forKey: .industryType)
+        industryOther = try container.decodeIfPresent(String.self, forKey: .industryOther)
+        employmentStatus = try container.decodeIfPresent(String.self, forKey: .employmentStatus)
+        actionHistory = try container.decodeIfPresent([ReferrerApplicantActionHistoryEntry].self, forKey: .actionHistory)
     }
+}
+
+struct ReferrerApplicantActionHistoryMeetingDetails: Decodable {
+    let date: String
+    let time: String
+    let timezone: String
+    let url: String
+}
+
+struct ReferrerApplicantActionHistoryEntry: Decodable {
+    let action: String
+    let timestamp: String
+    let performedBy: String
+    let performedByEmail: String?
+    let notes: String?
+    let meetingDetails: ReferrerApplicantActionHistoryMeetingDetails?
 }
 
 struct ReferrerCompany: Identifiable, Decodable {
