@@ -1009,6 +1009,7 @@ struct ReferrerPortalView: View {
                             .fill(Color.white.opacity(0.1))
                             .frame(height: 1)
                     }
+                    .padding(.bottom, 8)
 
                 portalMobileLabeledCell(label: l("Position / iRCRN")) {
                     portalPositionCellContent(applicant)
@@ -1026,7 +1027,8 @@ struct ReferrerPortalView: View {
                     label: l("Actions"),
                     hidesLabel: true,
                     addTopDivider: true,
-                    topPadding: 12
+                    topPadding: 20,
+                    bottomPadding: 8
                 ) {
                     portalActionsCellContent(applicant)
                 }
@@ -1067,6 +1069,7 @@ struct ReferrerPortalView: View {
         hidesLabel: Bool = false,
         addTopDivider: Bool = false,
         topPadding: CGFloat = 8,
+        bottomPadding: CGFloat = 8,
         @ViewBuilder content: () -> Content
     ) -> some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -1081,6 +1084,7 @@ struct ReferrerPortalView: View {
             content()
         }
         .padding(.top, topPadding)
+        .padding(.bottom, bottomPadding)
         .overlay(alignment: .top) {
             if addTopDivider {
                 Rectangle()
@@ -1137,11 +1141,11 @@ struct ReferrerPortalView: View {
     }
 
     private func portalCandidateCellContent(_ applicant: ReferrerApplicant, isExpanded: Bool) -> some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: .top, spacing: usesPortalMobileTableLayout ? 12 : 8) {
             Image(systemName: "chevron.right")
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(isExpanded ? portalWebChevronActiveColor : portalWebInkColor)
-                .padding(.top, 2)
+                .padding(.top, usesPortalMobileTableLayout ? 4 : 2)
                 .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 .animation(.easeInOut(duration: 0.15), value: isExpanded)
 
@@ -1215,7 +1219,7 @@ struct ReferrerPortalView: View {
         let hasMeeting = normalized == "meeting scheduled" && nonEmpty(applicant.meetingDate) != nil && nonEmpty(applicant.meetingTime) != nil
         let needsReschedule = normalized == "needs reschedule"
 
-        return VStack(alignment: .leading, spacing: 6) {
+        return VStack(alignment: .leading, spacing: usesPortalMobileTableLayout ? 8 : 6) {
             portalStatusBadge(applicant.status)
 
             if hasMeeting {
