@@ -819,16 +819,29 @@ struct ReferrerPortalView: View {
         static let minimumWidth: CGFloat = candidate + position + cv + status + actions
     }
 
+    private var portalWebInkColor: Color { Color(hex: 0x0F172A) }
+    private var portalWebSubtextColor: Color { Color(hex: 0x334155) }
+    private var portalWebMutedColor: Color { Color(hex: 0x64748B) }
+    private var portalWebSlateColor: Color { Color(hex: 0x475569) }
+    private var portalWebChevronActiveColor: Color { Color(hex: 0x1E40AF) }
+
     private var portalLoadingApplicantsTable: some View {
         applicationsTableShell {
-            loadingApplicantsRows
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.white.opacity(0.1))
-                )
+            if usesPortalMobileTableLayout {
+                loadingApplicantsRows
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                loadingApplicantsRows
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.white.opacity(0.1))
+                    )
+            }
         }
     }
 
@@ -868,18 +881,24 @@ struct ReferrerPortalView: View {
         }
     }
 
+    @ViewBuilder
     private func applicationsTableShell<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        content()
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(6)
-            .background(
-                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color.white.opacity(0.24))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .stroke(Color.white.opacity(0.22), lineWidth: 1)
-                    )
-            )
+        if usesPortalMobileTableLayout {
+            content()
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            content()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(6)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color.white.opacity(0.24))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(Color.white.opacity(0.22), lineWidth: 1)
+                        )
+                )
+        }
     }
 
     private var portalApplicationsCardList: some View {
@@ -893,11 +912,7 @@ struct ReferrerPortalView: View {
                 .padding(.vertical, 20)
                 .padding(.horizontal, 12)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .background(
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .fill(Color.white.opacity(0.06))
-                )
-                .padding(8)
+                .padding(4)
             } else {
                 VStack(alignment: .leading, spacing: 12) {
                     ForEach(paginatedApplicants.indices, id: \.self) { index in
@@ -906,14 +921,9 @@ struct ReferrerPortalView: View {
                         portalApplicationsCardRow(applicant, rowIndex: absoluteIndex)
                     }
                 }
-                .padding(8)
+                .padding(4)
             }
         }
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color.white.opacity(0.08))
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
     }
 
     private var portalApplicationsTableHeaderRow: some View {
@@ -1063,7 +1073,7 @@ struct ReferrerPortalView: View {
             if !hidesLabel {
                 Text(label)
                     .font(Theme.font(size: 10, weight: .bold))
-                    .foregroundStyle(Color.white.opacity(0.85))
+                    .foregroundStyle(portalWebInkColor)
                     .textCase(.uppercase)
                     .kerning(1.6)
             }
@@ -1130,7 +1140,7 @@ struct ReferrerPortalView: View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "chevron.right")
                 .font(.system(size: 11, weight: .semibold))
-                .foregroundStyle(Color(hex: 0x64748B))
+                .foregroundStyle(isExpanded ? portalWebChevronActiveColor : portalWebInkColor)
                 .padding(.top, 2)
                 .rotationEffect(.degrees(isExpanded ? 90 : 0))
                 .animation(.easeInOut(duration: 0.15), value: isExpanded)
@@ -1138,20 +1148,20 @@ struct ReferrerPortalView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(applicant.displayName)
                     .font(Theme.font(size: 14, weight: .semibold))
-                    .foregroundStyle(Theme.ink)
+                    .foregroundStyle(portalWebInkColor)
                     .fixedSize(horizontal: false, vertical: true)
 
                 if let email = applicant.email?.trimmingCharacters(in: .whitespacesAndNewlines), !email.isEmpty {
                     Text(email)
                         .font(Theme.font(size: 12))
-                        .foregroundStyle(Color(hex: 0x334155))
+                        .foregroundStyle(portalWebSubtextColor)
                         .fixedSize(horizontal: false, vertical: true)
                 }
 
                 if let phone = applicant.phone?.trimmingCharacters(in: .whitespacesAndNewlines), !phone.isEmpty {
                     Text(phone)
                         .font(Theme.font(size: 12))
-                        .foregroundStyle(Color(hex: 0x334155))
+                        .foregroundStyle(portalWebSubtextColor)
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
@@ -1163,12 +1173,12 @@ struct ReferrerPortalView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(nonEmpty(applicant.position) ?? "—")
                 .font(Theme.font(size: 14, weight: .semibold))
-                .foregroundStyle(Theme.ink)
+                .foregroundStyle(portalWebInkColor)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text("\(l("iRCRN")): \(nonEmpty(applicant.iCrn) ?? "-")")
                 .font(Theme.font(size: 12))
-                .foregroundStyle(Color(hex: 0x334155))
+                .foregroundStyle(portalWebSubtextColor)
                 .fixedSize(horizontal: false, vertical: true)
 
             if portalCompanies.count > 1, let companyName = nonEmpty(applicant.companyName) {
@@ -1187,14 +1197,14 @@ struct ReferrerPortalView: View {
                 Link(destination: url) {
                     Text(l("Download CV"))
                         .font(Theme.font(size: 12, weight: .semibold))
-                        .foregroundStyle(Theme.ink)
+                        .foregroundStyle(portalWebInkColor)
                         .underline()
                 }
                 .buttonStyle(.plain)
             } else {
                 Text(l("No CV available"))
                     .font(Theme.font(size: 12))
-                    .foregroundStyle(Color(hex: 0x64748B))
+                    .foregroundStyle(portalWebMutedColor)
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
@@ -1247,7 +1257,7 @@ struct ReferrerPortalView: View {
             if availableActions.isEmpty {
                 Text("—")
                     .font(Theme.font(size: 13))
-                    .foregroundStyle(Color(hex: 0x64748B))
+                    .foregroundStyle(portalWebMutedColor)
                     .frame(maxWidth: .infinity, alignment: .leading)
             } else {
                 Menu {
@@ -1260,7 +1270,7 @@ struct ReferrerPortalView: View {
                     HStack(spacing: 8) {
                         Text(l("Actions"))
                             .font(Theme.font(size: 13, weight: .medium))
-                            .foregroundStyle(Theme.ink)
+                            .foregroundStyle(portalWebInkColor)
                             .lineLimit(1)
                         Spacer(minLength: 0)
                         Image(systemName: "chevron.down")
@@ -1401,12 +1411,12 @@ struct ReferrerPortalView: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(label)
                 .font(Theme.font(size: 11, weight: .bold))
-                .foregroundStyle(Color(hex: 0x475569))
+                .foregroundStyle(portalWebSlateColor)
                 .textCase(.uppercase)
                 .kerning(1.4)
             Text(value)
                 .font(Theme.font(size: 13, weight: .medium))
-                .foregroundStyle(Theme.ink)
+                .foregroundStyle(portalWebInkColor)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -1421,7 +1431,7 @@ struct ReferrerPortalView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(l("Activity history"))
                 .font(Theme.font(size: 14, weight: .bold))
-                .foregroundStyle(Theme.ink)
+                .foregroundStyle(portalWebSlateColor)
 
             VStack(alignment: .leading, spacing: 10) {
                 ForEach(Array(history.enumerated()), id: \.offset) { _, entry in
@@ -1434,17 +1444,17 @@ struct ReferrerPortalView: View {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(portalHistoryActionLabel(entry.action))
                                 .font(Theme.font(size: 13, weight: .semibold))
-                                .foregroundStyle(Theme.ink)
+                                .foregroundStyle(Color(hex: 0x1E293B))
 
                             Text(portalHistoryMetaText(entry))
                                 .font(Theme.font(size: 12))
-                                .foregroundStyle(Color(hex: 0x475569))
+                                .foregroundStyle(portalWebSubtextColor)
                                 .fixedSize(horizontal: false, vertical: true)
 
                             if let notes = nonEmpty(entry.notes) {
                                 Text("\"\(notes)\"")
                                     .font(Theme.font(size: 12))
-                                    .foregroundStyle(Color(hex: 0x334155))
+                                    .foregroundStyle(portalWebSubtextColor)
                                     .fixedSize(horizontal: false, vertical: true)
                             }
                         }
