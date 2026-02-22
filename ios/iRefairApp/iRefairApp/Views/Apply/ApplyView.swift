@@ -9,6 +9,7 @@ struct ApplyView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
     @EnvironmentObject private var networkMonitor: NetworkMonitor
+    @EnvironmentObject private var applicantPortalAccountStore: ApplicantPortalAccountStore
 
     @State private var applicantId = ""
     @State private var applicantKey = ""
@@ -383,7 +384,16 @@ struct ApplyView: View {
                 payload: payload,
                 resume: resumeFile
             )
-            statusMessage = response.message ?? l("Application submitted. We'll log it and follow up with next steps.")
+            let baseSuccessMessage = response.message ?? l("Application submitted. We'll log it and follow up with next steps.")
+            let didAutoAddPortalAccount = await autoAddApplicantPortalAccountIfPossible(
+                applicantId: payload["applicantId"] ?? "",
+                applicantKey: payload["applicantKey"] ?? ""
+            )
+            if didAutoAddPortalAccount {
+                statusMessage = "\(baseSuccessMessage) \(l("Your applicant portal account was added on this device."))"
+            } else {
+                statusMessage = baseSuccessMessage
+            }
             showSuccessModal = true
             Telemetry.track("apply_submit_success")
         } catch {
@@ -391,9 +401,43 @@ struct ApplyView: View {
             errorMessage = error.localizedDescription
         }
     }
+
+    @MainActor
+    private func autoAddApplicantPortalAccountIfPossible(applicantId: String, applicantKey: String) async -> Bool {
+        let trimmedApplicantId = applicantId.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedApplicantKey = applicantKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedApplicantId.isEmpty, !trimmedApplicantKey.isEmpty else { return false }
+        guard !Validator.sanitizeBaseURL(apiBaseURL).isEmpty else { return false }
+        guard networkMonitor.isConnected else { return false }
+
+        do {
+            let response = try await APIClient.exchangeApplicantMobileSession(
+                baseURL: apiBaseURL,
+                applicantId: trimmedApplicantId,
+                applicantKey: trimmedApplicantKey
+            )
+
+            guard let refreshToken = response.refreshToken?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  !refreshToken.isEmpty,
+                  let responseApplicant = response.applicant else {
+                return false
+            }
+
+            applicantPortalAccountStore.upsertAccount(
+                from: responseApplicant,
+                refreshToken: refreshToken,
+                makeActive: true
+            )
+            return true
+        } catch {
+            Telemetry.capture(error)
+            return false
+        }
+    }
 }
 
 #Preview {
     ApplyView()
         .environmentObject(NetworkMonitor())
+        .environmentObject(ApplicantPortalAccountStore())
 }

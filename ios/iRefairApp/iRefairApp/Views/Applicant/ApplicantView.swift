@@ -1236,6 +1236,7 @@ struct ApplicantPortalView: View {
     private let applicantMetaSingleColumnBreakpoint: CGFloat = 340
     private let portalMobileTableBreakpoint: CGFloat = 900
 
+    @EnvironmentObject private var appState: AppState
     @EnvironmentObject private var networkMonitor: NetworkMonitor
     @EnvironmentObject private var applicantPortalAccountStore: ApplicantPortalAccountStore
 
@@ -1388,6 +1389,10 @@ struct ApplicantPortalView: View {
         }
         .onChange(of: applicantPortalAccountStore.activeAccountIrain) { _ in
             applicationsPage = 1
+        }
+        .onChange(of: appState.selectedTab) { selectedTab in
+            guard selectedTab == .applicantPortal else { return }
+            Task { await bootstrapSession() }
         }
         .sheet(isPresented: $isAccountManagerPresented) {
             portalAccountManagementSheet
@@ -1726,26 +1731,47 @@ struct ApplicantPortalView: View {
     }
 
     private var loadingApplicantApplicationsRows: some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: 0) {
             ForEach(0..<loadingRows, id: \.self) { index in
-                VStack(alignment: .leading, spacing: 8) {
-                    IRefairSkeletonBlock(height: 16, cornerRadius: 8, delay: Double(index) * 0.04)
-                    IRefairSkeletonBlock(height: 12, cornerRadius: 8, delay: Double(index) * 0.04 + 0.03)
-                    IRefairSkeletonBlock(height: 12, cornerRadius: 8, delay: Double(index) * 0.04 + 0.06)
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .top, spacing: 12) {
+                        VStack(alignment: .leading, spacing: 6) {
+                            IRefairSkeletonBlock(height: 16, cornerRadius: 8, delay: Double(index) * 0.03)
+                            loadingApplicantApplicationTextLine(height: 10, trailingInset: 116, delay: Double(index) * 0.03 + 0.02)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        IRefairSkeletonBlock(width: 84, height: 24, cornerRadius: 12, delay: Double(index) * 0.03 + 0.04)
+                    }
+
+                    loadingApplicantApplicationTextLine(height: 10, trailingInset: 140, delay: Double(index) * 0.03 + 0.06)
+                    loadingApplicantApplicationTextLine(height: 14, trailingInset: 52, delay: Double(index) * 0.03 + 0.08)
+                    loadingApplicantApplicationTextLine(height: 10, trailingInset: 98, delay: Double(index) * 0.03 + 0.10)
                 }
-                .padding(14)
-                .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(Color.white.opacity(0.6))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(Color(hex: 0x0F172A).opacity(0.09), lineWidth: 1)
-                        )
-                )
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+
+                if index < loadingRows - 1 {
+                    Divider()
+                        .background(Color.white.opacity(0.12))
+                }
+            }
+        }
+        .background {
+            if !usesPortalMobileTableLayout {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(Color.white.opacity(0.1))
             }
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(l("Loading..."))
+    }
+
+    private func loadingApplicantApplicationTextLine(height: CGFloat, trailingInset: CGFloat, delay: Double) -> some View {
+        HStack(spacing: 0) {
+            IRefairSkeletonBlock(height: height, cornerRadius: 999, delay: delay)
+            Spacer(minLength: trailingInset)
+        }
     }
 
     @ViewBuilder
@@ -2435,6 +2461,7 @@ struct ApplicantPortalView: View {
 
 #Preview("Applicant Portal") {
     ApplicantPortalView()
+        .environmentObject(AppState())
         .environmentObject(NetworkMonitor())
         .environmentObject(ApplicantPortalAccountStore())
 }
