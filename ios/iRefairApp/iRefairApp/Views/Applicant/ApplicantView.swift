@@ -644,7 +644,6 @@ struct ApplicantView: View {
         let meetingDetails = hasMeeting
             ? formatMeetingDetails(date: application.meetingDate, time: application.meetingTime, timezone: application.meetingTimezone)
             : l("No meeting scheduled")
-
         return VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 10) {
                 VStack(alignment: .leading, spacing: 4) {
@@ -1234,6 +1233,8 @@ struct ApplicantPortalView: View {
     private let apiBaseURL: String = APIConfig.baseURL
     private let applicationsPageSize = 10
     private let loadingRows = 2
+    private let applicantMetaSingleColumnBreakpoint: CGFloat = 340
+    private let portalMobileTableBreakpoint: CGFloat = 900
 
     @EnvironmentObject private var networkMonitor: NetworkMonitor
     @EnvironmentObject private var applicantPortalAccountStore: ApplicantPortalAccountStore
@@ -1271,6 +1272,10 @@ struct ApplicantPortalView: View {
         !applicantPortalAccountStore.accounts.isEmpty
     }
 
+    private var hasActiveAccount: Bool {
+        applicantPortalAccountStore.activeAccount != nil
+    }
+
     private var activeAccount: ApplicantPortalAccount? {
         applicantPortalAccountStore.activeAccount
     }
@@ -1282,6 +1287,14 @@ struct ApplicantPortalView: View {
     private var isBusySigningOut: Bool {
         isSigningOut || isSigningOutAll
     }
+
+    private var usesPortalMobileTableLayout: Bool {
+        UIScreen.main.bounds.width <= portalMobileTableBreakpoint
+    }
+
+    private var portalWebInkColor: Color { Color(hex: 0x0F172A) }
+    private var portalWebSubtextColor: Color { Color(hex: 0x334155) }
+    private var portalWebMutedColor: Color { Color(hex: 0x64748B) }
 
     private var sortedApplications: [ApplicantPortalApplication] {
         applications.sorted { lhs, rhs in
@@ -1333,17 +1346,20 @@ struct ApplicantPortalView: View {
 
                 if isLoading {
                     applicationsBlock {
-                        loadingApplicantApplicationsRows
+                        applicantApplicationsListShell {
+                            loadingApplicantApplicationsRows
+                                .padding(4)
+                        }
                     }
                 } else if !sortedApplications.isEmpty {
                     applicationsBlock {
                         VStack(alignment: .leading, spacing: 12) {
-                            ForEach(paginatedApplications) { application in
-                                applicantApplicationRow(application)
+                            applicantApplicationsListShell {
+                                applicantApplicationsCardList
                             }
-                        }
-                        if applicationsTotalPages > 1 {
-                            paginationControls
+                            if applicationsTotalPages > 1 {
+                                paginationControls
+                            }
                         }
                     }
                 } else if applicant != nil {
@@ -1550,7 +1566,7 @@ struct ApplicantPortalView: View {
     }
 
     private var signInSection: some View {
-        IRefairSection(l("Sign in to your applicant portal")) {
+        IRefairSection(hasActiveAccount ? l("Add another portal account") : l("Sign in to your applicant portal")) {
             IRefairField(l("Applicant ID (iRAIN) *")) {
                 IRefairTextField("", text: $loginIrain)
                     .textInputAutocapitalization(.characters)
@@ -1562,22 +1578,23 @@ struct ApplicantPortalView: View {
                     .autocorrectionDisabled()
             }
 
-            Button {
-                Task { await signInToPortal() }
-            } label: {
-                HStack(spacing: 8) {
-                    if isSigningIn {
-                        ProgressView()
-                            .tint(.white)
-                            .scaleEffect(0.9)
+            HStack(spacing: 12) {
+                Button {
+                    Task { await signInToPortal() }
+                } label: {
+                    HStack(spacing: 8) {
+                        if isSigningIn {
+                            ProgressView()
+                                .tint(.white)
+                                .scaleEffect(0.9)
+                        }
+                        Text(isSigningIn ? l("Signing in...") : l("Sign in to portal"))
                     }
-                    Text(isSigningIn ? l("Signing in...") : l("Sign in to portal"))
+                    .frame(maxWidth: .infinity)
                 }
-                .frame(maxWidth: .infinity)
+                .buttonStyle(IRefairPrimaryButtonStyle(fillWidth: true))
+                .disabled(isSigningIn || !networkMonitor.isConnected || isBusySigningOut)
             }
-            .buttonStyle(IRefairPrimaryButtonStyle(fillWidth: true))
-            .padding(.top, Theme.fieldLabelGap)
-            .disabled(isSigningIn || !networkMonitor.isConnected || isBusySigningOut)
 
             if let message = messages[.signIn] {
                 StatusBanner(text: message.text, style: message.style)
@@ -1618,34 +1635,64 @@ struct ApplicantPortalView: View {
                     .foregroundStyle(Color.white.opacity(0.75))
             }
 
-            Text("\(totalApplicationsCount) \(l("total"))")
-                .font(Theme.font(size: 13, weight: .semibold))
-                .foregroundStyle(Theme.ink)
-                .padding(.vertical, 8)
-                .padding(.horizontal, 14)
-                .frame(minHeight: 36)
-                .background(
-                    Capsule(style: .continuous)
-                        .fill(Color.white.opacity(0.7))
-                        .overlay(
-                            Capsule(style: .continuous)
-                                .stroke(Color(hex: 0x0F172A).opacity(0.12), lineWidth: 1)
-                        )
-                )
-                .shadow(color: Color(hex: 0x0F172A).opacity(0.06), radius: 6, x: 0, y: 2)
-                .fixedSize(horizontal: true, vertical: false)
+            HStack(alignment: .center, spacing: 8) {
+                applicationsTotalCountPill
+
+                if applicationsTotalPages > 1 {
+                    applicationsHeaderPageInfoPill
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
+    private var applicationsTotalCountPill: some View {
+        Text("\(totalApplicationsCount) \(l("total"))")
+            .font(Theme.font(size: 13, weight: .semibold))
+            .foregroundStyle(Theme.ink)
+            .padding(.vertical, 8)
+            .padding(.horizontal, 14)
+            .frame(minHeight: 36)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.white.opacity(0.7))
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(Color(hex: 0x0F172A).opacity(0.12), lineWidth: 1)
+                    )
+            )
+            .shadow(color: Color(hex: 0x0F172A).opacity(0.06), radius: 6, x: 0, y: 2)
+            .fixedSize(horizontal: true, vertical: false)
+    }
+
+    private var applicationsHeaderPageInfoPill: some View {
+        Text("Page \(validApplicationsPage) / \(applicationsTotalPages)")
+            .font(Theme.font(size: 12, weight: .medium))
+            .foregroundStyle(Color.white.opacity(0.85))
+            .padding(.vertical, 7)
+            .padding(.horizontal, 10)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(Color.white.opacity(0.12))
+                    .overlay(
+                        Capsule(style: .continuous)
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
+            )
+    }
+
+    private var applicantMetaColumns: [GridItem] {
+        if UIScreen.main.bounds.width <= applicantMetaSingleColumnBreakpoint {
+            return [GridItem(.flexible(minimum: 0), spacing: 16, alignment: .leading)]
+        }
+        return [
+            GridItem(.flexible(minimum: 0), spacing: 16, alignment: .leading),
+            GridItem(.flexible(minimum: 0), spacing: 16, alignment: .leading),
+        ]
+    }
+
     private func applicantMeta(_ applicant: ApplicantPortalSummary) -> some View {
-        LazyVGrid(
-            columns: [
-                GridItem(.flexible(minimum: 0), spacing: 16, alignment: .leading),
-                GridItem(.flexible(minimum: 0), spacing: 16, alignment: .leading),
-            ],
-            alignment: .leading,
-            spacing: 12
-        ) {
+        LazyVGrid(columns: applicantMetaColumns, alignment: .leading, spacing: 12) {
             metaItem(
                 title: l("Applicant"),
                 value: "\(applicant.displayName) - \(applicant.irain)"
@@ -1701,55 +1748,85 @@ struct ApplicantPortalView: View {
         .accessibilityLabel(l("Loading..."))
     }
 
-    private var paginationControls: some View {
-        HStack(spacing: 10) {
-            Button {
-                applicationsPage = 1
-            } label: {
-                Text("<<")
-            }
-            .buttonStyle(IRefairGhostButtonStyle())
-            .disabled(validApplicationsPage == 1)
-
-            Button {
-                applicationsPage = max(1, validApplicationsPage - 1)
-            } label: {
-                Text("<")
-            }
-            .buttonStyle(IRefairGhostButtonStyle())
-            .disabled(validApplicationsPage == 1)
-
-            Text(
-                String.localizedStringWithFormat(
-                    l("Page %d of %d"),
-                    validApplicationsPage,
-                    applicationsTotalPages
+    @ViewBuilder
+    private func applicantApplicationsListShell<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        if usesPortalMobileTableLayout {
+            content()
+                .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            content()
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(6)
+                .background(
+                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                        .fill(Color.white.opacity(0.24))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .stroke(Color.white.opacity(0.22), lineWidth: 1)
+                        )
                 )
-            )
-            .font(Theme.font(size: 13, weight: .semibold))
-            .foregroundStyle(Theme.ink)
-
-            Button {
-                applicationsPage = min(applicationsTotalPages, validApplicationsPage + 1)
-            } label: {
-                Text(">")
-            }
-            .buttonStyle(IRefairGhostButtonStyle())
-            .disabled(validApplicationsPage == applicationsTotalPages)
-
-            Button {
-                applicationsPage = applicationsTotalPages
-            } label: {
-                Text(">>")
-            }
-            .buttonStyle(IRefairGhostButtonStyle())
-            .disabled(validApplicationsPage == applicationsTotalPages)
         }
-        .padding(.top, 8)
-        .frame(maxWidth: .infinity, alignment: .center)
     }
 
-    private func applicantApplicationRow(_ application: ApplicantPortalApplication) -> some View {
+    private var applicantApplicationsCardList: some View {
+        let visibleApplications = paginatedApplications
+
+        return VStack(alignment: .leading, spacing: 12) {
+            ForEach(visibleApplications.indices, id: \.self) { index in
+                let application = visibleApplications[index]
+                let absoluteIndex = ((validApplicationsPage - 1) * applicationsPageSize) + index
+                applicantApplicationRow(application, rowIndex: absoluteIndex)
+            }
+        }
+        .padding(4)
+    }
+
+    private var paginationControls: some View {
+        HStack(spacing: 8) {
+            paginationControlButton("«", disabled: validApplicationsPage == 1) {
+                applicationsPage = 1
+            }
+
+            paginationControlButton("‹", disabled: validApplicationsPage == 1) {
+                applicationsPage = max(1, validApplicationsPage - 1)
+            }
+
+            Text("Page \(validApplicationsPage) of \(applicationsTotalPages)")
+                .font(Theme.font(size: 12, weight: .medium))
+                .foregroundStyle(Color.white.opacity(0.9))
+                .padding(.horizontal, 8)
+
+            paginationControlButton("›", disabled: validApplicationsPage == applicationsTotalPages) {
+                applicationsPage = min(applicationsTotalPages, validApplicationsPage + 1)
+            }
+
+            paginationControlButton("»", disabled: validApplicationsPage == applicationsTotalPages) {
+                applicationsPage = applicationsTotalPages
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: usesPortalMobileTableLayout ? .center : .trailing)
+    }
+
+    private func paginationControlButton(_ title: String, disabled: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(title)
+                .font(Theme.font(size: 13, weight: .semibold))
+                .foregroundStyle(disabled ? Color.white.opacity(0.45) : Color.white)
+                .frame(width: 34, height: 34)
+                .background(
+                    RoundedRectangle(cornerRadius: 10, style: .continuous)
+                        .fill(Color.white.opacity(disabled ? 0.06 : 0.12))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .stroke(Color.white.opacity(0.18), lineWidth: 1)
+                        )
+                )
+        }
+        .buttonStyle(.plain)
+        .disabled(disabled)
+    }
+
+    private func applicantApplicationRow(_ application: ApplicantPortalApplication, rowIndex: Int) -> some View {
         let normalizedStatus = (application.status ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         let hasMeeting = normalizedStatus == "meeting scheduled"
             && !(application.meetingDate ?? "").isEmpty
@@ -1761,51 +1838,56 @@ struct ApplicantPortalView: View {
         let meetingDetails = hasMeeting
             ? formatMeetingDetails(date: application.meetingDate, time: application.meetingTime, timezone: application.meetingTimezone)
             : l("No meeting scheduled")
+        let baseOpacity = rowIndex.isMultiple(of: 2) ? 0.12 : 0.08
 
-        return VStack(alignment: .leading, spacing: 10) {
+        return VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .top, spacing: 10) {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(application.id)
                         .font(Theme.font(.headline, weight: .semibold))
-                        .foregroundStyle(Theme.ink)
+                        .foregroundStyle(portalWebInkColor)
                     if !dateLabel.isEmpty {
                         Text(dateLabel)
                             .font(Theme.font(.caption))
-                            .foregroundStyle(Theme.muted)
+                            .foregroundStyle(portalWebSubtextColor)
                     }
                 }
                 Spacer(minLength: 12)
-                Text(localizedApplicationStatus(application.status))
-                    .font(Theme.font(size: 12, weight: .semibold))
-                    .foregroundStyle(statusColor(for: application.status))
-                    .padding(.vertical, 5)
-                    .padding(.horizontal, 10)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(statusColor(for: application.status).opacity(0.12))
-                            .overlay(
-                                Capsule(style: .continuous)
-                                    .stroke(statusColor(for: application.status).opacity(0.28), lineWidth: 1)
-                            )
-                    )
+                portalStatusBadge(application.status)
             }
+            .padding(.bottom, 12)
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(Color.white.opacity(0.1))
+                    .frame(height: 1)
+            }
+            .padding(.bottom, 8)
 
             VStack(alignment: .leading, spacing: 4) {
+                Text(l("Position / iRCRN"))
+                    .font(Theme.font(size: 10, weight: .bold))
+                    .foregroundStyle(Color(hex: 0x0F172A))
+                    .textCase(.uppercase)
+                    .kerning(1.6)
                 Text(application.position?.isEmpty == false ? application.position ?? "" : "-")
                     .font(Theme.font(size: 15, weight: .semibold))
-                    .foregroundStyle(Theme.ink)
+                    .foregroundStyle(portalWebInkColor)
                 Text("\(l("iRCRN")): \(application.iCrn?.isEmpty == false ? application.iCrn ?? "" : "-")")
                     .font(Theme.font(.caption))
-                    .foregroundStyle(Theme.muted)
+                    .foregroundStyle(portalWebSubtextColor)
             }
+            .padding(.top, 8)
+            .padding(.bottom, 8)
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(l("Meeting"))
-                    .font(Theme.font(size: 12, weight: .semibold))
-                    .foregroundStyle(Theme.muted)
+                    .font(Theme.font(size: 10, weight: .bold))
+                    .foregroundStyle(portalWebInkColor)
+                    .textCase(.uppercase)
+                    .kerning(1.6)
                 Text(meetingDetails)
                     .font(Theme.font(size: 13))
-                    .foregroundStyle(hasMeeting ? Theme.ink : Theme.muted)
+                    .foregroundStyle(hasMeeting ? Color(hex: 0x1E293B) : portalWebSubtextColor)
                 if hasMeeting,
                    let urlString = application.meetingUrl,
                    let meetingURL = URL(string: urlString),
@@ -1813,20 +1895,93 @@ struct ApplicantPortalView: View {
                 {
                     Link(l("Join"), destination: meetingURL)
                         .font(Theme.font(size: 13, weight: .semibold))
-                        .foregroundStyle(Theme.accentPrimary)
+                        .foregroundStyle(Color(hex: 0x1D4ED8))
                 }
             }
+            .padding(.top, 10)
+            .padding(.bottom, 8)
         }
-        .padding(14)
+        .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(Color.white.opacity(0.7))
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.white.opacity(baseOpacity + 0.04),
+                            Color.white.opacity(baseOpacity),
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
                 .overlay(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .stroke(Color(hex: 0x0F172A).opacity(0.1), lineWidth: 1)
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
                 )
         )
+        .shadow(color: Color.black.opacity(0.12), radius: 8, x: 0, y: 3)
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+    }
+
+    private enum PortalStatusTone {
+        case info
+        case success
+        case warning
+        case error
+        case neutral
+    }
+
+    private func portalStatusBadge(_ rawStatus: String?) -> some View {
+        let label = localizedApplicationStatus(rawStatus)
+        let tone = portalStatusTone(rawStatus)
+        let style = portalStatusColors(for: tone)
+
+        return Text(label)
+            .font(Theme.font(size: 12, weight: .semibold))
+            .foregroundStyle(style.fg)
+            .padding(.vertical, 4)
+            .padding(.horizontal, 10)
+            .background(
+                Capsule(style: .continuous)
+                    .fill(style.bg)
+            )
+    }
+
+    private func portalStatusTone(_ rawStatus: String?) -> PortalStatusTone {
+        let normalized = (rawStatus ?? "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+
+        switch normalized {
+        case "", "new", "meeting requested", "submitted cv to hr", "interviews being conducted", "cv updated", "info updated":
+            return .info
+        case "meeting scheduled", "met with referrer", "interviewed", "job offered", "landed job":
+            return .success
+        case "needs reschedule", "cv update requested", "info requested":
+            return .warning
+        case "not a good fit", "applicant no longer interested", "applicant decided not to move forward",
+             "hr decided not to proceed", "another applicant was a better fit", "candidate did not accept offer",
+             "cv mismatch", "ineligible":
+            return .error
+        default:
+            return .neutral
+        }
+    }
+
+    private func portalStatusColors(for tone: PortalStatusTone) -> (bg: Color, fg: Color) {
+        switch tone {
+        case .info:
+            return (Color(hex: 0xDBEAFE), Color(hex: 0x1E40AF))
+        case .success:
+            return (Color(hex: 0xD1FAE5), Color(hex: 0x065F46))
+        case .warning:
+            return (Color(hex: 0xFEF3C7), Color(hex: 0x92400E))
+        case .error:
+            return (Color(hex: 0xFEE2E2), Color(hex: 0x991B1B))
+        case .neutral:
+            return (Color(hex: 0xE2E8F0), Color(hex: 0x334155))
+        }
     }
 
     private func parseTimestamp(_ value: String?) -> Date {
@@ -2061,10 +2216,16 @@ struct ApplicantPortalView: View {
             applicant = responseApplicant
             loginApplicantKey = ""
 
-            if let messageTarget {
+            let shouldDismissAccountManagerSheet = messageTarget == .signIn
+            let postSignInMessageTarget: MessageTarget? = shouldDismissAccountManagerSheet ? .global : messageTarget
+
+            if shouldDismissAccountManagerSheet {
+                isAccountManagerPresented = false
+            } else if let messageTarget {
                 setMessage(l("Signed in. Loading portal data..."), style: .success, for: messageTarget)
             }
-            await loadPortal(messageTarget: messageTarget)
+
+            await loadPortal(messageTarget: postSignInMessageTarget)
         } catch {
             Telemetry.capture(error)
             if let messageTarget {
