@@ -27,6 +27,7 @@ struct ApplyView: View {
     @State private var fieldErrors: [String: String] = [:]
     @State private var validationScrollTarget: String?
     @State private var showSuccessModal = false
+    @State private var hasLoadedSavedCredentials = false
 
     var body: some View {
         NavigationStack {
@@ -186,6 +187,9 @@ struct ApplyView: View {
                 isPresented: $showSuccessModal,
                 variant: .default
             )
+        }
+        .onAppear {
+            loadSavedApplyCredentialsIfNeeded()
         }
     }
 
@@ -347,6 +351,38 @@ struct ApplyView: View {
         showSuccessModal = false
     }
 
+    private func loadSavedApplyCredentialsIfNeeded() {
+        guard !hasLoadedSavedCredentials else { return }
+        hasLoadedSavedCredentials = true
+
+        let trimmedApplicantId = applicantId.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedApplicantId.isEmpty {
+            let savedApplicantId = (KeychainStore.read(key: KeychainStore.applyFormApplicantIdStorageKey) ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !savedApplicantId.isEmpty {
+                applicantId = savedApplicantId
+            }
+        }
+
+        let trimmedApplicantKey = applicantKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedApplicantKey.isEmpty {
+            let savedApplicantKey = (KeychainStore.read(key: KeychainStore.applyFormApplicantKeyStorageKey) ?? "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !savedApplicantKey.isEmpty {
+                applicantKey = savedApplicantKey
+            }
+        }
+    }
+
+    private func saveApplyCredentials(applicantId: String, applicantKey: String) {
+        let trimmedApplicantId = applicantId.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedApplicantKey = applicantKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedApplicantId.isEmpty, !trimmedApplicantKey.isEmpty else { return }
+
+        _ = KeychainStore.save(trimmedApplicantId, key: KeychainStore.applyFormApplicantIdStorageKey)
+        _ = KeychainStore.save(trimmedApplicantKey, key: KeychainStore.applyFormApplicantKeyStorageKey)
+    }
+
     private func buildPayload() -> [String: String] {
         [
             "applicantId": applicantId.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -383,6 +419,10 @@ struct ApplyView: View {
                 baseURL: apiBaseURL,
                 payload: payload,
                 resume: resumeFile
+            )
+            saveApplyCredentials(
+                applicantId: payload["applicantId"] ?? "",
+                applicantKey: payload["applicantKey"] ?? ""
             )
             let baseSuccessMessage = response.message ?? l("Application submitted. We'll log it and follow up with next steps.")
             let didAutoAddPortalAccount = await autoAddApplicantPortalAccountIfPossible(

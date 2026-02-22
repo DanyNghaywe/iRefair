@@ -65,6 +65,13 @@ struct SettingsView: View {
                     }
 
                     IRefairSection(l("App data")) {
+                        Button(l("Clear saved apply credentials")) {
+                            KeychainStore.delete(key: KeychainStore.applyFormApplicantIdStorageKey)
+                            KeychainStore.delete(key: KeychainStore.applyFormApplicantKeyStorageKey)
+                            statusMessage = l("Cleared saved apply credentials.")
+                        }
+                        .buttonStyle(IRefairGhostButtonStyle())
+
                         Button(l("Clear saved referrer portals")) {
                             KeychainStore.delete(key: "referrerPortalToken")
                             KeychainStore.delete(key: "referrerPortalRefreshToken")

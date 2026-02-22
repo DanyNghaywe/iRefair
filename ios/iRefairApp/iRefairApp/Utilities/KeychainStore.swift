@@ -3,6 +3,8 @@ import Security
 
 enum KeychainStore {
     private static let service = "com.irefair.app"
+    static let applyFormApplicantIdStorageKey = "applyFormApplicantId"
+    static let applyFormApplicantKeyStorageKey = "applyFormApplicantKey"
 
     static func save(_ value: String, key: String) -> Bool {
         guard let data = value.data(using: .utf8) else { return false }
