@@ -4,6 +4,7 @@
  */
 
 import { sendMail } from '@/lib/mailer';
+import { revokeAllReferrerMobileSessions } from '@/lib/referrerMobileAuth';
 import {
   REFERRER_PORTAL_TOKEN_VERSION_HEADER,
   REFERRER_SHEET_NAME,
@@ -14,6 +15,19 @@ import {
 import { createReferrerToken, normalizePortalTokenVersion } from '@/lib/referrerPortalToken';
 import { normalizeHttpUrl } from '@/lib/validation';
 import { referrerPortalLink } from '@/lib/emailTemplates';
+
+function isMissingReferrerMobileSessionTable(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+
+  const maybeCode = 'code' in error ? (error as { code?: unknown }).code : null;
+  if (maybeCode === 'P2021') return true;
+
+  const maybeMessage = 'message' in error ? (error as { message?: unknown }).message : null;
+  if (typeof maybeMessage !== 'string') return false;
+
+  const lowered = maybeMessage.toLowerCase();
+  return lowered.includes('referrermobilesession') && lowered.includes('does not exist');
+}
 
 /**
  * Get the application base URL from environment variables.
@@ -50,6 +64,49 @@ export async function ensureReferrerPortalTokenVersion(irref: string): Promise<n
   }
 
   return portalTokenVersion;
+}
+
+/**
+ * Rotate the referrer's portal token version, invalidating previously issued portal/access tokens.
+ */
+export async function rotateReferrerPortalTokenVersion(irref: string): Promise<number> {
+  const referrer = await getReferrerByIrref(irref);
+  if (!referrer) {
+    throw new Error('Referrer not found');
+  }
+
+  const currentVersion = normalizePortalTokenVersion(referrer.record.portalTokenVersion);
+  const nextVersion = currentVersion + 1;
+
+  await ensureColumns(REFERRER_SHEET_NAME, [REFERRER_PORTAL_TOKEN_VERSION_HEADER]);
+  const result = await updateRowById(REFERRER_SHEET_NAME, 'iRREF', irref, {
+    [REFERRER_PORTAL_TOKEN_VERSION_HEADER]: String(nextVersion),
+  });
+
+  if (!result.updated) {
+    throw new Error('Unable to rotate portal token version');
+  }
+
+  return nextVersion;
+}
+
+/**
+ * Invalidate all existing referrer portal access, including mobile refresh sessions.
+ */
+export async function invalidateReferrerPortalAccess(irref: string): Promise<number> {
+  const nextVersion = await rotateReferrerPortalTokenVersion(irref);
+
+  try {
+    await revokeAllReferrerMobileSessions(irref);
+  } catch (error) {
+    // Some environments may not have the mobile session table yet; token version rotation still invalidates stateless sessions.
+    if (!isMissingReferrerMobileSessionTable(error)) {
+      throw error;
+    }
+    console.warn('Referrer mobile session table missing while invalidating portal access.', { irref, error });
+  }
+
+  return nextVersion;
 }
 
 /**

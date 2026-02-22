@@ -157,6 +157,11 @@ struct ReferrerPortalView: View {
         let style: StatusBanner.Style
     }
 
+    private enum SessionRefreshResult {
+        case success
+        case requiresSignIn(message: String)
+    }
+
     private let apiBaseURL: String = APIConfig.baseURL
 
     @EnvironmentObject private var appState: AppState
@@ -1803,6 +1808,35 @@ struct ReferrerPortalView: View {
         NSLocalizedString(key, comment: "")
     }
 
+    private func referrerPortalAccountStatusMessage(for error: Error) -> String? {
+        let rawMessage: String
+        if let apiError = error as? APIError {
+            rawMessage = apiError.message
+        } else {
+            rawMessage = error.localizedDescription
+        }
+
+        let normalized = rawMessage.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if normalized == "referrer not found" || normalized == "referrer not found." {
+            return l("This portal account was permanently deleted. Please request a new sign-in link.")
+        }
+        if normalized.contains("archived") && normalized.contains("portal access") {
+            return l("This portal account is archived. If it is restored, request a new sign-in link.")
+        }
+        return nil
+    }
+
+    private func referrerPortalDisplayErrorMessage(for error: Error) -> String {
+        referrerPortalAccountStatusMessage(for: error) ?? error.localizedDescription
+    }
+
+    private func referrerPortalRefreshFailureMessage(for error: Error?) -> String {
+        if let error, let specialized = referrerPortalAccountStatusMessage(for: error) {
+            return specialized
+        }
+        return l("Session expired. Please sign in again.")
+    }
+
     private func setMessage(_ text: String, style: StatusBanner.Style, for target: MessageTarget) {
         messages[target] = InlineMessage(text: text, style: style)
     }
@@ -1863,9 +1897,11 @@ struct ReferrerPortalView: View {
         }
 
         if accessToken.isEmpty {
-            let refreshed = await refreshSession(for: activeAccount.normalizedIrref)
-            guard refreshed else {
-                setMessage(l("Session expired. Please sign in again."), style: .error, for: startupMessageTarget)
+            switch await refreshSession(for: activeAccount.normalizedIrref) {
+            case .success:
+                break
+            case .requiresSignIn(let message):
+                setMessage(message, style: .error, for: startupMessageTarget)
                 return
             }
         }
@@ -2003,16 +2039,16 @@ struct ReferrerPortalView: View {
         } catch {
             Telemetry.capture(error)
             if let messageTarget {
-                setMessage(error.localizedDescription, style: .error, for: messageTarget)
+                setMessage(referrerPortalDisplayErrorMessage(for: error), style: .error, for: messageTarget)
             }
         }
     }
 
     @MainActor
-    private func refreshSession(for irref: String) async -> Bool {
+    private func refreshSession(for irref: String) async -> SessionRefreshResult {
         let refreshToken = referrerPortalAccountStore.refreshToken(for: irref)
         guard !refreshToken.isEmpty else {
-            return false
+            return .requiresSignIn(message: referrerPortalRefreshFailureMessage(for: nil))
         }
 
         do {
@@ -2026,13 +2062,13 @@ struct ReferrerPortalView: View {
 
             accessToken = newAccessToken
             _ = referrerPortalAccountStore.saveRefreshToken(newRefreshToken, for: irref)
-            return true
+            return .success
         } catch {
             Telemetry.capture(error)
             accessToken = ""
             clearPortalData()
             referrerPortalAccountStore.clearRefreshToken(for: irref)
-            return false
+            return .requiresSignIn(message: referrerPortalRefreshFailureMessage(for: error))
         }
     }
 
@@ -2123,10 +2159,12 @@ struct ReferrerPortalView: View {
         defer { isLoading = false }
 
         if accessToken.isEmpty {
-            let refreshed = await refreshSession(for: activeIrref)
-            if !refreshed {
+            switch await refreshSession(for: activeIrref) {
+            case .success:
+                break
+            case .requiresSignIn(let message):
                 if let messageTarget {
-                    setMessage(l("Session expired. Please sign in again."), style: .error, for: messageTarget)
+                    setMessage(message, style: .error, for: messageTarget)
                 }
                 return
             }
@@ -2164,8 +2202,9 @@ struct ReferrerPortalView: View {
             }
             Telemetry.track("referrer_portal_loaded", properties: ["count": "\(applicants.count)"])
         } catch {
-            let refreshed = await refreshSession(for: activeIrref)
-            if refreshed {
+            switch await refreshSession(for: activeIrref) {
+            case .success:
+                // The refresh succeeded; retry the load once.
                 do {
                     let retryResponse = try await APIClient.loadReferrerPortal(baseURL: apiBaseURL, token: accessToken)
                     guard referrerPortalAccountStore.activeAccountIrref == activeIrref else { return }
@@ -2201,15 +2240,16 @@ struct ReferrerPortalView: View {
                 } catch {
                     Telemetry.capture(error)
                     if let messageTarget {
-                        setMessage(error.localizedDescription, style: .error, for: messageTarget)
+                        setMessage(referrerPortalDisplayErrorMessage(for: error), style: .error, for: messageTarget)
                     }
                     return
                 }
-            }
-
-            Telemetry.capture(error)
-            if let messageTarget {
-                setMessage(error.localizedDescription, style: .error, for: messageTarget)
+            case .requiresSignIn(let message):
+                Telemetry.capture(error)
+                if let messageTarget {
+                    setMessage(message, style: .error, for: messageTarget)
+                }
+                return
             }
         }
     }

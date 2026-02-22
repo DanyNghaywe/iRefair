@@ -223,6 +223,8 @@
 "Set your API base URL in Settings before submitting." = "Définissez l'URL de base de l'API dans Paramètres avant d'envoyer.";
 "Session" = "Session";
 "Session expired. Please sign in again." = "Connexion expirée. Veuillez vous reconnecter.";
+"This portal account is archived. If it is restored, request a new sign-in link." = "Ce compte de portail est archivé. S'il est restauré, demandez un nouveau lien de connexion.";
+"This portal account was permanently deleted. Please request a new sign-in link." = "Ce compte de portail a été supprimé définitivement. Veuillez demander un nouveau lien de connexion.";
 "App configuration is missing API base URL." = "La configuration de l'application ne contient pas d'URL de base API.";
 "Settings" = "Paramètres";
 "Switch app mode?" = "Changer le mode de l'application ?";

@@ -223,6 +223,8 @@
 "Set your API base URL in Settings before submitting." = "Set your API base URL in Settings before submitting.";
 "Session" = "Session";
 "Session expired. Please sign in again." = "Sign-in expired. Please sign in again.";
+"This portal account is archived. If it is restored, request a new sign-in link." = "This portal account is archived. If it is restored, request a new sign-in link.";
+"This portal account was permanently deleted. Please request a new sign-in link." = "This portal account was permanently deleted. Please request a new sign-in link.";
 "App configuration is missing API base URL." = "App configuration is missing API base URL.";
 "Settings" = "Settings";
 "Switch app mode?" = "Switch app mode?";

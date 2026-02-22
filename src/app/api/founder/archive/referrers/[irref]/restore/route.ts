@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
-import { restoreReferrerByIrref } from '@/lib/sheets';
+import { invalidateReferrerPortalAccess } from '@/lib/referrerPortalLink';
+import { getReferrerByIrref, restoreReferrerByIrref } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,6 +19,16 @@ export async function POST(
   }
 
   try {
+    const existing = await getReferrerByIrref(params.irref);
+    if (!existing) {
+      return NextResponse.json({ ok: false, error: 'Referrer not found' }, { status: 404 });
+    }
+    if (existing.record.archived !== 'true') {
+      return NextResponse.json({ ok: false, error: 'Referrer is not archived' }, { status: 400 });
+    }
+
+    await invalidateReferrerPortalAccess(existing.record.irref);
+
     const result = await restoreReferrerByIrref(params.irref);
     if (!result.success) {
       if (result.reason === 'not_found') {

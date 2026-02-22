@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { requireFounder } from '@/lib/founderAuth';
+import { invalidateReferrerPortalAccess } from '@/lib/referrerPortalLink';
 import { archiveReferrerByIrref, getReferrerByIrref, updateReferrerFields } from '@/lib/sheets';
 import { normalizeHttpUrl } from '@/lib/validation';
 
@@ -178,6 +179,16 @@ export async function DELETE(
   }
 
   try {
+    const existing = await getReferrerByIrref(params.irain);
+    if (!existing) {
+      return NextResponse.json({ ok: false, error: 'Referrer not found' }, { status: 404 });
+    }
+    if (existing.record.archived === 'true') {
+      return NextResponse.json({ ok: false, error: 'Referrer is already archived' }, { status: 400 });
+    }
+
+    await invalidateReferrerPortalAccess(existing.record.irref);
+
     const result = await archiveReferrerByIrref(params.irain);
     if (!result.success) {
       if (result.reason === 'not_found') {
