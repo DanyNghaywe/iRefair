@@ -2785,10 +2785,6 @@ export async function migrateLegacyApplicantIds() {
     console.error('Applicant sheet formatting failed after migration (non-fatal):', error);
   }
 
-  if (SHEET_DB_ENABLED) {
-    await syncSheetsToDatabase();
-  }
-
   return {
     migrated: updates.length,
     updates,
@@ -6074,6 +6070,130 @@ type SheetSyncResult = {
   deleted: number;
   skipped: number;
 };
+
+type DatabaseToSheetSyncResult = {
+  sheetName: string;
+  columns: number;
+  rowsWritten: number;
+};
+
+async function writeDbSnapshotToSheet(
+  sheetName: string,
+  headers: string[],
+  rows: SheetRows,
+): Promise<void> {
+  if (!headers.length) return;
+
+  const spreadsheetId = getSpreadsheetIdOrThrow();
+  const sheets = getSheetsClient();
+
+  // Ensure the sheet exists and header formatting is initialized.
+  await ensureHeaders(sheetName, headers, true, { source: 'sheets' });
+
+  // Full SQL->Sheets sync: clear all values, then rewrite headers + all rows from the DB snapshot.
+  await sheets.spreadsheets.values.clear({
+    spreadsheetId,
+    range: buildSheetRange(sheetName),
+  });
+
+  const lastCol = toColumnLetter(headers.length - 1);
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range: buildSheetRange(sheetName, `A1:${lastCol}1`),
+    valueInputOption: 'RAW',
+    requestBody: {
+      majorDimension: 'ROWS',
+      values: [headers.map((value) => sanitizeSheetsCell(value))],
+    },
+  });
+
+  if (rows.length) {
+    const chunkSize = 300;
+    for (let start = 0; start < rows.length; start += chunkSize) {
+      const slice = rows.slice(start, start + chunkSize);
+      const startRow = start + 2;
+      const endRow = startRow + slice.length - 1;
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: buildSheetRange(sheetName, `A${startRow}:${lastCol}${endRow}`),
+        valueInputOption: 'RAW',
+        requestBody: {
+          majorDimension: 'ROWS',
+          values: slice.map((row) =>
+            normalizeRowValues(headers, row).map((value) => sanitizeSheetsCell(value)),
+          ),
+        },
+      });
+    }
+  }
+
+  headersCache.set(sheetName, headers);
+  invalidateSheetDataCache(sheetName);
+}
+
+export async function syncDatabaseToSheets(): Promise<{
+  ok: boolean;
+  syncedAt: string;
+  results: DatabaseToSheetSyncResult[];
+  error?: string;
+}> {
+  if (!SHEET_DB_ENABLED) {
+    return {
+      ok: false,
+      syncedAt: new Date().toISOString(),
+      results: [],
+      error: 'DATABASE_URL is not configured.',
+    };
+  }
+
+  const sheetNames = Object.keys(SHEET_KEY_HEADERS);
+  const results: DatabaseToSheetSyncResult[] = [];
+
+  for (const sheetName of sheetNames) {
+    const taskLabel = `fullDbToSheets:${sheetName}`;
+    const dbSheet = await db.sheet.findUnique({
+      where: { name: sheetName },
+      select: { headers: true },
+    });
+    const dbHeaders = Array.isArray(dbSheet?.headers) ? (dbSheet.headers as string[]) : [];
+    if (dbHeaders.length) {
+      dbHeadersCache.set(sheetName, dbHeaders);
+    }
+    const effectiveHeaders = dbHeaders.length ? dbHeaders : getDefaultHeadersForSheet(sheetName);
+
+    if (!effectiveHeaders.length) {
+      results.push({ sheetName, columns: 0, rowsWritten: 0 });
+      continue;
+    }
+
+    const dbRows = await db.sheetRow.findMany({
+      where: { sheetName, deletedAt: null },
+      orderBy: [{ rowIndex: 'asc' }, { key: 'asc' }],
+      select: { values: true },
+    });
+    const rows = dbRows.map((row) => (Array.isArray(row.values) ? (row.values as SheetRows[number]) : []));
+
+    await enqueueSheetTask(
+      sheetName,
+      async () => {
+        await writeDbSnapshotToSheet(sheetName, effectiveHeaders, rows);
+      },
+      taskLabel,
+    );
+
+    results.push({
+      sheetName,
+      columns: effectiveHeaders.length,
+      rowsWritten: rows.length,
+    });
+  }
+
+  return {
+    ok: true,
+    syncedAt: new Date().toISOString(),
+    results,
+  };
+}
 
 export async function syncSheetsToDatabase(): Promise<{
   ok: boolean;

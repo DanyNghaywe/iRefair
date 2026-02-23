@@ -1,4 +1,4 @@
-name: Sync Sheets
+name: SQL to Sheets Full Sync
 
 on:
   schedule:
@@ -9,7 +9,7 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Trigger sync endpoint
+      - name: Trigger SQL-to-Sheets full sync endpoint
         run: |
           curl -fsS \
             -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
