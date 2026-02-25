@@ -248,16 +248,16 @@ export async function getReferrerMobileRefreshTokenIrrefHint(
   const parsed = parseRefreshToken(refreshToken);
   if (!parsed) return null;
 
+  // This is a non-authoritative lookup used only to improve error messaging
+  // (e.g. archived account) when a stateful refresh token is revoked/expired/stale.
   const session = await db.referrerMobileSession.findUnique({
     where: { id: parsed.sessionId },
     select: {
       irref: true,
-      refreshTokenHash: true,
     },
   });
 
   if (!session) return null;
-  if (session.refreshTokenHash !== parsed.tokenHash) return null;
 
   return {
     irref: session.irref,
