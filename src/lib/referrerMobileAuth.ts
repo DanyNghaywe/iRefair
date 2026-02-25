@@ -41,6 +41,10 @@ export type ValidatedReferrerMobileRefreshToken = {
   sessionExpiresAt: Date;
 };
 
+export type ReferrerMobileRefreshTokenIrrefHint = {
+  irref: string;
+};
+
 export type ValidatedStatelessReferrerMobileRefreshToken = {
   irref: string;
   tokenVersion: number;
@@ -235,6 +239,28 @@ export async function validateReferrerMobileRefreshToken(refreshToken: string): 
     irref: session.irref,
     refreshTokenHash: parsed.tokenHash,
     sessionExpiresAt: session.sessionExpiresAt,
+  };
+}
+
+export async function getReferrerMobileRefreshTokenIrrefHint(
+  refreshToken: string,
+): Promise<ReferrerMobileRefreshTokenIrrefHint | null> {
+  const parsed = parseRefreshToken(refreshToken);
+  if (!parsed) return null;
+
+  const session = await db.referrerMobileSession.findUnique({
+    where: { id: parsed.sessionId },
+    select: {
+      irref: true,
+      refreshTokenHash: true,
+    },
+  });
+
+  if (!session) return null;
+  if (session.refreshTokenHash !== parsed.tokenHash) return null;
+
+  return {
+    irref: session.irref,
   };
 }
 

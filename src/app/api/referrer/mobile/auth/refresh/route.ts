@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import {
+  getReferrerMobileRefreshTokenIrrefHint,
   issueReferrerMobileAccessToken,
   issueStatelessReferrerMobileRefreshToken,
   revokeReferrerMobileSessionByRefreshToken,
@@ -78,6 +79,16 @@ export async function POST(request: NextRequest) {
 
     const validated = await validateReferrerMobileRefreshToken(refreshToken);
     if (!validated) {
+      const hinted = await getReferrerMobileRefreshTokenIrrefHint(refreshToken);
+      if (hinted) {
+        const referrer = await getReferrerByIrref(hinted.irref);
+        if (referrer?.record.archived?.toLowerCase() === 'true') {
+          return NextResponse.json(
+            { ok: false, error: 'This referrer account has been archived and portal access is no longer available.' },
+            { status: 403 },
+          );
+        }
+      }
       return NextResponse.json({ ok: false, error: 'Invalid or expired session.' }, { status: 401 });
     }
 

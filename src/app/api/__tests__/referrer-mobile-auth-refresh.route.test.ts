@@ -9,6 +9,7 @@ const { rateLimit, rateLimitHeaders } = vi.hoisted(() => ({
 }));
 
 const {
+  getReferrerMobileRefreshTokenIrrefHint,
   issueReferrerMobileAccessToken,
   issueStatelessReferrerMobileRefreshToken,
   revokeReferrerMobileSessionByRefreshToken,
@@ -16,6 +17,7 @@ const {
   validateStatelessReferrerMobileRefreshToken,
   validateReferrerMobileRefreshToken,
 } = vi.hoisted(() => ({
+  getReferrerMobileRefreshTokenIrrefHint: vi.fn(),
   issueReferrerMobileAccessToken: vi.fn(),
   issueStatelessReferrerMobileRefreshToken: vi.fn(),
   revokeReferrerMobileSessionByRefreshToken: vi.fn(),
@@ -41,6 +43,7 @@ vi.mock('@/lib/rateLimit', () => ({
 }));
 
 vi.mock('@/lib/referrerMobileAuth', () => ({
+  getReferrerMobileRefreshTokenIrrefHint,
   issueReferrerMobileAccessToken,
   issueStatelessReferrerMobileRefreshToken,
   revokeReferrerMobileSessionByRefreshToken,
@@ -69,6 +72,7 @@ beforeEach(() => {
   rateLimitHeaders.mockReset();
   issueReferrerMobileAccessToken.mockReset();
   issueStatelessReferrerMobileRefreshToken.mockReset();
+  getReferrerMobileRefreshTokenIrrefHint.mockReset();
   revokeReferrerMobileSessionByRefreshToken.mockReset();
   rotateReferrerMobileRefreshToken.mockReset();
   validateStatelessReferrerMobileRefreshToken.mockReset();
@@ -88,6 +92,7 @@ beforeEach(() => {
 
   validateStatelessReferrerMobileRefreshToken.mockReturnValue(null);
   validateReferrerMobileRefreshToken.mockResolvedValue(null);
+  getReferrerMobileRefreshTokenIrrefHint.mockResolvedValue(null);
   normalizePortalTokenVersion.mockImplementation((value: string) => {
     const parsed = Number.parseInt(value, 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
@@ -147,6 +152,29 @@ describe('POST /api/referrer/mobile/auth/refresh', () => {
     await expect(response.json()).resolves.toEqual({
       ok: false,
       error: 'Invalid or expired session.',
+    });
+  });
+
+  it('returns archived error when a revoked stateful refresh token belongs to an archived referrer', async () => {
+    validateStatelessReferrerMobileRefreshToken.mockReturnValue(null);
+    validateReferrerMobileRefreshToken.mockResolvedValue(null);
+    getReferrerMobileRefreshTokenIrrefHint.mockResolvedValue({
+      irref: 'iRREF0000000001',
+    });
+    getReferrerByIrref.mockResolvedValue({
+      record: {
+        irref: 'iRREF0000000001',
+        archived: 'true',
+        portalTokenVersion: '2',
+      },
+    });
+
+    const response = await POST(makeRequest({ refreshToken: 'session.secret-token-value' }));
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      error: 'This referrer account has been archived and portal access is no longer available.',
     });
   });
 });

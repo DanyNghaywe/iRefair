@@ -1830,6 +1830,31 @@ struct ReferrerPortalView: View {
         referrerPortalAccountStatusMessage(for: error) ?? error.localizedDescription
     }
 
+    private func shouldRetryPortalLoadWithSessionRefresh(after error: Error) -> Bool {
+        if referrerPortalAccountStatusMessage(for: error) != nil {
+            return false
+        }
+
+        let normalized = error.localizedDescription
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+
+        if normalized == "missing token" || normalized == "missing token." {
+            return true
+        }
+        if normalized == "invalid or expired token" || normalized == "invalid or expired token." {
+            return true
+        }
+        if normalized == "forbidden" || normalized == "forbidden." {
+            return true
+        }
+        if normalized.contains("session expired") {
+            return true
+        }
+
+        return false
+    }
+
     private func referrerPortalRefreshFailureMessage(for error: Error?) -> String {
         guard let error else {
             return l("Session expired. Please sign in again.")
@@ -2216,6 +2241,14 @@ struct ReferrerPortalView: View {
             }
             Telemetry.track("referrer_portal_loaded", properties: ["count": "\(applicants.count)"])
         } catch {
+            if !shouldRetryPortalLoadWithSessionRefresh(after: error) {
+                Telemetry.capture(error)
+                if let messageTarget {
+                    setMessage(referrerPortalDisplayErrorMessage(for: error), style: .error, for: messageTarget)
+                }
+                return
+            }
+
             switch await refreshSession(for: activeIrref) {
             case .success:
                 // The refresh succeeded; retry the load once.
