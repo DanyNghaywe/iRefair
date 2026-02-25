@@ -1831,10 +1831,24 @@ struct ReferrerPortalView: View {
     }
 
     private func referrerPortalRefreshFailureMessage(for error: Error?) -> String {
-        if let error, let specialized = referrerPortalAccountStatusMessage(for: error) {
-            return specialized
+        guard let error else {
+            return l("Session expired. Please sign in again.")
         }
-        return l("Session expired. Please sign in again.")
+
+        let displayMessage = referrerPortalDisplayErrorMessage(for: error)
+        let normalized = displayMessage
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+
+        if normalized.isEmpty {
+            return l("Session expired. Please sign in again.")
+        }
+
+        if normalized == "invalid or expired session" || normalized == "invalid or expired session." {
+            return l("Session expired. Please sign in again.")
+        }
+
+        return displayMessage
     }
 
     private func setMessage(_ text: String, style: StatusBanner.Style, for target: MessageTarget) {

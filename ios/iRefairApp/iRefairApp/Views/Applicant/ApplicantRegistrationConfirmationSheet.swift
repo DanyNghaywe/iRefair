@@ -241,6 +241,7 @@ struct ApplicantRegistrationConfirmationSheet: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 6)
+        .padding(.horizontal, 8)
     }
 
     private func tone(for variant: ApplicantRegistrationConfirmationVariant) -> (icon: String, color: Color) {
