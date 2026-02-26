@@ -4,6 +4,7 @@ import {
   createReferrerToken,
   normalizePortalTokenVersion,
   verifyReferrerToken,
+  verifyReferrerTokenAllowExpired,
 } from '../referrerPortalToken';
 import { resetProcessEnv } from './testUtils';
 
@@ -48,6 +49,17 @@ describe('createReferrerToken/verifyReferrerToken', () => {
     const token = createReferrerToken('IR123', 1, -1);
 
     expect(() => verifyReferrerToken(token)).toThrow('Token expired');
+  });
+
+  it('can read an expired token payload when expiry is explicitly allowed', () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2025-01-01T00:00:00Z'));
+
+    const token = createReferrerToken('IR123', 3, -1);
+    const payload = verifyReferrerTokenAllowExpired(token);
+
+    expect(payload.irref).toBe('IR123');
+    expect(payload.v).toBe(3);
   });
 
   it('rejects tampered signatures', () => {

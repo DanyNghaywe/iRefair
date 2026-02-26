@@ -10,6 +10,7 @@ const { rateLimit, rateLimitHeaders } = vi.hoisted(() => ({
 
 const {
   getReferrerMobileRefreshTokenIrrefHint,
+  getReferrerMobileStatelessRefreshTokenIrrefHint,
   issueReferrerMobileAccessToken,
   issueStatelessReferrerMobileRefreshToken,
   revokeReferrerMobileSessionByRefreshToken,
@@ -18,6 +19,7 @@ const {
   validateReferrerMobileRefreshToken,
 } = vi.hoisted(() => ({
   getReferrerMobileRefreshTokenIrrefHint: vi.fn(),
+  getReferrerMobileStatelessRefreshTokenIrrefHint: vi.fn(),
   issueReferrerMobileAccessToken: vi.fn(),
   issueStatelessReferrerMobileRefreshToken: vi.fn(),
   revokeReferrerMobileSessionByRefreshToken: vi.fn(),
@@ -44,6 +46,7 @@ vi.mock('@/lib/rateLimit', () => ({
 
 vi.mock('@/lib/referrerMobileAuth', () => ({
   getReferrerMobileRefreshTokenIrrefHint,
+  getReferrerMobileStatelessRefreshTokenIrrefHint,
   issueReferrerMobileAccessToken,
   issueStatelessReferrerMobileRefreshToken,
   revokeReferrerMobileSessionByRefreshToken,
@@ -73,6 +76,7 @@ beforeEach(() => {
   issueReferrerMobileAccessToken.mockReset();
   issueStatelessReferrerMobileRefreshToken.mockReset();
   getReferrerMobileRefreshTokenIrrefHint.mockReset();
+  getReferrerMobileStatelessRefreshTokenIrrefHint.mockReset();
   revokeReferrerMobileSessionByRefreshToken.mockReset();
   rotateReferrerMobileRefreshToken.mockReset();
   validateStatelessReferrerMobileRefreshToken.mockReset();
@@ -93,6 +97,7 @@ beforeEach(() => {
   validateStatelessReferrerMobileRefreshToken.mockReturnValue(null);
   validateReferrerMobileRefreshToken.mockResolvedValue(null);
   getReferrerMobileRefreshTokenIrrefHint.mockResolvedValue(null);
+  getReferrerMobileStatelessRefreshTokenIrrefHint.mockReturnValue(null);
   normalizePortalTokenVersion.mockImplementation((value: string) => {
     const parsed = Number.parseInt(value, 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
@@ -170,6 +175,29 @@ describe('POST /api/referrer/mobile/auth/refresh', () => {
     });
 
     const response = await POST(makeRequest({ refreshToken: 'session.secret-token-value' }));
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      error: 'This referrer account has been archived and portal access is no longer available.',
+    });
+  });
+
+  it('returns archived error for an expired stateless refresh token belonging to an archived referrer', async () => {
+    validateStatelessReferrerMobileRefreshToken.mockReturnValue(null);
+    getReferrerMobileStatelessRefreshTokenIrrefHint.mockReturnValue({
+      irref: 'iRREF0000000001',
+    });
+    validateReferrerMobileRefreshToken.mockResolvedValue(null);
+    getReferrerByIrref.mockResolvedValue({
+      record: {
+        irref: 'iRREF0000000001',
+        archived: 'true',
+        portalTokenVersion: '2',
+      },
+    });
+
+    const response = await POST(makeRequest({ refreshToken: 'stateless:expired-token' }));
 
     expect(response.status).toBe(403);
     await expect(response.json()).resolves.toEqual({

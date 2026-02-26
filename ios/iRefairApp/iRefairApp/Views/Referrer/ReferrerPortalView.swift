@@ -1876,7 +1876,44 @@ struct ReferrerPortalView: View {
         return displayMessage
     }
 
+    private func referrerPortalStoredStatusHint(for irref: String) -> String? {
+        let hint = referrerPortalAccountStore.statusHint(for: irref)
+        return hint.isEmpty ? nil : hint
+    }
+
+    private func storeReferrerPortalStatusHintIfNeeded(for irref: String, from error: Error) {
+        guard let statusMessage = referrerPortalAccountStatusMessage(for: error) else { return }
+        referrerPortalAccountStore.saveStatusHint(statusMessage, for: irref)
+    }
+
+    private func shouldPreserveReferrerPortalRefreshToken(after error: Error) -> Bool {
+        if referrerPortalAccountStatusMessage(for: error) != nil {
+            return true
+        }
+
+        let normalized = error.localizedDescription
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+
+        if normalized == "invalid or expired session" || normalized == "invalid or expired session." {
+            return true
+        }
+        if normalized == "session rotation failed. please sign in again." {
+            return true
+        }
+        if normalized.contains("session expired") {
+            return true
+        }
+
+        return false
+    }
+
     private func setMessage(_ text: String, style: StatusBanner.Style, for target: MessageTarget) {
+        if target == .global {
+            clearMessage(for: .switchAccount)
+        } else if target == .switchAccount {
+            clearMessage(for: .global)
+        }
         messages[target] = InlineMessage(text: text, style: style)
     }
 
@@ -1925,15 +1962,17 @@ struct ReferrerPortalView: View {
         var handledPendingPortalToken = false
         while let pendingPortalToken = appState.consumeNextPendingReferrerPortalToken() {
             handledPendingPortalToken = true
-            await exchangeSession(portalToken: pendingPortalToken, messageTarget: .global)
+            await exchangeSession(portalToken: pendingPortalToken, messageTarget: startupMessageTarget)
+        }
+
+        // Deep-link token handling already performs its own sign-in/load and messaging.
+        // Do not fall through into saved-account refresh, which can add a second banner.
+        if handledPendingPortalToken {
+            return
         }
 
         guard networkMonitor.isConnected else { return }
         guard let activeAccount else { return }
-
-        if handledPendingPortalToken && !accessToken.isEmpty {
-            return
-        }
 
         if accessToken.isEmpty {
             switch await refreshSession(for: activeAccount.normalizedIrref) {
@@ -2069,6 +2108,7 @@ struct ReferrerPortalView: View {
                 refreshToken: newRefreshToken,
                 makeActive: true
             )
+            referrerPortalAccountStore.clearStatusHint(for: responseReferrer.irref)
             referrer = responseReferrer
 
             if let messageTarget {
@@ -2077,6 +2117,10 @@ struct ReferrerPortalView: View {
             await loadPortal(messageTarget: messageTarget)
         } catch {
             Telemetry.capture(error)
+            if referrerPortalAccountStore.accounts.count == 1,
+               let onlyAccount = referrerPortalAccountStore.accounts.first {
+                storeReferrerPortalStatusHintIfNeeded(for: onlyAccount.normalizedIrref, from: error)
+            }
             if let messageTarget {
                 setMessage(referrerPortalDisplayErrorMessage(for: error), style: .error, for: messageTarget)
             }
@@ -2087,6 +2131,9 @@ struct ReferrerPortalView: View {
     private func refreshSession(for irref: String) async -> SessionRefreshResult {
         let refreshToken = referrerPortalAccountStore.refreshToken(for: irref)
         guard !refreshToken.isEmpty else {
+            if let statusHint = referrerPortalStoredStatusHint(for: irref) {
+                return .requiresSignIn(message: statusHint)
+            }
             return .requiresSignIn(message: referrerPortalRefreshFailureMessage(for: nil))
         }
 
@@ -2101,12 +2148,20 @@ struct ReferrerPortalView: View {
 
             accessToken = newAccessToken
             _ = referrerPortalAccountStore.saveRefreshToken(newRefreshToken, for: irref)
+            referrerPortalAccountStore.clearStatusHint(for: irref)
             return .success
         } catch {
             Telemetry.capture(error)
             accessToken = ""
             clearPortalData()
-            referrerPortalAccountStore.clearRefreshToken(for: irref)
+            storeReferrerPortalStatusHintIfNeeded(for: irref, from: error)
+            if !shouldPreserveReferrerPortalRefreshToken(after: error) {
+                referrerPortalAccountStore.clearRefreshToken(for: irref)
+            }
+            if let statusHint = referrerPortalStoredStatusHint(for: irref),
+               shouldPreserveReferrerPortalRefreshToken(after: error) {
+                return .requiresSignIn(message: statusHint)
+            }
             return .requiresSignIn(message: referrerPortalRefreshFailureMessage(for: error))
         }
     }
@@ -2243,6 +2298,7 @@ struct ReferrerPortalView: View {
         } catch {
             if !shouldRetryPortalLoadWithSessionRefresh(after: error) {
                 Telemetry.capture(error)
+                storeReferrerPortalStatusHintIfNeeded(for: activeIrref, from: error)
                 if let messageTarget {
                     setMessage(referrerPortalDisplayErrorMessage(for: error), style: .error, for: messageTarget)
                 }
@@ -2286,6 +2342,7 @@ struct ReferrerPortalView: View {
                     return
                 } catch {
                     Telemetry.capture(error)
+                    storeReferrerPortalStatusHintIfNeeded(for: activeIrref, from: error)
                     if let messageTarget {
                         setMessage(referrerPortalDisplayErrorMessage(for: error), style: .error, for: messageTarget)
                     }

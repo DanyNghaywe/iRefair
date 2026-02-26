@@ -8,7 +8,7 @@ import {
 } from '@/lib/referrerMobileAuth';
 import { RATE_LIMITS, rateLimit, rateLimitHeaders } from '@/lib/rateLimit';
 import { isReferrerMobileSessionStoreUnavailable, mapReferrerMobileAuthError } from '@/lib/referrerMobileAuthErrors';
-import { normalizePortalTokenVersion } from '@/lib/referrerPortalToken';
+import { normalizePortalTokenVersion, verifyReferrerTokenAllowExpired } from '@/lib/referrerPortalToken';
 import { getReferrerByIrref } from '@/lib/sheets';
 
 export const dynamic = 'force-dynamic';
@@ -53,6 +53,21 @@ export async function POST(request: NextRequest) {
       irref = payload.irref;
       portalTokenVersion = normalizePortalTokenVersion(String(payload.v));
     } catch {
+      try {
+        const hintedPayload = verifyReferrerTokenAllowExpired(portalToken);
+        const hintedReferrer = await getReferrerByIrref(hintedPayload.irref);
+        if (!hintedReferrer) {
+          return NextResponse.json({ ok: false, error: 'Referrer not found.' }, { status: 404 });
+        }
+        if (hintedReferrer.record.archived?.toLowerCase() === 'true') {
+          return NextResponse.json(
+            { ok: false, error: 'This referrer account has been archived and portal access is no longer available.' },
+            { status: 403 },
+          );
+        }
+      } catch {
+        // Fall through to the generic invalid/expired token response.
+      }
       return NextResponse.json({ ok: false, error: 'Invalid or expired token.' }, { status: 401 });
     }
 

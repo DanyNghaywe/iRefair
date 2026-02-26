@@ -1230,6 +1230,11 @@ struct ApplicantPortalView: View {
         let style: StatusBanner.Style
     }
 
+    private enum SessionRefreshResult {
+        case success
+        case requiresSignIn(message: String)
+    }
+
     private let apiBaseURL: String = APIConfig.baseURL
     private let applicationsPageSize = 10
     private let loadingRows = 2
@@ -2115,6 +2120,11 @@ struct ApplicantPortalView: View {
     }
 
     private func setMessage(_ text: String, style: StatusBanner.Style, for target: MessageTarget) {
+        if target == .global {
+            clearMessage(for: .switchAccount)
+        } else if target == .switchAccount {
+            clearMessage(for: .global)
+        }
         messages[target] = InlineMessage(text: text, style: style)
     }
 
@@ -2159,9 +2169,11 @@ struct ApplicantPortalView: View {
         guard let activeAccount else { return }
 
         if accessToken.isEmpty {
-            let refreshed = await refreshSession(for: activeAccount.normalizedIrain)
-            guard refreshed else {
-                setMessage(l("Session expired. Please sign in again."), style: .error, for: startupMessageTarget)
+            switch await refreshSession(for: activeAccount.normalizedIrain) {
+            case .success:
+                break
+            case .requiresSignIn(let message):
+                setMessage(message, style: .error, for: startupMessageTarget)
                 return
             }
         }
@@ -2261,10 +2273,10 @@ struct ApplicantPortalView: View {
     }
 
     @MainActor
-    private func refreshSession(for irain: String) async -> Bool {
+    private func refreshSession(for irain: String) async -> SessionRefreshResult {
         let refreshToken = applicantPortalAccountStore.refreshToken(for: irain)
         guard !refreshToken.isEmpty else {
-            return false
+            return .requiresSignIn(message: applicantPortalRefreshFailureMessage(for: nil))
         }
 
         do {
@@ -2278,13 +2290,15 @@ struct ApplicantPortalView: View {
 
             accessToken = newAccessToken
             _ = applicantPortalAccountStore.saveRefreshToken(newRefreshToken, for: irain)
-            return true
+            return .success
         } catch {
             Telemetry.capture(error)
             accessToken = ""
             clearPortalData()
-            applicantPortalAccountStore.clearRefreshToken(for: irain)
-            return false
+            if !shouldPreserveApplicantPortalRefreshToken(after: error) {
+                applicantPortalAccountStore.clearRefreshToken(for: irain)
+            }
+            return .requiresSignIn(message: applicantPortalRefreshFailureMessage(for: error))
         }
     }
 
@@ -2373,10 +2387,12 @@ struct ApplicantPortalView: View {
         defer { isLoading = false }
 
         if accessToken.isEmpty {
-            let refreshed = await refreshSession(for: activeIrain)
-            if !refreshed {
+            switch await refreshSession(for: activeIrain) {
+            case .success:
+                break
+            case .requiresSignIn(let message):
                 if let messageTarget {
-                    setMessage(l("Session expired. Please sign in again."), style: .error, for: messageTarget)
+                    setMessage(message, style: .error, for: messageTarget)
                 }
                 return
             }
@@ -2409,8 +2425,8 @@ struct ApplicantPortalView: View {
             }
             Telemetry.track("applicant_portal_loaded", properties: ["count": "\(applications.count)"])
         } catch {
-            let refreshed = await refreshSession(for: activeIrain)
-            if refreshed {
+            switch await refreshSession(for: activeIrain) {
+            case .success:
                 do {
                     let retryResponse = try await APIClient.loadApplicantPortal(baseURL: apiBaseURL, token: accessToken)
                     guard applicantPortalAccountStore.activeAccountIrain == activeIrain else { return }
@@ -2445,13 +2461,79 @@ struct ApplicantPortalView: View {
                     }
                     return
                 }
-            }
-
-            Telemetry.capture(error)
-            if let messageTarget {
-                setMessage(error.localizedDescription, style: .error, for: messageTarget)
+            case .requiresSignIn(let message):
+                Telemetry.capture(error)
+                if let messageTarget {
+                    setMessage(message, style: .error, for: messageTarget)
+                }
             }
         }
+    }
+
+    private func applicantPortalAccountStatusMessage(for error: Error) -> String? {
+        let rawMessage: String
+        if let apiError = error as? APIError {
+            rawMessage = apiError.message
+        } else {
+            rawMessage = error.localizedDescription
+        }
+
+        let normalized = rawMessage.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        if normalized == "applicant not found" || normalized == "applicant not found." {
+            return rawMessage
+        }
+        if normalized.contains("archived") && normalized.contains("portal access") {
+            return rawMessage
+        }
+        return nil
+    }
+
+    private func applicantPortalRefreshFailureMessage(for error: Error?) -> String {
+        guard let error else {
+            return l("Session expired. Please sign in again.")
+        }
+
+        if let accountStatusMessage = applicantPortalAccountStatusMessage(for: error) {
+            let trimmed = accountStatusMessage.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                return trimmed
+            }
+        }
+
+        let normalized = error.localizedDescription
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+
+        if normalized.isEmpty {
+            return l("Session expired. Please sign in again.")
+        }
+        if normalized == "invalid or expired session" || normalized == "invalid or expired session." {
+            return l("Session expired. Please sign in again.")
+        }
+
+        return error.localizedDescription
+    }
+
+    private func shouldPreserveApplicantPortalRefreshToken(after error: Error) -> Bool {
+        if applicantPortalAccountStatusMessage(for: error) != nil {
+            return true
+        }
+
+        let normalized = error.localizedDescription
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .lowercased()
+
+        if normalized == "invalid or expired session" || normalized == "invalid or expired session." {
+            return true
+        }
+        if normalized == "session rotation failed. please sign in again." {
+            return true
+        }
+        if normalized.contains("session expired") {
+            return true
+        }
+
+        return false
     }
 
     private func l(_ key: String) -> String {

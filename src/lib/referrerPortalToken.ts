@@ -47,7 +47,7 @@ export function createReferrerToken(irref: string, version = 1, ttlSeconds = 7 *
   return `${data}.${signature}`;
 }
 
-export function verifyReferrerToken(token: string): TokenPayload {
+function verifyReferrerTokenInternal(token: string, options?: { allowExpired?: boolean }): TokenPayload {
   const parts = token.split('.');
   if (parts.length !== 3) {
     throw new Error('Invalid token');
@@ -69,11 +69,19 @@ export function verifyReferrerToken(token: string): TokenPayload {
   if (!payload.irref || !payload.exp || typeof payload.exp !== 'number') {
     throw new Error('Invalid payload');
   }
-  if (payload.exp < Math.floor(Date.now() / 1000)) {
+  if (!options?.allowExpired && payload.exp < Math.floor(Date.now() / 1000)) {
     throw new Error('Token expired');
   }
   if (!payload.v || typeof payload.v !== 'number') {
     return { ...payload, v: 1 };
   }
   return payload;
+}
+
+export function verifyReferrerToken(token: string): TokenPayload {
+  return verifyReferrerTokenInternal(token);
+}
+
+export function verifyReferrerTokenAllowExpired(token: string): TokenPayload {
+  return verifyReferrerTokenInternal(token, { allowExpired: true });
 }

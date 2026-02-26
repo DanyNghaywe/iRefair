@@ -168,6 +168,7 @@ final class ReferrerPortalAccountStore: ObservableObject {
     private static let accountsStorageKey = "irefair.referrerPortal.accounts"
     private static let activeAccountStorageKey = "irefair.referrerPortal.activeIrref"
     private static let refreshTokenKeyPrefix = "referrerPortalRefreshToken."
+    private static let statusHintKeyPrefix = "referrerPortalStatusHint."
 
     @Published private(set) var accounts: [ReferrerPortalAccount] = []
     @Published private(set) var activeAccountIrref: String?
@@ -240,6 +241,7 @@ final class ReferrerPortalAccountStore: ObservableObject {
         if let refreshToken {
             saveRefreshToken(refreshToken, for: normalizedIrref)
         }
+        clearStatusHint(for: normalizedIrref)
 
         sortAccountsByRecentUse()
         persistAccounts()
@@ -267,11 +269,31 @@ final class ReferrerPortalAccountStore: ObservableObject {
         KeychainStore.delete(key: refreshTokenKey(for: irref))
     }
 
+    func statusHint(for irref: String) -> String {
+        let key = statusHintKey(for: irref)
+        return (userDefaults.string(forKey: key) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    func saveStatusHint(_ message: String, for irref: String) {
+        let normalizedMessage = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        let key = statusHintKey(for: irref)
+        if normalizedMessage.isEmpty {
+            userDefaults.removeObject(forKey: key)
+            return
+        }
+        userDefaults.set(normalizedMessage, forKey: key)
+    }
+
+    func clearStatusHint(for irref: String) {
+        userDefaults.removeObject(forKey: statusHintKey(for: irref))
+    }
+
     func removeAccount(irref: String) {
         let normalized = ReferrerPortalAccount.normalize(irref)
         guard !normalized.isEmpty else { return }
 
         clearRefreshToken(for: normalized)
+        clearStatusHint(for: normalized)
         accounts.removeAll { $0.normalizedIrref == normalized }
         sortAccountsByRecentUse()
         persistAccounts()
@@ -288,6 +310,7 @@ final class ReferrerPortalAccountStore: ObservableObject {
     func removeAllAccounts() {
         for account in accounts {
             clearRefreshToken(for: account.normalizedIrref)
+            clearStatusHint(for: account.normalizedIrref)
         }
         accounts = []
         persistAccounts()
@@ -348,6 +371,11 @@ final class ReferrerPortalAccountStore: ObservableObject {
     private func refreshTokenKey(for irref: String) -> String {
         let normalized = ReferrerPortalAccount.normalize(irref)
         return "\(Self.refreshTokenKeyPrefix)\(normalized)"
+    }
+
+    private func statusHintKey(for irref: String) -> String {
+        let normalized = ReferrerPortalAccount.normalize(irref)
+        return "\(Self.statusHintKeyPrefix)\(normalized)"
     }
 }
 

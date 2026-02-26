@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import {
   getReferrerMobileRefreshTokenIrrefHint,
+  getReferrerMobileStatelessRefreshTokenIrrefHint,
   issueReferrerMobileAccessToken,
   issueStatelessReferrerMobileRefreshToken,
   revokeReferrerMobileSessionByRefreshToken,
@@ -77,9 +78,10 @@ export async function POST(request: NextRequest) {
       return response;
     }
 
+    const statelessHint = getReferrerMobileStatelessRefreshTokenIrrefHint(refreshToken);
     const validated = await validateReferrerMobileRefreshToken(refreshToken);
     if (!validated) {
-      const hinted = await getReferrerMobileRefreshTokenIrrefHint(refreshToken);
+      const hinted = statelessHint ?? await getReferrerMobileRefreshTokenIrrefHint(refreshToken);
       if (hinted) {
         const referrer = await getReferrerByIrref(hinted.irref);
         if (referrer?.record.archived?.toLowerCase() === 'true') {

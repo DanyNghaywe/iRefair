@@ -1,7 +1,12 @@
 import { randomBytes, randomUUID } from 'crypto';
 
 import { db } from '@/lib/db';
-import { createReferrerToken, normalizePortalTokenVersion, verifyReferrerToken } from '@/lib/referrerPortalToken';
+import {
+  createReferrerToken,
+  normalizePortalTokenVersion,
+  verifyReferrerToken,
+  verifyReferrerTokenAllowExpired,
+} from '@/lib/referrerPortalToken';
 import { hashOpaqueToken } from '@/lib/tokens';
 
 const parsePositiveInt = (value: string | undefined, fallback: number) => {
@@ -262,6 +267,25 @@ export async function getReferrerMobileRefreshTokenIrrefHint(
   return {
     irref: session.irref,
   };
+}
+
+export function getReferrerMobileStatelessRefreshTokenIrrefHint(
+  refreshToken: string,
+): ReferrerMobileRefreshTokenIrrefHint | null {
+  const trimmed = refreshToken.trim();
+  if (!trimmed || !trimmed.startsWith(STATELESS_REFRESH_TOKEN_PREFIX)) {
+    return null;
+  }
+
+  const token = trimmed.slice(STATELESS_REFRESH_TOKEN_PREFIX.length).trim();
+  if (!token) return null;
+
+  try {
+    const payload = verifyReferrerTokenAllowExpired(token);
+    return { irref: payload.irref };
+  } catch {
+    return null;
+  }
 }
 
 export async function rotateReferrerMobileRefreshToken(

@@ -14,8 +14,9 @@ const { verifyLegacyReferrerPortalToken, issueReferrerMobileSession, issueStatel
   issueStatelessReferrerMobileSession: vi.fn(),
 }));
 
-const { normalizePortalTokenVersion } = vi.hoisted(() => ({
+const { normalizePortalTokenVersion, verifyReferrerTokenAllowExpired } = vi.hoisted(() => ({
   normalizePortalTokenVersion: vi.fn(),
+  verifyReferrerTokenAllowExpired: vi.fn(),
 }));
 
 const { getReferrerByIrref } = vi.hoisted(() => ({
@@ -38,6 +39,7 @@ vi.mock('@/lib/referrerMobileAuth', () => ({
 
 vi.mock('@/lib/referrerPortalToken', () => ({
   normalizePortalTokenVersion,
+  verifyReferrerTokenAllowExpired,
 }));
 
 vi.mock('@/lib/sheets', () => ({
@@ -58,6 +60,7 @@ beforeEach(() => {
   issueReferrerMobileSession.mockReset();
   issueStatelessReferrerMobileSession.mockReset();
   normalizePortalTokenVersion.mockReset();
+  verifyReferrerTokenAllowExpired.mockReset();
   getReferrerByIrref.mockReset();
 
   rateLimit.mockResolvedValue({
@@ -77,6 +80,11 @@ beforeEach(() => {
   normalizePortalTokenVersion.mockImplementation((value: string) => {
     const parsed = Number.parseInt(value, 10);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
+  });
+  verifyReferrerTokenAllowExpired.mockReturnValue({
+    irref: 'iRREF0000000001',
+    exp: Math.floor(Date.now() / 1000) - 10,
+    v: 2,
   });
   getReferrerByIrref.mockResolvedValue({
     record: {
@@ -140,6 +148,34 @@ describe('POST /api/referrer/mobile/auth/exchange', () => {
         name: 'Jane Referrer',
         email: 'jane@example.com',
       },
+    });
+  });
+
+  it('returns archived error when portal token is expired but belongs to an archived referrer', async () => {
+    verifyLegacyReferrerPortalToken.mockImplementation(() => {
+      throw new Error('Token expired');
+    });
+    verifyReferrerTokenAllowExpired.mockReturnValue({
+      irref: 'iRREF0000000001',
+      exp: Math.floor(Date.now() / 1000) - 10,
+      v: 2,
+    });
+    getReferrerByIrref.mockResolvedValue({
+      record: {
+        irref: 'iRREF0000000001',
+        name: 'Jane Referrer',
+        email: 'jane@example.com',
+        archived: 'true',
+        portalTokenVersion: '2',
+      },
+    });
+
+    const response = await POST(makeRequest({ portalToken: 'expired-valid-token' }));
+
+    expect(response.status).toBe(403);
+    await expect(response.json()).resolves.toEqual({
+      ok: false,
+      error: 'This referrer account has been archived and portal access is no longer available.',
     });
   });
 
