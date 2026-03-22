@@ -7,11 +7,65 @@ on:
 
 jobs:
   sync:
-    if: github.repository != 'makramaoun/iRefair'
+    # Only the deployed demo repo has the endpoint and secret for this job.
+    if: github.repository == 'DanyNghaywe/irefair-demo'
     runs-on: ubuntu-latest
+    env:
+      CRON_SECRET: ${{ secrets.CRON_SECRET }}
+      CRON_SYNC_URL: https://irefair.andbeyondca.com/api/cron/sync-sheets
     steps:
       - name: Trigger SQL-to-Sheets full sync endpoint
         run: |
-          curl -fsS \
-            -H "Authorization: Bearer ${{ secrets.CRON_SECRET }}" \
-            "https://irefair.andbeyondca.com/api/cron/sync-sheets"
+          set -euo pipefail
+
+          if [ -z "$CRON_SECRET" ]; then
+            echo "Missing GitHub Actions secret: CRON_SECRET" >&2
+            exit 1
+          fi
+
+          echo "event=$GITHUB_EVENT_NAME"
+          echo "ref=$GITHUB_REF"
+          echo "sha=$GITHUB_SHA"
+
+          response_file="$(mktemp)"
+          trap 'rm -f "$response_file"' EXIT
+
+          curl_exit=0
+          http_status="$(
+            curl -sS -o "$response_file" -w '%{http_code}' \
+              -H "Authorization: Bearer $CRON_SECRET" \
+              "$CRON_SYNC_URL"
+          )" || curl_exit=$?
+
+          echo "http_status=$http_status"
+          echo "response_body:"
+          if [ -s "$response_file" ]; then
+            cat "$response_file"
+          else
+            echo "<empty>"
+          fi
+          echo
+
+          {
+            echo "### SQL to Sheets Sync"
+            echo
+            echo "- Event: \`$GITHUB_EVENT_NAME\`"
+            echo "- Ref: \`$GITHUB_REF\`"
+            echo "- SHA: \`$GITHUB_SHA\`"
+            echo "- HTTP status: \`$http_status\`"
+            echo "- Curl exit: \`$curl_exit\`"
+            echo
+            echo "#### Response body"
+            echo
+            echo '```'
+            if [ -s "$response_file" ]; then
+              cat "$response_file"
+            else
+              echo "<empty>"
+            fi
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$curl_exit" -ne 0 ] || [ "$http_status" -lt 200 ] || [ "$http_status" -ge 300 ]; then
+            exit 1
+          fi
